@@ -93,7 +93,7 @@ An 8-bit immediate value that is used by the CALL instruction as jump offset.
 All ALU instructions take 2 operands A and B and produce result C.
 
 |opcodes|instruction|signed|A width|B width|C|C width|
-|-|-|-|-|-|-|-|-|-|
+|-|-|-|-|-|-|-|
 |TBD|ADD_64|no|64|64|A + B|64|
 |TBD|ADD_32|no|32|32|A + B|32|
 |TBD|ADD_16|no|16|16|A + B|16|
@@ -132,7 +132,7 @@ If `C` is shorter than 64 bits, it is zero-extended before the result is written
 
 ### FPU instructions
 |opcodes|instruction|C|
-|-|-|-|-|-|
+|-|-|-|
 |TBD|FADD|A + B|
 |TBD|FSUB|A - B|
 |TBD|FMUL|A * B|
@@ -186,4 +186,4 @@ The program is initialized from a 256-bit seed value using a suitable PRNG. The 
 
 
 ## Result
-When the program terminates (the value of `ic` register reaches 0), the register file and the stack are hashed using the Blake2b hash function to get the final PoW value. The generation/execution can be chained multiple times to discourage mining strategies that search for programs with particular properties.
+When the program terminates (the value of `ic` register reaches 0), the cache, the register file and the stack are hashed using the Blake2b hash function to get the final PoW value. The generation/execution can be chained multiple times to discourage mining strategies that search for programs with particular properties.
