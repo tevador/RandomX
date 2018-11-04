@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 	uint64_t ic = argc > 1 ? atoi(argv[1]) : 65536;
 	uint64_t ss = 0;
 	uint64_t branches = 0;
-	uint32_t state = 0;
+	uint64_t state = 0;
 	uint32_t state2 = 123456789;
 	void* stack[65536];
 	PROF_START();
