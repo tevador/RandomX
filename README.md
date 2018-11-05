@@ -118,7 +118,7 @@ END FUNCTION
 ![Imgur](https://i.imgur.com/ppEiUfh.png)
 
 |loc(b)|read B from|
-|---------|-|-|
+|---------|-|
 |000|register `x(b)`|
 |001|register `x(b)`|
 |010|register `x(b)`|
