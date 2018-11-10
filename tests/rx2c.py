@@ -2,8 +2,8 @@ import random
 import sys
 import os
 
-PROGRAM_SIZE = 1024
-INSTRUCTION_COUNT = 65536
+PROGRAM_SIZE = 512
+INSTRUCTION_COUNT = 1024 * 1024
         
 def genBytes(count):
     return ', '.join(str(random.getrandbits(8)) for i in range(count))
@@ -33,14 +33,14 @@ def toSigned32(x):
 def toSigned64(x):
     return x - ((x & 0x8000000000000000) << 1)
 
-def immediateTo(val, type):
+def immediateTo(symbol, type):
     converters = {
-        0: toSigned32(val),
-        1: val,
-        2: toSigned32(val),
-        3: val,
-        4: float(toSigned32(val) << 32),
-        5: val & 63
+        0: toSigned32(symbol.imm1),
+        1: symbol.imm1,
+        2: toSigned32(symbol.imm1),
+        3: symbol.imm1,
+        4: float(toSigned32(symbol.imm1) << 32),
+        5: symbol.imm0 & 63
     }
     return repr(converters.get(type))
     
@@ -102,15 +102,14 @@ def getRegister(num, type):
 def writeInitialValues(file):
     file.write("\tclock_t clockStart = clock(), clockEnd;\n")
     for i in range(8):
-        file.write("\tr{0} = {1}ULL;\n".format(i, random.getrandbits(64)))
+        file.write("\tr{0} = *(uint64_t*)(aesSeed + {1});\n".format(i, i * 8))
     for i in range(8):
-        file.write("\tf{0} = {1};\n".format(i, toSigned64(random.getrandbits(64))))
-    file.write("\tG = _mm_set_epi64x({0}ULL, {1}ULL);\n".format(random.getrandbits(64), random.getrandbits(64)))
-    file.write("\tmmu.m0 = {1};\n".format(i, random.getrandbits(32) & 0xFFFFFF00))
+        file.write("\tf{0} = *(int64_t*)(aesSeed + {1});\n".format(i, 64 + i * 8))
+    file.write("\tmmu.m0 = (aesKey[9] << 8) | (aesKey[10] << 16) | (aesKey[11] << 24);\n")
     file.write("\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)scratchpad, SCRATCHPAD_SIZE);\n")
     file.write("\tmmu.mx = 0;\n")
     file.write("\tmmu.sp = 0;\n")
-    file.write("\tic = 65536;\n")
+    file.write("\tic = {0};\n".format(INSTRUCTION_COUNT))
     file.write("\tmxcsr = (_mm_getcsr() | _MM_FLUSH_ZERO_ON) & ~_MM_ROUND_MASK; //flush denormals to zero, round to nearest\n")
     file.write("\t_mm_setcsr(mxcsr);\n")
     
@@ -131,13 +130,8 @@ def writeEpilog(file):
 def writeCommon(file, i, symbol, type, name):
     file.write("\ti_{0}: {{ //{1}\n".format(i, name))
     file.write("\t\tif(0 == ic--) goto end;\n")
-    file.write("\t\tr{0} ^= (uint32_t)_mm_cvtsi128_si32(G);\n".format(symbol.ra))
-    file.write("\t\taddr_t addr = r{0};\n".format(symbol.ra))
-    file.write("\t\tr{0} = __rolq(r{0}, 32);\n".format(symbol.ra))
-    file.write("\t\tG = _mm_shuffle_epi32(G, _MM_SHUFFLE(1, 2, 3, 0));\n")
-    if symbol.gen == 0:
-        file.write("\t\t__m128i K = _mm_set_epi64x({0}, r{1});\n".format(registerFrom(symbol.xb, type), symbol.ra))
-        file.write("\t\tG = _mm_aesenc_si128(G, K);\n")
+    file.write("\t\tr{0} ^= {1};\n".format(symbol.rega, symbol.addr0))
+    file.write("\t\taddr_t addr = r{0};\n".format(symbol.rega))
 
 def readA(symbol, type):
     location = {
@@ -154,38 +148,40 @@ def readA(symbol, type):
 
 def writeC(symbol, type):
     location = {
-        0: "SCRATCHPAD_256K(addr)",
-        1: "SCRATCHPAD_16K(addr)",
-        2: "",
-        3: "",
-        4: "SCRATCHPAD_16K(addr)",
-        5: "SCRATCHPAD_16K(addr)",
+        0: "SCRATCHPAD_256K(r{0} ^ {1})",
+        1: "SCRATCHPAD_16K(r{0} ^ {1})",
+        2: "SCRATCHPAD_16K(r{0} ^ {1})",
+        3: "SCRATCHPAD_16K(r{0} ^ {1})",
+        4: "",
+        5: "",
         6: "",
         7: ""
     }
-    c = location.get(symbol.loca)
+    c = location.get(symbol.locc)
     if c == "":
-        c = getRegister(symbol.xb, type)
+        c = getRegister(symbol.regc, type)
     else:
-        c = convertibleFrom(c, type)
+        c = convertibleFrom(c.format(symbol.regc, symbol.addr1), type)
     return c
 
 def readB(symbol, type):
     if symbol.locb < 6:
-        return registerTo(getRegister(symbol.xb, type), type)
+        return registerTo(getRegister(symbol.regb, type), type)
     else:
-        return immediateTo(symbol.imm1, type)
+        return immediateTo(symbol, type)
 
 class CodeSymbol:
     def __init__(self, qi):
         self.opcode = qi & 255
         self.loca = (qi >> 8) & 7
-        self.ra = (qi >> 11) & 7
-        self.gen = (qi >> 14) & 3
-        self.locb = (qi >> 16) & 7
-        self.xb = (qi >> 19) & 7
-        self.imm0 = (qi >> 24) & 255
-        self.imm1 = qi >> 32
+        self.rega = (qi >> 16) & 7
+        self.locb = (qi >> 24) & 7
+        self.regb = (qi >> 32) & 7
+        self.locc = (qi >> 40) & 7
+        self.regc = (qi >> 48) & 7
+        self.imm0 = (qi >> 56) & 255
+        self.addr0 = (qi >> 64) & 0xFFFFFFFF
+        self.addr1 = self.imm1 = qi >> 96
 
 def writeOperation(file, i, symbol, type, name, op):
     writeCommon(file, i, symbol, type, name)
@@ -326,7 +322,7 @@ def write_FSQRT(file, i, symbol):
 def write_FROUND(file, i, symbol):
     type = OperandType.FLOAT
     writeCommon(file, i, symbol, type, 'FROUND')
-    file.write("\t\t{0} A = {1};\n".format(declareType(OperandType.UINT64), readA(symbol, OperandType.UINT64)))
+    file.write("\t\t{0} A = {1};\n".format(declareType(OperandType.INT64), readA(symbol, OperandType.INT64)))
     file.write("\t\t{0} = A;\n".format(writeC(symbol, type)))
     file.write("\t\t_mm_setcsr(mxcsr | ((uint32_t)(A << 13) & _MM_ROUND_MASK)); }\n")
 
@@ -335,13 +331,13 @@ def write_CALL(file, i, symbol):
     writeCommon(file, i, symbol, type, 'CALL')
     file.write("\t\t{0} A = {1};\n".format(declareType(type), readA(symbol, type)))
     if symbol.locb < 6:
-        file.write("\t\tif((uint32_t){0} <= {1}) {{\n".format(getRegister(symbol.xb, type), immediateTo(symbol.imm1, type)))
+        file.write("\t\tif((uint32_t)r{0} <= {1}) {{\n".format(symbol.regb, symbol.imm1))
     file.write("\t\t\tPUSH_VALUE(A);\n");
     file.write("\t\t\tPUSH_ADDRESS(&&i_{0});\n".format((i + 1) & (PROGRAM_SIZE - 1)));
-    file.write("\t\t\tgoto i_{0};\n".format((i + 1 + symbol.imm0) & (PROGRAM_SIZE - 1)));
+    file.write("\t\t\tgoto i_{0};\n".format((i + 1 + (symbol.imm0 & (PROGRAM_SIZE/4 - 1))) & (PROGRAM_SIZE - 1)));
     if symbol.locb < 6:
         file.write("\t\t}}\n\t\t{0} = A;".format(writeC(symbol, type)))
-    file.write(" }\n")
+    file.write("\t\t}\n")
 
 def write_RET(file, i, symbol):
     type = OperandType.UINT64
@@ -349,7 +345,7 @@ def write_RET(file, i, symbol):
     file.write("\t\t{0} A = {1};\n".format(declareType(type), readA(symbol, type)))
     file.write("\t\tif(!STACK_IS_EMPTY()")
     if symbol.locb < 6:
-        file.write(" && (uint32_t){0} <= {1}".format(getRegister(symbol.xb, type), immediateTo(symbol.imm1, type)))
+        file.write(" && (uint32_t)r{0} <= {1}".format(symbol.regb, symbol.imm1))
     file.write(") {\n")
     file.write("\t\t\tvoid* target = POP_ADDRESS();\n")
     file.write("\t\t\tuint64_t C = POP_VALUE();\n")
@@ -620,10 +616,9 @@ def writeCode(file, i, symbol):
     opcodeMap.get(symbol.opcode)(file, i, symbol)
 
 def writeMain(file):
-    file.write(("int main() {\n"
+    file.write(('__attribute__((optimize("Os"))) int main() {\n'
                 "	register uint64_t r0, r1, r2, r3, r4, r5, r6, r7;\n"
                 "	register double f0, f1, f2, f3, f4, f5, f6, f7;\n"
-                "	register __m128i G; //g0-g3\n"
                 "	register uint64_t ic;\n"
                 "	convertible_t scratchpad[SCRATCHPAD_LENGTH];\n"
                 "	stack_t stack[STACK_LENGTH];\n"
@@ -663,10 +658,10 @@ def writeProlog(file):
                 "#define SCRATCHPAD_LENGTH (SCRATCHPAD_SIZE / sizeof(convertible_t))\n"
                 "#define SCRATCHPAD_MASK14 (16 * 1024 / sizeof(convertible_t) - 1)\n"
                 "#define SCRATCHPAD_MASK18 (SCRATCHPAD_LENGTH - 1)\n"
-                "#define SCRATCHPAD_16K(x) scratchpad[(x >> 3) & SCRATCHPAD_MASK14]\n"
-                "#define SCRATCHPAD_256K(x) scratchpad[(x >> 3) & SCRATCHPAD_MASK18]\n"
+                "#define SCRATCHPAD_16K(x) scratchpad[(x) & SCRATCHPAD_MASK14]\n"
+                "#define SCRATCHPAD_256K(x) scratchpad[(x) & SCRATCHPAD_MASK18]\n"
                 "#define STACK_LENGTH (32 * 1024)\n"
-                "#define DRAM(x) __rolq(6364136223846793005*(x)+1442695040888963407,32)\n"
+                "#define DRAM(x) __rolq(6364136223846793005ULL*(x)+1442695040888963407ULL,32)\n"
                 "//#define PREFETCH(x) _mm_prefetch(x, _MM_HINT_T0)\n"
                 "#define PREFETCH(x)\n"
                 "#define PUSH_VALUE(x) stack[mmu.sp++].value = x\n"
@@ -782,6 +777,7 @@ with sys.stdout as file:
     writeMain(file)
     writeInitialValues(file)
     for i in range(PROGRAM_SIZE):
-        writeCode(file, i, CodeSymbol(random.getrandbits(64)))
-    file.write("\t\tgoto i_0;\n")
+        writeCode(file, i, CodeSymbol(random.getrandbits(128)))
+    if PROGRAM_SIZE > 0:
+        file.write("\t\tgoto i_0;\n")
     writeEpilog(file)
