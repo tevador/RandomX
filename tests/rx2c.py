@@ -100,6 +100,14 @@ def getRegister(num, type):
     return registers.get(type).format(num)
 
 def writeInitialValues(file):
+    file.write("#ifdef RAM\n")
+    file.write("\tmmu.buffer = (char*)malloc(DRAM_SIZE);\n")
+    file.write("\tif(!mmu.buffer) {\n")
+    file.write('\t\tprintf("DRAM buffer allocation failed\\n");\n')
+    file.write("\t\treturn 1; }\n")
+    file.write("\t\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)mmu.buffer, DRAM_SIZE);\n")
+    file.write('\t\tprintf("DRAM buffer initialized successfully\\n");\n')
+    file.write("#endif\n")
     file.write("\tclock_t clockStart = clock(), clockEnd;\n")
     for i in range(8):
         file.write("\tr{0} = *(uint64_t*)(aesSeed + {1});\n".format(i, i * 8))
@@ -108,7 +116,7 @@ def writeInitialValues(file):
     file.write("\tmmu.m0 = (aesKey[9] << 8) | (aesKey[10] << 16) | (aesKey[11] << 24);\n")
     file.write("\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)scratchpad, SCRATCHPAD_SIZE);\n")
     file.write("\tmmu.mx = 0;\n")
-    file.write("\tmmu.sp = 0;\n")
+    file.write("\tsp = 0;\n")
     file.write("\tic = {0};\n".format(INSTRUCTION_COUNT))
     file.write("\tmxcsr = (_mm_getcsr() | _MM_FLUSH_ZERO_ON) & ~_MM_ROUND_MASK; //flush denormals to zero, round to nearest\n")
     file.write("\t_mm_setcsr(mxcsr);\n")
@@ -619,7 +627,7 @@ def writeMain(file):
     file.write(('__attribute__((optimize("Os"))) int main() {\n'
                 "	register uint64_t r0, r1, r2, r3, r4, r5, r6, r7;\n"
                 "	register double f0, f1, f2, f3, f4, f5, f6, f7;\n"
-                "	register uint64_t ic;\n"
+                "	register uint64_t ic, sp;\n"
                 "	convertible_t scratchpad[SCRATCHPAD_LENGTH];\n"
                 "	stack_t stack[STACK_LENGTH];\n"
                 "	mmu_t mmu;\n"
@@ -637,6 +645,7 @@ def writeProlog(file):
                 "typedef uint32_t addr_t;\n"
                 "typedef unsigned __int128 uint128_t;\n"
                 "typedef __int128 int128_t;\n"
+                "typedef unsigned char byte;\n"
                 "typedef union {\n"
                 "	double f64;\n"
                 "	int64_t i64;\n"
@@ -652,8 +661,11 @@ def writeProlog(file):
                 "	addr_t m0;\n"
                 "	addr_t m1;\n"
                 "	addr_t mx;\n"
-                "	uint32_t sp;\n"
+                "#ifdef RAM\n"
+                "	const char* buffer;\n"
+                "#endif\n"
                 "} mmu_t;\n"
+                "#define DRAM_SIZE (1UL << 32)\n"
                 "#define SCRATCHPAD_SIZE (256 * 1024)\n"
                 "#define SCRATCHPAD_LENGTH (SCRATCHPAD_SIZE / sizeof(convertible_t))\n"
                 "#define SCRATCHPAD_MASK14 (16 * 1024 / sizeof(convertible_t) - 1)\n"
@@ -661,22 +673,26 @@ def writeProlog(file):
                 "#define SCRATCHPAD_16K(x) scratchpad[(x) & SCRATCHPAD_MASK14]\n"
                 "#define SCRATCHPAD_256K(x) scratchpad[(x) & SCRATCHPAD_MASK18]\n"
                 "#define STACK_LENGTH (32 * 1024)\n"
-                "#define DRAM(x) __rolq(6364136223846793005ULL*(x)+1442695040888963407ULL,32)\n"
-                "//#define PREFETCH(x) _mm_prefetch(x, _MM_HINT_T0)\n"
+                "#ifdef RAM\n"
+                "#define DRAM_READ(mmu) (convertible_t)*(uint64_t*)((mmu)->buffer + (mmu)->m0)\n"
+                "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->m1), _MM_HINT_T0)\n"
+                "#else\n"
+                "#define DRAM_READ(mmu) (convertible_t)(uint64_t)__rolq(6364136223846793005ULL*((mmu)->m0)+1442695040888963407ULL,32)\n"
                 "#define PREFETCH(x)\n"
-                "#define PUSH_VALUE(x) stack[mmu.sp++].value = x\n"
-                "#define PUSH_ADDRESS(x) stack[mmu.sp++].address = x\n"
-                "#define STACK_IS_EMPTY() (mmu.sp == 0)\n"
-                "#define POP_VALUE() stack[--mmu.sp].value\n"
-                "#define POP_ADDRESS() stack[--mmu.sp].address\n"
+                "#endif\n"
+                "#define PUSH_VALUE(x) stack[sp++].value = x\n"
+                "#define PUSH_ADDRESS(x) stack[sp++].address = x\n"
+                "#define STACK_IS_EMPTY() (sp == 0)\n"
+                "#define POP_VALUE() stack[--sp].value\n"
+                "#define POP_ADDRESS() stack[--sp].address\n"
                 "static convertible_t readDram(mmu_t* mmu, addr_t addr) {\n"
                 "	convertible_t data;\n"
-                "	data.u64 = DRAM(mmu->m0); //TODO\n"
+                "	data = DRAM_READ(mmu);\n"
                 "	mmu->m0 += 8;\n"
                 "	mmu->mx ^= addr;\n"
-                "	if((mmu->m0 & 255) == 192) {\n"
+                "	if((mmu->m0 & 255) == 128) {\n"
                 "		mmu->m1 = mmu->mx & 0xFFFFFF00;\n"
-                "		PREFETCH(mmu->m1); //TODO\n"
+                "		PREFETCH(mmu);\n"
                 "	}\n"
                 "	if((mmu->m0 & 255) == 0)\n"
                 "		mmu->m0 = mmu->m1;\n"
@@ -772,8 +788,8 @@ def writeProlog(file):
 
 with sys.stdout as file:
     writeProlog(file)
-    file.write("const unsigned char aesKey[32] = {{ {0} }};\n".format(genBytes(32)))
-    file.write("const unsigned char aesSeed[128] = {{ {0} }};\n".format(genBytes(128)))
+    file.write("const byte aesKey[32] = {{ {0} }};\n".format(genBytes(32)))
+    file.write("const byte aesSeed[128] = {{ {0} }};\n".format(genBytes(128)))
     writeMain(file)
     writeInitialValues(file)
     for i in range(PROGRAM_SIZE):
