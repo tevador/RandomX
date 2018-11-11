@@ -101,12 +101,13 @@ def getRegister(num, type):
 
 def writeInitialValues(file):
     file.write("#ifdef RAM\n")
-    file.write("\tmmu.buffer = (char*)malloc(DRAM_SIZE);\n")
+    file.write("\tmmu.buffer = (char*)_mm_malloc(DRAM_SIZE, 16);\n")
     file.write("\tif(!mmu.buffer) {\n")
     file.write('\t\tprintf("DRAM buffer allocation failed\\n");\n')
-    file.write("\t\treturn 1; }\n")
-    file.write("\t\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)mmu.buffer, DRAM_SIZE);\n")
-    file.write('\t\tprintf("DRAM buffer initialized successfully\\n");\n')
+    file.write("\t\treturn 1;\n")
+    file.write("\t}\n")
+    file.write('\tprintf("Initializing DRAM buffer...\\n");\n')
+    file.write("\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)mmu.buffer, DRAM_SIZE);\n")
     file.write("#endif\n")
     file.write("\tclock_t clockStart = clock(), clockEnd;\n")
     for i in range(8):
@@ -125,13 +126,16 @@ def writeEpilog(file):
     file.write("\tend:\n")
     file.write("\t\tclockEnd = clock();\n")
     for i in range(8):
-        file.write('\t\tprintf("r{0} = %-36llu f{0} = %g\\n", r{0}, f{0});\n'.format(i))
+        file.write('\t\tprintf("r{0} = %-36lu f{0} = %g\\n", r{0}, f{0});\n'.format(i))
     file.write(("\t\tuint64_t spadsum = 0;\n"
-		"\t\tfor(int i = 0; i < SCRATCHPAD_LENGTH; ++i) {\n"
-		"\t\t	spadsum += scratchpad[i].u64;\n"
-		"\t\t}\n"
-		'\t\tprintf("scratchpad sum = %llu\\n", spadsum);\n'
-        '\t\tprintf("runtime: %f\\n", (clockEnd - clockStart) / (double)CLOCKS_PER_SEC);\n'))
+        "\t\tfor(int i = 0; i < SCRATCHPAD_LENGTH; ++i) {\n"
+        "\t\t	spadsum += scratchpad[i].u64;\n"
+        "\t\t}\n"
+        '\t\tprintf("scratchpad sum = %lu\\n", spadsum);\n'
+        '\t\tprintf("runtime: %f\\n", (clockEnd - clockStart) / (double)CLOCKS_PER_SEC);\n'
+        "#ifdef RAM\n"
+        "\t\t_mm_free((void*)mmu.buffer);\n"
+        "#endif\n"))
     file.write("\t\treturn 0;")
     file.write("}")
 
@@ -628,7 +632,7 @@ def writeMain(file):
                 "	register uint64_t r0, r1, r2, r3, r4, r5, r6, r7;\n"
                 "	register double f0, f1, f2, f3, f4, f5, f6, f7;\n"
                 "	register uint64_t ic, sp;\n"
-                "	convertible_t scratchpad[SCRATCHPAD_LENGTH];\n"
+                "	convertible_t scratchpad[SCRATCHPAD_LENGTH] __attribute__ ((aligned (16)));\n"
                 "	stack_t stack[STACK_LENGTH];\n"
                 "	mmu_t mmu;\n"
                 "	uint32_t mxcsr;\n"
