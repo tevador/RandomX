@@ -115,6 +115,7 @@ The second operand is loaded either from a register or from an immediate value e
 
 #### Operand C
 The third operand is the location where the result is stored.
+
 |loc\(c\)[2:0]|write C to|address size (W)
 |---------|-|-|
 |000|scratchpad|15 bits|
