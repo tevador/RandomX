@@ -342,7 +342,7 @@ def write_CALL(file, i, symbol):
         file.write("\t\tif((uint32_t)r{0} <= {1}) {{\n".format(symbol.regb, symbol.imm1))
     file.write("\t\t\tPUSH_VALUE(A);\n");
     file.write("\t\t\tPUSH_ADDRESS(&&i_{0});\n".format((i + 1) & (PROGRAM_SIZE - 1)));
-    file.write("\t\t\tgoto i_{0};\n".format((i + 1 + (symbol.imm0 & (PROGRAM_SIZE/4 - 1))) & (PROGRAM_SIZE - 1)));
+    file.write("\t\t\tgoto i_{0};\n".format((i + 1 + (symbol.imm0 & ((PROGRAM_SIZE >> 2) - 1))) & (PROGRAM_SIZE - 1)));
     if symbol.locb < 6:
         file.write("\t\t}}\n\t\t{0} = A;".format(writeC(symbol, type)))
     file.write("\t\t}\n")
