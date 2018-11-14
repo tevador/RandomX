@@ -126,12 +126,12 @@ def writeEpilog(file):
     file.write("\tend:\n")
     file.write("\t\tclockEnd = clock();\n")
     for i in range(8):
-        file.write('\t\tprintf("r{0} = %-36lu f{0} = %g\\n", r{0}, f{0});\n'.format(i))
+        file.write('\t\tprintf("r{0} = %-36" PRIu64 " f{0} = %g\\n", r{0}, f{0});\n'.format(i))
     file.write(("\t\tuint64_t spadsum = 0;\n"
         "\t\tfor(int i = 0; i < SCRATCHPAD_LENGTH; ++i) {\n"
         "\t\t	spadsum += scratchpad[i].u64;\n"
         "\t\t}\n"
-        '\t\tprintf("scratchpad sum = %lu\\n", spadsum);\n'
+        '\t\tprintf("scratchpad sum = %" PRIu64 "\\n", spadsum);\n'
         '\t\tprintf("runtime: %f\\n", (clockEnd - clockStart) / (double)CLOCKS_PER_SEC);\n'
         "#ifdef RAM\n"
         "\t\t_mm_free((void*)mmu.buffer);\n"
@@ -632,8 +632,8 @@ def writeMain(file):
                 "	register uint64_t r0, r1, r2, r3, r4, r5, r6, r7;\n"
                 "	register double f0, f1, f2, f3, f4, f5, f6, f7;\n"
                 "	register uint64_t ic, sp;\n"
-                "	convertible_t scratchpad[SCRATCHPAD_LENGTH] __attribute__ ((aligned (16)));\n"
                 "	stack_t stack[STACK_LENGTH];\n"
+                "	convertible_t scratchpad[SCRATCHPAD_LENGTH] __attribute__ ((aligned (16)));\n"
                 "	mmu_t mmu;\n"
                 "	uint32_t mxcsr;\n"
                 ))
@@ -646,6 +646,7 @@ def writeProlog(file):
                 "#include <emmintrin.h>\n"
                 "#include <wmmintrin.h>\n"
                 "#include <math.h>\n"
+                "#include <inttypes.h>\n"
                 "typedef uint32_t addr_t;\n"
                 "typedef unsigned __int128 uint128_t;\n"
                 "typedef __int128 int128_t;\n"
@@ -669,14 +670,14 @@ def writeProlog(file):
                 "	const char* buffer;\n"
                 "#endif\n"
                 "} mmu_t;\n"
-                "#define DRAM_SIZE (1UL << 32)\n"
+                "#define DRAM_SIZE (1ULL << 32)\n"
                 "#define SCRATCHPAD_SIZE (256 * 1024)\n"
                 "#define SCRATCHPAD_LENGTH (SCRATCHPAD_SIZE / sizeof(convertible_t))\n"
                 "#define SCRATCHPAD_MASK14 (16 * 1024 / sizeof(convertible_t) - 1)\n"
                 "#define SCRATCHPAD_MASK18 (SCRATCHPAD_LENGTH - 1)\n"
                 "#define SCRATCHPAD_16K(x) scratchpad[(x) & SCRATCHPAD_MASK14]\n"
                 "#define SCRATCHPAD_256K(x) scratchpad[(x) & SCRATCHPAD_MASK18]\n"
-                "#define STACK_LENGTH (32 * 1024)\n"
+                "#define STACK_LENGTH (128 * 1024)\n"
                 "#ifdef RAM\n"
                 "#define DRAM_READ(mmu) (convertible_t)*(uint64_t*)((mmu)->buffer + (mmu)->m0)\n"
                 "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->m1), _MM_HINT_T0)\n"
