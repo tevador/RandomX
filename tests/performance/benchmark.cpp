@@ -29,6 +29,14 @@
   #define ror64 __rorq
   #define rol64 __rolq
   #define forceinline inline
+  #ifdef __clang__
+  static inline uint64_t __rolq(uint64_t a, int b) {
+    return (a << b) | (a >> (64 - b));
+  }
+  static inline uint64_t __rorq(uint64_t a, int b) {
+    return (a >> b) | (a << (64 - b));
+  }
+  #endif
 #elif defined(_MSC_VER) && defined(_M_X64)
   #include <intrin.h>
   #include <stdlib.h>
