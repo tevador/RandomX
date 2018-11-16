@@ -4,6 +4,38 @@ import os
 
 PROGRAM_SIZE = 512
 INSTRUCTION_COUNT = 1024 * 1024
+INSTRUCTION_WEIGHTS = [
+    ("ADD_64", 16),
+    ("ADD_32", 8),
+    ("SUB_64", 16),
+    ("SUB_32", 8),
+    ("MUL_64", 7),
+    ("MULH_64", 7),
+    ("MUL_32", 7),
+    ("IMUL_32", 7),
+    ("IMULH_64", 7),
+    ("DIV_64", 1),
+    ("IDIV_64", 1),
+    ("AND_64", 4),
+    ("AND_32", 3),
+    ("OR_64", 4),
+    ("OR_32", 3),
+    ("XOR_64", 4),
+    ("XOR_32", 3),
+    ("SHL_64", 6),
+    ("SHR_64", 6),
+    ("SAR_64", 6),
+    ("ROL_64", 9),
+    ("ROR_64", 9),
+    ("FADD", 22),
+    ("FSUB", 22),
+    ("FMUL", 22),
+    ("FDIV", 8),
+    ("FSQRT", 6),
+    ("FROUND", 2),
+    ("CALL", 17),
+    ("RET", 15),
+]
         
 def genBytes(count):
     return ', '.join(str(random.getrandbits(8)) for i in range(count))
@@ -114,8 +146,8 @@ def writeInitialValues(file):
         file.write("\tr{0} = *(uint64_t*)(aesSeed + {1});\n".format(i, i * 8))
     for i in range(8):
         file.write("\tf{0} = *(int64_t*)(aesSeed + {1});\n".format(i, 64 + i * 8))
-    file.write("\tmmu.m0 = (aesKey[9] << 8) | (aesKey[10] << 16) | (aesKey[11] << 24);\n")
     file.write("\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)scratchpad, SCRATCHPAD_SIZE);\n")
+    file.write("\tmmu.m0 = (aesKey[10] << 16) | (aesKey[11] << 24);\n")
     file.write("\tmmu.mx = 0;\n")
     file.write("\tsp = 0;\n")
     file.write("\tic = {0};\n".format(INSTRUCTION_COUNT))
@@ -365,264 +397,17 @@ def write_RET(file, i, symbol):
     file.write("\t\t\tgoto *target;\n")
     file.write("\t\t}}\n\t\t{0} = A; }}\n".format(writeC(symbol, type)))
 
-opcodeMap = {
-    0: write_ADD_64,
-    1: write_ADD_64,
-    2: write_ADD_64,
-    3: write_ADD_64,
-    4: write_ADD_64,
-    5: write_ADD_64,
-    6: write_ADD_64,
-    7: write_ADD_64,
-    8: write_ADD_64,
-    9: write_ADD_64,
-    10: write_ADD_64,
-    11: write_ADD_64,
-    12: write_ADD_64,
-    13: write_ADD_64,
-    14: write_ADD_32,
-    15: write_ADD_32,
-    16: write_ADD_32,
-    17: write_ADD_32,
-    18: write_ADD_32,
-    19: write_ADD_32,
-    20: write_ADD_32,
-    21: write_SUB_64,
-    22: write_SUB_64,
-    23: write_SUB_64,
-    24: write_SUB_64,
-    25: write_SUB_64,
-    26: write_SUB_64,
-    27: write_SUB_64,
-    28: write_SUB_64,
-    29: write_SUB_64,
-    30: write_SUB_64,
-    31: write_SUB_64,
-    32: write_SUB_64,
-    33: write_SUB_64,
-    34: write_SUB_64,
-    35: write_SUB_32,
-    36: write_SUB_32,
-    37: write_SUB_32,
-    38: write_SUB_32,
-    39: write_SUB_32,
-    40: write_SUB_32,
-    41: write_SUB_32,
-    42: write_MUL_64,
-    43: write_MUL_64,
-    44: write_MUL_64,
-    45: write_MUL_64,
-    46: write_MULH_64,
-    47: write_MULH_64,
-    48: write_MULH_64,
-    49: write_MULH_64,
-    50: write_MUL_32,
-    51: write_MUL_32,
-    52: write_MUL_32,
-    53: write_MUL_32,
-    54: write_IMUL_32,
-    55: write_IMUL_32,
-    56: write_IMUL_32,
-    57: write_IMUL_32,
-    58: write_IMULH_64,
-    59: write_IMULH_64,
-    60: write_IMULH_64,
-    61: write_IMULH_64,
-    62: write_DIV_64,
-    63: write_IDIV_64,
-    64: write_AND_64,
-    65: write_AND_64,
-    66: write_AND_64,
-    67: write_AND_64,
-    68: write_AND_64,
-    69: write_AND_64,
-    70: write_AND_64,
-    71: write_AND_64,
-    72: write_AND_64,
-    73: write_AND_64,
-    74: write_AND_64,
-    75: write_AND_64,
-    76: write_AND_64,
-    77: write_AND_32,
-    78: write_AND_32,
-    79: write_AND_32,
-    80: write_AND_32,
-    81: write_AND_32,
-    82: write_AND_32,
-    83: write_OR_64,
-    84: write_OR_64,
-    85: write_OR_64,
-    86: write_OR_64,
-    87: write_OR_64,
-    88: write_OR_64,
-    89: write_OR_64,
-    90: write_OR_64,
-    91: write_OR_64,
-    92: write_OR_64,
-    93: write_OR_64,
-    94: write_OR_64,
-    95: write_OR_64,
-    96: write_OR_32,
-    97: write_OR_32,
-    98: write_OR_32,
-    99: write_OR_32,
-    100: write_OR_32,
-    101: write_OR_32,
-    102: write_XOR_64,
-    103: write_XOR_64,
-    104: write_XOR_64,
-    105: write_XOR_64,
-    106: write_XOR_64,
-    107: write_XOR_64,
-    108: write_XOR_64,
-    109: write_XOR_64,
-    110: write_XOR_64,
-    111: write_XOR_64,
-    112: write_XOR_64,
-    113: write_XOR_64,
-    114: write_XOR_64,
-    115: write_XOR_64,
-    116: write_XOR_32,
-    117: write_XOR_32,
-    118: write_XOR_32,
-    119: write_XOR_32,
-    120: write_XOR_32,
-    121: write_XOR_32,
-    122: write_SHL_64,
-    123: write_SHL_64,
-    124: write_SHL_64,
-    125: write_SHL_64,
-    126: write_SHL_64,
-    127: write_SHL_64,
-    128: write_SHL_64,
-    129: write_SHR_64,
-    130: write_SHR_64,
-    131: write_SHR_64,
-    132: write_SHR_64,
-    133: write_SAR_64,
-    134: write_SAR_64,
-    135: write_SAR_64,
-    136: write_ROL_64,
-    137: write_ROL_64,
-    138: write_ROL_64,
-    139: write_ROL_64,
-    140: write_ROL_64,
-    141: write_ROL_64,
-    142: write_ROL_64,
-    143: write_ROL_64,
-    144: write_ROL_64,
-    145: write_ROL_64,
-    146: write_ROL_64,
-    147: write_ROR_64,
-    148: write_ROR_64,
-    149: write_ROR_64,
-    150: write_ROR_64,
-    151: write_ROR_64,
-    152: write_ROR_64,
-    153: write_ROR_64,
-    154: write_ROR_64,
-    155: write_ROR_64,
-    156: write_ROR_64,
-    157: write_ROR_64,
-    158: write_FADD,
-    159: write_FADD,
-    160: write_FADD,
-    161: write_FADD,
-    162: write_FADD,
-    163: write_FADD,
-    164: write_FADD,
-    165: write_FADD,
-    166: write_FADD,
-    167: write_FADD,
-    168: write_FADD,
-    169: write_FADD,
-    170: write_FADD,
-    171: write_FADD,
-    172: write_FADD,
-    173: write_FADD,
-    174: write_FADD,
-    175: write_FADD,
-    176: write_FSUB,
-    177: write_FSUB,
-    178: write_FSUB,
-    179: write_FSUB,
-    180: write_FSUB,
-    181: write_FSUB,
-    182: write_FSUB,
-    183: write_FSUB,
-    184: write_FSUB,
-    185: write_FSUB,
-    186: write_FSUB,
-    187: write_FSUB,
-    188: write_FSUB,
-    189: write_FSUB,
-    190: write_FSUB,
-    191: write_FSUB,
-    192: write_FSUB,
-    193: write_FSUB,
-    194: write_FMUL,
-    195: write_FMUL,
-    196: write_FMUL,
-    197: write_FMUL,
-    198: write_FMUL,
-    199: write_FMUL,
-    200: write_FMUL,
-    201: write_FMUL,
-    202: write_FMUL,
-    203: write_FMUL,
-    204: write_FMUL,
-    205: write_FMUL,
-    206: write_FMUL,
-    207: write_FMUL,
-    208: write_FMUL,
-    209: write_FMUL,
-    210: write_FMUL,
-    211: write_FMUL,
-    212: write_FDIV,
-    213: write_FDIV,
-    214: write_FDIV,
-    215: write_FSQRT,
-    216: write_FSQRT,
-    217: write_FSQRT,
-    218: write_FSQRT,
-    219: write_FSQRT,
-    220: write_FSQRT,
-    221: write_FSQRT,
-    222: write_FROUND,
-    223: write_FROUND,
-    224: write_CALL,
-    225: write_CALL,
-    226: write_CALL,
-    227: write_CALL,
-    228: write_CALL,
-    229: write_CALL,
-    230: write_CALL,
-    231: write_CALL,
-    232: write_CALL,
-    233: write_CALL,
-    234: write_CALL,
-    235: write_CALL,
-    236: write_CALL,
-    237: write_CALL,
-    238: write_CALL,
-    239: write_CALL,
-    240: write_CALL,
-    241: write_RET,
-    242: write_RET,
-    243: write_RET,
-    244: write_RET,
-    245: write_RET,
-    246: write_RET,
-    247: write_RET,
-    248: write_RET,
-    249: write_RET,
-    250: write_RET,
-    251: write_RET,
-    252: write_RET,
-    253: write_RET,
-    254: write_RET,
-    255: write_RET,
-}
+opcodeMap = { }
+
+def buildOpcodeMap():
+    functions = globals()
+    totalWeight = 0;
+    for instruction, weight in INSTRUCTION_WEIGHTS:
+        func = functions['write_' + instruction]
+        for i in range(weight):
+            opcodeMap[totalWeight] = func
+            totalWeight = totalWeight + 1
+    assert totalWeight == 256
 
 def writeCode(file, i, symbol):
     opcodeMap.get(symbol.opcode)(file, i, symbol)
@@ -664,7 +449,6 @@ def writeProlog(file):
                 "} stack_t;\n"
                 "typedef struct {\n"
                 "	addr_t m0;\n"
-                "	addr_t m1;\n"
                 "	addr_t mx;\n"
                 "#ifdef RAM\n"
                 "	const char* buffer;\n"
@@ -680,10 +464,10 @@ def writeProlog(file):
                 "#define STACK_LENGTH (128 * 1024)\n"
                 "#ifdef RAM\n"
                 "#define DRAM_READ(mmu) (convertible_t)*(uint64_t*)((mmu)->buffer + (mmu)->m0)\n"
-                "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->m1), _MM_HINT_T0)\n"
+                "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->m0), _MM_HINT_T0)\n"
                 "#else\n"
                 "#define DRAM_READ(mmu) (convertible_t)(uint64_t)__rolq(6364136223846793005ULL*((mmu)->m0)+1442695040888963407ULL,32)\n"
-                "#define PREFETCH(x)\n"
+                "#define PREFETCH(mmu)\n"
                 "#endif\n"
                 "#define PUSH_VALUE(x) stack[sp++].value = x\n"
                 "#define PUSH_ADDRESS(x) stack[sp++].address = x\n"
@@ -695,12 +479,12 @@ def writeProlog(file):
                 "	data = DRAM_READ(mmu);\n"
                 "	mmu->m0 += 8;\n"
                 "	mmu->mx ^= addr;\n"
-                "	if((mmu->m0 & 255) == 128) {\n"
-                "		mmu->m1 = mmu->mx & 0xFFFFFF00;\n"
+                "	if((mmu->mx & 0xFFFF) == 0) {\n"
+                "		mmu->m0 = mmu->mx;\n"
+                "#if defined(PREF)\n"
                 "		PREFETCH(mmu);\n"
+                "#endif\n"
                 "	}\n"
-                "	if((mmu->m0 & 255) == 0)\n"
-                "		mmu->m0 = mmu->m1;\n"
                 "	return data;\n"
                 "}\n"
                 "static inline __m128i sl_xor(__m128i tmp1) {\n"
@@ -792,6 +576,7 @@ def writeProlog(file):
                 "}\n"))
 
 with sys.stdout as file:
+    buildOpcodeMap()
     writeProlog(file)
     file.write("const byte aesKey[32] = {{ {0} }};\n".format(genBytes(32)))
     file.write("const byte aesSeed[128] = {{ {0} }};\n".format(genBytes(128)))
