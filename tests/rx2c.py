@@ -147,7 +147,10 @@ def writeInitialValues(file):
     for i in range(8):
         file.write("\tf{0} = *(int64_t*)(aesSeed + {1});\n".format(i, 64 + i * 8))
     file.write("\taesInitialize((__m128i*)aesKey, (__m128i*)aesSeed, (__m128i*)scratchpad, SCRATCHPAD_SIZE);\n")
-    file.write("\tmmu.m0 = (aesKey[10] << 16) | (aesKey[11] << 24);\n")
+    file.write("\tmmu.ma = *(addr_t*)(aesKey + 8) & ~7U;\n")
+    file.write("#ifdef PRNTADDR\n")
+    file.write('\tprintf("DRAM address = %#010x\\n", mmu.ma);\n')
+    file.write("#endif\n")
     file.write("\tmmu.mx = 0;\n")
     file.write("\tsp = 0;\n")
     file.write("\tic = {0};\n".format(INSTRUCTION_COUNT))
@@ -448,7 +451,7 @@ def writeProlog(file):
                 "	void* address;\n"
                 "} stack_t;\n"
                 "typedef struct {\n"
-                "	addr_t m0;\n"
+                "	addr_t ma;\n"
                 "	addr_t mx;\n"
                 "#ifdef RAM\n"
                 "	const char* buffer;\n"
@@ -463,10 +466,10 @@ def writeProlog(file):
                 "#define SCRATCHPAD_256K(x) scratchpad[(x) & SCRATCHPAD_MASK18]\n"
                 "#define STACK_LENGTH (128 * 1024)\n"
                 "#ifdef RAM\n"
-                "#define DRAM_READ(mmu) (convertible_t)*(uint64_t*)((mmu)->buffer + (mmu)->m0)\n"
-                "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->m0), _MM_HINT_T0)\n"
+                "#define DRAM_READ(mmu) (convertible_t)*(uint64_t*)((mmu)->buffer + (mmu)->ma)\n"
+                "#define PREFETCH(mmu) _mm_prefetch(((mmu)->buffer + (mmu)->ma), _MM_HINT_T0)\n"
                 "#else\n"
-                "#define DRAM_READ(mmu) (convertible_t)(uint64_t)__rolq(6364136223846793005ULL*((mmu)->m0)+1442695040888963407ULL,32)\n"
+                "#define DRAM_READ(mmu) (convertible_t)(uint64_t)__rolq(6364136223846793005ULL*((mmu)->ma)+1442695040888963407ULL,32)\n"
                 "#define PREFETCH(mmu)\n"
                 "#endif\n"
                 "#define PUSH_VALUE(x) stack[sp++].value = x\n"
@@ -477,11 +480,14 @@ def writeProlog(file):
                 "static convertible_t readDram(mmu_t* mmu, addr_t addr) {\n"
                 "	convertible_t data;\n"
                 "	data = DRAM_READ(mmu);\n"
-                "	mmu->m0 += 8;\n"
+                "	mmu->ma += 8;\n"
                 "	mmu->mx ^= addr;\n"
-                "	if((mmu->mx & 0xFFF8) == 0) {\n"
-                "		mmu->m0 = mmu->mx & ~7U;\n"
-                "#if defined(PREF)\n"
+                "	if((mmu->mx & 0x1FFF) == 0) {\n"
+                "#ifdef PRNTADDR\n"
+                '		printf("DRAM jump %#010x -> %#010x\\n", mmu->ma, mmu->mx);\n'
+                "#endif\n"
+                "		mmu->ma = mmu->mx;\n"
+                "#ifdef PREF\n"
                 "		PREFETCH(mmu);\n"
                 "#endif\n"
                 "	}\n"
