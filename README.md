@@ -205,7 +205,7 @@ The shift/rotate instructions use just the bottom 6 bits of the `B` operand (`im
 |22|FSUB|A - B|
 |22|FMUL|A * B|
 |8|FDIV|A / B|
-|6|FSQRT|sqrt(A)|
+|6|FABSQRT|sqrt(A)|
 |2|FROUND|A|
 
 FPU instructions conform to the IEEE-754 specification, so they must give correctly rounded results. Initial rounding mode is RN (Round to Nearest). Denormal values may not be produced by any operation.
@@ -214,8 +214,8 @@ FPU instructions conform to the IEEE-754 specification, so they must give correc
 
 Operands loaded from memory are treated as signed 64-bit integers and converted to double precision floating point format. Operands loaded from floating point registers are used directly.
 
-##### FSQRT
-The sign bit of the FSQRT operand is always cleared first, so only non-negative values are used.
+##### FABSQRT
+The sign bit of the FABSQRT operand is always cleared first, so only non-negative values are used.
 
 *In x86, the `SQRTSD` instruction must be used. The legacy `FSQRT` instruction doesn't produce correctly rounded results in all cases.*
 
@@ -225,11 +225,11 @@ The FROUND instruction changes the rounding mode for all subsequent FPU operatio
 |A[1:0]|rounding mode|
 |-------|------------|
 |00|Round to Nearest (RN) mode|
-|01|Round towards Plus Infinity (RP) mode
-|10|Round towards Minus Infinity (RM) mode
+|01|Round towards Minus Infinity (RM) mode
+|10|Round towards Plus Infinity (RP) mode
 |11|Round towards Zero (RZ) mode
 
-*The two-bit flag value exactly corresponds to bits 13-14 of the x86 `MXCSR` register and bits 22-23 of the ARM `FPSCR` register.*
+*The two-bit flag value exactly corresponds to bits 13-14 of the x86 `MXCSR` register and bits 23 and 22 (reversed) of the ARM `FPSCR` register.*
 
 ### Control flow instructions
 The following 2 control flow instructions are supported:
