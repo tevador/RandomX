@@ -20,23 +20,22 @@
 #endif
 
 #if defined(_MSC_VER)
+	#define HAS_VALUE(X) X ## 0
+	#define EVAL_DEFINE(X) HAS_VALUE(X)
 	#include <intrin.h>
 	#include <stdlib.h>
 	#define ror64 _rotr64
 	#define rol64 _rotl64
-	#ifdef __MACHINEARM64_X64
+	#if EVAL_DEFINE(__MACHINEARM64_X64(1))
 		#define umulhi64 __umulh
 	#endif
-	#ifdef __MACHINEX64
+	#if EVAL_DEFINE(__MACHINEX64(1))
 		static inline uint64_t __imulhi64(int64_t a, int64_t b) {
 			int64_t hi;
 			_mul128(a, b, &hi);
 			return hi;
 		}
 		#define imulhi64 __imulhi64
-	#endif
-	#ifdef __MACHINEX86_X64
-		#define sar64 __ll_rshift
 	#endif
 #endif
 
@@ -60,11 +59,11 @@
 		return value >> shift;
 	}
 
-	struct usesArithmeticShift : std::integral_constant<bool, builtintShr64(-1LL, 1) == -1LL> {
+	struct UsesArithmeticShift : std::integral_constant<bool, builtintShr64(-1LL, 1) == -1LL> {
 	};
 
 	static inline int64_t __sar64(int64_t a, int b) {
-		return usesArithmeticShift::value ? builtintShr64(a, b) : (a < 0 ? ~(~a >> b) : a >> b);
+		return UsesArithmeticShift::value ? builtintShr64(a, b) : (a < 0 ? ~(~a >> b) : a >> b);
 	}
 	#define sar64 __sar64
 #endif
