@@ -328,7 +328,7 @@ static inline uint32_t subw(uint32_t w) {
 		sbox[w & 0xff];
 }
 
-#if defined(__clang__) || defined(__arm__)
+#if defined(__clang__) || defined(__arm__) || defined(__aarch64__)
 static inline uint32_t _rotr(uint32_t value, uint32_t amount) {
 	return (value >> amount) | (value << (-amount & 31));
 }
