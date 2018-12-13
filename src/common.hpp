@@ -104,7 +104,9 @@ namespace RandomX {
 
 	static_assert(sizeof(RegisterFile) == 2 * RegistersCount * sizeof(convertible_t), "Invalid alignment of struct RandomX::RegisterFile");
 
+	typedef convertible_t(*DatasetReadFunc)(addr_t, MemoryRegisters&);
+
 	extern "C" {
-		void executeProgram(RegisterFile& registerFile, convertible_t& scratchpad, MemoryRegisters& memory);
+		void executeProgram(RegisterFile& registerFile, MemoryRegisters& memory, DatasetReadFunc readFunc, convertible_t* scratchpad);
 	}
 }

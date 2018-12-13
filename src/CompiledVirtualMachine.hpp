@@ -19,27 +19,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <cstdint>
-#include <ostream>
-#include "common.hpp"
-#include "Instruction.hpp"
-
-class Pcg32;
+#include "VirtualMachine.hpp"
+#include "Program.hpp"
+#include <sstream>
 
 namespace RandomX {
 
-	class Program {
+	class CompiledVirtualMachine : public VirtualMachine {
 	public:
-		Instruction& operator()(uint64_t pc) {
-			return programBuffer[pc];
-		}
-		void initialize(Pcg32& gen);
-		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
-			p.print(os);
-			return os;
-		}
-	private:
-		void print(std::ostream&) const;
-		Instruction programBuffer[ProgramLength];
+		CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {}
+		virtual void initializeProgram(const void* seed) override;
+		virtual void execute() override;
 	};
 }

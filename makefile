@@ -11,7 +11,7 @@ SRCDIR=src
 OBJDIR=obj
 LDFLAGS=
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o blake2b.o dataset.o instructionsPortable.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o executeProgram-linux.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o)
 SRC1=$(addprefix $(SRCDIR)/,TestAluFpu.cpp instructions.hpp Pcg32.hpp)
 
 all: release test
@@ -43,14 +43,26 @@ $(OBJDIR)/argon2_core.o: $(addprefix $(SRCDIR)/,argon2_core.c argon2_core.h blak
 $(OBJDIR)/argon2_ref.o: $(addprefix $(SRCDIR)/,argon2_ref.c argon2.h argon2_core.h blake2/blake2.h blake2/blake2-impl.h blake2/blamka-round-ref.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/argon2_ref.c -o $@
 
+$(OBJDIR)/AssemblyGeneratorX86.o: $(addprefix $(SRCDIR)/,AssemblyGeneratorX86.cpp AssemblyGeneratorX86.hpp Instruction.hpp Pcg32.hpp common.hpp instructions.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/AssemblyGeneratorX86.cpp -o $@
+
 $(OBJDIR)/blake2b.o: $(addprefix $(SRCDIR)/blake2/,blake2b.c blake2.h blake2-impl.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/blake2/blake2b.c -o $@
+
+$(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachine.cpp CompiledVirtualMachine.hpp Pcg32.hpp common.hpp instructions.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/CompiledVirtualMachine.cpp -o $@
   
 $(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp Pcg32.hpp argon2_core.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/dataset.cpp -o $@
-  
+
+$(OBJDIR)/executeProgram-linux.o: $(addprefix $(SRCDIR)/,executeProgram-linux.cpp common.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/executeProgram-linux.cpp -o $@
+
 $(OBJDIR)/instructionsPortable.o: $(addprefix $(SRCDIR)/,instructionsPortable.cpp instructions.hpp intrinPortable.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/instructionsPortable.cpp -o $@
+
+$(OBJDIR)/Instruction.o: $(addprefix $(SRCDIR)/,Instruction.cpp Instruction.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/Instruction.cpp -o $@
   
 $(OBJDIR)/InterpretedVirtualMachine.o: $(addprefix $(SRCDIR)/,InterpretedVirtualMachine.cpp InterpretedVirtualMachine.hpp Pcg32.hpp instructions.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/InterpretedVirtualMachine.cpp -o $@

@@ -17,29 +17,31 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-
-#include <cstdint>
-#include <ostream>
+#include "CompiledVirtualMachine.hpp"
+#include "Pcg32.hpp"
 #include "common.hpp"
-#include "Instruction.hpp"
-
-class Pcg32;
+#include "instructions.hpp"
 
 namespace RandomX {
 
-	class Program {
-	public:
-		Instruction& operator()(uint64_t pc) {
-			return programBuffer[pc];
+	void CompiledVirtualMachine::initializeProgram(const void* seed) {
+		Pcg32 gen(seed);
+		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
+			*(((uint32_t*)&reg) + i) = gen();
 		}
-		void initialize(Pcg32& gen);
-		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
-			p.print(os);
-			return os;
+		FPINIT();
+		for (int i = 0; i < 8; ++i) {
+			reg.f[i].f64 = (double)reg.f[i].i64;
 		}
-	private:
-		void print(std::ostream&) const;
-		Instruction programBuffer[ProgramLength];
-	};
+		for (unsigned i = 0; i < ProgramLength; ++i) {
+			gen(); gen(); gen(); gen();
+		}
+		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;
+		mem.mx = *(((uint32_t*)seed) + 5);
+	}
+
+	void CompiledVirtualMachine::execute() {
+		FPINIT();
+		executeProgram(reg, mem, readDataset, scratchpad);
+	}
 }

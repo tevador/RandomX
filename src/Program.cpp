@@ -30,48 +30,8 @@ namespace RandomX {
 	void Program::print(std::ostream& os) const {
 		for (int i = 0; i < RandomX::ProgramLength; ++i) {
 			auto instr = programBuffer[i];
-			os << std::dec << instrNames[instr.opcode] << " (" << i << "):" << std::endl;
-			os << "  A: loc = " << (instr.loca & 7) << ", reg: " << (instr.rega & 7) << std::endl;
-			os << "  B: loc = " << (instr.locb & 7) << ", reg: " << (instr.regb & 7) << std::endl;
-			os << "  C: loc = " << (instr.locc & 7) << ", reg: " << (instr.regc & 7) << std::endl;
-			os << "  imm0 = " << (int)instr.imm0 << std::endl;
-			os << "  imm1 = " << std::hex << instr.imm1 << std::endl;
+			os << std::dec << instr.getName() << " (" << i << "):" << std::endl;
+			os << instr;
 		}
 	}
-
-#include "instructionWeights.hpp"
-#define INST_NAME(x) REPN(#x, WT(x))
-
-	const char* Program::instrNames[256] = {
-		INST_NAME(ADD_64)
-		INST_NAME(ADD_32)
-		INST_NAME(SUB_64)
-		INST_NAME(SUB_32)
-		INST_NAME(MUL_64)
-		INST_NAME(MULH_64)
-		INST_NAME(MUL_32)
-		INST_NAME(IMUL_32)
-		INST_NAME(IMULH_64)
-		INST_NAME(DIV_64)
-		INST_NAME(IDIV_64)
-		INST_NAME(AND_64)
-		INST_NAME(AND_32)
-		INST_NAME(OR_64)
-		INST_NAME(OR_32)
-		INST_NAME(XOR_64)
-		INST_NAME(XOR_32)
-		INST_NAME(SHL_64)
-		INST_NAME(SHR_64)
-		INST_NAME(SAR_64)
-		INST_NAME(ROL_64)
-		INST_NAME(ROR_64)
-		INST_NAME(FPADD)
-		INST_NAME(FPSUB)
-		INST_NAME(FPMUL)
-		INST_NAME(FPDIV)
-		INST_NAME(FPSQRT)
-		INST_NAME(FPROUND)
-		INST_NAME(CALL)
-		INST_NAME(RET)
-	};
 }

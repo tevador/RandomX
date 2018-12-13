@@ -23,8 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	typedef convertible_t(*DatasetReadFunc)(addr_t, MemoryRegisters&);
-
 	class VirtualMachine {
 	public:
 		VirtualMachine(bool softAes);

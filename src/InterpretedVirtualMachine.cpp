@@ -55,7 +55,7 @@ namespace RandomX {
 	void InterpretedVirtualMachine::execute() {
 		while (ic > 0) {
 			auto& inst = p(pc);
-			if(trace) std::cout << p.getName(inst) << " (" << std::dec << pc << ")" << std::endl;
+			if(trace) std::cout << inst.getName() << " (" << std::dec << pc << ")" << std::endl;
 			pc = (pc + 1) % ProgramLength;
 			auto handler = engine[inst.opcode];
 			(this->*handler)(inst);
