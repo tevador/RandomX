@@ -65,7 +65,7 @@ namespace RandomX {
 
 	convertible_t InterpretedVirtualMachine::loada(Instruction& inst) {
 		convertible_t& rega = reg.r[inst.rega % RegistersCount];
-		rega.u64 ^= inst.addr0;
+		rega.i64 ^= inst.addr0; //sign-extend addr0
 		addr_t addr = rega.u32;
 		switch (inst.loca & 7)
 		{
@@ -86,7 +86,7 @@ namespace RandomX {
 	}
 
 	convertible_t InterpretedVirtualMachine::loadbr1(Instruction& inst) {
-		switch (inst.loca & 7)
+		switch (inst.locb & 7)
 		{
 		case 0:
 		case 1:
@@ -98,7 +98,7 @@ namespace RandomX {
 		case 6:
 		case 7:
 			convertible_t temp;
-			temp.i64 = inst.imm1;
+			temp.i64 = inst.imm1; //sign-extend imm1
 			return temp;
 		}
 	}
@@ -182,13 +182,13 @@ namespace RandomX {
 	}
 
 #define ALU_RETIRE(x) x(a, b, c); \
-	if(trace) std::cout << std::hex << a.u64 << " " << b.u64 << " " << c.u64 << std::endl;
+	if(trace) std::cout << std::hex << /*a.u64 << " " << b.u64 << " " <<*/ c.u64 << std::endl;
 
 #define FPU_RETIRE(x) x(a, b, c); \
 	if(trace) { \
 		convertible_t bc; \
 		bc.f64 = b; \
-		std::cout << std::hex << a.u64 << " " << bc.u64 << " " << c.u64 << std::endl; \
+		std::cout << std::hex << /*a.u64 << " " << bc.u64 << " " <<*/ c.u64 << std::endl; \
 	} \
 	if(fpuCheck) { \
 		convertible_t bc; \
@@ -206,7 +206,7 @@ namespace RandomX {
 	}
 
 #define FPU_RETIRE_NB(x) x(a, b, c); \
-	if(trace) std::cout << std::hex << a.u64 << " " << c.u64 << std::endl;
+	if(trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 
 #define ALU_INST(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
 	convertible_t a = loada(inst); \
@@ -277,9 +277,11 @@ namespace RandomX {
 			stackPush(pc);
 			pc += (inst.imm0 & 127) + 1;
 			pc = pc % ProgramLength;
+			if (trace) std::cout << std::hex << a.u64 << std::endl;
 		}
 		else {
 			c.u64 = a.u64;
+			if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 		}
 	}
 
@@ -296,6 +298,7 @@ namespace RandomX {
 		else {
 			c.u64 = a.u64;
 		}
+		if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 	}
 
 #include "instructionWeights.hpp"

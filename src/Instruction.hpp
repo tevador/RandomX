@@ -34,7 +34,7 @@ namespace RandomX {
 		uint8_t locc;
 		uint8_t regc;
 		uint8_t imm0;
-		uint32_t addr0;
+		int32_t addr0;
 		union {
 			uint32_t addr1;
 			int32_t imm1;

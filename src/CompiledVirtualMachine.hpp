@@ -18,7 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-
+//#define TRACE
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include <sstream>
@@ -30,5 +30,9 @@ namespace RandomX {
 		CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {}
 		virtual void initializeProgram(const void* seed) override;
 		virtual void execute() override;
+	private:
+#ifdef TRACE
+		convertible_t tracepad[InstructionCount];
+#endif
 	};
 }

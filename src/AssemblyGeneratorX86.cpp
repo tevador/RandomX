@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
-
+//#define TRACE
 #include "AssemblyGeneratorX86.hpp"
 #include "Pcg32.hpp"
 #include "common.hpp"
@@ -164,6 +164,9 @@ namespace RandomX {
 			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
+			if (trace) {
+				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rcx" << std::endl;
+			}
 			return;
 
 		case 1:
@@ -174,10 +177,16 @@ namespace RandomX {
 			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
+			if (trace) {
+				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rcx" << std::endl;
+			}
 			return;
 
 		default:
 			asmCode << "\tmov " << regR[instr.regc % RegistersCount] << ", rax" << std::endl;
+			if (trace) {
+				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rax" << std::endl;
+			}
 		}
 	}
 
@@ -189,7 +198,7 @@ namespace RandomX {
 			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
 			asmCode << "\tmovd qword ptr [rsi + rax * 8], xmm0" << std::endl;
-			return;
+			break;
 
 		case 1:
 		case 2:
@@ -198,10 +207,14 @@ namespace RandomX {
 			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 			asmCode << "\tmovd qword ptr [rsi + rax * 8], xmm0" << std::endl;
-			return;
+			break;
 
 		default:
 			asmCode << "\tmovsd " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
+			break;
+		}
+		if (trace) {
+			asmCode << "\tmovd qword ptr [rsi + rdi * 8 + 262144], xmm0" << std::endl;
 		}
 	}
 
@@ -466,8 +479,11 @@ namespace RandomX {
 			asmCode << "\tjmp rx_i_" << wrapi(i + 1) << std::endl;
 			asmCode << "taken_call_" << i << ":" << std::endl;
 		}
+		if (trace) {
+			asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rax" << std::endl;
+		}
 		asmCode << "\tpush rax" << std::endl;
-		asmCode << "\tcall rx_i_" << wrapi(i + (instr.imm0 & 127) + 1) << std::endl;
+		asmCode << "\tcall rx_i_" << wrapi(i + (instr.imm0 & 127) + 2) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {

@@ -151,18 +151,39 @@ rx_finish:
 	; return
 	ret	0
 
-rx_read_dataset:
+rx_read_dataset_light:
 	push rdx
 	push r9
 	push r10
 	push r11
-	sub rsp, 32
+	movd qword ptr [rsp - 8], xmm1
+	movd qword ptr [rsp - 16], xmm2
+	sub rsp, 48
 	call qword ptr [rbp]
-	add	rsp, 32
+	add rsp, 48
+	movd xmm2, qword ptr [rsp - 16]
+	movd xmm1, qword ptr [rsp - 8]
 	pop r11
 	pop r10
 	pop r9
 	pop rdx
+	ret 0
+
+rx_read_dataset:
+	mov r8d, dword ptr [rdx]	; ma
+	mov rax, qword ptr [rdx+8]	; dataset
+	mov rax, qword ptr [rax+r8]
+	add dword ptr [rdx], 8
+	mov r8d, dword ptr [rdx+4]	; mx
+	xor ecx, r8d
+	mov dword ptr [rdx+4], ecx
+	test ecx, 0FFF8h
+	jne short rx_read_dataset_full_ret
+	and ecx, -8
+	mov dword ptr [rdx], ecx
+	mov r8, qword ptr [rdx+8]
+	prefetcht0 byte ptr [r8+rcx]
+rx_read_dataset_full_ret:
 	ret 0
 executeProgram ENDP
 

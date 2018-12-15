@@ -123,7 +123,7 @@ rx_i_6: ;CALL
 	jmp rx_i_7
 taken_call_6:
 	push rax
-	call rx_i_50
+	call rx_i_51
 
 rx_i_7: ;FPDIV
 	dec edi
@@ -538,7 +538,7 @@ rx_i_38: ;CALL
 	jmp rx_i_39
 taken_call_38:
 	push rax
-	call rx_i_111
+	call rx_i_112
 
 rx_i_39: ;CALL
 	dec edi
@@ -553,7 +553,7 @@ rx_i_39: ;CALL
 	jmp rx_i_40
 taken_call_39:
 	push rax
-	call rx_i_61
+	call rx_i_62
 
 rx_i_40: ;FPMUL
 	dec edi
@@ -621,7 +621,7 @@ rx_i_44: ;CALL
 	jmp rx_i_45
 taken_call_44:
 	push rax
-	call rx_i_93
+	call rx_i_94
 
 rx_i_45: ;FPROUND
 	dec edi
@@ -726,7 +726,7 @@ rx_i_51: ;CALL
 	jmp rx_i_52
 taken_call_51:
 	push rax
-	call rx_i_134
+	call rx_i_135
 
 rx_i_52: ;FPDIV
 	dec edi
@@ -943,7 +943,7 @@ rx_i_65: ;CALL
 	jmp rx_i_66
 taken_call_65:
 	push rax
-	call rx_i_123
+	call rx_i_124
 
 rx_i_66: ;FPSUB
 	dec edi
@@ -996,7 +996,7 @@ rx_i_69: ;CALL
 	jmp rx_i_70
 taken_call_69:
 	push rax
-	call rx_i_132
+	call rx_i_133
 
 rx_i_70: ;FPDIV
 	dec edi
@@ -1022,7 +1022,7 @@ rx_i_71: ;CALL
 	jmp rx_i_72
 taken_call_71:
 	push rax
-	call rx_i_82
+	call rx_i_83
 
 rx_i_72: ;FPADD
 	dec edi
@@ -1093,7 +1093,7 @@ rx_i_76: ;CALL
 	jmp rx_i_77
 taken_call_76:
 	push rax
-	call rx_i_194
+	call rx_i_195
 
 rx_i_77: ;FPDIV
 	dec edi
@@ -1138,7 +1138,7 @@ rx_i_79: ;CALL
 	jmp rx_i_80
 taken_call_79:
 	push rax
-	call rx_i_205
+	call rx_i_206
 
 rx_i_80: ;FPADD
 	dec edi
@@ -1208,7 +1208,7 @@ rx_i_83: ;CALL
 	jmp rx_i_84
 taken_call_83:
 	push rax
-	call rx_i_96
+	call rx_i_97
 
 rx_i_84: ;ROR_64
 	dec edi
@@ -1249,7 +1249,7 @@ rx_i_86: ;CALL
 	jmp rx_i_87
 taken_call_86:
 	push rax
-	call rx_i_148
+	call rx_i_149
 
 rx_i_87: ;DIV_64
 	dec edi
@@ -1376,7 +1376,7 @@ rx_i_96: ;CALL
 	mov ecx, ebx
 	call rx_read_dataset
 	push rax
-	call rx_i_173
+	call rx_i_174
 
 rx_i_97: ;ROR_64
 	dec edi
@@ -1402,7 +1402,7 @@ rx_i_98: ;CALL
 	jmp rx_i_99
 taken_call_98:
 	push rax
-	call rx_i_160
+	call rx_i_161
 
 rx_i_99: ;MUL_64
 	dec edi
@@ -1567,7 +1567,7 @@ rx_i_111: ;CALL
 	and eax, 2047
 	mov rax, qword ptr [rsi + rax * 8]
 	push rax
-	call rx_i_146
+	call rx_i_147
 
 rx_i_112: ;FPMUL
 	dec edi
@@ -1617,7 +1617,7 @@ rx_i_115: ;CALL
 	mov ecx, ebx
 	call rx_read_dataset
 	push rax
-	call rx_i_215
+	call rx_i_216
 
 rx_i_116: ;ADD_32
 	dec edi
@@ -1778,7 +1778,7 @@ rx_i_126: ;CALL
 	jmp rx_i_127
 taken_call_126:
 	push rax
-	call rx_i_195
+	call rx_i_196
 
 rx_i_127: ;ADD_64
 	dec edi
@@ -1806,7 +1806,7 @@ rx_i_128: ;CALL
 	jmp rx_i_129
 taken_call_128:
 	push rax
-	call rx_i_240
+	call rx_i_241
 
 rx_i_129: ;MUL_32
 	dec edi
@@ -1863,7 +1863,7 @@ rx_i_133: ;CALL
 	and eax, 2047
 	mov rax, qword ptr [rsi + rax * 8]
 	push rax
-	call rx_i_157
+	call rx_i_158
 
 rx_i_134: ;AND_64
 	dec edi
@@ -2049,7 +2049,7 @@ rx_i_146: ;CALL
 	jmp rx_i_147
 taken_call_146:
 	push rax
-	call rx_i_260
+	call rx_i_261
 
 rx_i_147: ;IMUL_32
 	dec edi
@@ -2277,7 +2277,7 @@ rx_i_163: ;CALL
 	jmp rx_i_164
 taken_call_163:
 	push rax
-	call rx_i_184
+	call rx_i_185
 
 rx_i_164: ;ADD_32
 	dec edi
@@ -2430,7 +2430,7 @@ rx_i_173: ;CALL
 	jmp rx_i_174
 taken_call_173:
 	push rax
-	call rx_i_200
+	call rx_i_201
 
 rx_i_174: ;FPSQRT
 	dec edi
@@ -2593,7 +2593,7 @@ rx_i_185: ;CALL
 	jmp rx_i_186
 taken_call_185:
 	push rax
-	call rx_i_214
+	call rx_i_215
 
 rx_i_186: ;FPADD
 	dec edi
@@ -2647,7 +2647,7 @@ rx_i_189: ;CALL
 	jmp rx_i_190
 taken_call_189:
 	push rax
-	call rx_i_249
+	call rx_i_250
 
 rx_i_190: ;XOR_64
 	dec edi
@@ -3209,7 +3209,7 @@ rx_i_230: ;CALL
 	jmp rx_i_231
 taken_call_230:
 	push rax
-	call rx_i_331
+	call rx_i_332
 
 rx_i_231: ;FPMUL
 	dec edi
@@ -3323,7 +3323,7 @@ rx_i_237: ;CALL
 	jmp rx_i_238
 taken_call_237:
 	push rax
-	call rx_i_271
+	call rx_i_272
 
 rx_i_238: ;FPDIV
 	dec edi
@@ -3379,7 +3379,7 @@ rx_i_241: ;CALL
 	mov ecx, r15d
 	call rx_read_dataset
 	push rax
-	call rx_i_298
+	call rx_i_299
 
 rx_i_242: ;ROR_64
 	dec edi
@@ -3597,7 +3597,7 @@ rx_i_257: ;CALL
 	jmp rx_i_258
 taken_call_257:
 	push rax
-	call rx_i_370
+	call rx_i_371
 
 rx_i_258: ;FPADD
 	dec edi
@@ -3776,7 +3776,7 @@ rx_i_270: ;CALL
 	jmp rx_i_271
 taken_call_270:
 	push rax
-	call rx_i_298
+	call rx_i_299
 
 rx_i_271: ;ROL_64
 	dec edi
@@ -3868,7 +3868,7 @@ rx_i_277: ;CALL
 	and eax, 2047
 	mov rax, qword ptr [rsi + rax * 8]
 	push rax
-	call rx_i_375
+	call rx_i_376
 
 rx_i_278: ;FPADD
 	dec edi
@@ -4548,7 +4548,7 @@ rx_i_326: ;CALL
 	jmp rx_i_327
 taken_call_326:
 	push rax
-	call rx_i_346
+	call rx_i_347
 
 rx_i_327: ;MUL_64
 	dec edi
@@ -4922,7 +4922,7 @@ rx_i_354: ;CALL
 	jmp rx_i_355
 taken_call_354:
 	push rax
-	call rx_i_355
+	call rx_i_356
 
 rx_i_355: ;MUL_64
 	dec edi
@@ -5659,7 +5659,7 @@ rx_i_409: ;CALL
 	jmp rx_i_410
 taken_call_409:
 	push rax
-	call rx_i_497
+	call rx_i_498
 
 rx_i_410: ;FPDIV
 	dec edi
@@ -5866,7 +5866,7 @@ rx_i_425: ;CALL
 	jmp rx_i_426
 taken_call_425:
 	push rax
-	call rx_i_34
+	call rx_i_35
 
 rx_i_426: ;IMUL_32
 	dec edi
@@ -6556,7 +6556,7 @@ rx_i_476: ;CALL
 	and eax, 2047
 	mov rax, qword ptr [rsi + rax * 8]
 	push rax
-	call rx_i_11
+	call rx_i_12
 
 rx_i_477: ;MUL_64
 	dec edi
@@ -6580,7 +6580,7 @@ rx_i_478: ;CALL
 	jmp rx_i_479
 taken_call_478:
 	push rax
-	call rx_i_72
+	call rx_i_73
 
 rx_i_479: ;FPSUB
 	dec edi
@@ -6721,7 +6721,7 @@ rx_i_489: ;CALL
 	jmp rx_i_490
 taken_call_489:
 	push rax
-	call rx_i_61
+	call rx_i_62
 
 rx_i_490: ;ADD_64
 	dec edi

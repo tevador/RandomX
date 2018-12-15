@@ -35,6 +35,7 @@ namespace RandomX {
 	constexpr int SeedSize = 32;
 
 	constexpr int CacheBlockSize = 1024;
+	constexpr int CacheShift = CacheBlockSize / 2;
 	constexpr int BlockExpansionRatio = 64;
 	constexpr uint32_t DatasetBlockSize = BlockExpansionRatio * CacheBlockSize;
 	constexpr uint32_t DatasetBlockCount = 65536;

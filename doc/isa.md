@@ -33,7 +33,7 @@ The first operand is read from memory. The location is determined by the `loc(a)
 
 Flag `reg(a)` encodes an integer register `r0`-`r7`.  The read address is calculated as:
 ```
-reg(a)[31:0] = reg(a)[31:0] XOR addr0
+reg(a) = reg(a) XOR signExtend(addr0)
 addr(a) = reg(a)[W-1:0]
 ```
 `W` is the address width from the above table. For reading from the scratchpad, `addr(a)` is multiplied by 8 for 8-byte aligned access.
@@ -54,7 +54,7 @@ The second operand is loaded either from a register or from an immediate value e
 
 `imm0` is an 8-bit immediate value, which is used for shift and rotate ALU operations.
 
-`imm1` is a 32-bit immediate value which is used for most operations. For operands larger than 32 bits, the value is zero-extended for unsigned instructions and sign-extended for signed instructions. For FPU instructions, the value is considered a signed 32-bit integer and then converted to a double precision floating point format.
+`imm1` is a 32-bit immediate value which is used for most operations. For operands larger than 32 bits, the value is sign-extended. For FPU instructions, the value is considered a signed 32-bit integer and then converted to a double precision floating point format.
 
 #### Operand C
 The third operand is the location where the result is stored.
@@ -80,7 +80,7 @@ addr(c) = 8 * (addr1 XOR reg(c)[31:0])[W-1:0]
 An 8-bit immediate value that is used as the shift/rotate count by some ALU instructions and as the jump offset of the CALL instruction.
 
 #### addr0
-A 32-bit address mask that is used to calculate the read address for the A operand.
+A 32-bit address mask that is used to calculate the read address for the A operand. It's sign-extended to 64 bits.
 
 #### addr1
 A 32-bit address mask that is used to calculate the write address for the C operand. `addr1` is equal to `imm1`.

@@ -43,5 +43,11 @@ namespace RandomX {
 	void CompiledVirtualMachine::execute() {
 		FPINIT();
 		executeProgram(reg, mem, readDataset, scratchpad);
+#ifdef TRACE
+		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
+			std::cout << std::hex << tracepad[i].u64 << std::endl;
+		}
+#endif
+
 	}
 }

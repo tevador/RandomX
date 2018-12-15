@@ -58,16 +58,14 @@ namespace RandomX {
 	void VirtualMachine::initializeScratchpad(uint32_t index) {
 		if (lightClient) {
 			if (softAes) {
-				initBlock<true>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 0, 4 * index + 0, mem.lcm->keys);
-				initBlock<true>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 1, 4 * index + 1, mem.lcm->keys);
-				initBlock<true>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 2, 4 * index + 2, mem.lcm->keys);
-				initBlock<true>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 3, 4 * index + 3, mem.lcm->keys);
+				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
+					initBlock<true>(mem.lcm->cache + CacheShift, ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, mem.lcm->keys);
+				}
 			}
 			else {
-				initBlock<false>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 0, 4 * index + 0, mem.lcm->keys);
-				initBlock<false>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 1, 4 * index + 1, mem.lcm->keys);
-				initBlock<false>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 2, 4 * index + 2, mem.lcm->keys);
-				initBlock<false>(mem.lcm->cache, ((uint8_t*)scratchpad) + DatasetBlockSize * 3, 4 * index + 3, mem.lcm->keys);
+				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
+					initBlock<false>(mem.lcm->cache + CacheShift, ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, mem.lcm->keys);
+				}
 			}
 		}
 		else {

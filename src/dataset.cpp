@@ -26,6 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <new>
 #include <algorithm>
 #include <stdexcept>
+#include <cstring>
 
 #if defined(_MSC_VER)
 #if defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)
@@ -237,7 +238,7 @@ namespace RandomX {
 		convertible_t data;
 		auto blockNumber = memory.ma / DatasetBlockSize;
 		if (memory.lcm->blockNumber != blockNumber) {
-			initBlock<softAes>(memory.lcm->cache, (uint8_t*)memory.lcm->block, blockNumber, memory.lcm->keys);
+			initBlock<softAes>(memory.lcm->cache + CacheShift, (uint8_t*)memory.lcm->block, blockNumber, memory.lcm->keys);
 			memory.lcm->blockNumber = blockNumber;
 		}
 		data.u64 = *(uint64_t*)(memory.lcm->block + (memory.ma % DatasetBlockSize));
@@ -263,15 +264,16 @@ namespace RandomX {
 		if (dataset == nullptr) {
 			throw std::runtime_error("Dataset memory allocation failed. >4 GiB of virtual memory is needed.");
 		}
-		uint8_t* cache = (uint8_t*)_mm_malloc(CacheSize, sizeof(__m128i));
-		if (dataset == nullptr) {
+		uint8_t* cache = (uint8_t*)_mm_malloc(CacheSize + CacheShift, sizeof(__m128i));
+		if (cache == nullptr) {
 			throw std::bad_alloc();
 		}
 		initializeCache(seed, SeedSize, cache);
+		memcpy(cache + CacheSize, cache, CacheShift);
 		alignas(16) __m128i keys[10];
 		expandAesKeys<softAes>((const __m128i*)seed, keys);
 		for (uint32_t i = 0; i < DatasetBlockCount; ++i) {
-			initBlock<softAes>(cache, dataset + i * DatasetBlockSize, i, keys);
+			initBlock<softAes>(cache + CacheShift, dataset + i * DatasetBlockSize, i, keys);
 		}
 		_mm_free(cache);
 	}
@@ -285,11 +287,12 @@ namespace RandomX {
 	template<bool softAes>
 	void datasetInitLight(const void* seed, LightClientMemory*& lcm) {
 		lcm = new LightClientMemory();
-		lcm->cache = (uint8_t*)_mm_malloc(CacheSize, sizeof(__m128i));
+		lcm->cache = (uint8_t*)_mm_malloc(CacheSize + CacheShift, sizeof(__m128i));
 		if (lcm->cache == nullptr) {
 			throw std::bad_alloc();
 		}
 		initializeCache(seed, SeedSize, lcm->cache);
+		memcpy(lcm->cache + CacheSize, lcm->cache, CacheShift);
 		expandAesKeys<softAes>((__m128i*)seed, lcm->keys);
 		lcm->block = (uint8_t*)_mm_malloc(DatasetBlockSize, sizeof(__m128i));
 		if (lcm->block == nullptr) {
