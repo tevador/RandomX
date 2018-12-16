@@ -29,10 +29,6 @@ namespace RandomX {
 		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
 			*(((uint32_t*)&reg) + i) = gen();
 		}
-		FPINIT();
-		for (int i = 0; i < 8; ++i) {
-			reg.f[i].f64 = (double)reg.f[i].i64;
-		}
 		for (unsigned i = 0; i < ProgramLength; ++i) {
 			gen(); gen(); gen(); gen();
 		}
@@ -41,7 +37,6 @@ namespace RandomX {
 	}
 
 	void CompiledVirtualMachine::execute() {
-		FPINIT();
 		executeProgram(reg, mem, readDataset, scratchpad);
 #ifdef TRACE
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {

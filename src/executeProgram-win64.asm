@@ -96,14 +96,16 @@ executeProgram PROC
 	mov r13, qword ptr [rcx+40]
 	mov r14, qword ptr [rcx+48]
 	mov r15, qword ptr [rcx+56]
-	movd xmm8, qword ptr [rcx+64]
-	movd xmm9, qword ptr [rcx+72]
-	movd xmm2, qword ptr [rcx+80]
-	movd xmm3, qword ptr [rcx+88]
-	movd xmm4, qword ptr [rcx+96]
-	movd xmm5, qword ptr [rcx+104]
-	movd xmm6, qword ptr [rcx+112]
-	movd xmm7, qword ptr [rcx+120]
+	mov dword ptr [rsp - 8], 40896
+	ldmxcsr dword ptr [rsp - 8]
+	cvtsi2sd xmm8, qword ptr [rcx+64]
+	cvtsi2sd xmm9, qword ptr [rcx+72]
+	cvtsi2sd xmm2, qword ptr [rcx+80]
+	cvtsi2sd xmm3, qword ptr [rcx+88]
+	cvtsi2sd xmm4, qword ptr [rcx+96]
+	cvtsi2sd xmm5, qword ptr [rcx+104]
+	cvtsi2sd xmm6, qword ptr [rcx+112]
+	cvtsi2sd xmm7, qword ptr [rcx+120]
 
 	; program body
 
