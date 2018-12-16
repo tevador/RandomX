@@ -24,9 +24,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	static const char* regR[8] = { "rbx", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
-	static const char* regR32[8] = { "ebx", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
-	static const char* regF[8] = { "xmm8", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regR[8] = { "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
+	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
+	static const char* regF[8] = { "xmm8", "xmm9", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
 
 	void AssemblyGeneratorX86::generateProgram(const void* seed) {
 		asmCode.str(std::string()); //clear
@@ -149,8 +149,8 @@ namespace RandomX {
 			convertible_t bimm;
 			bimm.f64 = (double)instr.imm1;
 			asmCode << "\tmov rax, " << bimm.i64 << std::endl;
-			asmCode << "\tmovd xmm9, rax" << std::endl;
-			asmCode << "\t" << instrx86 << " xmm0, xmm9" << std::endl;
+			asmCode << "\tmovd xmm1, rax" << std::endl;
+			asmCode << "\t" << instrx86 << " xmm0, xmm1" << std::endl;
 			return;
 		}
 	}
@@ -262,12 +262,10 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::h_MULH_64(Instruction& instr, int i) {
 		gena(instr);
-		asmCode << "\tmov r8, rdx" << std::endl;
 		asmCode << "\tmov rcx, ";
 		genbr1(instr);
 		asmCode << "\tmul rcx" << std::endl;
 		asmCode << "\tmov rax, rdx" << std::endl;
-		asmCode << "\tmov rdx, r8" << std::endl;
 		gencr(instr);
 	}
 
@@ -295,18 +293,15 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::h_IMULH_64(Instruction& instr, int i) {
 		gena(instr);
-		asmCode << "\tmov r8, rdx" << std::endl;
 		asmCode << "\tmov rcx, ";
 		genbr1(instr);
 		asmCode << "\timul rcx" << std::endl;
 		asmCode << "\tmov rax, rdx" << std::endl;
-		asmCode << "\tmov rdx, r8" << std::endl;
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_DIV_64(Instruction& instr, int i) {
 		gena(instr);
-		asmCode << "\tmov r8, rdx" << std::endl;
 		if ((instr.locb & 7) >= 6) {
 			if (instr.imm1 == 0) {
 				asmCode << "\tmov ecx, 1" << std::endl;
@@ -323,13 +318,11 @@ namespace RandomX {
 		}
 		asmCode << "\txor edx, edx" << std::endl;
 		asmCode << "\tdiv rcx" << std::endl;
-		asmCode << "\tmov rdx, r8" << std::endl;
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_IDIV_64(Instruction& instr, int i) {
 		gena(instr);
-		asmCode << "\tmov r8, rdx" << std::endl;
 		asmCode << "\tmov edx, ";
 		genbr132(instr);
 		asmCode << "\tcmp edx, -1" << std::endl;
@@ -346,7 +339,6 @@ namespace RandomX {
 		asmCode << "\tcqo" << std::endl;
 		asmCode << "\tidiv rcx" << std::endl;
 		asmCode << "result_idiv_" << i << ":" << std::endl;
-		asmCode << "\tmov rdx, r8" << std::endl;
 		gencr(instr);
 	}
 

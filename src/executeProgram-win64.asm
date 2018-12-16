@@ -22,14 +22,14 @@ PUBLIC executeProgram
 executeProgram PROC
 	; REGISTER ALLOCATION:
 	; rax -> temporary
-	; rbx -> "r0"
+	; rbx -> MemoryRegisters& memory
 	; rcx -> temporary
-	; rdx -> MemoryRegisters& memory
+	; rdx -> temporary
 	; rsi -> convertible_t& scratchpad
 	; rdi -> "ic" (instruction counter)
 	; rbp	-> beginning of VM stack
 	; rsp -> end of VM stack
-	; r8 	-> temporary
+	; r8 	-> "r0"
 	; r9 	-> "r1"
 	; r10 -> "r2"
 	; r11 -> "r3"
@@ -38,7 +38,7 @@ executeProgram PROC
 	; r14 -> "r6"
 	; r15 -> "r7"
 	; xmm0 -> temporary
-	; xmm1 -> "f1"
+	; xmm1 -> temporary
 	; xmm2 -> "f2"
 	; xmm3 -> "f3"
 	; xmm4 -> "f4"
@@ -46,7 +46,7 @@ executeProgram PROC
 	; xmm6 -> "f6"
 	; xmm7 -> "f7"
 	; xmm8 -> "f0"
-	; xmm9 -> temporary
+	; xmm9 -> "f1"
 
 	; STACK STRUCTURE:
 	;   |
@@ -79,16 +79,16 @@ executeProgram PROC
 	movdqu xmmword ptr [rsp+0], xmm9
 
 	; function arguments
-	push rcx 				; RegisterFile& registerFile
-	; mov rdx, rdx	; MemoryRegisters& memory
-	push r8 				; DatasetReadFunc readFunc
+	push rcx				; RegisterFile& registerFile
+	mov rbx, rdx		; MemoryRegisters& memory
+	push r8					; DatasetReadFunc readFunc
 	mov rsi, r9			; convertible_t& scratchpad
 
-	mov rbp, rsp		; beginning of VM stack
+	mov rbp, rsp			; beginning of VM stack
 	mov rdi, 1048576	; number of VM instructions to execute
 
 	; load VM register values
-	mov rbx, qword ptr [rcx+0]
+	mov r8, qword ptr [rcx+0]
 	mov r9, qword ptr [rcx+8]
 	mov r10, qword ptr [rcx+16]
 	mov r11, qword ptr [rcx+24]
@@ -97,7 +97,7 @@ executeProgram PROC
 	mov r14, qword ptr [rcx+48]
 	mov r15, qword ptr [rcx+56]
 	movd xmm8, qword ptr [rcx+64]
-	movd xmm1, qword ptr [rcx+72]
+	movd xmm9, qword ptr [rcx+72]
 	movd xmm2, qword ptr [rcx+80]
 	movd xmm3, qword ptr [rcx+88]
 	movd xmm4, qword ptr [rcx+96]
@@ -116,7 +116,7 @@ rx_finish:
 
 	; save VM register values
 	mov rcx, qword ptr [rbp+8]
-	mov qword ptr [rcx+0], rbx
+	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
 	mov qword ptr [rcx+16], r10
 	mov qword ptr [rcx+24], r11
@@ -125,7 +125,7 @@ rx_finish:
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
 	movd qword ptr [rcx+64], xmm8
-	movd qword ptr [rcx+72], xmm1
+	movd qword ptr [rcx+72], xmm9
 	movd qword ptr [rcx+80], xmm2
 	movd qword ptr [rcx+88], xmm3
 	movd qword ptr [rcx+96], xmm4
@@ -170,19 +170,18 @@ rx_read_dataset_light:
 	ret 0
 
 rx_read_dataset:
-	mov r8d, dword ptr [rdx]	; ma
-	mov rax, qword ptr [rdx+8]	; dataset
-	mov rax, qword ptr [rax+r8]
-	add dword ptr [rdx], 8
-	mov r8d, dword ptr [rdx+4]	; mx
-	xor ecx, r8d
-	mov dword ptr [rdx+4], ecx
+	mov edx, dword ptr [rbx]	; ma
+	mov rax, qword ptr [rbx+8]	; dataset
+	mov rax, qword ptr [rax+rdx]
+	add dword ptr [rbx], 8
+	xor ecx, dword ptr [rbx+4]	; mx
+	mov dword ptr [rbx+4], ecx
 	test ecx, 0FFF8h
 	jne short rx_read_dataset_full_ret
 	and ecx, -8
-	mov dword ptr [rdx], ecx
-	mov r8, qword ptr [rdx+8]
-	prefetcht0 byte ptr [r8+rcx]
+	mov dword ptr [rbx], ecx
+	mov rdx, qword ptr [rbx+8]
+	prefetcht0 byte ptr [rdx+rcx]
 rx_read_dataset_full_ret:
 	ret 0
 executeProgram ENDP
