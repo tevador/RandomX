@@ -21,23 +21,35 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Pcg32.hpp"
 #include "common.hpp"
 #include "instructions.hpp"
+#include <stdexcept>
 
 namespace RandomX {
+
+	CompiledVirtualMachine::CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {
+#if !defined(_M_X64) && !defined(__x86_64__)
+		throw std::runtime_error("Compiled VM only supports x86-64 CPUs");
+#endif
+	}
+
+	void CompiledVirtualMachine::initializeDataset(const void* seed, bool lightClient) {
+		if (lightClient) {
+			throw std::runtime_error("Compiled VM does not support light-client mode");
+		}
+		VirtualMachine::initializeDataset(seed, lightClient);
+	}
 
 	void CompiledVirtualMachine::initializeProgram(const void* seed) {
 		Pcg32 gen(seed);
 		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
 			*(((uint32_t*)&reg) + i) = gen();
 		}
-		for (unsigned i = 0; i < ProgramLength; ++i) {
-			gen(); gen(); gen(); gen();
-		}
+		compiler.generateProgram(gen);
 		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;
 		mem.mx = *(((uint32_t*)seed) + 5);
 	}
 
 	void CompiledVirtualMachine::execute() {
-		executeProgram(reg, mem, readDataset, scratchpad);
+		compiler.getProgramFunc()(reg, mem, scratchpad);
 #ifdef TRACE
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
 			std::cout << std::hex << tracepad[i].u64 << std::endl;

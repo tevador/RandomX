@@ -27,10 +27,11 @@ namespace RandomX {
 	public:
 		VirtualMachine(bool softAes);
 		virtual ~VirtualMachine() {}
-		void initializeDataset(const void* seed, bool light = false);
+		virtual void initializeDataset(const void* seed, bool light = false);
 		void initializeScratchpad(uint32_t index);
 		virtual void initializeProgram(const void* seed) = 0;
 		virtual void execute() = 0;
+		void getResult(void*);
 		const RegisterFile& getRegisterFile() const {
 			return reg;
 		}

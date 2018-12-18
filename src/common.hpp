@@ -70,6 +70,10 @@ namespace RandomX {
 	constexpr uint32_t ScratchpadL2 = ScratchpadSize / sizeof(convertible_t);
 	constexpr int RegistersCount = 8;
 
+	inline int wrapInstr(int i) {
+		return i % RandomX::ProgramLength;
+	}
+
 	struct LightClientMemory {
 		uint8_t* cache;
 		uint8_t* block;
@@ -107,7 +111,9 @@ namespace RandomX {
 
 	typedef convertible_t(*DatasetReadFunc)(addr_t, MemoryRegisters&);
 
+	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*);
+
 	extern "C" {
-		void executeProgram(RegisterFile& registerFile, MemoryRegisters& memory, DatasetReadFunc readFunc, convertible_t* scratchpad);
+		void executeProgram(RegisterFile& registerFile, MemoryRegisters& memory, convertible_t* scratchpad);
 	}
 }

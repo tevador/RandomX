@@ -72,4 +72,8 @@ namespace RandomX {
 			memcpy(scratchpad, mem.dataset + ScratchpadSize * index, ScratchpadSize);
 		}
 	}
+
+	void VirtualMachine::getResult(void* out) {
+
+	}
 }

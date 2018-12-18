@@ -109,13 +109,13 @@ int main(int argc, char** argv) {
 
 	RandomX::VirtualMachine* vm;
 
-	if (compiled) {
-		vm = new RandomX::CompiledVirtualMachine(softAes);
-	}
-	else {
-		vm = new RandomX::InterpretedVirtualMachine(softAes);
-	}
 	try {
+		if (compiled) {
+			vm = new RandomX::CompiledVirtualMachine(softAes);
+		}
+		else {
+			vm = new RandomX::InterpretedVirtualMachine(softAes);
+		}
 		std::cout << "Initializing..." << std::endl;
 		Stopwatch sw(true);
 		vm->initializeDataset(seed, lightClient);

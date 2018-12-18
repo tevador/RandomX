@@ -218,10 +218,6 @@ namespace RandomX {
 		}
 	}
 
-	static inline int wrapi(int i) {
-		return i % RandomX::ProgramLength;
-	}
-
 	void AssemblyGeneratorX86::h_ADD_64(Instruction& instr, int i) {
 		gena(instr);
 		asmCode << "\tadd rax, ";
@@ -468,14 +464,14 @@ namespace RandomX {
 			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm1 << std::endl;
 			asmCode << "\tjbe short taken_call_" << i << std::endl;
 			gencr(instr);
-			asmCode << "\tjmp rx_i_" << wrapi(i + 1) << std::endl;
+			asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
 			asmCode << "taken_call_" << i << ":" << std::endl;
 		}
 		if (trace) {
 			asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rax" << std::endl;
 		}
 		asmCode << "\tpush rax" << std::endl;
-		asmCode << "\tcall rx_i_" << wrapi(i + (instr.imm0 & 127) + 2) << std::endl;
+		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm0 & 127) + 2) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {

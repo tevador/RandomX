@@ -20,17 +20,21 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 //#define TRACE
 #include "VirtualMachine.hpp"
-#include "Program.hpp"
-#include <sstream>
+#include "JitCompilerX86.hpp"
 
 namespace RandomX {
 
 	class CompiledVirtualMachine : public VirtualMachine {
 	public:
-		CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {}
-		virtual void initializeProgram(const void* seed) override;
+		CompiledVirtualMachine(bool softAes);
+		void initializeDataset(const void* seed, bool light = false) override;
+		void initializeProgram(const void* seed) override;
 		virtual void execute() override;
+		void* getProgram() {
+			return compiler.getCode();
+		}
 	private:
+		JitCompilerX86 compiler;
 #ifdef TRACE
 		convertible_t tracepad[InstructionCount];
 #endif

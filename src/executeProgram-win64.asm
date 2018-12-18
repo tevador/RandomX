@@ -54,8 +54,7 @@ executeProgram PROC
 	;   | saved registers
 	;   |
 	;   v
-	; [rbp+8] RegisterFile& registerFile
-	; [rbp] 	DatasetReadFunc readFunc
+	; [rbp] RegisterFile& registerFile
 	;   |
 	;   |
 	;   | VM stack
@@ -72,7 +71,7 @@ executeProgram PROC
 	push r13
 	push r14
 	push r15
-	sub rsp, 64
+	sub rsp, 72
 	movdqu xmmword ptr [rsp+48], xmm6
 	movdqu xmmword ptr [rsp+32], xmm7
 	movdqu xmmword ptr [rsp+16], xmm8
@@ -81,8 +80,7 @@ executeProgram PROC
 	; function arguments
 	push rcx				; RegisterFile& registerFile
 	mov rbx, rdx		; MemoryRegisters& memory
-	push r8					; DatasetReadFunc readFunc
-	mov rsi, r9			; convertible_t& scratchpad
+	mov rsi, r8			; convertible_t& scratchpad
 
 	mov rbp, rsp			; beginning of VM stack
 	mov rdi, 1048576	; number of VM instructions to execute
@@ -96,8 +94,8 @@ executeProgram PROC
 	mov r13, qword ptr [rcx+40]
 	mov r14, qword ptr [rcx+48]
 	mov r15, qword ptr [rcx+56]
-	mov dword ptr [rsp - 8], 40896
-	ldmxcsr dword ptr [rsp - 8]
+	mov dword ptr [rsp-8], 40896
+	ldmxcsr dword ptr [rsp-8]
 	cvtsi2sd xmm8, qword ptr [rcx+64]
 	cvtsi2sd xmm9, qword ptr [rcx+72]
 	cvtsi2sd xmm2, qword ptr [rcx+80]
@@ -114,10 +112,9 @@ executeProgram PROC
 rx_finish:
 	; unroll the stack
 	mov rsp, rbp
-	add	rsp, 16
 
 	; save VM register values
-	mov rcx, qword ptr [rbp+8]
+	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
 	mov qword ptr [rcx+16], r10
@@ -136,11 +133,11 @@ rx_finish:
 	movd qword ptr [rcx+120], xmm7
 
 	; load callee-saved registers
-	movdqu xmm9, xmmword ptr [rsp+0]
+	movdqu xmm9, xmmword ptr [rsp]
 	movdqu xmm8, xmmword ptr [rsp+16]
 	movdqu xmm7, xmmword ptr [rsp+32]
 	movdqu xmm6, xmmword ptr [rsp+48]
-	add rsp, 64
+	add rsp, 72
 	pop r15
 	pop r14
 	pop r13
