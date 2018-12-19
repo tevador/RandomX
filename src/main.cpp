@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
 	};
 	int* nonce = (int*)(blockTemplate + 39);
-	uint8_t hash[32];
+	uint8_t hash[RandomX::ResultSize];
 
 	if (genAsm) {
 		*nonce = programCount;
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 	if (softAes)
 		std::cout << "Using software AES." << std::endl;
 
-	char cumulative[32] = { 0 };
+	char cumulative[RandomX::ResultSize] = { 0 };
 
 	RandomX::VirtualMachine* vm;
 
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 			/*std::string fileName("scratchpad-after-");
 			fileName = fileName + std::to_string(i) + ".txt";
 			dump((const char *)vm.getScratchpad(), RandomX::ScratchpadSize, fileName.c_str());*/
-			blake2b((void*)hash, sizeof(hash), &vm->getRegisterFile(), sizeof(RandomX::RegisterFile), nullptr, 0);
+			vm->getResult(hash);
 			if (RandomX::trace) {
 				outputHex(std::cout, (char*)hash, sizeof(hash));
 			}
@@ -148,8 +148,10 @@ int main(int argc, char** argv) {
 			((uint64_t*)cumulative)[3] ^= ((uint64_t*)hash)[3];
 		}
 		double elapsed = sw.getElapsed();
-		std::cout << "Cumulative output hash: ";
+		std::cout << "Calculated result: ";
 		outputHex(std::cout, cumulative, sizeof(cumulative));
+		if(programCount == 1000)
+		std::cout << "Reference result:  d62ed85c39030cd2c5704fca3a23019f1244f2b03447c9a6b39dea5390ed1d10" << std::endl;
 		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
 	}
 	catch (std::exception& e) {

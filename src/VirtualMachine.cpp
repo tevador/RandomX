@@ -20,6 +20,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "VirtualMachine.hpp"
 #include "common.hpp"
 #include "dataset.hpp"
+#include "t1ha/t1ha.h"
+#include "blake2/blake2.h"
 #include <cstring>
 
 namespace RandomX {
@@ -74,6 +76,9 @@ namespace RandomX {
 	}
 
 	void VirtualMachine::getResult(void* out) {
-
+		uint64_t smallState[sizeof(RegisterFile) / sizeof(uint64_t) + 2];
+		memcpy(smallState, &reg, sizeof(RegisterFile));
+		smallState[17] = t1ha2_atonce128(&smallState[16], scratchpad, ScratchpadSize, reg.r[0].u64);
+		blake2b(out, ResultSize, smallState, sizeof(smallState), nullptr, 0);
 	}
 }

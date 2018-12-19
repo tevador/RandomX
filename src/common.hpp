@@ -33,6 +33,7 @@ namespace RandomX {
 	constexpr int RoundToZero = 3;
 
 	constexpr int SeedSize = 32;
+	constexpr int ResultSize = 32;
 
 	constexpr int CacheBlockSize = 1024;
 	constexpr int CacheShift = CacheBlockSize / 2;

@@ -11,7 +11,7 @@ SRCDIR=src
 OBJDIR=obj
 LDFLAGS=
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o)
 SRC1=$(addprefix $(SRCDIR)/,TestAluFpu.cpp instructions.hpp Pcg32.hpp)
 
 all: release test
@@ -78,6 +78,9 @@ $(OBJDIR)/softAes.o: $(addprefix $(SRCDIR)/,softAes.cpp softAes.h) | $(OBJDIR)
   
 $(OBJDIR)/VirtualMachine.o: $(addprefix $(SRCDIR)/,VirtualMachine.cpp VirtualMachine.hpp common.hpp dataset.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/VirtualMachine.cpp -o $@
+
+$(OBJDIR)/t1ha2.o: $(addprefix $(SRCDIR)/t1ha/,t1ha2.c t1ha.h t1ha_bits.h) | $(OBJDIR)
+	$(CC) $(CCFLAGS) -c $(SRCDIR)/t1ha/t1ha2.c -o $@
   
 $(OBJDIR):
 	mkdir $(OBJDIR)
