@@ -20,58 +20,65 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "VirtualMachine.hpp"
 #include "common.hpp"
 #include "dataset.hpp"
+#include "Cache.hpp"
 #include "t1ha/t1ha.h"
 #include "blake2/blake2.h"
 #include <cstring>
 
 namespace RandomX {
 	VirtualMachine::VirtualMachine(bool softAes) : softAes(softAes), lightClient(false) {
-		mem.dataset = nullptr;
+		mem.ds.dataset = nullptr;
 	}
 
-	void VirtualMachine::initializeDataset(const void* seed, bool light) {
+	VirtualMachine::~VirtualMachine() {
 		if (lightClient) {
-			_mm_free(mem.lcm->cache);
-			_mm_free(mem.lcm->block);
+			delete mem.ds.lightDataset->block;
+			delete mem.ds.lightDataset;
 		}
-		_mm_free(mem.dataset);
+	}
+
+	void VirtualMachine::setDataset(dataset_t ds, bool light) {
+		if (mem.ds.dataset != nullptr) {
+			throw std::runtime_error("Dataset is already initialized");
+		}
 		lightClient = light;
 		if (light) {
+			auto lds = mem.ds.lightDataset = new LightClientDataset();
+			lds->cache = ds.cache;
+			lds->block = (uint8_t*)_mm_malloc(DatasetBlockSize, sizeof(__m128i));
+			lds->blockNumber = -1;
+			if (lds->block == nullptr) {
+				throw std::bad_alloc();
+			}
 			if (softAes) {
-				datasetInitLight<true>(seed, mem.lcm);
 				readDataset = &datasetReadLight<true>;
 			}
 			else {
-				datasetInitLight<false>(seed, mem.lcm);
 				readDataset = &datasetReadLight<false>;
 			}
 		}
 		else {
+			mem.ds = ds;
 			readDataset = &datasetRead;
-			if (softAes) {
-				datasetInit<true>(seed, mem.dataset);
-			}
-			else {
-				datasetInit<false>(seed, mem.dataset);
-			}
 		}
 	}
 
 	void VirtualMachine::initializeScratchpad(uint32_t index) {
 		if (lightClient) {
+			auto cache = mem.ds.lightDataset->cache;
 			if (softAes) {
 				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
-					initBlock<true>(mem.lcm->cache + CacheShift, ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, mem.lcm->keys);
+					initBlock<true>(cache->getCache(), ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, cache->getKeys());
 				}
 			}
 			else {
 				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
-					initBlock<false>(mem.lcm->cache + CacheShift, ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, mem.lcm->keys);
+					initBlock<false>(cache->getCache(), ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, cache->getKeys());
 				}
 			}
 		}
 		else {
-			memcpy(scratchpad, mem.dataset + ScratchpadSize * index, ScratchpadSize);
+			memcpy(scratchpad, mem.ds.dataset + ScratchpadSize * index, ScratchpadSize);
 		}
 	}
 

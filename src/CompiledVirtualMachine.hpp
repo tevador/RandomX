@@ -27,7 +27,7 @@ namespace RandomX {
 	class CompiledVirtualMachine : public VirtualMachine {
 	public:
 		CompiledVirtualMachine(bool softAes);
-		void initializeDataset(const void* seed, bool light = false) override;
+		void setDataset(dataset_t ds, bool light = false) override;
 		void initializeProgram(const void* seed) override;
 		virtual void execute() override;
 		void* getProgram() {

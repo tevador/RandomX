@@ -31,11 +31,11 @@ namespace RandomX {
 #endif
 	}
 
-	void CompiledVirtualMachine::initializeDataset(const void* seed, bool lightClient) {
+	void CompiledVirtualMachine::setDataset(dataset_t ds, bool lightClient) {
 		if (lightClient) {
 			throw std::runtime_error("Compiled VM does not support light-client mode");
 		}
-		VirtualMachine::initializeDataset(seed, lightClient);
+		VirtualMachine::setDataset(ds, lightClient);
 	}
 
 	void CompiledVirtualMachine::initializeProgram(const void* seed) {

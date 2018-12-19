@@ -20,8 +20,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
-#include <new>
-#include "intrinPortable.h"
 
 namespace RandomX {
 
@@ -55,13 +53,13 @@ namespace RandomX {
 	constexpr bool trace = false;
 #endif
 
-	typedef union {
+	union convertible_t {
 		double f64;
 		int64_t i64;
 		uint64_t u64;
 		int32_t i32;
 		uint32_t u32;
-	} convertible_t;
+	};
 
 	constexpr int ProgramLength = 512;
 	constexpr int InstructionCount = 1024 * 1024;
@@ -71,34 +69,27 @@ namespace RandomX {
 	constexpr uint32_t ScratchpadL2 = ScratchpadSize / sizeof(convertible_t);
 	constexpr int RegistersCount = 8;
 
+	class Cache;
+
 	inline int wrapInstr(int i) {
 		return i % RandomX::ProgramLength;
 	}
 
-	struct LightClientMemory {
-		uint8_t* cache;
+	struct LightClientDataset {
+		Cache* cache;
 		uint8_t* block;
 		uint32_t blockNumber;
-		alignas(16) __m128i keys[10];
+	};
 
-		void* operator new(size_t size) {
-			void* ptr = _mm_malloc(size, sizeof(__m128i));
-			if (ptr == nullptr)
-				throw std::bad_alloc();
-			return ptr;
-		}
-
-		void operator delete(void* ptr) {
-			_mm_free(ptr);
-		}
+	union dataset_t {
+		uint8_t* dataset;
+		Cache* cache;
+		LightClientDataset* lightDataset;
 	};
 
 	struct MemoryRegisters {
 		addr_t ma, mx;
-		union {
-			uint8_t* dataset;
-			LightClientMemory* lcm;
-		};
+		dataset_t ds;
 	};
 
 	static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct RandomX::MemoryRegisters");

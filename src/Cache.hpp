@@ -18,25 +18,40 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+
 #include <cstdint>
+#include <new>
 #include "common.hpp"
+#include "dataset.hpp"
 
 namespace RandomX {
 
-	class VirtualMachine {
+	class Cache {
 	public:
-		VirtualMachine(bool softAes);
-		virtual ~VirtualMachine();
-		virtual void setDataset(dataset_t ds, bool light = false);
-		void initializeScratchpad(uint32_t index);
-		virtual void initializeProgram(const void* seed) = 0;
-		virtual void execute() = 0;
-		void getResult(void*);
-	protected:
-		bool softAes, lightClient;
-		RegisterFile reg;
-		MemoryRegisters mem;
-		DatasetReadFunc readDataset;
-		alignas(16) convertible_t scratchpad[ScratchpadLength];
+		void* operator new(size_t size) {
+			void* ptr = _mm_malloc(size, sizeof(__m128i));
+			if (ptr == nullptr)
+				throw std::bad_alloc();
+			return ptr;
+		}
+
+		void operator delete(void* ptr) {
+			_mm_free(ptr);
+		}
+
+		template<bool softAes>
+		void initialize(const void* seed, size_t seedSize);
+
+		const KeysContainer& getKeys() const {
+			return keys;
+		}
+
+		const uint8_t* getCache() {
+			return memory + CacheShift;
+		}
+	private:
+		alignas(16) KeysContainer keys;
+		uint8_t memory[CacheSize + CacheShift];
+		void argonFill(const void* seed, size_t seedSize);
 	};
 }

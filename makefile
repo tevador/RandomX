@@ -9,10 +9,9 @@ endif
 BINDIR=bin
 SRCDIR=src
 OBJDIR=obj
-LDFLAGS=
+LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o)
-SRC1=$(addprefix $(SRCDIR)/,TestAluFpu.cpp instructions.hpp Pcg32.hpp)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o)
 
 all: release test
 
@@ -52,7 +51,7 @@ $(OBJDIR)/blake2b.o: $(addprefix $(SRCDIR)/blake2/,blake2b.c blake2.h blake2-imp
 $(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachine.cpp CompiledVirtualMachine.hpp Pcg32.hpp common.hpp instructions.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/CompiledVirtualMachine.cpp -o $@
   
-$(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp Pcg32.hpp argon2_core.h) | $(OBJDIR)
+$(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp Pcg32.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/dataset.cpp -o $@
 
 $(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp) | $(OBJDIR)
@@ -72,6 +71,9 @@ $(OBJDIR)/main.o: $(addprefix $(SRCDIR)/,main.cpp InterpretedVirtualMachine.hpp 
   
 $(OBJDIR)/Program.o: $(addprefix $(SRCDIR)/,Program.cpp Program.hpp Pcg32.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/Program.cpp -o $@
+
+$(OBJDIR)/Cache.o: $(addprefix $(SRCDIR)/,Cache.cpp Cache.hpp Pcg32.hpp argon2_core.h) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/Cache.cpp -o $@
   
 $(OBJDIR)/softAes.o: $(addprefix $(SRCDIR)/,softAes.cpp softAes.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/softAes.cpp -o $@

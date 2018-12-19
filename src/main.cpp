@@ -30,6 +30,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 #include <string>
 #include "instructions.hpp"
+#include <thread>
+#include <atomic>
+#include "dataset.hpp"
+#include "Cache.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -45,7 +49,6 @@ void outputHex(std::ostream& os, const char* data, int length) {
 		os << hexmap[(data[i] & 0xF0) >> 4];
 		os << hexmap[data[i] & 0x0F];
 	}
-	os << std::endl;
 }
 
 void readOption(const char* option, int argc, char** argv, bool& out) {
@@ -56,6 +59,15 @@ void readOption(const char* option, int argc, char** argv, bool& out) {
 		}
 	}
 	out = false;
+}
+
+void readIntOption(const char* option, int argc, char** argv, int& out, int defaultValue) {
+	for (int i = 0; i < argc - 1; ++i) {
+		if (strcmp(argv[i], option) == 0 && (out = atoi(argv[i + 1])) > 0) {
+			return;
+		}
+	}
+	out = defaultValue;
 }
 
 void readInt(int argc, char** argv, int& out, int defaultValue) {
@@ -75,81 +87,144 @@ std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf) {
 	return os;
 }
 
-int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled;
-	int programCount;
-	readOption("--softAes", argc, argv, softAes);
-	readOption("--lightClient", argc, argv, lightClient);
-	readOption("--genAsm", argc, argv, genAsm);
-	readOption("--compiled", argc, argv, compiled);
-	readInt(argc, argv, programCount, 1000);
+class AtomicHash {
+public:
+	AtomicHash() {
+		for (int i = 0; i < 4; ++i)
+			hash[i].store(0);
+	}
+	void xorWith(uint64_t update[4]) {
+		for (int i = 0; i < 4; ++i)
+			hash[i].fetch_xor(update[i]);
+	}
+	void print(std::ostream& os) {
+		for (int i = 0; i < 4; ++i)
+			print(hash[i], os);
+		os << std::endl;
+	}
+private:
+	void print(std::atomic<uint64_t>& hash, std::ostream& os) {
+		auto h = hash.load();
+		outputHex(std::cout, (char*)&h, sizeof(h));
+	}
+	std::atomic<uint64_t> hash[4];
+};
 
+void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread) {
+	uint64_t hash[4];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
 		0xea, 0x00, 0x00, 0x00, 0x00, 0x77, 0xb2, 0x06, 0xa0, 0x2c, 0xa5, 0xb1, 0xd4, 0xce, 0x6b, 0xbf, 0xdf, 0x0a, 0xca,
 		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
 	};
-	int* nonce = (int*)(blockTemplate + 39);
-	uint8_t hash[RandomX::ResultSize];
+	int* noncePtr = (int*)(blockTemplate + 39);
+	int nonce = atomicNonce.fetch_add(1);
 
-	if (genAsm) {
-		*nonce = programCount;
+	while (nonce < noncesCount) {
+		//std::cout << "Thread " << thread << " nonce " << nonce << std::endl;
+		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-		RandomX::AssemblyGeneratorX86 asmX86;
-		asmX86.generateProgram(hash);
-		asmX86.printCode(std::cout);
-		return 0;
+		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 63) << 8);
+		vm->initializeScratchpad(spIndex);
+		vm->initializeProgram(hash);
+		vm->execute();
+		vm->getResult(hash);
+		result.xorWith(hash);
+		if (RandomX::trace) {
+			std::cout << "Nonce: " << nonce << " ";
+			outputHex(std::cout, (char*)hash, sizeof(hash));
+			std::cout << std::endl;
+		}
+		nonce = atomicNonce.fetch_add(1);
 	}
+}
+
+int main(int argc, char** argv) {
+	bool softAes, lightClient, genAsm, compiled;
+	int programCount, threadCount;
+	readOption("--softAes", argc, argv, softAes);
+	readOption("--lightClient", argc, argv, lightClient);
+	readOption("--genAsm", argc, argv, genAsm);
+	readOption("--compiled", argc, argv, compiled);
+	readIntOption("--threads", argc, argv, threadCount, 1);
+	readIntOption("--nonces", argc, argv, programCount, 1000);
+
+	std::atomic<int> atomicNonce(0);
+	AtomicHash result;
+	std::vector<RandomX::VirtualMachine*> vms;
+	std::vector<std::thread> threads;
+	RandomX::dataset_t dataset;
 
 	if (softAes)
 		std::cout << "Using software AES." << std::endl;
-
-	char cumulative[RandomX::ResultSize] = { 0 };
-
-	RandomX::VirtualMachine* vm;
+	std::cout << "Initializing..." << std::endl;
 
 	try {
-		if (compiled) {
-			vm = new RandomX::CompiledVirtualMachine(softAes);
+		Stopwatch sw(true);
+		if (softAes) {
+			RandomX::datasetInitCache<true>(seed, dataset);
 		}
 		else {
-			vm = new RandomX::InterpretedVirtualMachine(softAes);
+			RandomX::datasetInitCache<false>(seed, dataset);
 		}
-		std::cout << "Initializing..." << std::endl;
-		Stopwatch sw(true);
-		vm->initializeDataset(seed, lightClient);
-		if(lightClient)
+		if (RandomX::trace) {
+			std::cout << "Keys: " << std::endl;
+			for (int i = 0; i < dataset.cache->getKeys().size(); ++i) {
+				outputHex(std::cout, (char*)&dataset.cache->getKeys()[i], sizeof(__m128i));
+			}
+			std::cout << std::endl;
+			std::cout << "Cache: " << std::endl;
+			outputHex(std::cout, (char*)dataset.cache->getCache(), sizeof(__m128i));
+			std::cout << std::endl;
+		}
+		if (lightClient) {
 			std::cout << "Cache (64 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
-		else
+		}
+		else {
+			RandomX::Cache* cache = dataset.cache;
+			RandomX::datasetAlloc(dataset);
+			auto perThread = RandomX::DatasetBlockCount / threadCount;
+			auto remainder = RandomX::DatasetBlockCount % threadCount;
+			for (int i = 0; i < threadCount; ++i) {
+				auto count = perThread + (i == threadCount - 1 ? remainder : 0);
+				if (softAes) {
+					threads.push_back(std::thread(&RandomX::datasetInit<true>, cache, dataset, i * perThread, count));
+				}
+				else {
+					threads.push_back(std::thread(&RandomX::datasetInit<false>, cache, dataset, i * perThread, count));
+				}
+			}
+			for (int i = 0; i < threads.size(); ++i) {
+				threads[i].join();
+			}
+			delete cache;
+			threads.clear();
 			std::cout << "Dataset (4 GiB) initialized in " << sw.getElapsed() << " s" << std::endl;
+		}
+		std::cout << "Initializing " << threadCount << " virtual machine(s)..." << std::endl;
+		for (int i = 0; i < threadCount; ++i) {
+			RandomX::VirtualMachine* vm;
+			if (compiled) {
+				vm = new RandomX::CompiledVirtualMachine(softAes);
+			}
+			else {
+				vm = new RandomX::InterpretedVirtualMachine(softAes);
+			}
+			vm->setDataset(dataset, lightClient);
+			vms.push_back(vm);
+		}
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
 		sw.restart();
-		for (int i = 0; i < programCount; ++i) {
-			*nonce = i;
-			if (RandomX::trace) std::cout << "Nonce: " << i << " ";
-			blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-			int spIndex = hash[24] | ((hash[25] & 63) << 8);
-			vm->initializeScratchpad(spIndex);
-			//dump((const char *)vm.getScratchpad(), RandomX::ScratchpadSize, "scratchpad-before.txt");
-			//return 0;
-			vm->initializeProgram(hash);
-			vm->execute();
-			/*std::string fileName("scratchpad-after-");
-			fileName = fileName + std::to_string(i) + ".txt";
-			dump((const char *)vm.getScratchpad(), RandomX::ScratchpadSize, fileName.c_str());*/
-			vm->getResult(hash);
-			if (RandomX::trace) {
-				outputHex(std::cout, (char*)hash, sizeof(hash));
-			}
-			((uint64_t*)cumulative)[0] ^= ((uint64_t*)hash)[0];
-			((uint64_t*)cumulative)[1] ^= ((uint64_t*)hash)[1];
-			((uint64_t*)cumulative)[2] ^= ((uint64_t*)hash)[2];
-			((uint64_t*)cumulative)[3] ^= ((uint64_t*)hash)[3];
+		for (int i = 0; i < vms.size(); ++i) {
+			threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i));
+		}
+		for (int i = 0; i < threads.size(); ++i) {
+			threads[i].join();
 		}
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
-		outputHex(std::cout, cumulative, sizeof(cumulative));
+		result.print(std::cout);
 		if(programCount == 1000)
 		std::cout << "Reference result:  d62ed85c39030cd2c5704fca3a23019f1244f2b03447c9a6b39dea5390ed1d10" << std::endl;
 		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
