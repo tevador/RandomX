@@ -18,7 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-
+//#define STATS
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include <vector>
@@ -42,6 +42,43 @@ namespace RandomX {
 		Program p;
 		std::vector<convertible_t> stack;
 		uint64_t pc, ic;
+#ifdef STATS
+		int count_ADD_64;
+		int count_ADD_32;
+		int count_SUB_64;
+		int count_SUB_32;
+		int count_MUL_64;
+		int count_MULH_64;
+		int count_MUL_32;
+		int count_IMUL_32;
+		int count_IMULH_64;
+		int count_DIV_64;
+		int count_IDIV_64;
+		int count_AND_64;
+		int count_AND_32;
+		int count_OR_64;
+		int count_OR_32;
+		int count_XOR_64;
+		int count_XOR_32;
+		int count_SHL_64;
+		int count_SHR_64;
+		int count_SAR_64;
+		int count_ROL_64;
+		int count_ROR_64;
+		int count_FPADD;
+		int count_FPSUB;
+		int count_FPMUL;
+		int count_FPDIV;
+		int count_FPSQRT;
+		int count_FPROUND;
+		int count_CALL_uncond;
+		int count_CALL_taken;
+		int count_CALL_not_taken;
+		int count_RET_stack_empty;
+		int count_RET_uncond;
+		int count_RET_taken;
+		int count_RET_not_taken;
+#endif
 
 		convertible_t loada(Instruction&);
 		convertible_t loadbr0(Instruction&);

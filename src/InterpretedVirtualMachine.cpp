@@ -205,10 +205,17 @@ namespace RandomX {
 		} \
 	}
 
+#ifdef STATS
+#define INC_COUNT(x) count_##x++;
+#else
+#define INC_COUNT(x)
+#endif
+
 #define FPU_RETIRE_NB(x) x(a, b, c); \
 	if(trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 
 #define ALU_INST(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
+	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
 	convertible_t b = loadbr1(inst); \
 	convertible_t& c = getcr(inst); \
@@ -216,6 +223,7 @@ namespace RandomX {
 	}
 
 #define ALU_INST_SR(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
+	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
 	convertible_t b = loadbr0(inst); \
 	convertible_t& c = getcr(inst); \
@@ -223,6 +231,7 @@ namespace RandomX {
 	}
 
 #define FPU_INST(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
+	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
 	double b = loadbf(inst); \
 	convertible_t& c = getcf(inst); \
@@ -230,6 +239,7 @@ namespace RandomX {
 	}
 
 #define FPU_INST_NB(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
+	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
 	convertible_t b; \
 	convertible_t& c = getcf(inst); \
@@ -271,8 +281,13 @@ namespace RandomX {
 	void InterpretedVirtualMachine::h_CALL(Instruction& inst) {
 		convertible_t a = loada(inst);
 		convertible_t b = loadbr1(inst);
-		convertible_t& c = getcr(inst);
 		if (b.u32 <= (uint32_t)inst.imm32) {
+#ifdef STATS
+			if ((inst.locb & 7) <= 5)
+				count_CALL_taken++;
+			else
+				count_CALL_uncond++;
+#endif
 			stackPush(a);
 			stackPush(pc);
 			pc += (inst.imm8 & 127) + 1;
@@ -280,6 +295,10 @@ namespace RandomX {
 			if (trace) std::cout << std::hex << a.u64 << std::endl;
 		}
 		else {
+			convertible_t& c = getcr(inst);
+#ifdef STATS
+			count_CALL_not_taken++;
+#endif
 			c.u64 = a.u64;
 			if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 		}
@@ -290,12 +309,24 @@ namespace RandomX {
 		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
 		if (stack.size() > 0 && b.u32 <= (uint32_t)inst.imm32) {
+#ifdef STATS
+			if ((inst.locb & 7) <= 5)
+				count_RET_taken++;
+			else
+				count_RET_uncond++;
+#endif
 			auto raddr = stackPopAddress();
 			auto retval = stackPopValue();
 			c.u64 = a.u64 ^ retval.u64;
 			pc = raddr;
 		}
 		else {
+#ifdef STATS
+			if (stack.size() == 0)
+				count_RET_stack_empty++;
+			else
+				count_RET_not_taken++;
+#endif
 			c.u64 = a.u64;
 		}
 		if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
