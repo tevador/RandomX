@@ -1,10 +1,11 @@
 
+
 ## RandomX instruction set
 RandomX uses a simple low-level language (instruction set), which was designed so that any random bitstring forms a valid program.
 
 Each RandomX instruction has a length of 128 bits. The encoding is following:
 
-![Imgur](https://i.imgur.com/thpvVHN.png)
+![Imgur](https://i.imgur.com/mbndESz.png)
 
 *All flags are aligned to an 8-bit boundary for easier decoding.*
 
@@ -33,10 +34,10 @@ The first operand is read from memory. The location is determined by the `loc(a)
 
 Flag `reg(a)` encodes an integer register `r0`-`r7`.  The read address is calculated as:
 ```
-reg(a) = reg(a) XOR signExtend(addr0)
-addr(a) = reg(a)[W-1:0]
+reg(a) = reg(a) XOR signExtend(addr(a))
+read_addr = reg(a)[W-1:0]
 ```
-`W` is the address width from the above table. For reading from the scratchpad, `addr(a)` is multiplied by 8 for 8-byte aligned access.
+`W` is the address width from the above table. For reading from the scratchpad, `read_addr` is multiplied by 8 for 8-byte aligned access.
 
 #### Operand B
 The second operand is loaded either from a register or from an immediate value encoded within the instruction. The `reg(b)` flag encodes an integer register (ALU operations) or a floating point register (FPU operations).
@@ -49,12 +50,12 @@ The second operand is loaded either from a register or from an immediate value e
 |011|register `reg(b)`|
 |100|register `reg(b)`|
 |101|register `reg(b)`|
-|110|`imm0` or `imm1`|
-|111|`imm0` or `imm1`|
+|110|`imm8` or `imm32`|
+|111|`imm8` or `imm32`|
 
-`imm0` is an 8-bit immediate value, which is used for shift and rotate ALU operations.
+`imm8` is an 8-bit immediate value, which is used for shift and rotate ALU operations.
 
-`imm1` is a 32-bit immediate value which is used for most operations. For operands larger than 32 bits, the value is sign-extended. For FPU instructions, the value is considered a signed 32-bit integer and then converted to a double precision floating point format.
+`imm32` is a 32-bit immediate value which is used for most operations. For operands larger than 32 bits, the value is sign-extended. For FPU instructions, the value is considered a signed 32-bit integer and then converted to a double precision floating point format.
 
 #### Operand C
 The third operand is the location where the result is stored.
@@ -72,18 +73,18 @@ The third operand is the location where the result is stored.
 
 The `reg(c)` flag encodes an integer register (ALU operations) or a floating point register (FPU operations).  For writing to the scratchpad, an integer register is always used and the write address is calculated as:
 ```
-addr(c) = 8 * (addr1 XOR reg(c)[31:0])[W-1:0]
+write_addr = 8 * (addr(c) XOR reg(c)[31:0])[W-1:0]
 ```
 *CPUs are typically designed for a 2:1 load:store ratio, so each VM instruction performs on average 1 memory read and 0.5 write to memory.*
 
-#### imm0
+#### imm8
 An 8-bit immediate value that is used as the shift/rotate count by some ALU instructions and as the jump offset of the CALL instruction.
 
-#### addr0
+#### addr(a)
 A 32-bit address mask that is used to calculate the read address for the A operand. It's sign-extended to 64 bits.
 
-#### addr1
-A 32-bit address mask that is used to calculate the write address for the C operand. `addr1` is equal to `imm1`.
+#### addr\(c\)
+A 32-bit address mask that is used to calculate the write address for the C operand. `addr(c)` is equal to `imm32`.
 
 ### ALU instructions
 
@@ -124,7 +125,7 @@ For the division instructions, the dividend is 64 bits long and the divisor 32 b
 *Division by zero can be handled without branching by a conditional move. Signed overflow happens only for the signed variant when the minimum negative value is divided by -1. This rare case must be handled in x86 (ARM produces the "correct" result).*
 
 ##### Shift and rotate
-The shift/rotate instructions use just the bottom 6 bits of the `B` operand (`imm0` is used as the immediate value). All treat `A` as unsigned except SAR_64, which performs an arithmetic right shift by copying the sign bit.
+The shift/rotate instructions use just the bottom 6 bits of the `B` operand (`imm8` is used as the immediate value). All treat `A` as unsigned except SAR_64, which performs an arithmetic right shift by copying the sign bit.
 
 ### FPU instructions
 
@@ -169,10 +170,10 @@ The following 2 control flow instructions are supported:
 |17|CALL|near procedure call|
 |15|RET|return from procedure|
 
-Both instructions are conditional in 75% of cases. The jump is taken only if `B <= imm1`. For the 25% of cases when `B` is equal to `imm1`, the jump is unconditional. In case the branch is not taken, both instructions become "arithmetic no-op" `C = A`.
+Both instructions are conditional in 75% of cases. The jump is taken only if `B <= imm32`. For the 25% of cases when `B` is equal to `imm32`, the jump is unconditional. In case the branch is not taken, both instructions become "arithmetic no-op" `C = A`.
 
 ##### CALL
-Taken CALL instruction pushes the values `A` and `pc` (program counter) onto the stack and then performs a forward jump relative to the value of `pc`. The forward offset is equal to `16 * (imm0[6:0] + 1)`. Maximum jump distance is therefore 128 instructions forward (this means that at least 4 correctly spaced CALL instructions are needed to form a loop in the program).
+Taken CALL instruction pushes the values `A` and `pc` (program counter) onto the stack and then performs a forward jump relative to the value of `pc`. The forward offset is equal to `16 * (imm8[6:0] + 1)`. Maximum jump distance is therefore 128 instructions forward (this means that at least 4 correctly spaced CALL instructions are needed to form a loop in the program).
 
 ##### RET
 The RET instruction behaves like "not taken" when the stack is empty. Taken RET instruction pops the return address `raddr` from the stack (it's the instruction following the previous CALL), then pops a return value `retval` from the stack and sets `C = A XOR retval`. Finally, the instruction jumps back to `raddr`.

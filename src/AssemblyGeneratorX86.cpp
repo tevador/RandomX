@@ -55,7 +55,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::gena(Instruction& instr) {
-		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addr0 << "h" << std::dec << std::endl;
+		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		switch (instr.loca & 7)
 		{
 		case 0:
@@ -93,7 +93,7 @@ namespace RandomX {
 			asmCode << "\t" << instrx86 << " rax, cl" << std::endl;
 			return;
 		default:
-			asmCode << "\t" << instrx86 << " rax, " << (instr.imm0 & 63) << std::endl;;
+			asmCode << "\t" << instrx86 << " rax, " << (instr.imm8 & 63) << std::endl;;
 			return;
 		}
 	}
@@ -110,7 +110,7 @@ namespace RandomX {
 			asmCode << regR[instr.regb % RegistersCount] << std::endl;
 			return;
 		default:
-			asmCode  << instr.imm1 << std::endl;;
+			asmCode  << instr.imm32 << std::endl;;
 			return;
 		}
 	}
@@ -127,7 +127,7 @@ namespace RandomX {
 			asmCode << regR32[instr.regb % RegistersCount] << std::endl;
 			return;
 		default:
-			asmCode << instr.imm1 << std::endl;;
+			asmCode << instr.imm32 << std::endl;;
 			return;
 		}
 	}
@@ -147,7 +147,7 @@ namespace RandomX {
 			return;
 		default:
 			convertible_t bimm;
-			bimm.f64 = (double)instr.imm1;
+			bimm.f64 = (double)instr.imm32;
 			asmCode << "\tmov rax, " << bimm.i64 << std::endl;
 			asmCode << "\tmovd xmm1, rax" << std::endl;
 			asmCode << "\t" << instrx86 << " xmm0, xmm1" << std::endl;
@@ -161,7 +161,7 @@ namespace RandomX {
 		case 0:
 			asmCode << "\tmov rcx, rax" << std::endl;
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
 			if (trace) {
@@ -174,7 +174,7 @@ namespace RandomX {
 		case 3:
 			asmCode << "\tmov rcx, rax" << std::endl;
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
 			if (trace) {
@@ -195,7 +195,7 @@ namespace RandomX {
 		{
 		case 0:
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
 			asmCode << "\tmovd qword ptr [rsi + rax * 8], xmm0" << std::endl;
 			break;
@@ -204,7 +204,7 @@ namespace RandomX {
 		case 2:
 		case 3:
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addr1 << "h" << std::dec << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 			asmCode << "\tmovd qword ptr [rsi + rax * 8], xmm0" << std::endl;
 			break;
@@ -278,7 +278,7 @@ namespace RandomX {
 		gena(instr);
 		asmCode << "\tmovsxd rcx, eax" << std::endl;
 		if ((instr.locb & 7) >= 6) {
-			asmCode << "\tmov rax, " << instr.imm1 << std::endl;
+			asmCode << "\tmov rax, " << instr.imm32 << std::endl;
 		}
 		else {
 			asmCode << "\tmovsxd rax, " << regR32[instr.regb % RegistersCount] << std::endl;
@@ -299,11 +299,11 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_DIV_64(Instruction& instr, int i) {
 		gena(instr);
 		if ((instr.locb & 7) >= 6) {
-			if (instr.imm1 == 0) {
+			if (instr.imm32 == 0) {
 				asmCode << "\tmov ecx, 1" << std::endl;
 			}
 			else {
-				asmCode << "\tmov ecx, " << instr.imm1 << std::endl;
+				asmCode << "\tmov ecx, " << instr.imm32 << std::endl;
 			}
 		}
 		else {
@@ -461,7 +461,7 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
 		gena(instr);
 		if ((instr.locb & 7) < 6) {
-			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm1 << std::endl;
+			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
 			asmCode << "\tjbe short taken_call_" << i << std::endl;
 			gencr(instr);
 			asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
@@ -471,7 +471,7 @@ namespace RandomX {
 			asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rax" << std::endl;
 		}
 		asmCode << "\tpush rax" << std::endl;
-		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm0 & 127) + 2) << std::endl;
+		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {
@@ -479,7 +479,7 @@ namespace RandomX {
 		asmCode << "\tcmp rsp, rbp" << std::endl;
 		asmCode << "\tje short not_taken_ret_" << i << std::endl;
 		if ((instr.locb & 7) < 6) {
-			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm1 << std::endl;
+			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
 			asmCode << "\tja short not_taken_ret_" << i << std::endl;
 		}
 		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;

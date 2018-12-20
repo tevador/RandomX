@@ -33,11 +33,11 @@ namespace RandomX {
 		uint8_t regb;
 		uint8_t locc;
 		uint8_t regc;
-		uint8_t imm0;
-		int32_t addr0;
+		uint8_t imm8;
+		int32_t addra;
 		union {
-			uint32_t addr1;
-			int32_t imm1;
+			uint32_t addrc;
+			int32_t imm32;
 		};
 		const char* getName() const {
 			return names[opcode];

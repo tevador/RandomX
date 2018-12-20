@@ -65,7 +65,7 @@ namespace RandomX {
 
 	convertible_t InterpretedVirtualMachine::loada(Instruction& inst) {
 		convertible_t& rega = reg.r[inst.rega % RegistersCount];
-		rega.i64 ^= inst.addr0; //sign-extend addr0
+		rega.i64 ^= inst.addra; //sign-extend addra
 		addr_t addr = rega.u32;
 		switch (inst.loca & 7)
 		{
@@ -98,7 +98,7 @@ namespace RandomX {
 		case 6:
 		case 7:
 			convertible_t temp;
-			temp.i64 = inst.imm1; //sign-extend imm1
+			temp.i64 = inst.imm32; //sign-extend imm32
 			return temp;
 		}
 	}
@@ -116,7 +116,7 @@ namespace RandomX {
 		case 6:
 		case 7:
 			convertible_t temp;
-			temp.u64 = inst.imm0;
+			temp.u64 = inst.imm8;
 			return temp;
 		}
 	}
@@ -133,7 +133,7 @@ namespace RandomX {
 			return reg.f[inst.regb % RegistersCount].f64;
 		case 6:
 		case 7:
-			return (double)inst.imm1;
+			return (double)inst.imm32;
 		}
 	}
 
@@ -142,13 +142,13 @@ namespace RandomX {
 		switch (inst.locc & 7)
 		{
 		case 0:
-			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addr1;
+			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
 			return scratchpad[addr % ScratchpadL2];
 
 		case 1:
 		case 2:
 		case 3:
-			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addr1;
+			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
 			return scratchpad[addr % ScratchpadL1];
 
 		case 4:
@@ -164,13 +164,13 @@ namespace RandomX {
 		switch (inst.locc & 7)
 		{
 		case 0:
-			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addr1;
+			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
 			return scratchpad[addr % ScratchpadL2];
 
 		case 1:
 		case 2:
 		case 3:
-			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addr1;
+			addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
 			return scratchpad[addr % ScratchpadL1];
 
 		case 4:
@@ -272,10 +272,10 @@ namespace RandomX {
 		convertible_t a = loada(inst);
 		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
-		if (b.u32 <= (uint32_t)inst.imm1) {
+		if (b.u32 <= (uint32_t)inst.imm32) {
 			stackPush(a);
 			stackPush(pc);
-			pc += (inst.imm0 & 127) + 1;
+			pc += (inst.imm8 & 127) + 1;
 			pc = pc % ProgramLength;
 			if (trace) std::cout << std::hex << a.u64 << std::endl;
 		}
@@ -289,7 +289,7 @@ namespace RandomX {
 		convertible_t a = loada(inst);
 		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
-		if (stack.size() > 0 && b.u32 <= (uint32_t)inst.imm1) {
+		if (stack.size() > 0 && b.u32 <= (uint32_t)inst.imm32) {
 			auto raddr = stackPopAddress();
 			auto retval = stackPopValue();
 			c.u64 = a.u64 ^ retval.u64;

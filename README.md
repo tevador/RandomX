@@ -44,3 +44,4 @@ RandomX uses some source code from the following 3rd party repositories:
 * Argon2d, Blake2b hashing functions: https://github.com/P-H-C/phc-winner-argon2
 * PCG32 random number generator: https://github.com/imneme/pcg-c-basic
 * Software AES implementation https://github.com/fireice-uk/xmr-stak
+* t1ha2 hashing function: https://github.com/leo-yuriev/t1ha

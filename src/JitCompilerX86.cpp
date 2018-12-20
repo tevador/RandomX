@@ -259,7 +259,7 @@ namespace RandomX {
 	void JitCompilerX86::gena(Instruction& instr) {
 		emit(uint16_t(0x8149)); //xor
 		emitByte(0xf0 + (instr.rega % RegistersCount));
-		emit(instr.addr0);
+		emit(instr.addra);
 		int32_t pc;
 		switch (instr.loca & 7)
 		{
@@ -301,7 +301,7 @@ namespace RandomX {
 		else {
 			emitByte(0x48); //REX.W
 			emit(opcodeImm); //xxx rax, imm8
-			emitByte((instr.imm0 & 63));
+			emitByte((instr.imm8 & 63));
 		}
 	}
 
@@ -312,7 +312,7 @@ namespace RandomX {
 		}
 		else {
 			emit(opcodeImm); // xxx rax, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 	}
 
@@ -323,7 +323,7 @@ namespace RandomX {
 		}
 		else {
 			emitByte(opcodeImm); // xxx eax, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 	}
 
@@ -343,7 +343,7 @@ namespace RandomX {
 		}
 		else {
 			convertible_t bimm;
-			bimm.f64 = (double)instr.imm1;
+			bimm.f64 = (double)instr.imm32;
 			emit(uint16_t(0xb848)); //movabs rax,imm64
 			emit(bimm.i64);
 			emitByte(0x66); //movq xmm1,rax
@@ -362,7 +362,7 @@ namespace RandomX {
 			emitByte(0x8b); // mov
 			emitByte(0xc0 + (instr.regc % RegistersCount)); //eax, regc
 			emitByte(0x35); // xor eax
-			emit(instr.addr1);
+			emit(instr.addrc);
 			emitByte(0x25); //and
 			emit(ScratchpadL2 - 1); //whole scratchpad
 			emit(0xc60c8948); // mov    QWORD PTR [rsi+rax*8],rcx
@@ -375,7 +375,7 @@ namespace RandomX {
 			emitByte(0x8b); // mov
 			emitByte(0xc0 + (instr.regc % RegistersCount)); //eax, regc
 			emitByte(0x35); // xor eax
-			emit(instr.addr1);
+			emit(instr.addrc);
 			emitByte(0x25); //and
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
 			emit(0xc60c8948); // mov    QWORD PTR [rsi+rax*8],rcx
@@ -396,7 +396,7 @@ namespace RandomX {
 			emit(uint16_t(0x8b41)); //mov
 			emitByte(0xc0 + regc); //eax, regc
 			emitByte(0x35); // xor eax
-			emit(instr.addr1);
+			emit(instr.addrc);
 			emitByte(0x25); //and
 			emit(ScratchpadL2 - 1); //whole scratchpad
 			emit(uint16_t(0x4866)); //prefix
@@ -409,7 +409,7 @@ namespace RandomX {
 			emit(uint16_t(0x8b41)); //mov
 			emitByte(0xc0 + regc); //eax, regc
 			emitByte(0x35); // xor eax
-			emit(instr.addr1);
+			emit(instr.addrc);
 			emitByte(0x25); //and
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
 			emit(uint16_t(0x4866)); //prefix
@@ -456,7 +456,7 @@ namespace RandomX {
 		else {
 			emitByte(0x48); //REX
 			emit(uint16_t(0xc069)); // imul rax, rax, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		gencr(instr);
 	}
@@ -469,7 +469,7 @@ namespace RandomX {
 		else {
 			emitByte(0x48);
 			emit(uint16_t(0xc1c7)); // mov rcx, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		emitByte(0x48);
 		emit(uint16_t(0xe1f7)); // mul rcx
@@ -486,7 +486,7 @@ namespace RandomX {
 		}
 		else {
 			emitByte(0xb8); // mov eax, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		emit(0xc1af0f48); //imul rax,rcx
 		gencr(instr);
@@ -502,7 +502,7 @@ namespace RandomX {
 		else {
 			emitByte(0x48);
 			emit(uint16_t(0xc0c7)); // mov rax, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		emit(0xc1af0f48); //imul rax,rcx
 		gencr(instr);
@@ -516,7 +516,7 @@ namespace RandomX {
 		else {
 			emitByte(0x48);
 			emit(uint16_t(0xc1c7)); // mov rcx, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		emitByte(0x48);
 		emit(uint16_t(0xe9f7)); // imul rcx
@@ -536,7 +536,7 @@ namespace RandomX {
 		}
 		else {
 			emitByte(0xb9); //mov ecx, imm32
-			emit(instr.imm1 != 0 ? instr.imm1 : 1);
+			emit(instr.imm32 != 0 ? instr.imm32 : 1);
 		}
 		emit(0xf748d233); //xor edx,edx; div rcx
 		emitByte(0xf1);
@@ -550,7 +550,7 @@ namespace RandomX {
 		}
 		else {
 			emitByte(0xba); // xxx edx, imm32
-			emit(instr.imm1);
+			emit(instr.imm32);
 		}
 		emit(0xc88b480b75fffa83);
 		emit(0x1274c9ff48c1d148);
@@ -661,7 +661,7 @@ namespace RandomX {
 		if ((instr.locb & 7) <= 5) {
 			emit(uint16_t(0x8141)); //cmp regb, imm32
 			emitByte(0xf8 + (instr.regb % RegistersCount));
-			emit(instr.imm1);
+			emit(instr.imm32);
 			if ((instr.locc & 7) <= 3) {
 				emit(uint16_t(0x1676)); //jmp
 			}
@@ -673,7 +673,7 @@ namespace RandomX {
 		}
 		emitByte(0x50); //push rax
 		emitByte(0xe8); //call
-		i = wrapInstr(i + (instr.imm0 & 127) + 2);
+		i = wrapInstr(i + (instr.imm8 & 127) + 2);
 		if (i < instructionOffsets.size()) {
 			emit(instructionOffsets[i] - (codePos + 4));
 		}
@@ -697,7 +697,7 @@ namespace RandomX {
 		if ((instr.locb & 7) <= 5) {
 			emit(uint16_t(0x8141)); //cmp regb, imm32
 			emitByte(0xf8 + (instr.regb % RegistersCount));
-			emit(instr.imm1);
+			emit(instr.imm32);
 			emitByte(0x77); //jmp
 			emitByte(11 + crlen);
 		}

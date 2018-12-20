@@ -25,10 +25,10 @@ namespace RandomX {
 			os << "  A: loc = " << std::dec << (loca & 7) << ", reg: " << (rega & 7) << std::endl;
 			os << "  B: loc = " << (locb & 7) << ", reg: " << (regb & 7) << std::endl;
 			os << "  C: loc = " << (locc & 7) << ", reg: " << (regc & 7) << std::endl;
-			os << "  addr0 = " << std::hex << addr0 << std::endl;
-			os << "  addr1 = " << addr1 << std::endl;
-			os << "  imm0 = " << std::dec << (int)imm0 << std::endl;
-			os << "  imm1 = " << imm1 << std::endl;
+			os << "  addra = " << std::hex << addra << std::endl;
+			os << "  addrc = " << addrc << std::endl;
+			os << "  imm8 = " << std::dec << (int)imm8 << std::endl;
+			os << "  imm32 = " << imm32 << std::endl;
 		}
 
 #include "instructionWeights.hpp"
