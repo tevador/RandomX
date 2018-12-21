@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+// Parts of this file are originally copyright (c) xmr-stak
+
 #include <cstring>
 #include "Cache.hpp"
 #include "softAes.h"
