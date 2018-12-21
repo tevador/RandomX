@@ -34,9 +34,9 @@ namespace RandomX {
 			return compiler.getCode();
 		}
 	private:
-		JitCompilerX86 compiler;
 #ifdef TRACE
 		convertible_t tracepad[InstructionCount];
 #endif
+		JitCompilerX86 compiler;
 	};
 }

@@ -106,6 +106,6 @@ namespace RandomX {
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*);
 
 	extern "C" {
-		void executeProgram(RegisterFile& registerFile, MemoryRegisters& memory, convertible_t* scratchpad);
+		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, DatasetReadFunc);
 	}
 }

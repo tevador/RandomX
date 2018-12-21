@@ -71,7 +71,7 @@ executeProgram PROC
 	push r13
 	push r14
 	push r15
-	sub rsp, 72
+	sub rsp, 64
 	movdqu xmmword ptr [rsp+48], xmm6
 	movdqu xmmword ptr [rsp+32], xmm7
 	movdqu xmmword ptr [rsp+16], xmm8
@@ -81,6 +81,7 @@ executeProgram PROC
 	push rcx				; RegisterFile& registerFile
 	mov rbx, rdx		; MemoryRegisters& memory
 	mov rsi, r8			; convertible_t& scratchpad
+	push r9
 
 	mov rbp, rsp			; beginning of VM stack
 	mov rdi, 1048576	; number of VM instructions to execute
@@ -115,6 +116,7 @@ rx_finish:
 
 	; save VM register values
 	pop rcx
+	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
 	mov qword ptr [rcx+16], r10
@@ -137,7 +139,7 @@ rx_finish:
 	movdqu xmm8, xmmword ptr [rsp+16]
 	movdqu xmm7, xmmword ptr [rsp+32]
 	movdqu xmm6, xmmword ptr [rsp+48]
-	add rsp, 72
+	add rsp, 64
 	pop r15
 	pop r14
 	pop r13
@@ -150,11 +152,12 @@ rx_finish:
 	; return
 	ret	0
 
-rx_read_dataset_light:
-	push rdx
+rx_read_dataset:
+	push r8
 	push r9
 	push r10
 	push r11
+	mov rdx, rbx
 	movd qword ptr [rsp - 8], xmm1
 	movd qword ptr [rsp - 16], xmm2
 	sub rsp, 48
@@ -165,10 +168,10 @@ rx_read_dataset_light:
 	pop r11
 	pop r10
 	pop r9
-	pop rdx
+	pop r8
 	ret 0
 
-rx_read_dataset:
+rx_read_dataset_full:
 	mov edx, dword ptr [rbx]	; ma
 	mov rax, qword ptr [rbx+8]	; dataset
 	mov rax, qword ptr [rax+rdx]
