@@ -280,13 +280,10 @@ namespace RandomX {
 
 	void InterpretedVirtualMachine::h_CALL(Instruction& inst) {
 		convertible_t a = loada(inst);
-		convertible_t b = loadbr1(inst);
-		if (b.u32 <= (uint32_t)inst.imm32) {
+		if (JMP_COND(inst.locb, reg.r[inst.regb % RegistersCount], inst.imm32)) {
 #ifdef STATS
-			if ((inst.locb & 7) <= 5)
-				count_CALL_taken++;
-			else
-				count_CALL_uncond++;
+			count_CALL_taken++;
+			count_jump_taken[inst.locb & 7]++;
 #endif
 			stackPush(a);
 			stackPush(pc);
@@ -298,6 +295,7 @@ namespace RandomX {
 			convertible_t& c = getcr(inst);
 #ifdef STATS
 			count_CALL_not_taken++;
+			count_jump_not_taken[inst.locb & 7]++;
 #endif
 			c.u64 = a.u64;
 			if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
@@ -308,12 +306,10 @@ namespace RandomX {
 		convertible_t a = loada(inst);
 		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
-		if (stack.size() > 0 && b.u32 <= (uint32_t)inst.imm32) {
+		if (stack.size() > 0 && JMP_COND(inst.locb, reg.r[inst.regb % RegistersCount], inst.imm32)) {
 #ifdef STATS
-			if ((inst.locb & 7) <= 5)
-				count_RET_taken++;
-			else
-				count_RET_uncond++;
+			count_RET_taken++;
+			count_jump_taken[inst.locb & 7]++;
 #endif
 			auto raddr = stackPopAddress();
 			auto retval = stackPopValue();
@@ -324,8 +320,10 @@ namespace RandomX {
 #ifdef STATS
 			if (stack.size() == 0)
 				count_RET_stack_empty++;
-			else
+			else {
 				count_RET_not_taken++;
+				count_jump_not_taken[inst.locb & 7]++;
+			}
 #endif
 			c.u64 = a.u64;
 		}

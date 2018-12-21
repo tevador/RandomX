@@ -657,20 +657,41 @@ namespace RandomX {
 		gencf(instr);
 	}
 
-	void JitCompilerX86::h_CALL(Instruction& instr, int i) {
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8141)); //cmp regb, imm32
-			emitByte(0xf8 + (instr.regb % RegistersCount));
-			emit(instr.imm32);
-			if ((instr.locc & 7) <= 3) {
-				emit(uint16_t(0x1676)); //jmp
-			}
-			else {
-				emit(uint16_t(0x0576)); //jmp
-			}
-			gencr(instr);
-			emit(uint16_t(0x06eb)); //jmp to next
+	static inline uint8_t jumpCondition(Instruction& instr, bool invert = false) {
+		switch ((instr.locb & 7) ^ invert)
+		{
+			case 0:
+				return 0x76; //jbe
+			case 1:
+				return 0x77; //ja
+			case 2:
+				return 0x78; //js
+			case 3:
+				return 0x79; //jns
+			case 4:
+				return 0x70; //jo
+			case 5:
+				return 0x71; //jno
+			case 6:
+				return 0x7c; //jl
+			case 7:
+				return 0x7d; //jge
 		}
+	}
+
+	void JitCompilerX86::h_CALL(Instruction& instr, int i) {
+		emit(uint16_t(0x8141)); //cmp regb, imm32
+		emitByte(0xf8 + (instr.regb % RegistersCount));
+		emit(instr.imm32);
+		emitByte(jumpCondition(instr));
+		if ((instr.locc & 7) <= 3) {
+			emitByte(0x16);
+		}
+		else {
+			emitByte(0x05);
+		}
+		gencr(instr);
+		emit(uint16_t(0x06eb)); //jmp to next
 		emitByte(0x50); //push rax
 		emitByte(0xe8); //call
 		i = wrapInstr(i + (instr.imm8 & 127) + 2);
@@ -685,22 +706,16 @@ namespace RandomX {
 
 	void JitCompilerX86::h_RET(Instruction& instr, int i) {
 		int crlen = 0;
-		int blen = 0;
 		if ((instr.locc & 7) <= 3) {
 			crlen = 17;
 		}
-		if ((instr.locb & 7) <= 5) {
-			blen = 9;
-		}
 		emit(0x74e53b48); //cmp rsp, rbp; je
-		emitByte(11 + blen + crlen);
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8141)); //cmp regb, imm32
-			emitByte(0xf8 + (instr.regb % RegistersCount));
-			emit(instr.imm32);
-			emitByte(0x77); //jmp
-			emitByte(11 + crlen);
-		}
+		emitByte(20 + crlen);
+		emit(uint16_t(0x8141)); //cmp regb, imm32
+		emitByte(0xf8 + (instr.regb % RegistersCount));
+		emit(instr.imm32);
+		emitByte(jumpCondition(instr, true));
+		emitByte(11 + crlen);
 		emitByte(0x48);
 		emit(0x08244433); //xor rax,QWORD PTR [rsp+0x8]
 		gencr(instr);

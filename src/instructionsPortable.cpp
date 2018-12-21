@@ -126,6 +126,34 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	#define imulhi64 __imulhi64
 #endif
 
+// avoid undefined behavior of signed overflow
+static inline int32_t safeSub(int32_t a, int32_t b) {
+	return int32_t(uint32_t(a) - uint32_t(b));
+}
+
+#if __GNUC__ >= 5
+#undef __has_builtin
+#define __has_builtin(x) 1
+#endif
+
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_sub_overflow)
+	static inline bool __subOverflow(int32_t a, int32_t b) {
+		int32_t temp;
+		return __builtin_sub_overflow(a, b, &temp);
+	}
+	#define subOverflow __subOverflow
+#endif
+#endif
+
+#ifndef subOverflow
+	static inline bool __subOverflow(int32_t a, int32_t b) {
+		auto c = safeSub(a, b);
+		return (c < a) != (b > 0);
+	}
+	#define subOverflow __subOverflow
+#endif
+
 static double FlushDenormal(double x) {
 	if (std::fpclassify(x) == FP_SUBNORMAL) {
 		return 0;
@@ -233,6 +261,28 @@ namespace RandomX {
 
 		void ROR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
 			c.u64 = ror64(a.u64, (b.u64 & 63));
+		}
+
+		bool JMP_COND(uint8_t type, convertible_t& regb, int32_t imm32) {
+			switch (type & 7)
+			{
+				case 0:
+					return regb.u32 <= (uint32_t)imm32;
+				case 1:
+					return regb.u32 > (uint32_t)imm32;
+				case 2:
+					return safeSub(regb.i32, imm32) < 0;
+				case 3:
+					return safeSub(regb.i32, imm32) >= 0;
+				case 4:
+					return subOverflow(regb.i32, imm32);
+				case 5:
+					return !subOverflow(regb.i32, imm32);
+				case 6:
+					return regb.i32 < imm32;
+				case 7:
+					return regb.i32 >= imm32;
+			}
 		}
 
 		void FPINIT() {

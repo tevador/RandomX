@@ -57,6 +57,7 @@ namespace RandomX {
 		void SAR_64(convertible_t& a, convertible_t& b, convertible_t& c);
 		void ROL_64(convertible_t& a, convertible_t& b, convertible_t& c);
 		void ROR_64(convertible_t& a, convertible_t& b, convertible_t& c);
+		bool JMP_COND(uint8_t, convertible_t&, int32_t);
 		void FPINIT();
 		void FPADD(convertible_t& a, double b, convertible_t& c);
 		void FPSUB(convertible_t& a, double b, convertible_t& c);

@@ -19,16 +19,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#define WT_ADD_64 16
-#define WT_ADD_32 4
-#define WT_SUB_64 16
-#define WT_SUB_32 4
-#define WT_MUL_64 15
-#define WT_MULH_64 11
-#define WT_MUL_32 11
-#define WT_IMUL_32 11
-#define WT_IMULH_64 11
-#define WT_DIV_64 1 
+#define WT_ADD_64 10
+#define WT_ADD_32 2
+#define WT_SUB_64 10
+#define WT_SUB_32 2
+#define WT_MUL_64 21
+#define WT_MULH_64 10
+#define WT_MUL_32 15
+#define WT_IMUL_32 15
+#define WT_IMULH_64 10
+#define WT_DIV_64 1
 #define WT_IDIV_64 1
 #define WT_AND_64 4
 #define WT_AND_32 2
@@ -39,16 +39,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_SHL_64 3
 #define WT_SHR_64 3
 #define WT_SAR_64 3
-#define WT_ROL_64 9
-#define WT_ROR_64 9
+#define WT_ROL_64 6
+#define WT_ROR_64 6
 #define WT_FPADD 20
 #define WT_FPSUB 20
 #define WT_FPMUL 22
 #define WT_FPDIV 8
 #define WT_FPSQRT 6
 #define WT_FPROUND 2
-#define WT_CALL 17
-#define WT_RET 15
+#define WT_CALL 24
+#define WT_RET 18
 
 constexpr int wtSum = WT_ADD_64 + WT_ADD_32 + WT_SUB_64 + WT_SUB_32 + \
 WT_MUL_64 + WT_MULH_64 + WT_MUL_32 + WT_IMUL_32 + WT_IMULH_64 + \

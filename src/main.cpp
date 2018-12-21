@@ -248,8 +248,12 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
-		std::cout << "Reference result:  d62ed85c39030cd2c5704fca3a23019f1244f2b03447c9a6b39dea5390ed1d10" << std::endl;
+		std::cout << "Reference result:  f6bf06465d5fa1b1dc919140b9e9f9e210b07ae6d662988458a172e9a267eb3f" << std::endl;
 		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
+		/*if (threadCount == 1 && !compiled) {
+			auto ivm = (RandomX::InterpretedVirtualMachine*)vms[0];
+			std::cout << ivm->getProgam();
+		}*/
 	}
 	catch (std::exception& e) {
 		std::cout << "ERROR: " << e.what() << std::endl;

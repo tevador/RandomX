@@ -307,7 +307,7 @@ namespace RandomX {
 			}
 		}
 		else {
-			asmCode << "mov ecx, 1" << std::endl;
+			asmCode << "\tmov ecx, 1" << std::endl;
 			asmCode << "\tmov edx, " << regR32[instr.regb % RegistersCount] << std::endl;
 			asmCode << "\ttest edx, edx" << std::endl;
 			asmCode << "\tcmovne ecx, edx" << std::endl;
@@ -458,15 +458,36 @@ namespace RandomX {
 		gencf(instr);
 	}
 
+	static inline const char* jumpCondition(Instruction& instr, bool invert = false) {
+		switch ((instr.locb & 7) ^ invert)
+		{
+			case 0:
+				return "jbe";
+			case 1:
+				return "ja";
+			case 2:
+				return "js";
+			case 3:
+				return "jns";
+			case 4:
+				return "jo";
+			case 5:
+				return "jno";
+			case 6:
+				return "jl";
+			case 7:
+				return "jge";
+		}
+	}
+
 	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
 		gena(instr);
-		if ((instr.locb & 7) < 6) {
-			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-			asmCode << "\tjbe short taken_call_" << i << std::endl;
-			gencr(instr);
-			asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
-			asmCode << "taken_call_" << i << ":" << std::endl;
-		}
+		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
+		asmCode << "\t" << jumpCondition(instr);
+		asmCode << " short taken_call_" << i << std::endl;
+		gencr(instr);
+		asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
+		asmCode << "taken_call_" << i << ":" << std::endl;
 		if (trace) {
 			asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262144], rax" << std::endl;
 		}
@@ -478,10 +499,9 @@ namespace RandomX {
 		gena(instr);
 		asmCode << "\tcmp rsp, rbp" << std::endl;
 		asmCode << "\tje short not_taken_ret_" << i << std::endl;
-		if ((instr.locb & 7) < 6) {
-			asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-			asmCode << "\tja short not_taken_ret_" << i << std::endl;
-		}
+		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
+		asmCode << "\t" << jumpCondition(instr, true);
+		asmCode << " short not_taken_ret_" << i << std::endl;
 		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;
 		gencr(instr);
 		asmCode << "\tret 8" << std::endl;

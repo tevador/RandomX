@@ -71,13 +71,13 @@ namespace RandomX {
 		int count_FPDIV;
 		int count_FPSQRT;
 		int count_FPROUND;
-		int count_CALL_uncond;
 		int count_CALL_taken;
 		int count_CALL_not_taken;
 		int count_RET_stack_empty;
-		int count_RET_uncond;
 		int count_RET_taken;
 		int count_RET_not_taken;
+		int count_jump_taken[8] = { 0 };
+		int count_jump_not_taken[8] = { 0 };
 #endif
 
 		convertible_t loada(Instruction&);

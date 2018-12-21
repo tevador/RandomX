@@ -14,9 +14,9 @@ There are 256 opcodes, which are distributed between various operations dependin
 
 |operation|number of opcodes||
 |---------|-----------------|----|
-|ALU operations|146|57.0%|
+|ALU operations|136|53.1%|
 |FPU operations|78|30.5%|
-|Control flow |32|12.5%|
+|Control flow |42|16.4%|
 
 #### Operand A
 The first operand is read from memory. The location is determined by the `loc(a)` flag:
@@ -90,15 +90,15 @@ A 32-bit address mask that is used to calculate the write address for the C oper
 
 |weight|instruction|signed|A width|B width|C|C width|
 |-|-|-|-|-|-|-|
-|16|ADD_64|no|64|64|A + B|64|
-|4|ADD_32|no|32|32|A + B|32|
-|16|SUB_64|no|64|64|A - B|64|
-|4|SUB_32|no|32|32|A - B|32|
-|15|MUL_64|no|64|64|A * B|64|
-|11|MULH_64|no|64|64|A * B|64|
-|11|MUL_32|no|32|32|A * B|64|
-|11|IMUL_32|yes|32|32|A * B|64|
-|11|IMULH_64|yes|64|64|A * B|64|
+|10|ADD_64|no|64|64|A + B|64|
+|2|ADD_32|no|32|32|A + B|32|
+|10|SUB_64|no|64|64|A - B|64|
+|2|SUB_32|no|32|32|A - B|32|
+|21|MUL_64|no|64|64|A * B|64|
+|10|MULH_64|no|64|64|A * B|64|
+|15|MUL_32|no|32|32|A * B|64|
+|15|IMUL_32|yes|32|32|A * B|64|
+|10|IMULH_64|yes|64|64|A * B|64|
 |1|DIV_64|no|64|32|A / B|32|
 |1|IDIV_64|yes|64|32|A / B|32|
 |4|AND_64|no|64|64|A & B|64|
@@ -110,8 +110,8 @@ A 32-bit address mask that is used to calculate the write address for the C oper
 |3|SHL_64|no|64|6|A << B|64|
 |3|SHR_64|no|64|6|A >> B|64|
 |3|SAR_64|yes|64|6|A >> B|64|
-|9|ROL_64|no|64|6|A <<< B|64|
-|9|ROR_64|no|64|6|A >>> B|64|
+|6|ROL_64|no|64|6|A <<< B|64|
+|6|ROR_64|no|64|6|A >>> B|64|
 
 ##### 32-bit operations
 Instructions ADD_32, SUB_32, AND_32, OR_32, XOR_32 only use the low-order 32 bits of the input operands. The result of these operations is 32 bits long and bits 32-63 of C are zero.
@@ -162,15 +162,30 @@ The rounding modes are defined by the IEEE-754 standard.
 
 *The two-bit flag value exactly corresponds to bits 13-14 of the x86 `MXCSR` register and bits 23 and 22 (reversed) of the ARM `FPSCR` register.*
 
-### Control flow instructions
-The following 2 control flow instructions are supported:
+### Control instructions
+The following 2 control instructions are supported:
 
 |weight|instruction|function|
 |-|-|-|
-|17|CALL|near procedure call|
-|15|RET|return from procedure|
+|24|CALL|near procedure call|
+|18|RET|return from procedure|
 
-Both instructions are conditional in 75% of cases. The jump is taken only if `B <= imm32`. For the 25% of cases when `B` is equal to `imm32`, the jump is unconditional. In case the branch is not taken, both instructions become "arithmetic no-op" `C = A`.
+Both instructions are conditional. The condition function takes the lower 32 bits of integer register `reg(b)` and the value `imm32` and evaluates a condition based on the `loc(b)` flag: 
+
+|loc(b)[2:0]|signed|jump condition|probability|*x86*|*ARM*
+|---|---|----------|-----|--|----|
+|000|no|`reg(b)[31:0] <= imm32`|0% - 100%|`JBE`|`BLS`
+|001|no|`reg(b)[31:0] > imm32`|0% - 100%|`JA`|`BHI`
+|010|yes|`reg(b)[31:0] - imm32 < 0`|50%|`JS`|`BMI`
+|011|yes|`reg(b)[31:0] - imm32 >= 0`|50%|`JNS`|`BPL`
+|100|yes|`reg(b)[31:0] - imm32` overflows|0% - 50%|`JO`|`BVS`
+|101|yes|`reg(b)[31:0] - imm32` doesn't overflow|50% - 100%|`JNO`|`BVC`
+|110|yes|`reg(b)[31:0] < imm32`|0% - 100%|`JL`|`BLT`
+|111|yes|`reg(b)[31:0] >= imm32`|0% - 100%|`JGE`|`BGE`
+
+The 'signed' column specifies if the operands are interpreted as signed or unsigned 32-bit numbers. Column 'probability' lists the expected jump probability (range means that the actual value for a specific instruction depends on `imm32`). *Columns 'x86' and 'ARM' list the corresponding hardware instructions (following a `CMP` instruction).*
+
+In case the branch is not taken, both CALL and RET become "arithmetic no-op" `C = A`.
 
 ##### CALL
 Taken CALL instruction pushes the values `A` and `pc` (program counter) onto the stack and then performs a forward jump relative to the value of `pc`. The forward offset is equal to `16 * (imm8[6:0] + 1)`. Maximum jump distance is therefore 128 instructions forward (this means that at least 4 correctly spaced CALL instructions are needed to form a loop in the program).
