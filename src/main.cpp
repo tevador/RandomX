@@ -206,19 +206,29 @@ int main(int argc, char** argv) {
 		else {
 			RandomX::Cache* cache = dataset.cache;
 			RandomX::datasetAlloc(dataset);
-			auto perThread = RandomX::DatasetBlockCount / threadCount;
-			auto remainder = RandomX::DatasetBlockCount % threadCount;
-			for (int i = 0; i < threadCount; ++i) {
-				auto count = perThread + (i == threadCount - 1 ? remainder : 0);
-				if (softAes) {
-					threads.push_back(std::thread(&RandomX::datasetInit<true>, cache, dataset, i * perThread, count));
+			if (threadCount > 1) {
+				auto perThread = RandomX::DatasetBlockCount / threadCount;
+				auto remainder = RandomX::DatasetBlockCount % threadCount;
+				for (int i = 0; i < threadCount; ++i) {
+					auto count = perThread + (i == threadCount - 1 ? remainder : 0);
+					if (softAes) {
+						threads.push_back(std::thread(&RandomX::datasetInit<true>, cache, dataset, i * perThread, count));
+					}
+					else {
+						threads.push_back(std::thread(&RandomX::datasetInit<false>, cache, dataset, i * perThread, count));
+					}
 				}
-				else {
-					threads.push_back(std::thread(&RandomX::datasetInit<false>, cache, dataset, i * perThread, count));
+				for (int i = 0; i < threads.size(); ++i) {
+					threads[i].join();
 				}
 			}
-			for (int i = 0; i < threads.size(); ++i) {
-				threads[i].join();
+			else {
+				if (softAes) {
+					RandomX::datasetInit<true>(cache, dataset, 0, RandomX::DatasetBlockCount);
+				}
+				else {
+					RandomX::datasetInit<false>(cache, dataset, 0, RandomX::DatasetBlockCount);
+				}
 			}
 			delete cache;
 			threads.clear();
@@ -238,11 +248,16 @@ int main(int argc, char** argv) {
 		}
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
 		sw.restart();
-		for (int i = 0; i < vms.size(); ++i) {
-			threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i));
+		if (threadCount > 1) {
+			for (int i = 0; i < vms.size(); ++i) {
+				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i));
+			}
+			for (int i = 0; i < threads.size(); ++i) {
+				threads[i].join();
+			}
 		}
-		for (int i = 0; i < threads.size(); ++i) {
-			threads[i].join();
+		else {
+			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0);
 		}
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
