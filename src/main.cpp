@@ -110,6 +110,18 @@ private:
 	std::atomic<uint64_t> hash[4];
 };
 
+void printUsage(const char* executable) {
+	std::cout << "Usage: " << executable << " [OPTIONS]" << std::endl;
+	std::cout << "Supported options:" << std::endl;
+	std::cout << "\t--help\t\t\tshows this message" << std::endl;
+	std::cout << "\t--compiled\t\tuse x86-64 JIT-compiled VM (default: interpreted VM)" << std::endl;
+	std::cout << "\t--lightClient\t\tuse 'light-client' mode (default: full dataset mode)" << std::endl;
+	std::cout << "\t--softAes\t\tuse software AES (default: x86 AES-NI)" << std::endl;
+	std::cout << "\t--threads T\t\tuse T threads (default: 1)" << std::endl;
+	std::cout << "\t--nonces N\t\trun N nonces (default: 1000)" << std::endl;
+	std::cout << "\t--genAsm\t\tgenerate x86 asm code for nonce N" << std::endl;
+}
+
 void generateAsm(int nonce) {
 	uint64_t hash[4];
 	unsigned char blockTemplate[] = {
@@ -158,8 +170,15 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled;
+	bool softAes, lightClient, genAsm, compiled, help;
 	int programCount, threadCount;
+	readOption("--help", argc, argv, help);
+
+	if (help) {
+		printUsage(argv[0]);
+		return 0;
+	}
+
 	readOption("--softAes", argc, argv, softAes);
 	readOption("--lightClient", argc, argv, lightClient);
 	readOption("--genAsm", argc, argv, genAsm);
