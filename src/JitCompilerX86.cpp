@@ -27,6 +27,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #else
 #include <sys/types.h>
 #include <sys/mman.h>
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 #endif
 
 namespace RandomX {

@@ -131,6 +131,12 @@ namespace RandomX {
 		}
 	}
 
+	template
+		void initBlock<true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
+
+	template
+		void initBlock<false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
+
 	template<bool softAes>
 	convertible_t datasetReadLight(addr_t addr, MemoryRegisters& memory) {
 		convertible_t data;
