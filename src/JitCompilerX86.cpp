@@ -24,12 +24,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #ifdef _WIN32
 #include <windows.h>
-#elif defined(__linux__)
-#include <unistd.h>
-#include <malloc.h>
-#include <sys/mman.h>
 #else
-#error "Unsupported operating system"
+#include <sys/types.h>
+#include <sys/mman.h>
 #endif
 
 namespace RandomX {
@@ -204,16 +201,9 @@ namespace RandomX {
 		if (code == nullptr)
 			throw std::runtime_error("VirtualAlloc failed");
 #else
-		auto pagesize = sysconf(_SC_PAGE_SIZE);
-		if (pagesize == -1)
-			throw std::runtime_error("sysconf failed");
-
-		code = (uint8_t*)memalign(pagesize, CodeSize);
-		if (code == nullptr)
-			throw std::runtime_error("memalign failed");
-
-		if (mprotect(code, CodeSize, PROT_READ | PROT_WRITE | PROT_EXEC) == -1)
-			throw std::runtime_error("mprotect failed");
+		code = (uint8_t*)mmap(nullptr, CodeSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+		if (code == (uint8_t*)-1)
+			throw std::runtime_error("mmap failed");
 #endif
 		memcpy(code, prologue, sizeof(prologue));
 		if (startOffsetAligned - sizeof(prologue) > 4) {

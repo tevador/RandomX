@@ -1,7 +1,7 @@
 #CXX=g++-8
 #CC=gcc-8
 PLATFORM=$(shell uname -i)
-CXXFLAGS=-std=c++17
+CXXFLAGS=-std=c++11
 CCFLAGS=
 ifeq ($(PLATFORM),x86_64)
     CXXFLAGS += -maes
