@@ -81,6 +81,11 @@ namespace RandomX {
 
 	*/
 
+	constexpr uint8_t ic3 = (InstructionCount >> 24);
+	constexpr uint8_t ic2 = (InstructionCount >> 16);
+	constexpr uint8_t ic1 = (InstructionCount >> 8);
+	constexpr uint8_t ic0 = (InstructionCount >> 0);
+
 	const uint8_t prologue[] = {
 	   0x53,                                        //push   rbx
 	   0x55,                                        //push   rbp
@@ -108,7 +113,7 @@ namespace RandomX {
 	   0x48, 0x8b, 0xcf,                            //mov    rcx, rdi
 #endif
 	   0x48, 0x8b, 0xec,                            //mov    rbp,rsp
-	   0x48, 0xc7, 0xc7, 0x00, 0x00, 0x10, 0x00,    //mov    rdi,0x100000
+	   0x48, 0xc7, 0xc7, ic0, ic1, ic2, ic3,        //mov    rdi, "InstructionCount"
 	   0x4c, 0x8b, 0x01,                            //mov    r8,QWORD PTR[rcx]
 	   0x4c, 0x8b, 0x49, 0x08,                      //mov    r9,QWORD PTR[rcx+0x8]
 	   0x4c, 0x8b, 0x51, 0x10,                      //mov    r10,QWORD PTR[rcx+0x10]
@@ -209,10 +214,14 @@ namespace RandomX {
 			throw std::runtime_error("mmap failed");
 #endif
 		memcpy(code, prologue, sizeof(prologue));
-		if (startOffsetAligned - sizeof(prologue) > 4) {
-			codePos = sizeof(prologue);
+		codePos = sizeof(prologue);
+		if (startOffsetAligned - codePos > 4) {
 			emitByte(0xeb);
 			emitByte(startOffsetAligned - (codePos + 1));
+		}
+		else {
+			while (codePos < startOffsetAligned)
+				emitByte(0x90); //nop
 		}
 		memcpy(code + readDatasetSubOffset, readDatasetSub, sizeof(readDatasetSub));
 		memcpy(code + epilogueOffset, epilogue, sizeof(epilogue));
