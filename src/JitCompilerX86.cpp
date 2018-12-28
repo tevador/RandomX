@@ -81,10 +81,10 @@ namespace RandomX {
 
 	*/
 
-	constexpr uint8_t ic3 = (InstructionCount >> 24);
-	constexpr uint8_t ic2 = (InstructionCount >> 16);
-	constexpr uint8_t ic1 = (InstructionCount >> 8);
-	constexpr uint8_t ic0 = (InstructionCount >> 0);
+	constexpr uint8_t ic3 = ((InstructionCount + 1) >> 24);
+	constexpr uint8_t ic2 = ((InstructionCount + 1) >> 16);
+	constexpr uint8_t ic1 = ((InstructionCount + 1) >> 8);
+	constexpr uint8_t ic0 = ((InstructionCount + 1) >> 0);
 
 	const uint8_t prologue[] = {
 	   0x53,                                        //push   rbx
@@ -245,7 +245,7 @@ namespace RandomX {
 
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
 		instructionOffsets.push_back(codePos);
-		emit(0x880fcfff); //dec edx; js <epilogue>
+		emit(0x840fcfff); //dec edx; jz <epilogue>
 		emit(epilogueOffset - (codePos + 4)); //jump offset (RIP-relative)
 		gena(instr);
 		auto generator = engine[instr.opcode];

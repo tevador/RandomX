@@ -49,7 +49,7 @@ namespace RandomX {
 	void AssemblyGeneratorX86::generateCode(Instruction& instr, int i) {
 		asmCode << "rx_i_" << i << ": ;" << instr.getName() << std::endl;
 		asmCode << "\tdec edi" << std::endl;
-		asmCode << "\tjs rx_finish" << std::endl;
+		asmCode << "\tjz rx_finish" << std::endl;
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}

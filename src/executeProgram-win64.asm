@@ -84,7 +84,7 @@ executeProgram PROC
 	push r9
 
 	mov rbp, rsp			; beginning of VM stack
-	mov rdi, 1048576	; number of VM instructions to execute
+	mov rdi, 1048577	; number of VM instructions to execute + 1
 
 	; load VM register values
 	mov r8, qword ptr [rcx+0]
