@@ -499,9 +499,6 @@ namespace RandomX {
 		gena(instr);
 		asmCode << "\tcmp rsp, rbp" << std::endl;
 		asmCode << "\tje short not_taken_ret_" << i << std::endl;
-		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-		asmCode << "\t" << jumpCondition(instr, true);
-		asmCode << " short not_taken_ret_" << i << std::endl;
 		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;
 		gencr(instr);
 		asmCode << "\tret 8" << std::endl;

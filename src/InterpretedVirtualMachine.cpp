@@ -26,6 +26,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
+#ifdef STATS
+#include <algorithm>
+#endif
 
 #ifdef FPUCHECK
 constexpr bool fpuCheck = true;
@@ -54,6 +57,9 @@ namespace RandomX {
 
 	void InterpretedVirtualMachine::execute() {
 		while (ic > 0) {
+#ifdef STATS
+			count_instructions[pc]++;
+#endif
 			auto& inst = p(pc);
 			if(trace) std::cout << inst.getName() << " (" << std::dec << pc << ")" << std::endl;
 			pc = (pc + 1) % ProgramLength;
@@ -61,6 +67,9 @@ namespace RandomX {
 			(this->*handler)(inst);
 			ic--;
 		}
+#ifdef STATS
+		count_endstack += stack.size();
+#endif
 	}
 
 	convertible_t InterpretedVirtualMachine::loada(Instruction& inst) {
@@ -284,9 +293,13 @@ namespace RandomX {
 #ifdef STATS
 			count_CALL_taken++;
 			count_jump_taken[inst.locb & 7]++;
+			count_retdepth = std::max(0, count_retdepth - 1);
 #endif
 			stackPush(a);
 			stackPush(pc);
+#ifdef STATS
+			count_max_stack = std::max(count_max_stack, (int)stack.size());
+#endif
 			pc += (inst.imm8 & 127) + 1;
 			pc = pc % ProgramLength;
 			if (trace) std::cout << std::hex << a.u64 << std::endl;
@@ -306,10 +319,11 @@ namespace RandomX {
 		convertible_t a = loada(inst);
 		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
-		if (stack.size() > 0 && JMP_COND(inst.locb, reg.r[inst.regb % RegistersCount], inst.imm32)) {
+		if (stack.size() > 0) {
 #ifdef STATS
 			count_RET_taken++;
-			count_jump_taken[inst.locb & 7]++;
+			count_retdepth++;
+			count_retdepth_max = std::max(count_retdepth_max, count_retdepth);
 #endif
 			auto raddr = stackPopAddress();
 			auto retval = stackPopValue();

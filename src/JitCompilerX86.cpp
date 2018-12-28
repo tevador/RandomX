@@ -712,11 +712,6 @@ namespace RandomX {
 			crlen = 17;
 		}
 		emit(0x74e53b48); //cmp rsp, rbp; je
-		emitByte(20 + crlen);
-		emit(uint16_t(0x8141)); //cmp regb, imm32
-		emitByte(0xf8 + (instr.regb % RegistersCount));
-		emit(instr.imm32);
-		emitByte(jumpCondition(instr, true));
 		emitByte(11 + crlen);
 		emitByte(0x48);
 		emit(0x08244433); //xor rax,QWORD PTR [rsp+0x8]

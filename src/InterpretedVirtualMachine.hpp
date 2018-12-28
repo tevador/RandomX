@@ -18,7 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-//#define STATS
+#define STATS
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include <vector>
@@ -43,41 +43,46 @@ namespace RandomX {
 		std::vector<convertible_t> stack;
 		uint64_t pc, ic;
 #ifdef STATS
-		int count_ADD_64;
-		int count_ADD_32;
-		int count_SUB_64;
-		int count_SUB_32;
-		int count_MUL_64;
-		int count_MULH_64;
-		int count_MUL_32;
-		int count_IMUL_32;
-		int count_IMULH_64;
-		int count_DIV_64;
-		int count_IDIV_64;
-		int count_AND_64;
-		int count_AND_32;
-		int count_OR_64;
-		int count_OR_32;
-		int count_XOR_64;
-		int count_XOR_32;
-		int count_SHL_64;
-		int count_SHR_64;
-		int count_SAR_64;
-		int count_ROL_64;
-		int count_ROR_64;
-		int count_FPADD;
-		int count_FPSUB;
-		int count_FPMUL;
-		int count_FPDIV;
-		int count_FPSQRT;
-		int count_FPROUND;
-		int count_CALL_taken;
-		int count_CALL_not_taken;
-		int count_RET_stack_empty;
-		int count_RET_taken;
-		int count_RET_not_taken;
+		int count_ADD_64 = 0;
+		int count_ADD_32 = 0;
+		int count_SUB_64 = 0;
+		int count_SUB_32 = 0;
+		int count_MUL_64 = 0;
+		int count_MULH_64 = 0;
+		int count_MUL_32 = 0;
+		int count_IMUL_32 = 0;
+		int count_IMULH_64 = 0;
+		int count_DIV_64 = 0;
+		int count_IDIV_64 = 0;
+		int count_AND_64 = 0;
+		int count_AND_32 = 0;
+		int count_OR_64 = 0;
+		int count_OR_32 = 0;
+		int count_XOR_64 = 0;
+		int count_XOR_32 = 0;
+		int count_SHL_64 = 0;
+		int count_SHR_64 = 0;
+		int count_SAR_64 = 0;
+		int count_ROL_64 = 0;
+		int count_ROR_64 = 0;
+		int count_FPADD = 0;
+		int count_FPSUB = 0;
+		int count_FPMUL = 0;
+		int count_FPDIV = 0;
+		int count_FPSQRT = 0;
+		int count_FPROUND = 0;
+		int count_CALL_taken = 0;
+		int count_CALL_not_taken = 0;
+		int count_RET_stack_empty = 0;
+		int count_RET_taken = 0;
+		int count_RET_not_taken = 0;
 		int count_jump_taken[8] = { 0 };
 		int count_jump_not_taken[8] = { 0 };
+		int count_max_stack = 0;
+		int count_retdepth = 0;
+		int count_retdepth_max = 0;
+		int count_endstack = 0;
+		int count_instructions[ProgramLength] = { 0 };
 #endif
 
 		convertible_t loada(Instruction&);
