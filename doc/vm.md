@@ -1,4 +1,5 @@
 
+
 ## RandomX virtual machine
 RandomX is intended to be run efficiently on a general-purpose CPU. The virtual machine (VM) which runs RandomX code attempts to simulate a generic CPU using the following set of components:
 
@@ -37,10 +38,10 @@ The control unit (CU) controls the execution of the program. It reads instructio
 #### Stack
 To simulate function calls, the VM uses a stack structure. The program interacts with the stack using the CALL and RET instructions. The stack has unlimited size and each stack element is 64 bits wide.
 
-*Although there is no explicit limit of the stack size, the maximum theoretical size of the stack is 16 MiB for a program that contains only unconditional CALL instructions (the probability of randomly generating such program is about 5×10<sup>-912</sup>). In reality, the stack size will rarely exceed 1 MiB.*
+*Although there is no explicit limit of the stack size, the maximum theoretical size of the stack is 16 MiB. Most programs will use around 4 KiB of stack.*
 
 #### Register file
-The VM has 8 integer registers `r0`-`r7` and 8 floating point registers `f0`-`f7`. All registers are 64 bits wide.
+The VM has 8 integer registers `r0`-`r7`  and 8 floating point registers `f0`-`f7`. The integer registers are 64 bits wide. The floating point registers are 128 bits wide and each stores two packed double precision numbers.
 
 *The number of registers is low enough so that they can be stored in actual hardware registers on most CPUs.*
 
@@ -48,7 +49,7 @@ The VM has 8 integer registers `r0`-`r7` and 8 floating point registers `f0`-`f7
 The arithmetic logic unit (ALU) performs integer operations. The ALU can perform binary integer operations from 7 groups (addition, subtraction, multiplication, division, bitwise operations, shift, rotation) with operand sizes of 64 or 32 bits.
 
 #### FPU
-The floating-point unit performs IEEE-754 compliant math using 64-bit double precision floating point numbers. Five basic operations are available: addition, subtraction, multiplication, division and square root.
+The floating-point unit performs IEEE-754 compliant math using 64-bit double precision floating point numbers. Five basic operations are available: addition, subtraction, multiplication, division and square root. All operations work with two packed double precision numbers.
 
 #### Binary encoding
-The VM stores and loads all data in little-endian byte order. Signed numbers are represented using two's complement.
+The VM stores and loads all data in little-endian byte order. Signed integer numbers are represented using two's complement.
