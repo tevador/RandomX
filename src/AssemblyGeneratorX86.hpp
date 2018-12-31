@@ -38,13 +38,14 @@ namespace RandomX {
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
 
-		void gena(Instruction&);
+		void genar(Instruction&);
+		void genaf(Instruction&);
 		void genbr0(Instruction&, const char*);
 		void genbr1(Instruction&);
 		void genbr132(Instruction&);
 		void genbf(Instruction&, const char*);
 		void gencr(Instruction&);
-		void gencf(Instruction&);
+		void gencf(Instruction&, bool);
 
 		void generateCode(Instruction&, int);
 

@@ -79,14 +79,6 @@ void readInt(int argc, char** argv, int& out, int defaultValue) {
 	out = defaultValue;
 }
 
-std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf) {
-	for (int i = 0; i < RandomX::RegistersCount; ++i)
-		os << std::hex << "r" << i << " = " << rf.r[i].u64 << std::endl << std::dec;
-	for (int i = 0; i < RandomX::RegistersCount; ++i)
-		os << std::hex << "f" << i << " = " << rf.f[i].u64 << " (" << rf.f[i].f64 << ")" << std::endl << std::dec;
-	return os;
-}
-
 class AtomicHash {
 public:
 	AtomicHash() {
@@ -282,7 +274,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
-		std::cout << "Reference result:  f6bf06465d5fa1b1dc919140b9e9f9e210b07ae6d662988458a172e9a267eb3f" << std::endl;
+		std::cout << "Reference result:  3e1c5f9b9d0bf8ffa250f860bf5f7ab76ac823b206ddee6a592660119a3640c6" << std::endl;
 		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
 		/*if (threadCount == 1 && !compiled) {
 			auto ivm = (RandomX::InterpretedVirtualMachine*)vms[0];

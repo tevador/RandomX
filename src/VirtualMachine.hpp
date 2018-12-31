@@ -32,11 +32,14 @@ namespace RandomX {
 		virtual void initializeProgram(const void* seed) = 0;
 		virtual void execute() = 0;
 		void getResult(void*);
+		const RegisterFile& getRegisterFile() {
+			return reg;
+		}
 	protected:
 		bool softAes, lightClient;
-		RegisterFile reg;
-		MemoryRegisters mem;
 		DatasetReadFunc readDataset;
+		alignas(16) RegisterFile reg;
+		MemoryRegisters mem;
 		alignas(16) convertible_t scratchpad[ScratchpadLength];
 	};
 }

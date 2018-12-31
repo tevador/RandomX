@@ -18,7 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#define STATS
+//#define STATS
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include <vector>
@@ -88,9 +88,9 @@ namespace RandomX {
 		convertible_t loada(Instruction&);
 		convertible_t loadbr0(Instruction&);
 		convertible_t loadbr1(Instruction&);
-		double loadbf(Instruction&);
 		convertible_t& getcr(Instruction&);
-		convertible_t& getcf(Instruction&);
+		void writecf(Instruction&, fpu_reg_t&);
+		void writecflo(Instruction&, fpu_reg_t&);
 
 		void stackPush(convertible_t& c) {
 			stack.push_back(c);

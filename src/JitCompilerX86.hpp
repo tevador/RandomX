@@ -58,13 +58,16 @@ namespace RandomX {
 		std::vector<int32_t> instructionOffsets;
 		std::vector<CallOffset> callOffsets;
 
-		void gena(Instruction&);
+		void genar(Instruction&);
+		void genaf(Instruction&);
 		void genbr0(Instruction&, uint16_t, uint16_t);
 		void genbr1(Instruction&, uint16_t, uint16_t);
 		void genbr132(Instruction&, uint16_t, uint8_t);
 		void genbf(Instruction&, uint8_t);
+		void scratchpadStoreR(Instruction&, uint32_t);
+		void scratchpadStoreF(Instruction&, int, uint32_t, bool);
 		void gencr(Instruction&);
-		void gencf(Instruction&);
+		void gencf(Instruction&, bool);
 		void generateCode(Instruction&, int);
 		void fixCallOffsets();
 

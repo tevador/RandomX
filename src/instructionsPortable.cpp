@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 //#define DEBUG
-//#define FTZ
 #include "instructions.hpp"
 #include "intrinPortable.h"
 #pragma STDC FENV_ACCESS on
@@ -154,19 +153,17 @@ static inline int32_t safeSub(int32_t a, int32_t b) {
 	#define subOverflow __subOverflow
 #endif
 
-static double FlushDenormal(double x) {
-	if (std::fpclassify(x) == FP_SUBNORMAL) {
-		return 0;
+static inline double FlushDenormalNaN(double x) {
+	int fpc = std::fpclassify(x);
+	if (fpc == FP_SUBNORMAL || fpc == FP_NAN) {
+		return 0.0;
 	}
 	return x;
 }
 
-#ifdef FTZ
-#undef FTZ
-#define FTZ(x) FlushDenormal(x)
-#else
-#define FTZ(x) x
-#endif
+static inline double FlushNaN(double x) {
+	return x != x ? 0.0 : x;
+}
 
 namespace RandomX {
 
@@ -286,37 +283,95 @@ namespace RandomX {
 		}
 
 		void FPINIT() {
-			setRoundMode(FE_TONEAREST);
-		}
-
-		void FPADD(convertible_t& a, double b, convertible_t& c) {
-			c.f64 = FTZ(convertToDouble(a.i64) + b);
-		}
-
-		void FPSUB(convertible_t& a, double b, convertible_t& c) {
-			c.f64 = FTZ(convertToDouble(a.i64) - b);
-		}
-
-		void FPMUL(convertible_t& a, double b, convertible_t& c) {
-			c.f64 = FTZ(convertToDoubleNonZero(a.i64) * b);
-		}
-
-		void FPDIV(convertible_t& a, double b, convertible_t& c) {
-			c.f64 = FTZ(convertToDoubleNonZero(a.i64) / b);
-		}
-
-		void FPSQRT(convertible_t& a, convertible_t& b, convertible_t& c) {
 #ifdef __SSE2__
-			double d = convertToDoubleNonNegative(a.i64);
-			c.f64 = _mm_cvtsd_f64(_mm_sqrt_sd(_mm_setzero_pd(), _mm_load_pd(&d)));
+			_mm_setcsr(0x9FC0); //Flush to zero, denormals are zero, default rounding mode, all exceptions disabled
 #else
-			c.f64 = FTZ(sqrt(convertToDoubleNonNegative(a.i64)));
+			setRoundMode(FE_TONEAREST);
 #endif
-
 		}
 
-		void FPROUND(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.f64 = convertToDouble(a.i64);
+		void FPADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+#ifdef __SSE2__
+			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
+			__m128d ad = _mm_cvtepi32_pd(ai);
+			__m128d bd = _mm_load_pd(&b.lo.f64);
+			__m128d cd = _mm_add_pd(ad, bd);
+			_mm_store_pd(&c.lo.f64, cd);
+#else
+			double alo = (double)a.i32lo;
+			double ahi = (double)a.i32hi;
+			c.lo.f64 = alo + b.lo.f64;
+			c.hi.f64 = ahi + b.hi.f64;
+#endif
+		}
+
+		void FPSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+#ifdef __SSE2__
+			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
+			__m128d ad = _mm_cvtepi32_pd(ai);
+			__m128d bd = _mm_load_pd(&b.lo.f64);
+			__m128d cd = _mm_sub_pd(ad, bd);
+			_mm_store_pd(&c.lo.f64, cd);
+#else
+			double alo = (double)a.i32lo;
+			double ahi = (double)a.i32hi;
+			c.lo.f64 = alo - b.lo.f64;
+			c.hi.f64 = ahi - b.hi.f64;
+#endif
+		}
+
+		void FPMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+#ifdef __SSE2__
+			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
+			__m128d ad = _mm_cvtepi32_pd(ai);
+			__m128d bd = _mm_load_pd(&b.lo.f64);
+			__m128d cd = _mm_mul_pd(ad, bd);
+			__m128d mask = _mm_cmpeq_pd(cd, cd);
+			cd = _mm_and_pd(cd, mask);
+			_mm_store_pd(&c.lo.f64, cd);
+#else
+			double alo = (double)a.i32lo;
+			double ahi = (double)a.i32hi;
+			c.lo.f64 = FlushNaN(alo * b.lo.f64);
+			c.hi.f64 = FlushNaN(ahi * b.hi.f64);
+#endif
+		}
+
+		void FPDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+#ifdef __SSE2__
+			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
+			__m128d ad = _mm_cvtepi32_pd(ai);
+			__m128d bd = _mm_load_pd(&b.lo.f64);
+			__m128d cd = _mm_div_pd(ad, bd);
+			__m128d mask = _mm_cmpeq_pd(cd, cd);
+			cd = _mm_and_pd(cd, mask);
+			_mm_store_pd(&c.lo.f64, cd);
+#else
+			double alo = (double)a.i32lo;
+			double ahi = (double)a.i32hi;
+			c.lo.f64 = FlushDenormalNaN(alo / b.lo.f64);
+			c.hi.f64 = FlushDenormalNaN(ahi / b.hi.f64);
+#endif
+		}
+
+		void FPSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+#ifdef __SSE2__
+			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
+			__m128d ad = _mm_cvtepi32_pd(ai);
+			const __m128d absmask = _mm_castsi128_pd(_mm_set1_epi64x(~(1LL << 63)));
+			ad = _mm_and_pd(ad, absmask);
+			__m128d cd = _mm_sqrt_pd(ad);
+			_mm_store_pd(&c.lo.f64, cd);
+#else
+			double alo = (double)a.i32lo;
+			double ahi = (double)a.i32hi;
+			c.lo.f64 = sqrt(std::abs(alo));
+			c.hi.f64 = sqrt(std::abs(ahi));
+#endif
+		}
+
+		void FPROUND(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+			c.lo.f64 = convertSigned52(a.i64);
 			switch (a.u64 & 3) {
 				case RoundDown:
 #ifdef DEBUG

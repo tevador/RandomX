@@ -26,9 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	CompiledVirtualMachine::CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {
-#if !defined(_M_X64) && !defined(__x86_64__)
-		throw std::runtime_error("Compiled VM only supports x86-64 CPUs");
-#endif
+
 	}
 
 	void CompiledVirtualMachine::setDataset(dataset_t ds, bool lightClient) {
@@ -51,7 +49,7 @@ namespace RandomX {
 	void CompiledVirtualMachine::execute() {
 		//executeProgram(reg, mem, scratchpad, readDataset);
 		compiler.getProgramFunc()(reg, mem, scratchpad);
-#ifdef TRACE
+#ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
 			std::cout << std::hex << tracepad[i].u64 << std::endl;
 		}

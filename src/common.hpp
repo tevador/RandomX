@@ -20,6 +20,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
+#include <iostream>
 
 namespace RandomX {
 
@@ -59,6 +60,15 @@ namespace RandomX {
 		uint64_t u64;
 		int32_t i32;
 		uint32_t u32;
+		struct {
+			int32_t i32lo;
+			int32_t i32hi;
+		};
+	};
+
+	struct fpu_reg_t {
+		convertible_t lo;
+		convertible_t hi;
 	};
 
 	constexpr int ProgramLength = 512;
@@ -96,10 +106,10 @@ namespace RandomX {
 
 	struct RegisterFile {
 		convertible_t r[RegistersCount];
-		convertible_t f[RegistersCount];
+		fpu_reg_t f[RegistersCount];
 	};
 
-	static_assert(sizeof(RegisterFile) == 2 * RegistersCount * sizeof(convertible_t), "Invalid alignment of struct RandomX::RegisterFile");
+	static_assert(sizeof(RegisterFile) == 3 * RegistersCount * sizeof(convertible_t), "Invalid alignment of struct RandomX::RegisterFile");
 
 	typedef convertible_t(*DatasetReadFunc)(addr_t, MemoryRegisters&);
 
@@ -109,3 +119,5 @@ namespace RandomX {
 		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, DatasetReadFunc);
 	}
 }
+
+std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf);

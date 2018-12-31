@@ -19,15 +19,15 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#define WT_ADD_64 10
+#define WT_ADD_64 11
 #define WT_ADD_32 2
-#define WT_SUB_64 10
+#define WT_SUB_64 11
 #define WT_SUB_32 2
-#define WT_MUL_64 21
+#define WT_MUL_64 23
 #define WT_MULH_64 10
 #define WT_MUL_32 15
 #define WT_IMUL_32 15
-#define WT_IMULH_64 10
+#define WT_IMULH_64 6
 #define WT_DIV_64 1
 #define WT_IDIV_64 1
 #define WT_AND_64 4
@@ -47,8 +47,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_FPDIV 8
 #define WT_FPSQRT 6
 #define WT_FPROUND 2
-#define WT_CALL 24
-#define WT_RET 18
+#define WT_CALL 20
+#define WT_RET 22
+
 
 constexpr int wtSum = WT_ADD_64 + WT_ADD_32 + WT_SUB_64 + WT_SUB_32 + \
 WT_MUL_64 + WT_MULH_64 + WT_MUL_32 + WT_IMUL_32 + WT_IMULH_64 + \
@@ -60,6 +61,7 @@ WT_SAR_64 + WT_ROL_64 + WT_ROR_64 + WT_FPADD + WT_FPSUB + WT_FPMUL \
 static_assert(wtSum == 256,
 	"Sum of instruction weights must be 256");
 
+#define REP0(x)
 #define REP1(x) x,
 #define REP2(x) REP1(x) x,
 #define REP3(x) REP2(x) x,
@@ -86,6 +88,16 @@ static_assert(wtSum == 256,
 #define REP24(x) REP23(x) x,
 #define REP25(x) REP24(x) x,
 #define REP26(x) REP25(x) x,
+#define REP27(x) REP26(x) x,
+#define REP28(x) REP27(x) x,
+#define REP29(x) REP28(x) x,
+#define REP30(x) REP29(x) x,
+#define REP31(x) REP30(x) x,
+#define REP32(x) REP31(x) x,
+#define REP33(x) REP32(x) x,
+#define REP40(x) REP32(x) REP8(x)
+#define REP128(x) REP32(x) REP32(x) REP32(x) REP32(x)
+#define REP256(x) REP128(x) REP128(x)
 #define REPNX(x,N) REP##N(x)
 #define REPN(x,N) REPNX(x,N)
 #define NUM(x) x

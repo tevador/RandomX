@@ -21,32 +21,35 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <limits>
 #include "instructions.hpp"
-#include "Pcg32.hpp"
 //#define DEBUG
 
 using namespace RandomX;
 
-typedef void(*VmOperation)(convertible_t&, convertible_t&, convertible_t&);
-
-uint64_t rxRound(uint32_t mode, int64_t x, int64_t y, VmOperation op) {
-	convertible_t a, b, c;
-	a.u64 = mode;
-	FPROUND(a, b, c);
-#ifdef DEBUG
-	a.f64 = convertToDouble(x);
-	b.f64 = convertToDouble(y);
-	std::cout << std::hex << (uint64_t)x << " -> " << a.u64 << std::endl;
-	std::cout << std::hex << (uint64_t)y << " -> " << b.u64 << std::endl;
-	std::cout << std::dec;
-#endif
-	a.i64 = x;
-	b.i64 = y;
-	op(a, b, c);
-	return c.u64;
-}
+typedef void(*FpuOperation)(convertible_t&, fpu_reg_t&, fpu_reg_t&);
 
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
+
+uint64_t rxRound(uint32_t mode, int64_t x, int64_t y, FpuOperation op, bool hiEqualsLo = true) {
+	convertible_t a;
+	fpu_reg_t b, c;
+	a.u64 = mode;
+	FPROUND(a, b, c);
+	if (hiEqualsLo) {
+		a.i32lo = x;
+		a.i32hi = x;
+	}
+	else {
+		a.i64 = x;
+	}
+	b.lo.i64 = y;
+	b.hi.i64 = y;
+	op(a, b, c);
+	if (hiEqualsLo) {
+		CHECK(c.lo.u64 == c.hi.u64);
+	}
+	return c.lo.u64;
+}
 
 #define RX_EXECUTE_U64(va, vb, INST) do { \
 	a.u64 = va; \
@@ -273,118 +276,126 @@ TEST_CASE("Circular right shift (64-bit)", "[ROR_64]") {
 
 TEST_CASE("Denormal results are not produced", "[FTZ]") {
 	FPINIT();
-	convertible_t a, b, c;
-	a.i64 = 2048;
-	FPDIV(a, DBL_MAX, c);
+	convertible_t a;
+	fpu_reg_t b;
+	a.i64 = 1;
+	b.lo.f64 = DBL_MAX;
+	FPDIV(a, b, b);
 #ifdef DEBUG
-	std::cout << a.i64 << " / " << DBL_MAX << " = " << std::hex << c.u64 << std::endl;
+	std::cout << a.i64 << " / " << DBL_MAX << " = " << std::hex << b.lo.u64 << std::endl;
 #endif
-	REQUIRE(std::fpclassify(c.f64) != FP_SUBNORMAL);
-	b.f64 = c.f64;
+	CHECK(std::fpclassify(b.lo.f64) != FP_SUBNORMAL);
 	a.i64 = 0;
-	FPSUB_64(a, b, c);
+	FPSUB(a, b, b);
 #ifdef DEBUG
-	std::cout << a.i64 << " - " << b.f64 << " = " << std::hex << c.u64 << std::endl;
+	std::cout << a.i64 << " - " << b.lo.f64 << " = " << std::hex << b.lo.u64 << std::endl;
 #endif
-	CHECK(std::fpclassify(c.f64) != FP_SUBNORMAL);
+	CHECK(std::fpclassify(b.lo.f64) != FP_SUBNORMAL);
 }
 
 TEST_CASE("NaN results are not produced", "[NAN]") {
 	FPINIT();
-	convertible_t a, c;
+	convertible_t a;
+	fpu_reg_t b;
 	a.i64 = 0;
-	FPDIV(a, 0, c);
-	CHECK(std::fpclassify(c.f64) != FP_NAN);
-	FPMUL(a, std::numeric_limits<double>::infinity(), c);
-	CHECK(std::fpclassify(c.f64) != FP_NAN);
+	b.lo.f64 = 0;
+	FPDIV(a, b, b);
+	CHECK(std::fpclassify(b.lo.f64) != FP_NAN);
+	b.lo.f64 = std::numeric_limits<double>::infinity();
+	FPMUL(a, b, b);
+	CHECK(std::fpclassify(b.lo.f64) != FP_NAN);
 }
 
-volatile int64_t fpAdda = 7379480244170225589;
-volatile int64_t fpAddb = -438072579179686797;
-volatile int64_t fpSuba = 2939258788088626026;
-volatile int64_t fpSubb = 4786131045320678734;
-volatile int64_t fpMula1 = 8399833736388895639;
-volatile int64_t fpMulb1 = 5671608020317594922;
-volatile int64_t fpMula2 = -7094299423744805450;
-volatile int64_t fpMulb2 = 4982086006202596504;
-volatile int64_t fpDiva1 = 8399833736388895639;
-volatile int64_t fpDivb1 = 5671608020317594922;
-volatile int64_t fpDiva2 = -7434878587645025912;
-volatile int64_t fpDivb2 = 5266243837734830806;
-volatile int64_t fpSqrta = -7594301562963134542;
+volatile int64_t fpRounda = 7379480244170225589;
+volatile int32_t fpAdda = -2110701072;
+volatile int64_t fpAddb = 5822431907862180274;
+volatile int32_t fpSuba = -1651770302;
+volatile int64_t fpSubb = 4982086006202596504;
+volatile int32_t fpMula1 = 122885310;
+volatile int64_t fpMulb1 = 6036690890763685020;
+volatile int32_t fpMula2 = -1952486466;
+volatile int64_t fpMulb2 = 5693689137909219638;
+volatile int32_t fpDiva1 = -1675630642;
+volatile int64_t fpDivb1 = -3959960229647489051;
+volatile int32_t fpDiva2 = -1651770302;
+volatile int64_t fpDivb2 = 4982086006202596504;
+volatile int32_t fpSqrta1 = 440505508;
+volatile int32_t fpSqrta2 = -2147483648;
 
 TEST_CASE("IEEE-754 compliance", "[FPU]") {
 	FPINIT();
-	convertible_t a, b, c;
+	convertible_t a;
+	fpu_reg_t b, c;
+	b.lo.f64 = 0.0;
 
-	a.i64 = 2048;
-	FPDIV(a, 0, c);
-	CHECK(c.f64 == std::numeric_limits<double>::infinity());
+	a.i64 = 1;
+	FPDIV(a, b, c);
+	CHECK(c.lo.f64 == std::numeric_limits<double>::infinity());
 
-	a.i64 = -2048;
-	FPDIV(a, 0, c);
-	CHECK(c.f64 == -std::numeric_limits<double>::infinity());
+	a.i64 = -1;
+	FPDIV(a, b, c);
+	CHECK(c.lo.f64 == -std::numeric_limits<double>::infinity());
 
 #ifdef DEBUG
 	std::cout << "FPROUND" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpAdda, 0, &FPROUND) == 0x43d99a4b8bc531dcU);
-	CHECK(rxRound(RoundDown, fpAdda, 0, &FPROUND) == 0x43d99a4b8bc531dcU);
-	CHECK(rxRound(RoundUp, fpAdda, 0, &FPROUND) == 0x43d99a4b8bc531dcU);
-	CHECK(rxRound(RoundToZero, fpAdda, 0, &FPROUND) == 0x43d99a4b8bc531dcU);
-
-	CHECK(rxRound(RoundToNearest, fpSuba, 0, &FPROUND) == 0x43c4652c25bf7bdcU);
-	CHECK(rxRound(RoundDown, fpSuba, 0, &FPROUND) == 0x43c4652c25bf7bdcU);
-	CHECK(rxRound(RoundUp, fpSuba, 0, &FPROUND) == 0x43c4652c25bf7bdcU);
-	CHECK(rxRound(RoundToZero, fpSuba, 0, &FPROUND) == 0x43c4652c25bf7bdcU);
+	CHECK(rxRound(RoundToNearest, fpRounda, 0, &FPROUND, false) == 0x43d99a4b8bc531dcU);
+	CHECK(rxRound(RoundDown, fpRounda, 0, &FPROUND, false) == 0x43d99a4b8bc531dcU);
+	CHECK(rxRound(RoundUp, fpRounda, 0, &FPROUND, false) == 0x43d99a4b8bc531dcU);
+	CHECK(rxRound(RoundToZero, fpRounda, 0, &FPROUND, false) == 0x43d99a4b8bc531dcU);
 
 #ifdef DEBUG
 	std::cout << "FPADD" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpAdda, fpAddb, &FPADD_64) == 0xf9eba74f6c27d473U);
-	CHECK(rxRound(RoundDown, fpAdda, fpAddb, &FPADD_64) == 0xf9eba74f6c27d473U);
-	CHECK(rxRound(RoundUp, fpAdda, fpAddb, &FPADD_64) == 0xf9eba74f6c27d472U);
-	CHECK(rxRound(RoundToZero, fpAdda, fpAddb, &FPADD_64) == 0xf9eba74f6c27d472U);
+	CHECK(rxRound(RoundToNearest, fpAdda, fpAddb, &FPADD) == 0x50cd6ef8bd0671b2U);
+	CHECK(rxRound(RoundDown, fpAdda, fpAddb, &FPADD) == 0x50cd6ef8bd0671b1U);
+	CHECK(rxRound(RoundUp, fpAdda, fpAddb, &FPADD) == 0x50cd6ef8bd0671b2U);
+	CHECK(rxRound(RoundToZero, fpAdda, fpAddb, &FPADD) == 0x50cd6ef8bd0671b1U);
 
 #ifdef DEBUG
 	std::cout << "FPSUB" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpSuba, fpSubb, &FPSUB_64) == 0x43c4652bb6bc2c49U);
-	CHECK(rxRound(RoundDown, fpSuba, fpSubb, &FPSUB_64) == 0x43c4652bb6bc2c48U);
-	CHECK(rxRound(RoundUp, fpSuba, fpSubb, &FPSUB_64) == 0x43c4652bb6bc2c49U);
-	CHECK(rxRound(RoundToZero, fpSuba, fpSubb, &FPSUB_64) == 0x43c4652bb6bc2c48U);
+	CHECK(rxRound(RoundToNearest, fpSuba, fpSubb, &FPSUB) == 0xc523ecd390267c99U);
+	CHECK(rxRound(RoundDown, fpSuba, fpSubb, &FPSUB) == 0xc523ecd390267c99U);
+	CHECK(rxRound(RoundUp, fpSuba, fpSubb, &FPSUB) == 0xc523ecd390267c98U);
+	CHECK(rxRound(RoundToZero, fpSuba, fpSubb, &FPSUB) == 0xc523ecd390267c98U);
 
 #ifdef DEBUG
 	std::cout << "FPMUL" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpMula1, fpMulb1, &FPMUL_64) == 0x52a3abbb1677f3e9U);
-	CHECK(rxRound(RoundDown, fpMula1, fpMulb1, &FPMUL_64) == 0x52a3abbb1677f3e8U);
-	CHECK(rxRound(RoundUp, fpMula1, fpMulb1, &FPMUL_64) == 0x52a3abbb1677f3e9U);
-	CHECK(rxRound(RoundToZero, fpMula1, fpMulb1, &FPMUL_64) == 0x52a3abbb1677f3e8U);
+	CHECK(rxRound(RoundToNearest, fpMula1, fpMulb1, &FPMUL) == 0x5574b924d2f24542U);
+	CHECK(rxRound(RoundDown, fpMula1, fpMulb1, &FPMUL) == 0x5574b924d2f24541U);
+	CHECK(rxRound(RoundUp, fpMula1, fpMulb1, &FPMUL) == 0x5574b924d2f24542U);
+	CHECK(rxRound(RoundToZero, fpMula1, fpMulb1, &FPMUL) == 0x5574b924d2f24541U);
 
-	CHECK(rxRound(RoundToNearest, fpMula2, fpMulb2, &FPMUL_64) == 0xc90ea6c25e29c583U);
-	CHECK(rxRound(RoundDown, fpMula2, fpMulb2, &FPMUL_64) == 0xc90ea6c25e29c583U);
-	CHECK(rxRound(RoundUp, fpMula2, fpMulb2, &FPMUL_64) == 0xc90ea6c25e29c582U);
-	CHECK(rxRound(RoundToZero, fpMula2, fpMulb2, &FPMUL_64) == 0xc90ea6c25e29c582U);
+	CHECK(rxRound(RoundToNearest, fpMula2, fpMulb2, &FPMUL) == 0xd0f23a18891a7470U);
+	CHECK(rxRound(RoundDown, fpMula2, fpMulb2, &FPMUL) == 0xd0f23a18891a7470U);
+	CHECK(rxRound(RoundUp, fpMula2, fpMulb2, &FPMUL) == 0xd0f23a18891a746fU);
+	CHECK(rxRound(RoundToZero, fpMula2, fpMulb2, &FPMUL) == 0xd0f23a18891a746fU);
 
 #ifdef DEBUG
 	std::cout << "FPDIV" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpDiva1, fpDivb1, &FPDIV_64) == 0x3515967d3015e81cU);
-	CHECK(rxRound(RoundDown, fpDiva1, fpDivb1, &FPDIV_64) == 0x3515967d3015e81bU);
-	CHECK(rxRound(RoundUp, fpDiva1, fpDivb1, &FPDIV_64) == 0x3515967d3015e81cU);
-	CHECK(rxRound(RoundToZero, fpDiva1, fpDivb1, &FPDIV_64) == 0x3515967d3015e81bU);
+	CHECK(rxRound(RoundToNearest, fpDiva1, fpDivb1, &FPDIV) == 0x38bd2a7732b5eb0aU);
+	CHECK(rxRound(RoundDown, fpDiva1, fpDivb1, &FPDIV) == 0x38bd2a7732b5eb09U);
+	CHECK(rxRound(RoundUp, fpDiva1, fpDivb1, &FPDIV) == 0x38bd2a7732b5eb0aU);
+	CHECK(rxRound(RoundToZero, fpDiva1, fpDivb1, &FPDIV) == 0x38bd2a7732b5eb09U);
 
-	CHECK(rxRound(RoundToNearest, fpDiva2, fpDivb2, &FPDIV_64) == 0xbab33c30b92b8fccU);
-	CHECK(rxRound(RoundDown, fpDiva2, fpDivb2, &FPDIV_64) == 0xbab33c30b92b8fccU);
-	CHECK(rxRound(RoundUp, fpDiva2, fpDivb2, &FPDIV_64) == 0xbab33c30b92b8fcbU);
-	CHECK(rxRound(RoundToZero, fpDiva2, fpDivb2, &FPDIV_64) == 0xbab33c30b92b8fcbU);
+	CHECK(rxRound(RoundToNearest, fpDiva2, fpDivb2, &FPDIV) == 0xbca3c3c039ccc71cU);
+	CHECK(rxRound(RoundDown, fpDiva2, fpDivb2, &FPDIV) == 0xbca3c3c039ccc71cU);
+	CHECK(rxRound(RoundUp, fpDiva2, fpDivb2, &FPDIV) == 0xbca3c3c039ccc71bU);
+	CHECK(rxRound(RoundToZero, fpDiva2, fpDivb2, &FPDIV) == 0xbca3c3c039ccc71bU);
 
 #ifdef DEBUG
 	std::cout << "FPSQRT" << std::endl;
 #endif
-	CHECK(rxRound(RoundToNearest, fpSqrta, 0, &FPSQRT) == 0x41d304e3fcc31a2dU);
-	CHECK(rxRound(RoundDown, fpSqrta, 0, &FPSQRT) == 0x41d304e3fcc31a2cU);
-	CHECK(rxRound(RoundUp, fpSqrta, 0, &FPSQRT) == 0x41d304e3fcc31a2dU);
-	CHECK(rxRound(RoundToZero, fpSqrta, 0, &FPSQRT) == 0x41d304e3fcc31a2cU);
+	CHECK(rxRound(RoundToNearest, fpSqrta1, 0, &FPSQRT) == 0x40d47f0e46ebc19dU);
+	CHECK(rxRound(RoundDown, fpSqrta1, 0, &FPSQRT) == 0x40d47f0e46ebc19cU);
+	CHECK(rxRound(RoundUp, fpSqrta1, 0, &FPSQRT) == 0x40d47f0e46ebc19dU);
+	CHECK(rxRound(RoundToZero, fpSqrta1, 0, &FPSQRT) == 0x40d47f0e46ebc19cU);
+
+	CHECK(rxRound(RoundToNearest, fpSqrta2, 0, &FPSQRT) == 0x40e6a09e667f3bcdU);
+	CHECK(rxRound(RoundDown, fpSqrta2, 0, &FPSQRT) == 0x40e6a09e667f3bccU);
+	CHECK(rxRound(RoundUp, fpSqrta2, 0, &FPSQRT) == 0x40e6a09e667f3bcdU);
+	CHECK(rxRound(RoundToZero, fpSqrta2, 0, &FPSQRT) == 0x40e6a09e667f3bccU);
 }

@@ -22,16 +22,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	inline double convertToDouble(int64_t x) {
-		return (double)(x &-2048L);
-	}
-
-	inline double convertToDoubleNonZero(int64_t x) {
-		return (double)((x & -2048L) | 2048);
-	}
-
-	inline double convertToDoubleNonNegative(int64_t x) {
-		return (double)(x & 9223372036854773760L);
+	//Clears the 11 least-significant bits before conversion. This is done so the number
+	//fits exactly into the 52-bit mantissa without rounding.
+	inline double convertSigned52(int64_t x) {
+		return (double)(x & -2048L);
 	}
 
 	extern "C" {
@@ -59,27 +53,11 @@ namespace RandomX {
 		void ROR_64(convertible_t& a, convertible_t& b, convertible_t& c);
 		bool JMP_COND(uint8_t, convertible_t&, int32_t);
 		void FPINIT();
-		void FPADD(convertible_t& a, double b, convertible_t& c);
-		void FPSUB(convertible_t& a, double b, convertible_t& c);
-		void FPMUL(convertible_t& a, double b, convertible_t& c);
-		void FPDIV(convertible_t& a, double b, convertible_t& c);
-		void FPSQRT(convertible_t& a, convertible_t& b, convertible_t& c);
-		void FPROUND(convertible_t& a, convertible_t& b, convertible_t& c);
-
-		inline void FPADD_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			FPADD(a, b.f64, c);
-		}
-
-		inline void FPSUB_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			FPSUB(a, b.f64, c);
-		}
-
-		inline void FPMUL_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			FPMUL(a, b.f64, c);
-		}
-
-		inline void FPDIV_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			FPDIV(a, b.f64, c);
-		}
+		void FPADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FPSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FPMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FPDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FPSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FPROUND(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
 	}
 }
