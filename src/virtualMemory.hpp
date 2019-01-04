@@ -18,28 +18,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include <cstdint>
-#include "common.hpp"
 
-namespace RandomX {
-
-	class VirtualMachine {
-	public:
-		VirtualMachine(bool softAes);
-		virtual ~VirtualMachine();
-		virtual void setDataset(dataset_t ds, bool light = false);
-		void initializeScratchpad(uint32_t index);
-		virtual void initializeProgram(const void* seed) = 0;
-		virtual void execute() = 0;
-		void getResult(void*);
-		const RegisterFile& getRegisterFile() {
-			return reg;
-		}
-	protected:
-		bool softAes, lightClient;
-		DatasetReadFunc readDataset;
-		alignas(16) RegisterFile reg;
-		MemoryRegisters mem;
-		alignas(64) convertible_t scratchpad[ScratchpadLength];
-	};
-}
+void* allocExecutableMemory(size_t);
+void* allocLargePagesMemory(size_t);

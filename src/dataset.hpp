@@ -35,7 +35,7 @@ namespace RandomX {
 	template<bool softAes>
 	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber, const KeysContainer& keys);
 
-	void datasetAlloc(dataset_t& ds);
+	void datasetAlloc(dataset_t& ds, bool largePages);
 
 	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);

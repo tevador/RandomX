@@ -162,7 +162,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled, help;
+	bool softAes, lightClient, genAsm, compiled, help, largePages;
 	int programCount, threadCount;
 	readOption("--help", argc, argv, help);
 
@@ -177,6 +177,7 @@ int main(int argc, char** argv) {
 	readOption("--compiled", argc, argv, compiled);
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, programCount, 1000);
+	readOption("--largePages", argc, argv, largePages);
 
 	if (genAsm) {
 		generateAsm(programCount);
@@ -216,7 +217,7 @@ int main(int argc, char** argv) {
 		}
 		else {
 			RandomX::Cache* cache = dataset.cache;
-			RandomX::datasetAlloc(dataset);
+			RandomX::datasetAlloc(dataset, largePages);
 			if (threadCount > 1) {
 				auto perThread = RandomX::DatasetBlockCount / threadCount;
 				auto remainder = RandomX::DatasetBlockCount % threadCount;

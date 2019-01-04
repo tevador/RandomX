@@ -26,6 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "Pcg32.hpp"
 #include "Cache.hpp"
+#include "virtualMemory.hpp"
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
@@ -161,12 +162,17 @@ namespace RandomX {
 	template
 		convertible_t datasetReadLight<true>(addr_t addr, MemoryRegisters& memory);
 
-	void datasetAlloc(dataset_t& ds) {
+	void datasetAlloc(dataset_t& ds, bool largePages) {
 		if (sizeof(size_t) <= 4)
 			throw std::runtime_error("Platform doesn't support enough memory for the dataset");
-		ds.dataset = (uint8_t*)_mm_malloc(DatasetSize, /*sizeof(__m128i)*/ 64);
-		if (ds.dataset == nullptr) {
-			throw std::runtime_error("Dataset memory allocation failed. >4 GiB of free virtual memory is needed.");
+		if (largePages) {
+			ds.dataset = (uint8_t*)allocLargePagesMemory(DatasetSize);
+		}
+		else {
+			ds.dataset = (uint8_t*)_mm_malloc(DatasetSize, 64);
+			if (ds.dataset == nullptr) {
+				throw std::runtime_error("Dataset memory allocation failed. >4 GiB of free virtual memory is needed.");
+			}
 		}
 	}
 

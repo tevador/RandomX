@@ -45,7 +45,7 @@ namespace RandomX {
 		void genbr132(Instruction&);
 		void genbf(Instruction&, const char*);
 		void gencr(Instruction&);
-		void gencf(Instruction&, bool);
+		void gencf(Instruction&);
 
 		void generateCode(Instruction&, int);
 

@@ -1,11 +1,10 @@
 rx_i_0: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0ca9788ah
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r9d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_0
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -22,21 +21,20 @@ not_taken_ret_0:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_1: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 06afc2fa4h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	and rax, r10
 	mov r12, rax
 
 rx_i_2: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 097210f7bh
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	cmp r11d, 1348521207
 	jno short taken_call_2
 	mov rcx, rax
@@ -50,31 +48,23 @@ taken_call_2:
 	call rx_i_47
 
 rx_i_3: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 082c73195h
 	mov ecx, r13d
-	call rx_read_dataset_r
-	mov rcx, rax
+	call rx_readint_l1
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm8, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
-	mov eax, r8d
-	xor eax, 06bb1a0b2h
-	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_4: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 077daefb4h
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	mov rcx, r14
 	mul rcx
 	mov rax, rdx
@@ -85,22 +75,22 @@ rx_i_4: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_5: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0379f9ee0h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r12d
 	imul rax, rcx
 	mov r12, rax
 
 rx_i_6: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 03bae7272h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r15
 	mov rcx, rax
 	mov eax, r9d
@@ -109,12 +99,11 @@ rx_i_6: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_7: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0e264ed81h
-	mov eax, r10d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -123,11 +112,11 @@ rx_i_7: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_8: ;SHL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 068c1e5d2h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	shl rax, 47
 	mov rcx, rax
 	mov eax, r12d
@@ -136,30 +125,29 @@ rx_i_8: ;SHL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_9: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 085121c54h
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	and rax, 565870810
 	mov r10, rax
 
 rx_i_10: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 052efde3eh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, -727859809
 	mov r13, rax
 
 rx_i_11: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0a9bf8aa1h
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm5
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -168,11 +156,11 @@ rx_i_11: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_12: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0db2691ch
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r8d, -1763940407
 	jge short taken_call_12
 	mov r8, rax
@@ -182,20 +170,20 @@ taken_call_12:
 	call rx_i_35
 
 rx_i_13: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 061c0d34dh
 	mov ecx, r12d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm9, xmm0
 
 rx_i_14: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0e761d1beh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	shr rax, 4
 	mov rcx, rax
 	mov eax, r10d
@@ -204,12 +192,12 @@ rx_i_14: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_15: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 074ddb688h
 	mov ecx, r11d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_15
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -226,12 +214,11 @@ not_taken_ret_15:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_16: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 06be90627h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	add rax, r10
 	mov rcx, rax
 	mov eax, r9d
@@ -240,12 +227,11 @@ rx_i_16: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_17: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0fbc6fc35h
-	mov eax, r11d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm4
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -257,12 +243,11 @@ rx_i_17: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_18: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0c28ca080h
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	subpd xmm0, xmm4
 	movaps xmm3, xmm0
 	mov eax, r11d
@@ -271,21 +256,20 @@ rx_i_18: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_19: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ac009c30h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	subpd xmm0, xmm8
 	movaps xmm7, xmm0
 
 rx_i_20: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ecca967dh
 	mov ecx, r13d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -297,20 +281,20 @@ rx_i_20: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_21: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0977f0284h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm7, xmm0
 
 rx_i_22: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 080bdfefah
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add eax, r8d
 	mov rcx, rax
 	mov eax, r10d
@@ -319,20 +303,20 @@ rx_i_22: ;ADD_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_23: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0e1e0d3c4h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r11
 	mov r8, rax
 
 rx_i_24: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 070d3b8c7h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r15
 	imul rcx
 	mov rax, rdx
@@ -343,11 +327,11 @@ rx_i_24: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_25: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01cf77a04h
 	mov ecx, r12d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -359,11 +343,11 @@ rx_i_25: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_26: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0e311468ch
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r13d
 	imul rax, rcx
@@ -374,12 +358,11 @@ rx_i_26: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_27: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01fd9911ah
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -387,41 +370,38 @@ rx_i_27: ;FPMUL
 	movaps xmm6, xmm0
 
 rx_i_28: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 067df757eh
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	xor rax, r13
 	mov r14, rax
 
 rx_i_29: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0be2e7c42h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, 1944166515
 	mov r14, rax
 
 rx_i_30: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 084d067f7h
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm7, xmm0
 
 rx_i_31: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0d352ce37h
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l2
 	addpd xmm0, xmm3
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -430,33 +410,31 @@ rx_i_31: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_32: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0a1f248dah
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, -1936869641
 	mov r9, rax
 
 rx_i_33: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0554720fch
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l2
 	mov rcx, r15
 	mul rcx
 	mov rax, rdx
 	mov r12, rax
 
 rx_i_34: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0665e91f1h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	cmp r14d, -380224718
 	js short taken_call_34
 	mov r15, rax
@@ -466,13 +444,12 @@ taken_call_34:
 	call rx_i_108
 
 rx_i_35: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 05ef1be79h
-	mov eax, r15d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r15d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_35
 	xor rax, qword ptr [rsp + 8]
 	mov r8, rax
@@ -481,12 +458,11 @@ not_taken_ret_35:
 	mov r8, rax
 
 rx_i_36: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 012ec7e3ah
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -494,12 +470,11 @@ rx_i_36: ;FPMUL
 	movaps xmm7, xmm0
 
 rx_i_37: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d0706601h
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -511,32 +486,30 @@ rx_i_37: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_38: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 064056913h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	sub rax, r14
 	mov r10, rax
 
 rx_i_39: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 02c1f1eb0h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add eax, r14d
 	mov r14, rax
 
 rx_i_40: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 068fd9009h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r10d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_40
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -553,12 +526,11 @@ not_taken_ret_40:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_41: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 037a30933h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	cmp r14d, -1070581824
 	jo short taken_call_41
 	mov r9, rax
@@ -568,21 +540,20 @@ taken_call_41:
 	call rx_i_127
 
 rx_i_42: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0bc1de9f6h
-	mov eax, r15d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	subpd xmm0, xmm6
 	movaps xmm6, xmm0
 
 rx_i_43: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 02b2a2eech
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, 1693705407
 	mov rcx, rax
 	mov eax, r11d
@@ -591,31 +562,30 @@ rx_i_43: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_44: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0685817abh
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r9
 	rol rax, cl
 	mov r15, rax
 
 rx_i_45: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 08cd244ebh
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	subpd xmm0, xmm2
 	movaps xmm5, xmm0
 
 rx_i_46: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 06d8f4254h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	add rax, r9
 	mov rcx, rax
 	mov eax, r8d
@@ -624,11 +594,11 @@ rx_i_46: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_47: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 05ba232c6h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r10d, 119251505
 	jbe short taken_call_47
 	mov rcx, rax
@@ -642,12 +612,11 @@ taken_call_47:
 	call rx_i_131
 
 rx_i_48: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0aaed618fh
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm9, xmm0
@@ -657,12 +626,11 @@ rx_i_48: ;FPSQRT
 	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_49: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0f96c6a45h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -670,12 +638,11 @@ rx_i_49: ;FPMUL
 	movaps xmm5, xmm0
 
 rx_i_50: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0da3e4842h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	or eax, r10d
 	mov rcx, rax
 	mov eax, r15d
@@ -684,20 +651,20 @@ rx_i_50: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_51: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0302b676ah
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, 419241919
 	mov r15, rax
 
 rx_i_52: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0fa88f48bh
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r13d, -534426193
 	js short taken_call_52
 	mov rcx, rax
@@ -711,13 +678,12 @@ taken_call_52:
 	call rx_i_94
 
 rx_i_53: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 03dff9b9eh
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r13d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_53
 	xor rax, qword ptr [rsp + 8]
 	mov r13, rax
@@ -726,12 +692,11 @@ not_taken_ret_53:
 	mov r13, rax
 
 rx_i_54: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 060638de0h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l2
 	mov rcx, 282209221
 	imul rcx
 	mov rax, rdx
@@ -742,12 +707,11 @@ rx_i_54: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_55: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0dda983d4h
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -759,12 +723,11 @@ rx_i_55: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_56: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0f1456b8eh
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	and rax, r15
 	mov rcx, rax
 	mov eax, r8d
@@ -773,12 +736,11 @@ rx_i_56: ;AND_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_57: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 010dc4571h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l2
 	imul rax, r14
 	mov rcx, rax
 	mov eax, r15d
@@ -787,12 +749,11 @@ rx_i_57: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_58: ;IDIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0bcec0ebah
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l2
 	mov edx, r13d
 	cmp edx, -1
 	jne short safe_idiv_58
@@ -811,22 +772,21 @@ result_idiv_58:
 	mov r8, rax
 
 rx_i_59: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0980dd402h
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	subpd xmm0, xmm8
 	movaps xmm7, xmm0
 
 rx_i_60: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 03de14d1eh
 	mov ecx, r15d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_60
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -843,12 +803,11 @@ not_taken_ret_60:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_61: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 05058ce64h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	cmp r15d, 1933164545
 	jns short taken_call_61
 	mov r11, rax
@@ -858,11 +817,11 @@ taken_call_61:
 	call rx_i_120
 
 rx_i_62: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0c3089414h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -874,12 +833,11 @@ rx_i_62: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_63: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 065cf272eh
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm7
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -887,20 +845,20 @@ rx_i_63: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_64: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ae54dfbfh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r15
 	mov r9, rax
 
 rx_i_65: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 07b366ce6h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r8d, 1498056607
 	js short taken_call_65
 	mov r11, rax
@@ -910,11 +868,11 @@ taken_call_65:
 	call rx_i_129
 
 rx_i_66: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 015a1b689h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm9, xmm0
@@ -924,11 +882,11 @@ rx_i_66: ;FPSQRT
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_67: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 088393ba0h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r13d, 2031541081
 	jns short taken_call_67
 	mov r9, rax
@@ -938,11 +896,11 @@ taken_call_67:
 	call rx_i_79
 
 rx_i_68: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 03aa5c3a4h
 	mov ecx, r13d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -951,33 +909,31 @@ rx_i_68: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_69: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0376c9c27h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm5
 	movaps xmm8, xmm0
 
 rx_i_70: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0bbbec3fah
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l2
 	mov rcx, r9
 	mul rcx
 	mov rax, rdx
 	mov r13, rax
 
 rx_i_71: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0e9efb350h
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -985,11 +941,11 @@ rx_i_71: ;FPMUL
 	movaps xmm7, xmm0
 
 rx_i_72: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0f4e51e28h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r9d, -631091751
 	jno short taken_call_72
 	mov rcx, rax
@@ -1003,26 +959,23 @@ taken_call_72:
 	call rx_i_191
 
 rx_i_73: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0c24ddbd4h
 	mov ecx, r12d
-	call rx_read_dataset_r
-	mov rcx, rax
+	call rx_readint_l2
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm2, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
 
 rx_i_74: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04c4b0c7fh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, rax, -1431647438
 	mov rcx, rax
 	mov eax, r9d
@@ -1031,13 +984,12 @@ rx_i_74: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_75: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 03bcc02e3h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r14d
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_75
 	xor rax, qword ptr [rsp + 8]
 	mov r13, rax
@@ -1046,12 +998,11 @@ not_taken_ret_75:
 	mov r13, rax
 
 rx_i_76: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04b0ff63eh
-	mov eax, r11d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -1060,13 +1011,12 @@ rx_i_76: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_77: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0b956b3e8h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r14d
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_77
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -1083,25 +1033,23 @@ not_taken_ret_77:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_78: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0edeca680h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r8d
 	imul rax, rcx
 	mov r15, rax
 
 rx_i_79: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0fbdddcb5h
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r11d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_79
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -1118,30 +1066,29 @@ not_taken_ret_79:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_80: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 09cec97a1h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l2
 	addpd xmm0, xmm3
 	movaps xmm3, xmm0
 
 rx_i_81: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 078228167h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, r13
 	mov r8, rax
 
 rx_i_82: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 078cae1ffh
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r12d, -68969733
 	jo short taken_call_82
 	mov rcx, rax
@@ -1155,21 +1102,20 @@ taken_call_82:
 	call rx_i_145
 
 rx_i_83: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d9b6a533h
-	mov eax, r10d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	and rax, r10
 	mov r12, rax
 
 rx_i_84: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0e9e75336h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r10
 	ror rax, cl
 	mov rcx, rax
@@ -1179,21 +1125,20 @@ rx_i_84: ;ROR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_85: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 04c0d378ah
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	imul rax, r8
 	mov r10, rax
 
 rx_i_86: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04386e368h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, r8
 	mov rcx, rax
 	mov eax, r12d
@@ -1202,22 +1147,20 @@ rx_i_86: ;OR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_87: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0d75a0ecfh
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	sub rax, r12
 	mov r8, rax
 
 rx_i_88: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 031bb7f7ah
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -1226,11 +1169,11 @@ rx_i_88: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_89: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 03b45ecebh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, r8
 	mov rcx, rax
 	mov eax, r10d
@@ -1239,21 +1182,20 @@ rx_i_89: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_90: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0ee08e76bh
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm6, xmm0
 
 rx_i_91: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 042e28e94h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1261,11 +1203,11 @@ rx_i_91: ;FPMUL
 	movaps xmm4, xmm0
 
 rx_i_92: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0729260e1h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r14d, 1288893603
 	jge short taken_call_92
 	mov r12, rax
@@ -1275,12 +1217,11 @@ taken_call_92:
 	call rx_i_170
 
 rx_i_93: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0bfcebaf4h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	addpd xmm0, xmm2
 	movaps xmm2, xmm0
 	mov eax, r10d
@@ -1289,13 +1230,12 @@ rx_i_93: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_94: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ea326630h
-	mov eax, r13d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r13d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_94
 	xor rax, qword ptr [rsp + 8]
 	mov r8, rax
@@ -1304,11 +1244,11 @@ not_taken_ret_94:
 	mov r8, rax
 
 rx_i_95: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0b5451a2dh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r10
 	mov rcx, rax
 	mov eax, r15d
@@ -1317,22 +1257,22 @@ rx_i_95: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_96: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04f912ef8h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	mov rax, -1354397081
 	imul rax, rcx
 	mov r11, rax
 
 rx_i_97: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0acc45b3bh
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm5, xmm0
@@ -1342,20 +1282,20 @@ rx_i_97: ;FPSQRT
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_98: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 09900a4e8h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r15
 	mov r14, rax
 
 rx_i_99: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0841b2984h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	divpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1367,31 +1307,29 @@ rx_i_99: ;FPDIV
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_100: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 07ebea48fh
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, r9
 	mov r14, rax
 
 rx_i_101: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0631209d3h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	sub rax, r8
 	mov r11, rax
 
 rx_i_102: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0e50bf07ah
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l1
 	divpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1399,12 +1337,11 @@ rx_i_102: ;FPDIV
 	movaps xmm7, xmm0
 
 rx_i_103: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 02b7096f1h
-	mov eax, r10d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	imul rax, r13
 	mov rcx, rax
 	mov eax, r15d
@@ -1413,12 +1350,11 @@ rx_i_103: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_104: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 075deaf71h
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	mov rcx, -1913070089
 	imul rcx
 	mov rax, rdx
@@ -1429,11 +1365,11 @@ rx_i_104: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_105: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 036a51f72h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r15d
 	imul rax, rcx
@@ -1444,11 +1380,11 @@ rx_i_105: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_106: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 07b512986h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1460,12 +1396,11 @@ rx_i_106: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_107: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0f1d2e50h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	cmp r11d, 1917037441
 	jl short taken_call_107
 	mov rcx, rax
@@ -1479,11 +1414,11 @@ taken_call_107:
 	call rx_i_143
 
 rx_i_108: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 07327ba60h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	divpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1495,21 +1430,20 @@ rx_i_108: ;FPDIV
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_109: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0594e37deh
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	addpd xmm0, xmm2
 	movaps xmm3, xmm0
 
 rx_i_110: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 04cdf5ebah
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r9
 	rol rax, cl
 	mov rcx, rax
@@ -1519,12 +1453,12 @@ rx_i_110: ;ROL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_111: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 02e16c97ch
 	mov ecx, r8d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_111
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -1541,12 +1475,11 @@ not_taken_ret_111:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_112: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d42ddbd4h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	sub rax, r13
 	mov rcx, rax
 	mov eax, r14d
@@ -1555,42 +1488,42 @@ rx_i_112: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_113: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 07a4f8cbbh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r9
 	mul rcx
 	mov rax, rdx
 	mov r13, rax
 
 rx_i_114: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 06e83e2cdh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r15
 	imul rcx
 	mov rax, rdx
 	mov r14, rax
 
 rx_i_115: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0336c980eh
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	or rax, r10
 	mov r14, rax
 
 rx_i_116: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d122702eh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, -1850776691
 	imul rcx
 	mov rax, rdx
@@ -1601,12 +1534,11 @@ rx_i_116: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_117: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 015f2012bh
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	and rax, -1205826972
 	mov rcx, rax
 	mov eax, r15d
@@ -1615,41 +1547,38 @@ rx_i_117: ;AND_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_118: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 037ddf43dh
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l2
 	subpd xmm0, xmm5
 	movaps xmm6, xmm0
 
 rx_i_119: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0bba475f3h
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm5, xmm0
 
 rx_i_120: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0e5561e3eh
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	addpd xmm0, xmm4
 	movaps xmm8, xmm0
 
 rx_i_121: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 03ab8f73h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1657,12 +1586,12 @@ rx_i_121: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_122: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 04e0dbd40h
 	mov ecx, r10d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_122
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -1679,21 +1608,20 @@ not_taken_ret_122:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_123: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 073e9f58ah
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	add eax, r15d
 	mov r13, rax
 
 rx_i_124: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0e3fa3670h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r11d, 1719505436
 	jns short taken_call_124
 	mov rcx, rax
@@ -1707,23 +1635,22 @@ taken_call_124:
 	call rx_i_237
 
 rx_i_125: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0ebec27cdh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov ecx, eax
 	mov eax, r14d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_126: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 01feb5264h
-	mov eax, r8d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	divpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1731,32 +1658,31 @@ rx_i_126: ;FPDIV
 	movaps xmm2, xmm0
 
 rx_i_127: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0405f500fh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r10d
 	imul rax, rcx
 	mov r8, rax
 
 rx_i_128: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0459f1154h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, r9
 	mov r9, rax
 
 rx_i_129: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 081918b4ch
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	cmp r13d, -590624856
 	jge short taken_call_129
 	mov r9, rax
@@ -1766,12 +1692,11 @@ taken_call_129:
 	call rx_i_154
 
 rx_i_130: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 077c3b332h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	or rax, -281794782
 	mov rcx, rax
 	mov eax, r11d
@@ -1780,13 +1705,12 @@ rx_i_130: ;OR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_131: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 05792310bh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r12d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_131
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -1803,20 +1727,20 @@ not_taken_ret_131:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_132: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0ebc6e10h
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm7, xmm0
 
 rx_i_133: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0822f8b60h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, -1000526796
 	mov rcx, rax
 	mov eax, r15d
@@ -1825,20 +1749,20 @@ rx_i_133: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_134: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d0f18593h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, 1516102347
 	mov r13, rax
 
 rx_i_135: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 088212ef9h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -1846,11 +1770,11 @@ rx_i_135: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_136: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 01ae56e03h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm5, xmm0
@@ -1860,23 +1784,22 @@ rx_i_136: ;FPSQRT
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_137: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 015a24231h
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	mov rcx, r9
 	rol rax, cl
 	mov r11, rax
 
 rx_i_138: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 02fd380c5h
 	mov ecx, r13d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_138
 	xor rax, qword ptr [rsp + 8]
 	mov r10, rax
@@ -1885,12 +1808,11 @@ not_taken_ret_138:
 	mov r10, rax
 
 rx_i_139: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 093172470h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	add rax, 515364082
 	mov rcx, rax
 	mov eax, r11d
@@ -1899,23 +1821,22 @@ rx_i_139: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_140: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 052543553h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r11d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_141: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 02f636da1h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm2
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -1924,11 +1845,11 @@ rx_i_141: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_142: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0b11a4f2ch
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r12d, 1365939282
 	js short taken_call_142
 	mov rcx, rax
@@ -1942,35 +1863,33 @@ taken_call_142:
 	call rx_i_257
 
 rx_i_143: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 037f4b5d0h
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r11d
 	imul rax, rcx
 	mov r9, rax
 
 rx_i_144: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 02e59e00ah
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l2
 	mov rcx, r11
 	imul rcx
 	mov rax, rdx
 	mov r15, rax
 
 rx_i_145: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 08d5c798h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r11
 	imul rcx
 	mov rax, rdx
@@ -1981,24 +1900,22 @@ rx_i_145: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_146: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 02327e6e2h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r12d
 	imul rax, rcx
 	mov r10, rax
 
 rx_i_147: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 03a7df043h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	mov rcx, 1784404616
 	mul rcx
 	mov rax, rdx
@@ -2009,11 +1926,11 @@ rx_i_147: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_148: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0783e5c4eh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r14
 	mov rcx, rax
 	mov eax, r10d
@@ -2022,12 +1939,11 @@ rx_i_148: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_149: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0aa0f5b2fh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r14d
 	imul rax, rcx
@@ -2038,12 +1954,11 @@ rx_i_149: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_150: ;DIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 01504ca7ah
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov ecx, 1
 	mov edx, r8d
 	test edx, edx
@@ -2057,12 +1972,11 @@ rx_i_150: ;DIV_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_151: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0ea72a7cfh
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	or eax, r13d
 	mov rcx, rax
 	mov eax, r11d
@@ -2071,21 +1985,21 @@ rx_i_151: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_152: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ad0e7a88h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r10
 	ror rax, cl
 	mov r10, rax
 
 rx_i_153: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0fd95ab87h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	divpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2097,23 +2011,22 @@ rx_i_153: ;FPDIV
 	movlpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_154: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0256697b0h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l2
 	mov ecx, eax
 	mov eax, r13d
 	imul rax, rcx
 	mov r10, rax
 
 rx_i_155: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0d23f3b78h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r10
 	ror rax, cl
 	mov rcx, rax
@@ -2123,42 +2036,41 @@ rx_i_155: ;ROR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_156: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 098917533h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r15d
 	imul rax, rcx
 	mov r15, rax
 
 rx_i_157: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0dfac3efch
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, r12
 	mov r14, rax
 
 rx_i_158: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0a64de090h
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	add rax, 1233402159
 	mov r10, rax
 
 rx_i_159: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0952a3abbh
 	mov ecx, r13d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_159
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -2175,11 +2087,11 @@ not_taken_ret_159:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_160: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0b1685b90h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, 1518778665
 	mov rcx, rax
 	mov eax, r10d
@@ -2188,31 +2100,30 @@ rx_i_160: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_161: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0ea992531h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, r14
 	mov r8, rax
 
 rx_i_162: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 01fd57a4ah
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov rcx, r10
 	sar rax, cl
 	mov r13, rax
 
 rx_i_163: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0e3486c0ah
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, -2101130488
 	mov rcx, rax
 	mov eax, r14d
@@ -2221,12 +2132,11 @@ rx_i_163: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_164: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01f0c2737h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r9d
 	imul rax, rcx
@@ -2237,13 +2147,12 @@ rx_i_164: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_165: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0debb493eh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r12d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_165
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -2260,12 +2169,11 @@ not_taken_ret_165:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_166: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0fe684081h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l2
 	mov rcx, r8
 	rol rax, cl
 	mov rcx, rax
@@ -2275,12 +2183,11 @@ rx_i_166: ;ROL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_167: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0d10371ch
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm4
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2292,23 +2199,22 @@ rx_i_167: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_168: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 071b15effh
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm7, xmm0
 
 rx_i_169: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 072790347h
 	mov ecx, r11d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_169
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -2325,12 +2231,11 @@ not_taken_ret_169:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_170: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04ae8a020h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l2
 	cmp r10d, -1541051751
 	jl short taken_call_170
 	mov r14, rax
@@ -2340,34 +2245,31 @@ taken_call_170:
 	call rx_i_204
 
 rx_i_171: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 09901e05bh
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	mov rcx, r12
 	imul rcx
 	mov rax, rdx
 	mov r12, rax
 
 rx_i_172: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 050e8c510h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	sub rax, r11
 	mov r12, rax
 
 rx_i_173: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 05422cf8fh
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	imul rax, r12
 	mov rcx, rax
 	mov eax, r12d
@@ -2376,50 +2278,42 @@ rx_i_173: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_174: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0a025c3dbh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	mov rcx, rax
+	mov ecx, r12d
+	call rx_readint_l1
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm6, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
-	mov eax, r14d
-	xor eax, 02be6989fh
-	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_175: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 08f74c11h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	sar rax, cl
 	mov r8, rax
 
 rx_i_176: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 01f2ed5f1h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, r14
 	mov r10, rax
 
 rx_i_177: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d2072c79h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	add rax, r10
 	mov rcx, rax
 	mov eax, r13d
@@ -2428,12 +2322,12 @@ rx_i_177: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_178: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0a8e51933h
 	mov ecx, r15d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_178
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -2450,22 +2344,20 @@ not_taken_ret_178:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_179: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0934ad492h
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	addpd xmm0, xmm2
 	movaps xmm8, xmm0
 
 rx_i_180: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 01cb3ce1fh
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l2
 	xor rax, 1995308563
 	mov rcx, rax
 	mov eax, r9d
@@ -2474,12 +2366,12 @@ rx_i_180: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_181: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 023c7845fh
 	mov ecx, r10d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_181
 	xor rax, qword ptr [rsp + 8]
 	mov r10, rax
@@ -2488,40 +2380,38 @@ not_taken_ret_181:
 	mov r10, rax
 
 rx_i_182: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0f8884327h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm7
 	movaps xmm6, xmm0
 
 rx_i_183: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 013070461h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	add rax, 137260710
 	mov r10, rax
 
 rx_i_184: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 04764cdf7h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sar rax, 40
 	mov r12, rax
 
 rx_i_185: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 03c41026fh
-	mov eax, r10d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	cmp r15d, -1510284125
 	jbe short taken_call_185
 	mov rcx, rax
@@ -2535,11 +2425,11 @@ taken_call_185:
 	call rx_i_246
 
 rx_i_186: ;XOR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0cded414bh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor eax, r15d
 	mov rcx, rax
 	mov eax, r10d
@@ -2548,11 +2438,11 @@ rx_i_186: ;XOR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_187: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 05c6d64a8h
 	mov ecx, r13d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	divpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2560,12 +2450,11 @@ rx_i_187: ;FPDIV
 	movaps xmm5, xmm0
 
 rx_i_188: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 04659becbh
-	mov eax, r9d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2573,27 +2462,24 @@ rx_i_188: ;FPMUL
 	movaps xmm4, xmm0
 
 rx_i_189: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0c52741d5h
 	mov ecx, r11d
-	call rx_read_dataset_r
-	mov rcx, rax
+	call rx_readint_l1
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm5, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
 
 rx_i_190: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0217bf5f3h
 	mov ecx, r12d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_190
 	xor rax, qword ptr [rsp + 8]
 	mov r13, rax
@@ -2602,11 +2488,11 @@ not_taken_ret_190:
 	mov r13, rax
 
 rx_i_191: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0884f3526h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r11d, 1687119072
 	jno short taken_call_191
 	mov rcx, rax
@@ -2620,12 +2506,11 @@ taken_call_191:
 	call rx_i_275
 
 rx_i_192: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0d76edad3h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	cmp r14d, -117628864
 	jns short taken_call_192
 	mov r8, rax
@@ -2635,11 +2520,11 @@ taken_call_192:
 	call rx_i_305
 
 rx_i_193: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0e9939ach
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r12d
 	imul rax, rcx
@@ -2650,12 +2535,11 @@ rx_i_193: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_194: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0f21ca520h
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2667,21 +2551,21 @@ rx_i_194: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_195: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 09405152ch
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	rol rax, cl
 	mov r9, rax
 
 rx_i_196: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0c2a9f41bh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, -1907903895
 	mov rcx, rax
 	mov eax, r13d
@@ -2690,21 +2574,20 @@ rx_i_196: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_197: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0229208efh
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r15
 	mov r11, rax
 
 rx_i_198: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0c8d95bbbh
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	mov rcx, r14
 	mul rcx
 	mov rax, rdx
@@ -2715,11 +2598,11 @@ rx_i_198: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_199: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 050049e2eh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r10
 	mul rcx
 	mov rax, rdx
@@ -2730,11 +2613,11 @@ rx_i_199: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_200: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0c63b99e8h
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -2743,12 +2626,11 @@ rx_i_200: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_201: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0cdda801dh
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -2757,21 +2639,20 @@ rx_i_201: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_202: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0fa44b04ah
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l2
 	subpd xmm0, xmm9
 	movaps xmm5, xmm0
 
 rx_i_203: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d73e472ch
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -2780,12 +2661,11 @@ rx_i_203: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_204: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 01af8ab1dh
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	imul rax, r15
 	mov rcx, rax
 	mov eax, r8d
@@ -2794,12 +2674,11 @@ rx_i_204: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_205: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 094e997c5h
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	divpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2807,11 +2686,11 @@ rx_i_205: ;FPDIV
 	movaps xmm5, xmm0
 
 rx_i_206: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0e836a177h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm7
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -2819,11 +2698,11 @@ rx_i_206: ;FPMUL
 	movaps xmm4, xmm0
 
 rx_i_207: ;AND_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 039ccdd30h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	and eax, r12d
 	mov rcx, rax
 	mov eax, r9d
@@ -2832,21 +2711,20 @@ rx_i_207: ;AND_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_208: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f4f126c5h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r12
 	mov r10, rax
 
 rx_i_209: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0b84811f1h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	shr rax, 30
 	mov rcx, rax
 	mov eax, r12d
@@ -2855,11 +2733,11 @@ rx_i_209: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_210: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0c5efc90ah
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov ecx, eax
 	mov eax, -1027162400
 	imul rax, rcx
@@ -2870,21 +2748,20 @@ rx_i_210: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_211: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0ce533072h
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm3, xmm0
 
 rx_i_212: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 06b465fdbh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r13
 	mov rcx, rax
 	mov eax, r15d
@@ -2893,43 +2770,41 @@ rx_i_212: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_213: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 02dd1d503h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	movsxd rcx, eax
 	mov rax, 129993589
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_214: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0a159f313h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov rcx, r14
 	rol rax, cl
 	mov r14, rax
 
 rx_i_215: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 08359265eh
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r12
 	mov r10, rax
 
 rx_i_216: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 080696de3h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r13
 	mov rcx, rax
 	mov eax, r15d
@@ -2938,12 +2813,11 @@ rx_i_216: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_217: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 040d5b526h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r9d
 	imul rax, rcx
@@ -2954,11 +2828,11 @@ rx_i_217: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_218: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 083c0bd93h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r8d, -585552250
 	jge short taken_call_218
 	mov r11, rax
@@ -2968,11 +2842,11 @@ taken_call_218:
 	call rx_i_240
 
 rx_i_219: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0ca37f668h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, -740915304
 	mov rcx, rax
 	mov eax, r15d
@@ -2981,11 +2855,11 @@ rx_i_219: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_220: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0bb44c384h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r11d
 	imul rax, rcx
@@ -2996,12 +2870,11 @@ rx_i_220: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_221: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0a3deb512h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov rcx, r15
 	imul rcx
 	mov rax, rdx
@@ -3012,12 +2885,11 @@ rx_i_221: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_222: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 084a02d64h
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3029,12 +2901,11 @@ rx_i_222: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_223: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 01e5cc085h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm2, xmm0
 	mov eax, r10d
@@ -3043,11 +2914,11 @@ rx_i_223: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_224: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 053982440h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r14
 	sar rax, cl
 	mov rcx, rax
@@ -3057,11 +2928,11 @@ rx_i_224: ;SAR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_225: ;DIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0c558367eh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov ecx, 1
 	mov edx, r10d
 	test edx, edx
@@ -3075,11 +2946,11 @@ rx_i_225: ;DIV_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_226: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 040139b65h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r8d, -1752488808
 	jno short taken_call_226
 	mov rcx, rax
@@ -3093,12 +2964,11 @@ taken_call_226:
 	call rx_i_328
 
 rx_i_227: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0fa312dbdh
-	mov eax, r11d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	divpd xmm0, xmm7
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3110,12 +2980,11 @@ rx_i_227: ;FPDIV
 	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_228: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0b64246c0h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	cmp r10d, -2099304
 	jns short taken_call_228
 	mov rcx, rax
@@ -3129,11 +2998,11 @@ taken_call_228:
 	call rx_i_283
 
 rx_i_229: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 05c535836h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r12d
 	imul rax, rcx
@@ -3144,12 +3013,11 @@ rx_i_229: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_230: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0f394972eh
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3161,12 +3029,12 @@ rx_i_230: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_231: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0bb56428dh
 	mov ecx, r9d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_231
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -3183,12 +3051,11 @@ not_taken_ret_231:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_232: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 09ab46ab3h
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	divpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3196,11 +3063,11 @@ rx_i_232: ;FPDIV
 	movaps xmm7, xmm0
 
 rx_i_233: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 08eb2cd76h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r12d, 392389867
 	jo short taken_call_233
 	mov r14, rax
@@ -3210,27 +3077,23 @@ taken_call_233:
 	call rx_i_268
 
 rx_i_234: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0ba687578h
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	mov rcx, rax
+	mov ecx, r15d
+	call rx_readint_l1
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm4, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
 
 rx_i_235: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0b6cb9ff2h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r12d
 	imul rax, rcx
@@ -3241,20 +3104,20 @@ rx_i_235: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_236: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 03ad196ach
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm4
 	movaps xmm3, xmm0
 
 rx_i_237: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0fab4600h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r12d, -121899164
 	jge short taken_call_237
 	mov r11, rax
@@ -3264,11 +3127,11 @@ taken_call_237:
 	call rx_i_295
 
 rx_i_238: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0158f119fh
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm6
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -3277,32 +3140,31 @@ rx_i_238: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_239: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 044f30b3fh
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	add rax, r10
 	mov r10, rax
 
 rx_i_240: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0d65d29f9h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	mov rax, -423830277
 	imul rax, rcx
 	mov r8, rax
 
 rx_i_241: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0ce5260adh
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -3311,12 +3173,11 @@ rx_i_241: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_242: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01119b0f9h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	mov rcx, 319324914
 	mul rcx
 	mov rax, rdx
@@ -3327,31 +3188,29 @@ rx_i_242: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_243: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d6c2ce3dh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	xor rax, 1198180774
 	mov r14, rax
 
 rx_i_244: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0c6a6248h
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l2
 	addpd xmm0, xmm6
 	movaps xmm9, xmm0
 
 rx_i_245: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 084505739h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, -1546539637
 	mov rcx, rax
 	mov eax, r12d
@@ -3360,21 +3219,20 @@ rx_i_245: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_246: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 027eeaa2eh
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l2
 	and rax, r9
 	mov r12, rax
 
 rx_i_247: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0c4de0296h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r14d
 	imul rax, rcx
@@ -3385,12 +3243,11 @@ rx_i_247: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_248: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0649df46fh
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l2
 	mov ecx, eax
 	mov eax, r15d
 	imul rax, rcx
@@ -3401,11 +3258,11 @@ rx_i_248: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_249: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0499552cch
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r11d
 	imul rax, rcx
@@ -3416,12 +3273,11 @@ rx_i_249: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_250: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 083eafe6fh
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l2
 	imul rax, r8
 	mov rcx, rax
 	mov eax, r14d
@@ -3430,12 +3286,11 @@ rx_i_250: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_251: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0a25a4d8ah
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3447,21 +3302,21 @@ rx_i_251: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_252: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 08a75ad41h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r8
 	rol rax, cl
 	mov r14, rax
 
 rx_i_253: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 057f3f596h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r15d, 1699431947
 	jns short taken_call_253
 	mov rcx, rax
@@ -3475,11 +3330,11 @@ taken_call_253:
 	call rx_i_367
 
 rx_i_254: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 04cfb709eh
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm4
 	movaps xmm8, xmm0
 	mov eax, r8d
@@ -3488,11 +3343,11 @@ rx_i_254: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_255: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0b96ec9ech
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm5
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -3501,11 +3356,11 @@ rx_i_255: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_256: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 08375472ch
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r15
 	mul rcx
 	mov rax, rdx
@@ -3516,11 +3371,11 @@ rx_i_256: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_257: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d75a8c3fh
 	mov ecx, r12d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm5
 	movaps xmm3, xmm0
 	mov eax, r11d
@@ -3529,12 +3384,11 @@ rx_i_257: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_258: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 064fdbda0h
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r14d
 	imul rax, rcx
@@ -3545,22 +3399,20 @@ rx_i_258: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_259: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 02e36a073h
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm3, xmm0
 
 rx_i_260: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0f94e9fa9h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3568,11 +3420,11 @@ rx_i_260: ;FPMUL
 	movaps xmm9, xmm0
 
 rx_i_261: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 02346171ch
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm3, xmm0
@@ -3582,12 +3434,11 @@ rx_i_261: ;FPSQRT
 	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_262: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 01c42baa6h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	or eax, r13d
 	mov rcx, rax
 	mov eax, r11d
@@ -3596,11 +3447,11 @@ rx_i_262: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_263: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0b39b140h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	divpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3608,12 +3459,11 @@ rx_i_263: ;FPDIV
 	movaps xmm6, xmm0
 
 rx_i_264: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 01a07d201h
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3621,12 +3471,11 @@ rx_i_264: ;FPMUL
 	movaps xmm7, xmm0
 
 rx_i_265: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 07a3eb340h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l2
 	addpd xmm0, xmm8
 	movaps xmm2, xmm0
 	mov eax, r10d
@@ -3635,13 +3484,12 @@ rx_i_265: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_266: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 03d0a3a89h
-	mov eax, r13d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r13d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_266
 	xor rax, qword ptr [rsp + 8]
 	mov r10, rax
@@ -3650,22 +3498,20 @@ not_taken_ret_266:
 	mov r10, rax
 
 rx_i_267: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0c6c7b37h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	ror rax, 56
 	mov r11, rax
 
 rx_i_268: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0c2510cebh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	cmp r15d, -2062812966
 	jl short taken_call_268
 	mov r13, rax
@@ -3675,11 +3521,11 @@ taken_call_268:
 	call rx_i_381
 
 rx_i_269: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0c80cc899h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	ror rax, cl
 	mov rcx, rax
@@ -3689,11 +3535,11 @@ rx_i_269: ;ROR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_270: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0eb355caah
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3701,11 +3547,11 @@ rx_i_270: ;FPMUL
 	movaps xmm7, xmm0
 
 rx_i_271: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0c6f12299h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, -2032281772
 	imul rax, rcx
@@ -3716,22 +3562,20 @@ rx_i_271: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_272: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0695a5dd2h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	or eax, r12d
 	mov r13, rax
 
 rx_i_273: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0d315e4dch
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	cmp r12d, 1670848568
 	jl short taken_call_273
 	mov rcx, rax
@@ -3745,11 +3589,11 @@ taken_call_273:
 	call rx_i_372
 
 rx_i_274: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0b66ca7e0h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	subpd xmm0, xmm4
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -3758,20 +3602,20 @@ rx_i_274: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_275: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0788eceb7h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	or rax, r11
 	mov r13, rax
 
 rx_i_276: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0c6ac5edah
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r11d, -1236180570
 	jns short taken_call_276
 	mov rcx, rax
@@ -3785,11 +3629,11 @@ taken_call_276:
 	call rx_i_404
 
 rx_i_277: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0c9549789h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r10d
 	imul rax, rcx
@@ -3800,11 +3644,11 @@ rx_i_277: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_278: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0a2bc66c9h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm7
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -3813,11 +3657,11 @@ rx_i_278: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_279: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0f1a91458h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm5
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -3826,12 +3670,11 @@ rx_i_279: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_280: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 066246b43h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	and rax, r11
 	mov rcx, rax
 	mov eax, r13d
@@ -3840,11 +3683,11 @@ rx_i_280: ;AND_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_281: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 05a762727h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r10
 	mov rcx, rax
 	mov eax, r11d
@@ -3853,21 +3696,20 @@ rx_i_281: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_282: ;SUB_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0de1ab603h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub eax, 1367326224
 	mov r11, rax
 
 rx_i_283: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0df4d084fh
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	add eax, -1156732976
 	mov rcx, rax
 	mov eax, r12d
@@ -3876,11 +3718,11 @@ rx_i_283: ;ADD_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_284: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0e68f36ach
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm6
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -3889,33 +3731,31 @@ rx_i_284: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_285: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 09adb333bh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r8d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_286: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 082f5e36ch
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm7, xmm0
 
 rx_i_287: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 049547c9ch
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	or rax, r15
 	mov rcx, rax
 	mov eax, r8d
@@ -3924,12 +3764,11 @@ rx_i_287: ;OR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_288: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 08716ac8bh
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	imul rax, r8
 	mov rcx, rax
 	mov eax, r9d
@@ -3938,12 +3777,11 @@ rx_i_288: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_289: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0efef52b5h
-	mov eax, r14d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l2
 	divpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3951,11 +3789,11 @@ rx_i_289: ;FPDIV
 	movaps xmm8, xmm0
 
 rx_i_290: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 060665748h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	mulpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -3963,13 +3801,12 @@ rx_i_290: ;FPMUL
 	movaps xmm9, xmm0
 
 rx_i_291: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0ddf4bd1ah
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r13d
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_291
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -3986,31 +3823,30 @@ not_taken_ret_291:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_292: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 05a87cc3dh
-	mov eax, r13d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	ror rax, 23
 	mov r10, rax
 
 rx_i_293: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0c61f4279h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	subpd xmm0, xmm5
 	movaps xmm8, xmm0
 
 rx_i_294: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0f3b9d85h
 	mov ecx, r14d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_294
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -4027,20 +3863,20 @@ not_taken_ret_294:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_295: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f42798fdh
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm8
 	movaps xmm7, xmm0
 
 rx_i_296: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 018738758h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r9d, -207252278
 	jns short taken_call_296
 	mov rcx, rax
@@ -4054,32 +3890,29 @@ taken_call_296:
 	call rx_i_395
 
 rx_i_297: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0de3b9d9bh
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	add rax, r10
 	mov r14, rax
 
 rx_i_298: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 084f53637h
-	mov eax, r14d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	subpd xmm0, xmm7
 	movaps xmm6, xmm0
 
 rx_i_299: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 042f4897h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	add rax, 21400308
 	mov rcx, rax
 	mov eax, r12d
@@ -4088,21 +3921,20 @@ rx_i_299: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_300: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 095765693h
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	subpd xmm0, xmm8
 	movaps xmm2, xmm0
 
 rx_i_301: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0a0ec5eech
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm5
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4114,21 +3946,20 @@ rx_i_301: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_302: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0f6f8c345h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, r10
 	mov r11, rax
 
 rx_i_303: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 082a3e965h
-	mov eax, r14d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -4137,60 +3968,57 @@ rx_i_303: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_304: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 04940c652h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	imul rax, r15
 	mov r13, rax
 
 rx_i_305: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 03c6c62b8h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, rax, -65873120
 	mov r10, rax
 
 rx_i_306: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 08b34cdfch
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	add rax, r15
 	mov r13, rax
 
 rx_i_307: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 04c36adb1h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	sar rax, cl
 	mov r10, rax
 
 rx_i_308: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0a4213b21h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l2
 	imul rax, r13
 	mov r15, rax
 
 rx_i_309: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 090c42304h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov rcx, -1652850028
 	imul rcx
 	mov rax, rdx
@@ -4201,12 +4029,11 @@ rx_i_309: ;IMULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_310: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f78e1c8ch
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4218,11 +4045,11 @@ rx_i_310: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_311: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0ff8848cfh
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm4
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4230,32 +4057,31 @@ rx_i_311: ;FPMUL
 	movaps xmm4, xmm0
 
 rx_i_312: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0b18904cdh
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, -1147928648
 	imul rax, rcx
 	mov r10, rax
 
 rx_i_313: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0a0d0befh
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	addpd xmm0, xmm5
 	movaps xmm6, xmm0
 
 rx_i_314: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 01e3c65f7h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r9d
 	imul rax, rcx
@@ -4266,23 +4092,22 @@ rx_i_314: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_315: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 02e36ddafh
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov rcx, r15
 	shr rax, cl
 	mov r9, rax
 
 rx_i_316: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 05b0cb5bbh
 	mov ecx, r14d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_316
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -4299,29 +4124,29 @@ not_taken_ret_316:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_317: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0c74e7415h
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm7
 	movaps xmm5, xmm0
 
 rx_i_318: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 057621d9ah
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm7, xmm0
 
 rx_i_319: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 08ee02d99h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r15
 	rol rax, cl
 	mov rcx, rax
@@ -4331,11 +4156,11 @@ rx_i_319: ;ROL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_320: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 013461188h
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm4
 	movaps xmm2, xmm0
 	mov eax, r10d
@@ -4344,12 +4169,11 @@ rx_i_320: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_321: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0a7bae383h
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r9d
 	imul rax, rcx
@@ -4360,12 +4184,12 @@ rx_i_321: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_322: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 08215399bh
 	mov ecx, r14d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_322
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -4382,12 +4206,11 @@ not_taken_ret_322:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_323: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 07b07664bh
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	mov rcx, -696924877
 	mul rcx
 	mov rax, rdx
@@ -4398,12 +4221,11 @@ rx_i_323: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_324: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f956baffh
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm9, xmm0
@@ -4413,21 +4235,20 @@ rx_i_324: ;FPSQRT
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_325: ;SHL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0708ab9d1h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	shl rax, 24
 	mov r13, rax
 
 rx_i_326: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0d1b27540h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	mul rcx
 	mov rax, rdx
@@ -4438,33 +4259,31 @@ rx_i_326: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_327: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 09665f98dh
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	and rax, r15
 	mov r12, rax
 
 rx_i_328: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0fb9c32adh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	mov rcx, r13
 	rol rax, cl
 	mov r9, rax
 
 rx_i_329: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0e1110623h
 	mov ecx, r11d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_329
 	xor rax, qword ptr [rsp + 8]
 	mov r11, rax
@@ -4473,12 +4292,11 @@ not_taken_ret_329:
 	mov r11, rax
 
 rx_i_330: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f6a93f19h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r13d
 	imul rax, rcx
@@ -4489,22 +4307,20 @@ rx_i_330: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_331: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0bc9bbe4ah
-	mov eax, r9d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm9, xmm0
 
 rx_i_332: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0f253cd4eh
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm3, xmm0
 	mov eax, r11d
@@ -4513,31 +4329,29 @@ rx_i_332: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_333: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0f009758bh
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l2
 	xor rax, -175125848
 	mov r11, rax
 
 rx_i_334: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0dda04168h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add eax, r13d
 	mov r8, rax
 
 rx_i_335: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 03e6cfb73h
-	mov eax, r15d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	sub rax, r8
 	mov rcx, rax
 	mov eax, r12d
@@ -4546,21 +4360,20 @@ rx_i_335: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_336: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0aea0a435h
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	addpd xmm0, xmm2
 	movaps xmm3, xmm0
 
 rx_i_337: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 03d6c4ab2h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add eax, r12d
 	mov rcx, rax
 	mov eax, r13d
@@ -4569,41 +4382,38 @@ rx_i_337: ;ADD_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_338: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d428a742h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	imul rax, r12
 	mov r11, rax
 
 rx_i_339: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 04596ef73h
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm2, xmm0
 
 rx_i_340: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0e51629cch
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm5
 	movaps xmm5, xmm0
 
 rx_i_341: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 019eb9ea5h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r15d
 	imul rax, rcx
@@ -4614,11 +4424,11 @@ rx_i_341: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_342: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 09ccc7abah
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4626,12 +4436,11 @@ rx_i_342: ;FPMUL
 	movaps xmm3, xmm0
 
 rx_i_343: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 056f6cf0bh
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	shr rax, 48
 	mov rcx, rax
 	mov eax, r15d
@@ -4640,12 +4449,11 @@ rx_i_343: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_344: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 03ef9bcc4h
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4653,11 +4461,11 @@ rx_i_344: ;FPMUL
 	movaps xmm5, xmm0
 
 rx_i_345: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0bbbcdbach
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r13
 	mul rcx
 	mov rax, rdx
@@ -4668,11 +4476,11 @@ rx_i_345: ;MULH_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_346: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0ae9d1e96h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, r15
 	mov rcx, rax
 	mov eax, r13d
@@ -4681,22 +4489,20 @@ rx_i_346: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_347: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 070c34d69h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	add rax, r10
 	mov r13, rax
 
 rx_i_348: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0523ff904h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -4705,22 +4511,20 @@ rx_i_348: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_349: ;XOR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 018e0e5ddh
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l2
 	xor eax, r15d
 	mov r13, rax
 
 rx_i_350: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 09bd050f0h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	cmp r9d, -980411581
 	jbe short taken_call_350
 	mov rcx, rax
@@ -4734,20 +4538,20 @@ taken_call_350:
 	call rx_i_352
 
 rx_i_351: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0a3a5906fh
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, r10
 	mov r13, rax
 
 rx_i_352: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0afc9af2bh
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm2, xmm0
 	mov eax, r10d
@@ -4756,12 +4560,11 @@ rx_i_352: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_353: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 02e65278bh
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4773,22 +4576,22 @@ rx_i_353: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_354: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 02412fc10h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r13
 	mul rcx
 	mov rax, rdx
 	mov r13, rax
 
 rx_i_355: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 06bd6e65fh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r14
 	mov rcx, rax
 	mov eax, r8d
@@ -4797,31 +4600,29 @@ rx_i_355: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_356: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 01cd85d80h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, r10
 	mov r11, rax
 
 rx_i_357: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0f7daed36h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l2
 	add rax, 820073637
 	mov r11, rax
 
 rx_i_358: ;DIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 088fa6e5ah
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l2
 	mov ecx, 1
 	mov edx, r11d
 	test edx, edx
@@ -4831,11 +4632,11 @@ rx_i_358: ;DIV_64
 	mov r9, rax
 
 rx_i_359: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0714fc2cdh
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	subpd xmm0, xmm9
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -4844,12 +4645,11 @@ rx_i_359: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_360: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0c2d110b5h
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4857,11 +4657,11 @@ rx_i_360: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_361: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 01d125a7fh
 	mov ecx, r15d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm6, xmm0
@@ -4871,12 +4671,11 @@ rx_i_361: ;FPSQRT
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_362: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0ed8954bdh
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	sub rax, 1082179469
 	mov rcx, rax
 	mov eax, r15d
@@ -4885,12 +4684,11 @@ rx_i_362: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_363: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 09f75887bh
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm6
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -4898,23 +4696,22 @@ rx_i_363: ;FPMUL
 	movaps xmm3, xmm0
 
 rx_i_364: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0badaf867h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r8
 	mul rcx
 	mov rax, rdx
 	mov r8, rax
 
 rx_i_365: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 02db4444ah
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r9d
 	imul rax, rcx
@@ -4925,12 +4722,11 @@ rx_i_365: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_366: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0bff7218fh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r8d
 	imul rax, rcx
@@ -4941,11 +4737,11 @@ rx_i_366: ;IMUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_367: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 04d14cb3ah
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -4954,31 +4750,29 @@ rx_i_367: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_368: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0a14836bah
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r10
 	mov r8, rax
 
 rx_i_369: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 053fe22e2h
-	mov eax, r9d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	and rax, r13
 	mov r9, rax
 
 rx_i_370: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 010e1fb24h
-	mov eax, r15d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	subpd xmm0, xmm6
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -4987,11 +4781,11 @@ rx_i_370: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_371: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0ebbd5cc9h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5000,23 +4794,21 @@ rx_i_371: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_372: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 098ab79d7h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l2
 	mov rcx, r13
 	rol rax, cl
 	mov r9, rax
 
 rx_i_373: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 056438b3h
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l2
 	divpd xmm0, xmm8
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5024,11 +4816,11 @@ rx_i_373: ;FPDIV
 	movaps xmm4, xmm0
 
 rx_i_374: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0dbcce604h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5036,11 +4828,11 @@ rx_i_374: ;FPMUL
 	movaps xmm2, xmm0
 
 rx_i_375: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0edea6200h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, r15
 	mov rcx, rax
 	mov eax, r12d
@@ -5049,12 +4841,11 @@ rx_i_375: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_376: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 05e61b279h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	add rax, 476136066
 	mov rcx, rax
 	mov eax, r8d
@@ -5063,31 +4854,31 @@ rx_i_376: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_377: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0fc1fb433h
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm7, xmm0
 
 rx_i_378: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 082aa21ach
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, 547725353
 	imul rax, rcx
 	mov r15, rax
 
 rx_i_379: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 05dba41fbh
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5096,12 +4887,11 @@ rx_i_379: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_380: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0229e3d6eh
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	imul rax, rax, -1443002912
 	mov rcx, rax
 	mov eax, r13d
@@ -5110,21 +4900,21 @@ rx_i_380: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_381: ;SAR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 019816ff9h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r14
 	sar rax, cl
 	mov r9, rax
 
 rx_i_382: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 036b5b81fh
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm3, xmm0
 	mov eax, r11d
@@ -5133,12 +4923,11 @@ rx_i_382: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_383: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 05f798ec3h
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	subpd xmm0, xmm4
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5147,11 +4936,11 @@ rx_i_383: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_384: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 05b459fd7h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r11
 	shr rax, cl
 	mov rcx, rax
@@ -5161,11 +4950,11 @@ rx_i_384: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_385: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0c91749bbh
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r12
 	mov rcx, rax
 	mov eax, r13d
@@ -5174,31 +4963,30 @@ rx_i_385: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_386: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0575b4bdch
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm8
 	movaps xmm9, xmm0
 
 rx_i_387: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0d4f7bc6ah
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	imul rax, r15
 	mov r9, rax
 
 rx_i_388: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 08a949356h
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r8d
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_388
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -5215,12 +5003,11 @@ not_taken_ret_388:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_389: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 06531ad2eh
-	mov eax, r11d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	cmp r9d, -350609584
 	jge short taken_call_389
 	mov r14, rax
@@ -5230,32 +5017,29 @@ taken_call_389:
 	call rx_i_421
 
 rx_i_390: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 02914abeah
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	addpd xmm0, xmm4
 	movaps xmm3, xmm0
 
 rx_i_391: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0473a41f0h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm6, xmm0
 
 rx_i_392: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 01ebc1f0dh
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l2
 	ror rax, 0
 	mov rcx, rax
 	mov eax, r13d
@@ -5264,12 +5048,11 @@ rx_i_392: ;ROR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_393: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0742e95b1h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	or eax, 552339548
 	mov rcx, rax
 	mov eax, r13d
@@ -5278,22 +5061,20 @@ rx_i_393: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_394: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0db885c2ch
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm6, xmm0
 
 rx_i_395: ;IDIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04ae4fe8ch
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	mov edx, r13d
 	cmp edx, -1
 	jne short safe_idiv_395
@@ -5312,20 +5093,20 @@ result_idiv_395:
 	mov r8, rax
 
 rx_i_396: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 07b41862bh
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm7
 	movaps xmm4, xmm0
 
 rx_i_397: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0916f3819h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r12
 	mov rcx, rax
 	mov eax, r10d
@@ -5334,12 +5115,11 @@ rx_i_397: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_398: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04eb6fd2ah
-	mov eax, r8d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	rol rax, 44
 	mov rcx, rax
 	mov eax, r11d
@@ -5348,11 +5128,11 @@ rx_i_398: ;ROL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_399: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0899a98cfh
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	divpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5360,12 +5140,11 @@ rx_i_399: ;FPDIV
 	movaps xmm6, xmm0
 
 rx_i_400: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0aae75db6h
-	mov eax, r13d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	or eax, r11d
 	mov rcx, rax
 	mov eax, r14d
@@ -5374,12 +5153,11 @@ rx_i_400: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_401: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 032e81f25h
-	mov eax, r13d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm4
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5391,12 +5169,12 @@ rx_i_401: ;FPMUL
 	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_402: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0fa1a07ffh
 	mov ecx, r9d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_402
 	xor rax, qword ptr [rsp + 8]
 	mov r14, rax
@@ -5405,12 +5183,11 @@ not_taken_ret_402:
 	mov r14, rax
 
 rx_i_403: ;IDIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0e59500f7h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	mov edx, r12d
 	cmp edx, -1
 	jne short safe_idiv_403
@@ -5433,23 +5210,23 @@ result_idiv_403:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_404: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 05b8ceb2fh
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r8d
 	imul rax, rcx
 	mov r15, rax
 
 rx_i_405: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0f61082a3h
 	mov ecx, r8d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_405
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -5466,31 +5243,23 @@ not_taken_ret_405:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_406: ;FPROUND
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0af6886b7h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	mov rcx, rax
+	mov ecx, r9d
+	call rx_readint_l2
 	shl eax, 13
-	and rcx, -2048
 	and eax, 24576
-	cvtsi2sd xmm9, rcx
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
-	mov eax, r9d
-	xor eax, 09862adefh
-	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_407: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 09699566fh
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5498,11 +5267,11 @@ rx_i_407: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_408: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 066e79fa6h
 	mov ecx, r15d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r9
 	mov rcx, rax
 	mov eax, r10d
@@ -5511,22 +5280,21 @@ rx_i_408: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_409: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04b6caa9ah
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r15
 	mov r8, rax
 
 rx_i_410: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0d17f245eh
-	mov eax, r15d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r15d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_410
 	xor rax, qword ptr [rsp + 8]
 	mov r8, rax
@@ -5535,13 +5303,12 @@ not_taken_ret_410:
 	mov r8, rax
 
 rx_i_411: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0364f10e7h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r12d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_411
 	xor rax, qword ptr [rsp + 8]
 	mov r12, rax
@@ -5550,12 +5317,11 @@ not_taken_ret_411:
 	mov r12, rax
 
 rx_i_412: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0ac90e7ah
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l1
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm3, xmm0
@@ -5565,12 +5331,11 @@ rx_i_412: ;FPSQRT
 	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_413: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04b6037abh
-	mov eax, r11d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	divpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5578,11 +5343,11 @@ rx_i_413: ;FPDIV
 	movaps xmm4, xmm0
 
 rx_i_414: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 06c01554dh
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, r8
 	mov rcx, rax
 	mov eax, r10d
@@ -5591,23 +5356,22 @@ rx_i_414: ;OR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_415: ;DIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 08c3e59a1h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, -538093385
 	xor edx, edx
 	div rcx
 	mov r9, rax
 
 rx_i_416: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0f3fafde9h
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5616,31 +5380,31 @@ rx_i_416: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_417: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 03c6481fah
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r12
 	mov r10, rax
 
 rx_i_418: ;MULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 02bd61c5fh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r11
 	mul rcx
 	mov rax, rdx
 	mov r10, rax
 
 rx_i_419: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0b6ab9d32h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor rax, r14
 	mov rcx, rax
 	mov eax, r14d
@@ -5649,12 +5413,11 @@ rx_i_419: ;XOR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_420: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0f9690ceah
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	addpd xmm0, xmm3
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -5663,13 +5426,12 @@ rx_i_420: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_421: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01ada0f39h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r12d
+	call rx_readint_l2
+	cmp rsp, rbx
 	je short not_taken_ret_421
 	xor rax, qword ptr [rsp + 8]
 	mov r10, rax
@@ -5678,22 +5440,22 @@ not_taken_ret_421:
 	mov r10, rax
 
 rx_i_422: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 04dd16ca4h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	movsxd rcx, eax
 	movsxd rax, r10d
 	imul rax, rcx
 	mov r13, rax
 
 rx_i_423: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 04df5ce05h
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r10
 	mov rcx, rax
 	mov eax, r15d
@@ -5702,11 +5464,11 @@ rx_i_423: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_424: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 01ad12ce2h
 	mov ecx, r13d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm7
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -5715,23 +5477,22 @@ rx_i_424: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_425: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0a3c5391dh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r10d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_426: ;AND_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 09dd55ba0h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	and rax, r9
 	mov rcx, rax
 	mov eax, r14d
@@ -5740,12 +5501,11 @@ rx_i_426: ;AND_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_427: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0d6cae9aeh
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r11d
 	imul rax, rcx
@@ -5756,13 +5516,12 @@ rx_i_427: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_428: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0f807a961h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r11d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_428
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -5779,21 +5538,20 @@ not_taken_ret_428:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_429: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0650a4102h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	imul rax, rax, 1990438276
 	mov r15, rax
 
 rx_i_430: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 019cc0e5h
 	mov ecx, r14d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm8
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5802,11 +5560,11 @@ rx_i_430: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_431: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0ed17ab58h
 	mov ecx, r12d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm5
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -5815,20 +5573,20 @@ rx_i_431: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_432: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 01c3b321fh
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	sub rax, r10
 	mov r8, rax
 
 rx_i_433: ;ADD_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0bbb88499h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add eax, r12d
 	mov rcx, rax
 	mov eax, r12d
@@ -5837,11 +5595,11 @@ rx_i_433: ;ADD_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_434: ;FPSQRT
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0167edabdh
 	mov ecx, r13d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	andps xmm0, xmm10
 	sqrtpd xmm0, xmm0
 	movaps xmm9, xmm0
@@ -5851,12 +5609,11 @@ rx_i_434: ;FPSQRT
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_435: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0b940480ah
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	imul rax, r15
 	mov rcx, rax
 	mov eax, r9d
@@ -5865,12 +5622,11 @@ rx_i_435: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_436: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0bfc3ca8bh
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l2
 	addpd xmm0, xmm2
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -5879,11 +5635,11 @@ rx_i_436: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_437: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 098a6bcf7h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	divpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5891,11 +5647,11 @@ rx_i_437: ;FPDIV
 	movaps xmm8, xmm0
 
 rx_i_438: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0325b38ebh
 	mov ecx, r10d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -5903,11 +5659,11 @@ rx_i_438: ;FPMUL
 	movaps xmm4, xmm0
 
 rx_i_439: ;XOR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 05e807e81h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	xor eax, r15d
 	mov rcx, rax
 	mov eax, r10d
@@ -5916,13 +5672,12 @@ rx_i_439: ;XOR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_440: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 062f83728h
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r10d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_440
 	xor rax, qword ptr [rsp + 8]
 	mov r9, rax
@@ -5931,11 +5686,11 @@ not_taken_ret_440:
 	mov r9, rax
 
 rx_i_441: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0d18ec075h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, 529736748
 	mov rcx, rax
 	mov eax, r9d
@@ -5944,11 +5699,11 @@ rx_i_441: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_442: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0a53dd1bh
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	cmp r15d, 799523062
 	jbe short taken_call_442
 	mov rcx, rax
@@ -5962,13 +5717,12 @@ taken_call_442:
 	call rx_i_9
 
 rx_i_443: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0232d1285h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r14d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_443
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -5985,12 +5739,11 @@ not_taken_ret_443:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_444: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 042455dd8h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l2
 	mulpd xmm0, xmm7
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6002,11 +5755,11 @@ rx_i_444: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_445: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 09ae009b2h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, r11
 	mov rcx, rax
 	mov eax, r9d
@@ -6015,11 +5768,11 @@ rx_i_445: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_446: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 01734708eh
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, r15d
 	imul rax, rcx
@@ -6030,11 +5783,11 @@ rx_i_446: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_447: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 01596d0e8h
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	subpd xmm0, xmm7
 	movaps xmm5, xmm0
 	mov eax, r13d
@@ -6043,31 +5796,29 @@ rx_i_447: ;FPSUB
 	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_448: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0390cfdb0h
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	subpd xmm0, xmm3
 	movaps xmm9, xmm0
 
 rx_i_449: ;ROR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04f27744bh
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	ror rax, 28
 	mov r8, rax
 
 rx_i_450: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 04e2c76ffh
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r12
 	rol rax, cl
 	mov rcx, rax
@@ -6077,21 +5828,21 @@ rx_i_450: ;ROL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_451: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0c4d99ac9h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	add rax, -287502157
 	mov r8, rax
 
 rx_i_452: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 040130b88h
 	mov ecx, r13d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_452
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -6108,23 +5859,22 @@ not_taken_ret_452:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_453: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0a2096aa4h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r14
 	imul rcx
 	mov rax, rdx
 	mov r8, rax
 
 rx_i_454: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 081314291h
-	mov eax, r13d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -6133,21 +5883,20 @@ rx_i_454: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_455: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 059263cdbh
-	mov eax, r8d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readint_l1
 	xor rax, r9
 	mov r8, rax
 
 rx_i_456: ;OR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 010e8fe6h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	or eax, r11d
 	mov rcx, rax
 	mov eax, r9d
@@ -6156,11 +5905,11 @@ rx_i_456: ;OR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_457: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 09de1a3efh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r10
 	mov rcx, rax
 	mov eax, r10d
@@ -6169,20 +5918,20 @@ rx_i_457: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_458: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 05c79df6eh
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	rol rax, 22
 	mov r14, rax
 
 rx_i_459: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0346f46adh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, rax, 381354340
 	mov rcx, rax
 	mov eax, r13d
@@ -6191,11 +5940,11 @@ rx_i_459: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_460: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 098ab71fch
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, r14
 	mov rcx, rax
 	mov eax, r12d
@@ -6204,11 +5953,11 @@ rx_i_460: ;SUB_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_461: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0c814e926h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov rcx, r13
 	shr rax, cl
 	mov rcx, rax
@@ -6218,31 +5967,29 @@ rx_i_461: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_462: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0c64b4a9eh
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l2
 	add rax, -1734323376
 	mov r15, rax
 
 rx_i_463: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 08c29341h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l1
 	sub rax, r15
 	mov r10, rax
 
 rx_i_464: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 06ff587fdh
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r15
 	mov rcx, rax
 	mov eax, r13d
@@ -6251,43 +5998,40 @@ rx_i_464: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_465: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0b62c0003h
-	mov eax, r12d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l2
 	addpd xmm0, xmm5
 	movaps xmm2, xmm0
 
 rx_i_466: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 05c541c42h
-	mov eax, r13d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readint_l1
 	movsxd rcx, eax
 	mov rax, 282682508
 	imul rax, rcx
 	mov r9, rax
 
 rx_i_467: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0cbb33f81h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm8, xmm0
 
 rx_i_468: ;IDIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 091044dc3h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov edx, -13394825
 	cmp edx, -1
 	jne short safe_idiv_468
@@ -6310,11 +6054,11 @@ result_idiv_468:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_469: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0c0186beh
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov ecx, eax
 	mov eax, 294019485
 	imul rax, rcx
@@ -6325,11 +6069,11 @@ rx_i_469: ;MUL_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_470: ;XOR_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 090849e3eh
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	xor eax, r11d
 	mov rcx, rax
 	mov eax, r14d
@@ -6338,24 +6082,22 @@ rx_i_470: ;XOR_32
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_471: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0cedba9b6h
-	mov eax, r14d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	movsxd rcx, eax
 	movsxd rax, r13d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_472: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 038f4b9d6h
-	mov eax, r9d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readint_l2
 	cmp r10d, 1738497427
 	jl short taken_call_472
 	mov r10, rax
@@ -6365,21 +6107,20 @@ taken_call_472:
 	call rx_i_8
 
 rx_i_473: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 01fb7637dh
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	imul rax, rax, -751043211
 	mov r12, rax
 
 rx_i_474: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0b5c0b4d4h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r15d, -233120543
 	jo short taken_call_474
 	mov r15, rax
@@ -6389,32 +6130,29 @@ taken_call_474:
 	call rx_i_69
 
 rx_i_475: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0910dcdeeh
-	mov eax, r10d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readfloat_l2
 	subpd xmm0, xmm9
 	movaps xmm7, xmm0
 
 rx_i_476: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 07ab3b5a4h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm9, xmm0
 
 rx_i_477: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 07a29ec63h
-	mov eax, r12d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm6, xmm0
 	mov eax, r14d
@@ -6423,21 +6161,20 @@ rx_i_477: ;FPADD
 	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_478: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 02d3d7e7fh
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	imul rax, r10
 	mov r12, rax
 
 rx_i_479: ;MUL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 09b49c793h
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	imul rax, r14
 	mov rcx, rax
 	mov eax, r13d
@@ -6446,22 +6183,20 @@ rx_i_479: ;MUL_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_480: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0a9cc4f01h
-	mov eax, r9d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r9d
+	call rx_readfloat_l1
 	subpd xmm0, xmm4
 	movaps xmm6, xmm0
 
 rx_i_481: ;DIV_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0225ba1f9h
-	mov eax, r14d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r14d
+	call rx_readint_l1
 	mov ecx, 1
 	mov edx, r13d
 	test edx, edx
@@ -6471,38 +6206,38 @@ rx_i_481: ;DIV_64
 	mov r12, rax
 
 rx_i_482: ;XOR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 044a0f592h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	xor rax, r12
 	mov r11, rax
 
 rx_i_483: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 07f71f219h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	addpd xmm0, xmm6
 	movaps xmm6, xmm0
 
 rx_i_484: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 07027bacdh
 	mov ecx, r12d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	rol rax, 37
 	mov r11, rax
 
 rx_i_485: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 03a04647h
 	mov ecx, r13d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	cmp r8d, 554879918
 	jno short taken_call_485
 	mov rcx, rax
@@ -6516,12 +6251,11 @@ taken_call_485:
 	call rx_i_58
 
 rx_i_486: ;ADD_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0ad072937h
-	mov eax, r15d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readint_l1
 	add rax, 942846898
 	mov rcx, rax
 	mov eax, r8d
@@ -6530,33 +6264,31 @@ rx_i_486: ;ADD_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_487: ;SUB_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 07f78ad34h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	sub rax, -333279706
 	mov r11, rax
 
 rx_i_488: ;IMULH_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 0d8b1788eh
-	mov eax, r12d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l1
 	mov rcx, 297357073
 	imul rcx
 	mov rax, rdx
 	mov r12, rax
 
 rx_i_489: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0b2ec9f3ah
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	cmp r15d, -1127175870
 	jge short taken_call_489
 	mov rcx, rax
@@ -6570,20 +6302,20 @@ taken_call_489:
 	call rx_i_75
 
 rx_i_490: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 015c7f598h
 	mov ecx, r11d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm7, xmm0
 
 rx_i_491: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0902da6bdh
 	mov ecx, r8d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	addpd xmm0, xmm9
 	movaps xmm7, xmm0
 	mov eax, r15d
@@ -6592,42 +6324,40 @@ rx_i_491: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_492: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0491090d9h
 	mov ecx, r9d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	or rax, r9
 	mov r12, rax
 
 rx_i_493: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 09de81282h
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	subpd xmm0, xmm9
 	movaps xmm4, xmm0
 
 rx_i_494: ;MUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0b0d50e46h
 	mov ecx, r10d
-	call rx_read_dataset_r
+	call rx_readint_l2
 	mov ecx, eax
 	mov eax, r11d
 	imul rax, rcx
 	mov r14, rax
 
 rx_i_495: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 0e276cad1h
-	mov eax, r11d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm2
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6635,21 +6365,20 @@ rx_i_495: ;FPMUL
 	movaps xmm8, xmm0
 
 rx_i_496: ;OR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r14, 0fe757b73h
 	mov ecx, r14d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	or rax, -359802064
 	mov r9, rax
 
 rx_i_497: ;FPDIV
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 08d25742eh
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	divpd xmm0, xmm3
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6657,12 +6386,11 @@ rx_i_497: ;FPDIV
 	movaps xmm8, xmm0
 
 rx_i_498: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r15, 0e066fd15h
-	mov eax, r15d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r15d
+	call rx_readfloat_l1
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6674,24 +6402,22 @@ rx_i_498: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_499: ;IMUL_32
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 08925556bh
-	mov eax, r12d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r12d
+	call rx_readint_l2
 	movsxd rcx, eax
 	mov rax, -1795485757
 	imul rax, rcx
 	mov r8, rax
 
 rx_i_500: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 04bc870ebh
-	mov eax, r10d
-	and eax, 32767
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r10d
+	call rx_readint_l1
 	cmp r13d, 1243939650
 	jl short taken_call_500
 	mov rcx, rax
@@ -6705,11 +6431,11 @@ taken_call_500:
 	call rx_i_511
 
 rx_i_501: ;SHR_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 07d46c503h
 	mov ecx, r8d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r10
 	shr rax, cl
 	mov rcx, rax
@@ -6719,12 +6445,12 @@ rx_i_501: ;SHR_64
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_502: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 09e70b20ch
 	mov ecx, r10d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_502
 	xor rax, qword ptr [rsp + 8]
 	mov rcx, rax
@@ -6741,12 +6467,11 @@ not_taken_ret_502:
 	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_503: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0442e4850h
-	mov eax, r13d
-	and eax, 32767
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm9, xmm0
 	mov eax, r9d
@@ -6755,12 +6480,11 @@ rx_i_503: ;FPSUB
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_504: ;FPADD
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 099d48347h
-	mov eax, r13d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r13d
+	call rx_readfloat_l1
 	addpd xmm0, xmm9
 	movaps xmm4, xmm0
 	mov eax, r12d
@@ -6769,11 +6493,11 @@ rx_i_504: ;FPADD
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_505: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r12, 032c0a28ah
 	mov ecx, r12d
-	call rx_read_dataset_f
+	call rx_readfloat_l2
 	mulpd xmm0, xmm4
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6785,11 +6509,11 @@ rx_i_505: ;FPMUL
 	movlpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_506: ;FPMUL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r9, 0a973d58ch
 	mov ecx, r9d
-	call rx_read_dataset_f
+	call rx_readfloat_l1
 	mulpd xmm0, xmm9
 	movaps xmm1, xmm0
 	cmpeqpd xmm1, xmm1
@@ -6797,13 +6521,12 @@ rx_i_506: ;FPMUL
 	movaps xmm3, xmm0
 
 rx_i_507: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r10, 0d3b7165ch
-	mov eax, r10d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
-	cmp rsp, rbp
+	mov ecx, r10d
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_507
 	xor rax, qword ptr [rsp + 8]
 	mov r14, rax
@@ -6812,12 +6535,12 @@ not_taken_ret_507:
 	mov r14, rax
 
 rx_i_508: ;RET
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r13, 0da34d818h
 	mov ecx, r13d
-	call rx_read_dataset_r
-	cmp rsp, rbp
+	call rx_readint_l1
+	cmp rsp, rbx
 	je short not_taken_ret_508
 	xor rax, qword ptr [rsp + 8]
 	mov r8, rax
@@ -6826,12 +6549,11 @@ not_taken_ret_508:
 	mov r8, rax
 
 rx_i_509: ;CALL
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 01b2873f2h
-	mov eax, r11d
-	and eax, 2047
-	mov rax, qword ptr [rsi + rax * 8]
+	mov ecx, r11d
+	call rx_readint_l1
 	cmp r8d, 1826115244
 	jno short taken_call_509
 	mov r10, rax
@@ -6841,21 +6563,20 @@ taken_call_509:
 	call rx_i_42
 
 rx_i_510: ;FPSUB
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r8, 0db65513ch
-	mov eax, r8d
-	and eax, 2047
-	cvtdq2pd xmm0, qword ptr [rsi + rax * 8]
+	mov ecx, r8d
+	call rx_readfloat_l1
 	subpd xmm0, xmm2
 	movaps xmm9, xmm0
 
 rx_i_511: ;ROL_64
-	dec edi
+	dec ebp
 	jz rx_finish
 	xor r11, 02bd79286h
 	mov ecx, r11d
-	call rx_read_dataset_r
+	call rx_readint_l1
 	mov rcx, r10
 	rol rax, cl
 	mov r11, rax

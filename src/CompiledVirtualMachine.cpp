@@ -47,8 +47,8 @@ namespace RandomX {
 	}
 
 	void CompiledVirtualMachine::execute() {
-		//executeProgram(reg, mem, scratchpad, readDataset);
-		compiler.getProgramFunc()(reg, mem, scratchpad);
+		executeProgram(reg, mem, scratchpad, readDataset);
+		//compiler.getProgramFunc()(reg, mem, scratchpad);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
 			std::cout << std::hex << tracepad[i].u64 << std::endl;

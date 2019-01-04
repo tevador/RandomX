@@ -15,19 +15,19 @@
 ;# You should have received a copy of the GNU General Public License
 ;# along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
-PUBLIC executeProgram
+_RANDOMX_EXECUTE_PROGRAM SEGMENT PAGE READ EXECUTE
 
-.code
+PUBLIC executeProgram
 
 executeProgram PROC
 	; REGISTER ALLOCATION:
 	; rax -> temporary
-	; rbx -> MemoryRegisters& memory
+	; rbx -> beginning of VM stack
 	; rcx -> temporary
 	; rdx -> temporary
 	; rsi -> convertible_t& scratchpad
-	; rdi -> "ic" (instruction counter)
-	; rbp	-> beginning of VM stack
+	; rdi -> "mx"
+	; rbp	-> "ic"
 	; rsp -> end of VM stack
 	; r8 	-> "r0"
 	; r9 	-> "r1"
@@ -55,7 +55,8 @@ executeProgram PROC
 	;   | saved registers
 	;   |
 	;   v
-	; [rbp] RegisterFile& registerFile
+	; [rbx+8] RegisterFile& registerFile
+	; [rbx+0] uint8_t* dataset
 	;   |
 	;   |
 	;   | VM stack
@@ -80,17 +81,18 @@ executeProgram PROC
 	movdqu xmmword ptr [rsp+0], xmm10
 
 	; function arguments
-	push rcx				; RegisterFile& registerFile
-	mov rbx, rdx		; MemoryRegisters& memory
-	mov rsi, r8			; convertible_t& scratchpad
-	push r9
+	push rcx                    ; RegisterFile& registerFile
+	mov edi, dword ptr [rdx]    ; "mx"
+	mov rax, qword ptr [rdx+8]  ; uint8_t* dataset
+	push rax
+	mov rsi, r8                 ; convertible_t* scratchpad
 
-	mov rbp, rsp			; beginning of VM stack
-	mov rdi, 1048577	; number of VM instructions to execute + 1
+	mov rbx, rsp                ; beginning of VM stack
+	mov ebp, 524289             ; number of VM instructions to execute + 1
 
 	xorps xmm10, xmm10
 	cmpeqpd xmm10, xmm10
-	psrlq xmm10, 1		; mask for absolute value = 0x7fffffffffffffff7fffffffffffffff
+	psrlq xmm10, 1		          ; mask for absolute value = 0x7fffffffffffffff7fffffffffffffff
 
 	; reset rounding mode
 	mov dword ptr [rsp-8], 40896
@@ -162,7 +164,7 @@ executeProgram PROC
 
 rx_finish:
 	; unroll the stack
-	mov rsp, rbp
+	mov rsp, rbx
 
 	; save VM register values
 	pop rcx
@@ -202,57 +204,103 @@ rx_finish:
 	pop rbx
 
 	; return
-	ret	0
+	ret
+	
+TransformAddress MACRO reg32, reg64
+;# Transforms the address in the register so that the transformed address
+;# lies in a different cache line than the original address (mod 2^N).
+;# This is done to prevent a load-store dependency.
+;# There are 3 different transformations that can be used: x -> 9*x+C, x -> x+C, x -> x^C
+	lea reg32, [reg64+reg64*8+127]  ;# C = -119 -110 -101 -92 -83 -74 -65 -55 -46 -37 -28 -19 -10 -1 9 18 27 36 45 54 63 73 82 91 100 109 118 127
+	;lea reg32, [reg64-128]         ;# C = all except -7 to +7
+	;xor reg32, -8                  ;# C = all except 0 to 7
+ENDM
 
+ReadMemoryRandom MACRO spmask, float
+;# IN     ecx = random 32-bit address
+;# OUT    rax = 64-bit integer return value
+;# OUT   xmm0 = 128-bit floating point return value
+;# GLOBAL rbp = "ic" number of instructions until the end of the program
+;# GLOBAL rbx = address of the dataset address
+;# GLOBAL rsi = address of the scratchpad
+;# GLOBAL rdi = "mx" random 32-bit dataset address
+;# MODIFY rcx, rdx
+LOCAL L_prefetch, L_read, L_return
+	mov eax, ebp
+	and al, 63
+	jz short L_prefetch     ;# "ic" divisible by 64 -> prefetch
+	xor edx, edx
+	cmp al, 14
+	je short L_read         ;# "ic" = 14 (mod 64) -> random read
+	cmovb edx, ecx          ;# "ic" < 14 (mod 64) -> modify random read address
+	xor edi, edx
+L_return:
+	and ecx, spmask                 ;# limit address to the specified scratchpad size
+IF float
+	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
+ELSE
+	mov rax, qword ptr [rsi+rcx*8]
+ENDIF
+	ret	
+L_prefetch:
+	mov rax, qword ptr [rbx]        ;# load the dataset address
+	and edi, -64                    ;# align "mx" to the start of a cache line
+	prefetchnta byte ptr [rax+rdi]
+	jmp short L_return
+L_read:
+	push rcx
+	TransformAddress ecx, rcx       ;# TransformAddress function
+	and ecx, spmask-7               ;# limit address to the specified scratchpad size aligned to multiple of 8
+	call rx_read_dataset
+	pop rcx
+	jmp short L_return
+ENDM
+
+ALIGN 64
+rx_readint_l1:
+ReadMemoryRandom 2047, 0
+
+ALIGN 64
+rx_readint_l2:
+ReadMemoryRandom 32767, 0
+
+ALIGN 64
+rx_readfloat_l1:
+ReadMemoryRandom 2047, 1
+
+ALIGN 64
+rx_readfloat_l2:
+ReadMemoryRandom 32767, 1
+
+ALIGN 64
 rx_read_dataset:
-	push r8
-	push r9
-	push r10
-	push r11
-	mov rdx, rbx
-	movd qword ptr [rsp - 8], xmm1
-	movd qword ptr [rsp - 16], xmm2
-	sub rsp, 48
-	call qword ptr [rbp]
-	add rsp, 48
-	movd xmm2, qword ptr [rsp - 16]
-	movd xmm1, qword ptr [rsp - 8]
-	pop r11
-	pop r10
-	pop r9
-	pop r8
-	ret 0
-
-rx_read_dataset_r:
-	mov edx, dword ptr [rbx]	; ma
-	mov rax, qword ptr [rbx+8]	; dataset
-	mov rax, qword ptr [rax+rdx]
-	add dword ptr [rbx], 8
-	xor ecx, dword ptr [rbx+4]	; mx
-	mov dword ptr [rbx+4], ecx
-	test ecx, 0FFF8h
-	jne short rx_read_dataset_r_ret
-	and ecx, -8
-	mov dword ptr [rbx], ecx
-	mov rdx, qword ptr [rbx+8]
-	prefetcht0 byte ptr [rdx+rcx]
-rx_read_dataset_r_ret:
-	ret 0
-
-rx_read_dataset_f:
-	mov edx, dword ptr [rbx]	; ma
-	mov rax, qword ptr [rbx+8]	; dataset
-	cvtdq2pd xmm0, qword ptr [rax+rdx]
-	add dword ptr [rbx], 8
-	xor ecx, dword ptr [rbx+4]	; mx
-	mov dword ptr [rbx+4], ecx
-	test ecx, 0FFF8h
-	jne short rx_read_dataset_f_ret
-	and ecx, -8
-	mov dword ptr [rbx], ecx
-	prefetcht0 byte ptr [rax+rcx]
-rx_read_dataset_f_ret:
-	ret 0
+;# IN     rcx = scratchpad index - must be divisible by 8
+;# GLOBAL rbx = address of the dataset address
+;# GLOBAL rsi = address of the scratchpad
+;# GLOBAL rdi = "mx" random 32-bit dataset address
+;# MODIFY rax, rcx, rdx
+	mov rax, qword ptr [rbx]        ;# load the dataset address
+	lea rcx, [rsi+rcx*8]            ;# scratchpad cache line
+	lea rax, [rax+rdi]              ;# dataset cache line	              
+	mov rdx, qword ptr [rax+0]      ;# load first dataset quadword (prefetched into the cache by now)
+	xor qword ptr [rcx+0], rdx      ;# XOR the dataset item with a scratchpad item, repeat for the rest of the cacheline
+	mov rdx, qword ptr [rax+8]
+	xor qword ptr [rcx+8], rdx
+	mov rdx, qword ptr [rax+16]
+	xor qword ptr [rcx+16], rdx
+	mov rdx, qword ptr [rax+24]
+	xor qword ptr [rcx+24], rdx
+	mov rdx, qword ptr [rax+32]
+	xor qword ptr [rcx+32], rdx
+	mov rdx, qword ptr [rax+40]
+	xor qword ptr [rcx+40], rdx
+	mov rdx, qword ptr [rax+48]
+	xor qword ptr [rcx+48], rdx
+	mov rdx, qword ptr [rax+56]
+	xor qword ptr [rcx+56], rdx
+	ret
 executeProgram ENDP
+
+_RANDOMX_EXECUTE_PROGRAM ENDS
 
 END

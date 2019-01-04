@@ -28,6 +28,11 @@ namespace RandomX {
 	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
 	static const char* regF[8] = { "xmm8", "xmm9", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
 
+	static const char* regMx = "edi";
+	static const char* regIc = "ebp";
+	static const char* regStackBeginAddr = "rbx";
+	static const char* regScratchpadAddr = "rsi";
+
 	void AssemblyGeneratorX86::generateProgram(const void* seed) {
 		asmCode.str(std::string()); //clear
 		Pcg32 gen(seed);
@@ -48,7 +53,7 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::generateCode(Instruction& instr, int i) {
 		asmCode << "rx_i_" << i << ": ;" << instr.getName() << std::endl;
-		asmCode << "\tdec edi" << std::endl;
+		asmCode << "\tdec " << regIc << std::endl;
 		asmCode << "\tjz rx_finish" << std::endl;
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
@@ -56,54 +61,34 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::genar(Instruction& instr) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
-		switch (instr.loca & 7)
+		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
+		switch (instr.loca & 3)
 		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tcall rx_read_dataset_r" << std::endl;
-			return;
-
-		case 4:
-			asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-			asmCode << "\tmov rax, qword ptr [rsi + rax * 8]" << std::endl;
-			return;
-
-		default:
-			asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-			asmCode << "\tmov rax, qword ptr [rsi + rax * 8]" << std::endl;
-			return;
+			case 0:
+			case 1:
+			case 2:
+				asmCode << "\tcall rx_readint_l1" << std::endl;
+				return;
+			default: //3
+				asmCode << "\tcall rx_readint_l2" << std::endl;
+				return;
 		}
 	}
 
 
 	void AssemblyGeneratorX86::genaf(Instruction& instr) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
-		switch (instr.loca & 7)
+		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
+		switch (instr.loca & 3)
 		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tcall rx_read_dataset_f" << std::endl;
-			return;
-
-		case 4:
-			asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-			asmCode << "\tcvtdq2pd xmm0, qword ptr [rsi + rax * 8]" << std::endl;
-			return;
-
-		default:
-			asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-			asmCode << "\tcvtdq2pd xmm0, qword ptr [rsi + rax * 8]" << std::endl;
-			return;
+			case 0:
+			case 1:
+			case 2:
+				asmCode << "\tcall rx_readfloat_l1" << std::endl;
+				return;
+			default: //3
+				asmCode << "\tcall rx_readfloat_l2" << std::endl;
+				return;
 		}
 	}
 
@@ -169,9 +154,9 @@ namespace RandomX {
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
 			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
+			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262136], rcx" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rcx" << std::endl;
 			}
 			return;
 
@@ -182,31 +167,31 @@ namespace RandomX {
 			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
 			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-			asmCode << "\tmov qword ptr [rsi + rax * 8], rcx" << std::endl;
+			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262136], rcx" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rcx" << std::endl;
 			}
 			return;
 
 		default:
 			asmCode << "\tmov " << regR[instr.regc % RegistersCount] << ", rax" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262136], rax" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rax" << std::endl;
 			}
+			return;
 		}
 	}
 
-	void AssemblyGeneratorX86::gencf(Instruction& instr, bool alwaysLow = false) {
-		if(!alwaysLow)
-			asmCode << "\tmovaps " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
-		const char* store = (!alwaysLow && (instr.locc & 8)) ? "movhpd" : "movlpd";
+	void AssemblyGeneratorX86::gencf(Instruction& instr) {
+		asmCode << "\tmovaps " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
+		const char* store = (instr.locc & 8) ? "movhpd" : "movlpd";
 		switch (instr.locc & 7)
 		{
 			case 4:
 				asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
 				asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 				asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-				asmCode << "\t" << store << " qword ptr [rsi + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
+				asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
 				break;
 
 			case 5:
@@ -215,11 +200,11 @@ namespace RandomX {
 				asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
 				asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
 				asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-				asmCode << "\t" << store << " qword ptr [rsi + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
+				asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
 				break;
 		}
 		if (trace) {
-			asmCode << "\t" << store << " qword ptr [rsi + rdi * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;
+			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;
 		}
 	}
 
@@ -454,15 +439,14 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::h_FPROUND(Instruction& instr, int i) {
 		genar(instr);
-		asmCode << "\tmov rcx, rax" << std::endl;
+		//asmCode << "\tmov rcx, rax" << std::endl;
 		asmCode << "\tshl eax, 13" << std::endl;
-		asmCode << "\tand rcx, -2048" << std::endl;
+		//asmCode << "\tand rcx, -2048" << std::endl;
 		asmCode << "\tand eax, 24576" << std::endl;
-		asmCode << "\tcvtsi2sd " << regF[instr.regc % RegistersCount] << ", rcx" << std::endl;
+		//asmCode << "\tmovaps " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
 		asmCode << "\tor eax, 40896" << std::endl;
 		asmCode << "\tmov dword ptr [rsp - 8], eax" << std::endl;
 		asmCode << "\tldmxcsr dword ptr [rsp - 8]" << std::endl;
-		gencf(instr, true);
 	}
 
 	static inline const char* jumpCondition(Instruction& instr, bool invert = false) {
@@ -496,7 +480,7 @@ namespace RandomX {
 		asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
 		asmCode << "taken_call_" << i << ":" << std::endl;
 		if (trace) {
-			asmCode << "\tmov qword ptr [rsi + rdi * 8 + 262136], rax" << std::endl;
+			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rax" << std::endl;
 		}
 		asmCode << "\tpush rax" << std::endl;
 		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
@@ -504,7 +488,7 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {
 		genar(instr);
-		asmCode << "\tcmp rsp, rbp" << std::endl;
+		asmCode << "\tcmp rsp, " << regStackBeginAddr << std::endl;
 		asmCode << "\tje short not_taken_ret_" << i << std::endl;
 		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;
 		gencr(instr);
