@@ -88,7 +88,7 @@ executeProgram PROC
 	mov rsi, r8                 ; convertible_t* scratchpad
 
 	mov rbx, rsp                ; beginning of VM stack
-	mov ebp, 524289             ; number of VM instructions to execute + 1
+	mov ebp, 1048577            ; number of VM instructions to execute + 1
 
 	xorps xmm10, xmm10
 	cmpeqpd xmm10, xmm10
