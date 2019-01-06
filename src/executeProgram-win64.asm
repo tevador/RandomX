@@ -223,17 +223,12 @@ ReadMemoryRandom MACRO spmask, float
 ;# GLOBAL rbp = "ic" number of instructions until the end of the program
 ;# GLOBAL rbx = address of the dataset address
 ;# GLOBAL rsi = address of the scratchpad
-;# GLOBAL rdi = "mx" random 32-bit dataset address
+;# GLOBAL rdi = low 32 bits = "mx", high 32 bits = "ma"
 ;# MODIFY rcx, rdx
-LOCAL L_prefetch, L_read, L_return
-	mov eax, ebp
-	and al, 63
-	jz short L_prefetch     ;# "ic" divisible by 64 -> prefetch
-	xor edx, edx
-	cmp al, 14
-	je short L_read         ;# "ic" = 14 (mod 64) -> random read
-	cmovb edx, ecx          ;# "ic" < 14 (mod 64) -> modify random read address
-	xor edi, edx
+LOCAL L_prefetch_read, L_return
+	test ebp, 63
+	jz short L_prefetch_read        ;# "ic" divisible by 64 -> prefetch + read
+	xor rdi, rcx                    ;# randomize "mx"
 L_return:
 	and ecx, spmask                 ;# limit address to the specified scratchpad size
 IF float
@@ -242,12 +237,15 @@ ELSE
 	mov rax, qword ptr [rsi+rcx*8]
 ENDIF
 	ret	
-L_prefetch:
+L_prefetch_read:
+	; prefetch cacheline "mx"
 	mov rax, qword ptr [rbx]        ;# load the dataset address
-	and edi, -64                    ;# align "mx" to the start of a cache line
-	prefetchnta byte ptr [rax+rdi]
-	jmp short L_return
-L_read:
+	and rdi, -64                    ;# align "mx" to the start of a cache line
+	mov edx, edi                    ;# edx = mx
+	prefetchnta byte ptr [rax+rdx]
+	; read cacheline "ma"
+	ror rdi, 32                     ;# swap "ma" and "mx"
+	mov edx, edi                    ;# edx = ma
 	push rcx
 	TransformAddress ecx, rcx       ;# TransformAddress function
 	and ecx, spmask-7               ;# limit address to the specified scratchpad size aligned to multiple of 8
@@ -274,14 +272,13 @@ ReadMemoryRandom 32767, 1
 
 ALIGN 64
 rx_read_dataset:
-;# IN     rcx = scratchpad index - must be divisible by 8
-;# GLOBAL rbx = address of the dataset address
+;# IN     rax = dataset address
+;# IN     ecx = scratchpad index - must be divisible by 8
+;# IN     edx = dataset index - must be divisible by 64
 ;# GLOBAL rsi = address of the scratchpad
-;# GLOBAL rdi = "mx" random 32-bit dataset address
 ;# MODIFY rax, rcx, rdx
-	mov rax, qword ptr [rbx]        ;# load the dataset address
 	lea rcx, [rsi+rcx*8]            ;# scratchpad cache line
-	lea rax, [rax+rdi]              ;# dataset cache line	              
+	lea rax, [rax+rdx]              ;# dataset cache line
 	mov rdx, qword ptr [rax+0]      ;# load first dataset quadword (prefetched into the cache by now)
 	xor qword ptr [rcx+0], rdx      ;# XOR the dataset item with a scratchpad item, repeat for the rest of the cacheline
 	mov rdx, qword ptr [rax+8]

@@ -19,13 +19,24 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 //#define TRACEVM
+#include <new>
 #include "VirtualMachine.hpp"
 #include "JitCompilerX86.hpp"
+#include "intrinPortable.h"
 
 namespace RandomX {
 
 	class CompiledVirtualMachine : public VirtualMachine {
 	public:
+		void* operator new(size_t size) {
+			void* ptr = _mm_malloc(size, 64);
+			if (ptr == nullptr)
+				throw std::bad_alloc();
+			return ptr;
+		}
+		void operator delete(void* ptr) {
+			_mm_free(ptr);
+		}
 		CompiledVirtualMachine(bool softAes);
 		void setDataset(dataset_t ds, bool light = false) override;
 		void initializeProgram(const void* seed) override;
