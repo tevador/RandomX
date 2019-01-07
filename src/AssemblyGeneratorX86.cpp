@@ -59,37 +59,55 @@ namespace RandomX {
 		(this->*generator)(instr, i);
 	}
 
-	void AssemblyGeneratorX86::genar(Instruction& instr) {
+	void AssemblyGeneratorX86::genar(Instruction& instr, int i) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
+		asmCode << "\ttest ebp, 63" << std::endl;
+		asmCode << "\tjnz short rx_body_" << i << std::endl;
 		switch (instr.loca & 3)
 		{
 			case 0:
 			case 1:
 			case 2:
-				asmCode << "\tcall rx_readint_l1" << std::endl;
-				return;
+				asmCode << "\tcall rx_read_l1" << std::endl;
+				asmCode << "rx_body_" << i << ":" << std::endl;
+				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\tand ecx, " << (ScratchpadL1 - 1) << std::endl;
+				break;
 			default: //3
-				asmCode << "\tcall rx_readint_l2" << std::endl;
-				return;
+				asmCode << "\tcall rx_read_l2" << std::endl;
+				asmCode << "rx_body_" << i << ":" << std::endl;
+				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\tand ecx, " << (ScratchpadL2 - 1) << std::endl;
+				break;
 		}
+		asmCode << "\tmov rax, qword ptr [rsi+rcx*8]" << std::endl;
 	}
 
 
-	void AssemblyGeneratorX86::genaf(Instruction& instr) {
+	void AssemblyGeneratorX86::genaf(Instruction& instr, int i) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
+		asmCode << "\ttest ebp, 63" << std::endl;
+		asmCode << "\tjnz short rx_body_" << i << std::endl;
 		switch (instr.loca & 3)
 		{
 			case 0:
 			case 1:
 			case 2:
-				asmCode << "\tcall rx_readfloat_l1" << std::endl;
-				return;
+				asmCode << "\tcall rx_read_l1" << std::endl;
+				asmCode << "rx_body_" << i << ":" << std::endl;
+				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\tand ecx, " << (ScratchpadL1 - 1) << std::endl;
+				break;
 			default: //3
-				asmCode << "\tcall rx_readfloat_l2" << std::endl;
-				return;
+				asmCode << "\tcall rx_read_l2" << std::endl;
+				asmCode << "rx_body_" << i << ":" << std::endl;
+				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\tand ecx, " << (ScratchpadL2 - 1) << std::endl;
+				break;
 		}
+		asmCode << "\tcvtdq2pd xmm0, qword ptr [rsi+rcx*8]" << std::endl;
 	}
 
 	void AssemblyGeneratorX86::genbr0(Instruction& instr, const char* instrx86) {
@@ -209,35 +227,35 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_ADD_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tadd rax, ";
 		genbr1(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_ADD_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tadd eax, ";
 		genbr132(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_SUB_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tsub rax, ";
 		genbr1(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_SUB_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tsub eax, ";
 		genbr132(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_MUL_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\timul rax, ";
 		if ((instr.locb & 7) >= 6) {
 			asmCode << "rax, ";
@@ -247,7 +265,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_MULH_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tmov rcx, ";
 		genbr1(instr);
 		asmCode << "\tmul rcx" << std::endl;
@@ -256,7 +274,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_MUL_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tmov ecx, eax" << std::endl;
 		asmCode << "\tmov eax, ";
 		genbr132(instr);
@@ -265,7 +283,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_IMUL_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tmovsxd rcx, eax" << std::endl;
 		if ((instr.locb & 7) >= 6) {
 			asmCode << "\tmov rax, " << instr.imm32 << std::endl;
@@ -278,7 +296,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_IMULH_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tmov rcx, ";
 		genbr1(instr);
 		asmCode << "\timul rcx" << std::endl;
@@ -287,7 +305,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_DIV_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		if ((instr.locb & 7) >= 6) {
 			if (instr.imm32 == 0) {
 				asmCode << "\tmov ecx, 1" << std::endl;
@@ -308,7 +326,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_IDIV_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tmov edx, ";
 		genbr132(instr);
 		asmCode << "\tcmp edx, -1" << std::endl;
@@ -329,91 +347,91 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_AND_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tand rax, ";
 		genbr1(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_AND_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tand eax, ";
 		genbr132(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_OR_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tor rax, ";
 		genbr1(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_OR_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tor eax, ";
 		genbr132(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_XOR_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\txor rax, ";
 		genbr1(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_XOR_32(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\txor eax, ";
 		genbr132(instr);
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_SHL_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		genbr0(instr, "shl");
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_SHR_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		genbr0(instr, "shr");
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_SAR_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		genbr0(instr, "sar");
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_ROL_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		genbr0(instr, "rol");
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_ROR_64(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		genbr0(instr, "ror");
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FPADD(Instruction& instr, int i) {
-		genaf(instr);
+		genaf(instr, i);
 		genbf(instr, "addpd");
 		gencf(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FPSUB(Instruction& instr, int i) {
-		genaf(instr);
+		genaf(instr, i);
 		genbf(instr, "subpd");
 		gencf(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FPMUL(Instruction& instr, int i) {
-		genaf(instr);
+		genaf(instr, i);
 		genbf(instr, "mulpd");
 		asmCode << "\tmovaps xmm1, xmm0" << std::endl;
 		asmCode << "\tcmpeqpd xmm1, xmm1" << std::endl;
@@ -422,7 +440,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_FPDIV(Instruction& instr, int i) {
-		genaf(instr);
+		genaf(instr, i);
 		genbf(instr, "divpd");
 		asmCode << "\tmovaps xmm1, xmm0" << std::endl;
 		asmCode << "\tcmpeqpd xmm1, xmm1" << std::endl;
@@ -431,14 +449,14 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_FPSQRT(Instruction& instr, int i) {
-		genaf(instr);
+		genaf(instr, i);
 		asmCode << "\tandps xmm0, xmm10" << std::endl;
 		asmCode << "\tsqrtpd xmm0, xmm0" << std::endl;
 		gencf(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FPROUND(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		//asmCode << "\tmov rcx, rax" << std::endl;
 		asmCode << "\tshl eax, 13" << std::endl;
 		//asmCode << "\tand rcx, -2048" << std::endl;
@@ -472,7 +490,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
 		asmCode << "\t" << jumpCondition(instr);
 		asmCode << " short taken_call_" << i << std::endl;
@@ -487,7 +505,7 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {
-		genar(instr);
+		genar(instr, i);
 		asmCode << "\tcmp rsp, " << regStackBeginAddr << std::endl;
 		asmCode << "\tje short not_taken_ret_" << i << std::endl;
 		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;

@@ -98,7 +98,7 @@ namespace RandomX {
 	};
 
 	struct MemoryRegisters {
-		addr_t ma, mx;
+		addr_t mx, ma;
 		dataset_t ds;
 	};
 

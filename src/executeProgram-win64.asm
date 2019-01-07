@@ -82,7 +82,7 @@ executeProgram PROC
 
 	; function arguments
 	push rcx                    ; RegisterFile& registerFile
-	mov edi, dword ptr [rdx]    ; "mx"
+	mov rdi, qword ptr [rdx]    ; "mx", "ma"
 	mov rax, qword ptr [rdx+8]  ; uint8_t* dataset
 	push rax
 	mov rsi, r8                 ; convertible_t* scratchpad
@@ -216,7 +216,7 @@ TransformAddress MACRO reg32, reg64
 	;xor reg32, -8                  ;# C = all except 0 to 7
 ENDM
 
-ReadMemoryRandom MACRO spmask, float
+ReadMemoryRandom MACRO spmask
 ;# IN     ecx = random 32-bit address
 ;# OUT    rax = 64-bit integer return value
 ;# OUT   xmm0 = 128-bit floating point return value
@@ -225,19 +225,6 @@ ReadMemoryRandom MACRO spmask, float
 ;# GLOBAL rsi = address of the scratchpad
 ;# GLOBAL rdi = low 32 bits = "mx", high 32 bits = "ma"
 ;# MODIFY rcx, rdx
-LOCAL L_prefetch_read, L_return
-	test ebp, 63
-	jz short L_prefetch_read        ;# "ic" divisible by 64 -> prefetch + read
-	xor rdi, rcx                    ;# randomize "mx"
-L_return:
-	and ecx, spmask                 ;# limit address to the specified scratchpad size
-IF float
-	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-ELSE
-	mov rax, qword ptr [rsi+rcx*8]
-ENDIF
-	ret	
-L_prefetch_read:
 	; prefetch cacheline "mx"
 	mov rax, qword ptr [rbx]        ;# load the dataset address
 	and rdi, -64                    ;# align "mx" to the start of a cache line
@@ -249,34 +236,6 @@ L_prefetch_read:
 	push rcx
 	TransformAddress ecx, rcx       ;# TransformAddress function
 	and ecx, spmask-7               ;# limit address to the specified scratchpad size aligned to multiple of 8
-	call rx_read_dataset
-	pop rcx
-	jmp short L_return
-ENDM
-
-ALIGN 64
-rx_readint_l1:
-ReadMemoryRandom 2047, 0
-
-ALIGN 64
-rx_readint_l2:
-ReadMemoryRandom 32767, 0
-
-ALIGN 64
-rx_readfloat_l1:
-ReadMemoryRandom 2047, 1
-
-ALIGN 64
-rx_readfloat_l2:
-ReadMemoryRandom 32767, 1
-
-ALIGN 64
-rx_read_dataset:
-;# IN     rax = dataset address
-;# IN     ecx = scratchpad index - must be divisible by 8
-;# IN     edx = dataset index - must be divisible by 64
-;# GLOBAL rsi = address of the scratchpad
-;# MODIFY rax, rcx, rdx
 	lea rcx, [rsi+rcx*8]            ;# scratchpad cache line
 	lea rax, [rax+rdx]              ;# dataset cache line
 	mov rdx, qword ptr [rax+0]      ;# load first dataset quadword (prefetched into the cache by now)
@@ -295,7 +254,18 @@ rx_read_dataset:
 	xor qword ptr [rcx+48], rdx
 	mov rdx, qword ptr [rax+56]
 	xor qword ptr [rcx+56], rdx
+	pop rcx
 	ret
+ENDM
+
+ALIGN 64
+rx_read_l1:
+ReadMemoryRandom 2047
+
+ALIGN 64
+rx_read_l2:
+ReadMemoryRandom 32767
+
 executeProgram ENDP
 
 _RANDOMX_EXECUTE_PROGRAM ENDS
