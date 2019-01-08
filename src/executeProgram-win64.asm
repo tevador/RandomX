@@ -22,12 +22,12 @@ PUBLIC executeProgram
 executeProgram PROC
 	; REGISTER ALLOCATION:
 	; rax -> temporary
-	; rbx -> beginning of VM stack
+	; rbx -> "ic"
 	; rcx -> temporary
 	; rdx -> temporary
 	; rsi -> convertible_t& scratchpad
-	; rdi -> "mx"
-	; rbp	-> "ic"
+	; rdi -> beginning of VM stack
+	; rbp -> "ma", "mx"
 	; rsp -> end of VM stack
 	; r8 	-> "r0"
 	; r9 	-> "r1"
@@ -82,13 +82,13 @@ executeProgram PROC
 
 	; function arguments
 	push rcx                    ; RegisterFile& registerFile
-	mov rdi, qword ptr [rdx]    ; "mx", "ma"
+	mov rbp, qword ptr [rdx]    ; "mx", "ma"
 	mov rax, qword ptr [rdx+8]  ; uint8_t* dataset
 	push rax
 	mov rsi, r8                 ; convertible_t* scratchpad
 
-	mov rbx, rsp                ; beginning of VM stack
-	mov ebp, 1048577            ; number of VM instructions to execute + 1
+	mov rdi, rsp                ; beginning of VM stack
+	mov ebx, 1048577            ; number of VM instructions to execute + 1
 
 	xorps xmm10, xmm10
 	cmpeqpd xmm10, xmm10
@@ -164,7 +164,7 @@ executeProgram PROC
 
 rx_finish:
 	; unroll the stack
-	mov rsp, rbx
+	mov rsp, rdi
 
 	; save VM register values
 	pop rcx
@@ -211,30 +211,29 @@ TransformAddress MACRO reg32, reg64
 ;# lies in a different cache line than the original address (mod 2^N).
 ;# This is done to prevent a load-store dependency.
 ;# There are 3 different transformations that can be used: x -> 9*x+C, x -> x+C, x -> x^C
-	lea reg32, [reg64+reg64*8+127]  ;# C = -119 -110 -101 -92 -83 -74 -65 -55 -46 -37 -28 -19 -10 -1 9 18 27 36 45 54 63 73 82 91 100 109 118 127
-	;lea reg32, [reg64-128]         ;# C = all except -7 to +7
-	;xor reg32, -8                  ;# C = all except 0 to 7
+	;lea reg32, [reg64+reg64*8+127]  ;# C = -119 -110 -101 -92 -83 -74 -65 -55 -46 -37 -28 -19 -10 -1 9 18 27 36 45 54 63 73 82 91 100 109 118 127
+	db 64
+	add reg32, -39                   ;# C = all except -7 to +7
+	;xor reg32, -8                   ;# C = all except 0 to 7
 ENDM
 
 ReadMemoryRandom MACRO spmask
 ;# IN     ecx = random 32-bit address
-;# OUT    rax = 64-bit integer return value
-;# OUT   xmm0 = 128-bit floating point return value
-;# GLOBAL rbp = "ic" number of instructions until the end of the program
-;# GLOBAL rbx = address of the dataset address
+;# GLOBAL rdi = address of the dataset address
 ;# GLOBAL rsi = address of the scratchpad
-;# GLOBAL rdi = low 32 bits = "mx", high 32 bits = "ma"
+;# GLOBAL rbp = low 32 bits = "mx", high 32 bits = "ma"
 ;# MODIFY rcx, rdx
+	push rcx                        ;# preserve ecx
+	TransformAddress ecx, rcx       ;# TransformAddress function
+	mov rax, qword ptr [rdi]        ;# load the dataset address
+	xor rbp, rcx                    ;# modify "mx"
 	; prefetch cacheline "mx"
-	mov rax, qword ptr [rbx]        ;# load the dataset address
-	and rdi, -64                    ;# align "mx" to the start of a cache line
-	mov edx, edi                    ;# edx = mx
+	and rbp, -64                    ;# align "mx" to the start of a cache line
+	mov edx, ebp                    ;# edx = mx
 	prefetchnta byte ptr [rax+rdx]
 	; read cacheline "ma"
-	ror rdi, 32                     ;# swap "ma" and "mx"
-	mov edx, edi                    ;# edx = ma
-	push rcx
-	TransformAddress ecx, rcx       ;# TransformAddress function
+	ror rbp, 32                     ;# swap "ma" and "mx"
+	mov edx, ebp                    ;# edx = ma
 	and ecx, spmask-7               ;# limit address to the specified scratchpad size aligned to multiple of 8
 	lea rcx, [rsi+rcx*8]            ;# scratchpad cache line
 	lea rax, [rax+rdx]              ;# dataset cache line
@@ -254,7 +253,7 @@ ReadMemoryRandom MACRO spmask
 	xor qword ptr [rcx+48], rdx
 	mov rdx, qword ptr [rax+56]
 	xor qword ptr [rcx+56], rdx
-	pop rcx
+	pop rcx                         ;# restore ecx
 	ret
 ENDM
 
