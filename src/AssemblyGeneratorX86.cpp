@@ -28,7 +28,7 @@ namespace RandomX {
 	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
 	static const char* regF[8] = { "xmm8", "xmm9", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
 
-	static const char* regMx = "edi";
+	static const char* regMx = "rdi";
 	static const char* regIc = "ebp";
 	static const char* regStackBeginAddr = "rbx";
 	static const char* regScratchpadAddr = "rsi";
@@ -62,7 +62,7 @@ namespace RandomX {
 	void AssemblyGeneratorX86::genar(Instruction& instr, int i) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
-		asmCode << "\ttest ebp, 63" << std::endl;
+		asmCode << "\ttest " << regIc << ", 63" << std::endl;
 		asmCode << "\tjnz short rx_body_" << i << std::endl;
 		switch (instr.loca & 3)
 		{
@@ -71,24 +71,24 @@ namespace RandomX {
 			case 2:
 				asmCode << "\tcall rx_read_l1" << std::endl;
 				asmCode << "rx_body_" << i << ":" << std::endl;
-				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\txor " << regMx << ", rcx" << std::endl;
 				asmCode << "\tand ecx, " << (ScratchpadL1 - 1) << std::endl;
 				break;
 			default: //3
 				asmCode << "\tcall rx_read_l2" << std::endl;
 				asmCode << "rx_body_" << i << ":" << std::endl;
-				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\txor " << regMx << ", rcx" << std::endl;
 				asmCode << "\tand ecx, " << (ScratchpadL2 - 1) << std::endl;
 				break;
 		}
-		asmCode << "\tmov rax, qword ptr [rsi+rcx*8]" << std::endl;
+		asmCode << "\tmov rax, qword ptr [" << regScratchpadAddr << "+rcx*8]" << std::endl;
 	}
 
 
 	void AssemblyGeneratorX86::genaf(Instruction& instr, int i) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		asmCode << "\tmov ecx, " << regR32[instr.rega % RegistersCount] << std::endl;
-		asmCode << "\ttest ebp, 63" << std::endl;
+		asmCode << "\ttest " << regIc << ", 63" << std::endl;
 		asmCode << "\tjnz short rx_body_" << i << std::endl;
 		switch (instr.loca & 3)
 		{
@@ -97,17 +97,17 @@ namespace RandomX {
 			case 2:
 				asmCode << "\tcall rx_read_l1" << std::endl;
 				asmCode << "rx_body_" << i << ":" << std::endl;
-				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\txor " << regMx << ", rcx" << std::endl;
 				asmCode << "\tand ecx, " << (ScratchpadL1 - 1) << std::endl;
 				break;
 			default: //3
 				asmCode << "\tcall rx_read_l2" << std::endl;
 				asmCode << "rx_body_" << i << ":" << std::endl;
-				asmCode << "\txor rdi, rcx" << std::endl;
+				asmCode << "\txor " << regMx << ", rcx" << std::endl;
 				asmCode << "\tand ecx, " << (ScratchpadL2 - 1) << std::endl;
 				break;
 		}
-		asmCode << "\tcvtdq2pd xmm0, qword ptr [rsi+rcx*8]" << std::endl;
+		asmCode << "\tcvtdq2pd xmm0, qword ptr [" << regScratchpadAddr << "+rcx*8]" << std::endl;
 	}
 
 	void AssemblyGeneratorX86::genbr0(Instruction& instr, const char* instrx86) {
@@ -174,7 +174,7 @@ namespace RandomX {
 			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rcx" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
 			}
 			return;
 
@@ -187,14 +187,14 @@ namespace RandomX {
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rcx" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
 			}
 			return;
 
 		default:
 			asmCode << "\tmov " << regR[instr.regc % RegistersCount] << ", rax" << std::endl;
 			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rax" << std::endl;
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rax" << std::endl;
 			}
 			return;
 		}
@@ -222,7 +222,7 @@ namespace RandomX {
 				break;
 		}
 		if (trace) {
-			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;
+			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;
 		}
 	}
 
@@ -498,7 +498,7 @@ namespace RandomX {
 		asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
 		asmCode << "taken_call_" << i << ":" << std::endl;
 		if (trace) {
-			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rdi * 8 + 262136], rax" << std::endl;
+			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rax" << std::endl;
 		}
 		asmCode << "\tpush rax" << std::endl;
 		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
