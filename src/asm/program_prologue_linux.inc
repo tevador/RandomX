@@ -7,9 +7,11 @@
 	push r15
 
 	;# function arguments
-	push rdi        ;# RegisterFile& registerFile
-	mov rbx, rsi    ;# MemoryRegisters& memory
-	mov rsi, rdx    ;# convertible_t* scratchpad
+	push rdi                    ;# RegisterFile& registerFile
+	mov rbp, qword ptr [rsi]    ;# "mx", "ma"
+	mov rax, qword ptr [rsi+8]  ;# uint8_t* dataset
+	push rax
+	mov rsi, rdx                ;# convertible_t* scratchpad
 	mov rcx, rdi
 
 	#include "program_prologue_load.inc"

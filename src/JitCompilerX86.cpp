@@ -48,12 +48,12 @@ namespace RandomX {
 	 REGISTER ALLOCATION:
 
 	 rax -> temporary
-	 rbx -> MemoryRegisters& memory
+	 rbx -> "ic"
 	 rcx -> temporary
 	 rdx -> temporary
 	 rsi -> convertible_t* scratchpad
-	 rdi -> "ic" (instruction counter)
-	 rbp -> beginning of VM stack
+	 rdi -> beginning of VM stack
+	 rbp -> "ma", "mx"
 	 rsp -> end of VM stack
 	 r8  -> "r0"
 	 r9  -> "r1"
@@ -82,7 +82,8 @@ namespace RandomX {
 	   | saved registers
 	   |
 	   v
-	 [rbp] RegisterFile& registerFile
+	 [rdi+8] RegisterFile& registerFile
+	 [rdi]   uint8_t* dataset
 	   |
 	   |
 	   | VM stack
@@ -97,18 +98,19 @@ namespace RandomX {
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
 	const uint8_t* codeProgramBegin = (uint8_t*)&randomx_program_begin;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
-	const uint8_t* codeReadDatasetR = (uint8_t*)&randomx_program_read_r;
-	const uint8_t* codeReadDatasetF = (uint8_t*)&randomx_program_read_f;
+	const uint8_t* codeReadDatasetL1 = (uint8_t*)&randomx_program_read_l1;
+	const uint8_t* codeReadDatasetL2 = (uint8_t*)&randomx_program_read_l2;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
+	const uint32_t* addressTransformations = (uint32_t*)&randomx_program_transform;
 
 	const int32_t prologueSize = codeProgramBegin - codePrologue;
-	const int32_t epilogueSize = codeReadDatasetR - codeEpilogue;
-	const int32_t readDatasetRSize = codeReadDatasetF - codeReadDatasetR;
-	const int32_t readDatasetFSize = codeProgramEnd - codeReadDatasetF;
+	const int32_t epilogueSize = codeReadDatasetL1 - codeEpilogue;
+	const int32_t readDatasetL1Size = codeReadDatasetL2 - codeReadDatasetL1;
+	const int32_t readDatasetL2Size = codeProgramEnd - codeReadDatasetL2;
 
-	const int32_t readDatasetFOffset = CodeSize - readDatasetFSize;
-	const int32_t readDatasetROffset = readDatasetFOffset - readDatasetRSize;
-	const int32_t epilogueOffset = readDatasetROffset - epilogueSize;
+	const int32_t readDatasetL2Offset = CodeSize - readDatasetL2Size;
+	const int32_t readDatasetL1Offset = readDatasetL2Offset - readDatasetL1Size;
+	const int32_t epilogueOffset = readDatasetL1Offset - epilogueSize;
 
 	JitCompilerX86::JitCompilerX86() {
 #ifdef _WIN32
@@ -121,9 +123,9 @@ namespace RandomX {
 			throw std::runtime_error("mmap failed");
 #endif
 		memcpy(code, codePrologue, prologueSize);
-		memcpy(code + CodeSize - readDatasetRSize - readDatasetFSize - epilogueSize, codeEpilogue, epilogueSize);
-		memcpy(code + CodeSize - readDatasetRSize - readDatasetFSize, codeReadDatasetR, readDatasetRSize);
-		memcpy(code + CodeSize - readDatasetFSize, codeReadDatasetF, readDatasetFSize);
+		memcpy(code + CodeSize - epilogueSize - readDatasetL1Size - readDatasetL2Size, codeEpilogue, epilogueSize);
+		memcpy(code + CodeSize - readDatasetL1Size - readDatasetL2Size, codeReadDatasetL1, readDatasetL1Size);
+		memcpy(code + CodeSize - readDatasetL2Size, codeReadDatasetL2, readDatasetL2Size);
 	}
 
 	void JitCompilerX86::generateProgram(Pcg32& gen) {
@@ -140,12 +142,33 @@ namespace RandomX {
 		emitByte(0xe9);
 		emit(instructionOffsets[0] - (codePos + 4));
 		fixCallOffsets();
+		uint32_t transformL1 = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
+		uint32_t transformL2 = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
+		*reinterpret_cast<uint32_t*>(code + readDatasetL1Offset + 1) = transformL1;
+		*reinterpret_cast<uint32_t*>(code + readDatasetL2Offset + 1) = transformL2;
 	}
 
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
 		instructionOffsets.push_back(codePos);
-		emit(0x840fcfff); //dec edx; jz <epilogue>
+		emit(0x840fcbff); //dec ebx; jz <epilogue>
 		emit(epilogueOffset - (codePos + 4)); //jump offset (RIP-relative)
+		emit(uint16_t(0x8149)); //xor
+		emitByte(0xf0 + (instr.rega % RegistersCount));
+		emit(instr.addra);
+		emit(uint16_t(0x8b41)); //mov
+		emitByte(0xc8 + (instr.rega % RegistersCount)); //ecx, rega
+		emit(0x753fc3f6); //test bl,0x3f; jne
+		emit(uint16_t(0xe805));
+		if (instr.loca & 3) { //A.LOC.W
+			emit(readDatasetL1Offset - (codePos + 4));
+		}
+		else {
+			emit(readDatasetL2Offset - (codePos + 4));
+		}
+		if ((instr.loca & 192) == 0) { //A.LOC.X
+			emit(uint16_t(0x3348));
+			emitByte(0xe9); //xor rbp, rcx
+		}
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
@@ -157,73 +180,26 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::genar(Instruction& instr) {
-		emit(uint16_t(0x8149)); //xor
-		emitByte(0xf0 + (instr.rega % RegistersCount));
-		emit(instr.addra);
-		switch (instr.loca & 7)
-		{
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-				emit(uint16_t(0x8b41)); //mov
-				emitByte(0xc8 + (instr.rega % RegistersCount)); //ecx, rega
-				emitByte(0xe8); //call
-				emit(readDatasetROffset - (codePos + 4));
-				return;
-
-			case 4:
-				emit(uint16_t(0x8b41)); //mov
-				emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-				emitByte(0x25); //and
-				emit(ScratchpadL2 - 1); //whole scratchpad
-				emit(0xc6048b48); // mov rax,QWORD PTR [rsi+rax*8]
-				return;
-
-			default:
-				emit(uint16_t(0x8b41)); //mov
-				emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-				emitByte(0x25); //and
-				emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
-				emit(0xc6048b48); // mov rax,QWORD PTR [rsi+rax*8]
-				return;
+		emit(uint16_t(0xe181)); //and ecx,
+		if (instr.loca & 3) {
+			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
 		}
+		else {
+			emit(ScratchpadL2 - 1); //whole scratchpad
+		}
+		emit(0xce048b48); //mov rax,QWORD PTR [rsi+rcx*8]
 	}
 
 	void JitCompilerX86::genaf(Instruction& instr) {
-		emit(uint16_t(0x8149)); //xor
-		emitByte(0xf0 + (instr.rega % RegistersCount));
-		emit(instr.addra);
-		switch (instr.loca & 7)
-		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			emit(uint16_t(0x8b41)); //mov
-			emitByte(0xc8 + (instr.rega % RegistersCount)); //ecx, rega
-			emitByte(0xe8); //call
-			emit(readDatasetFOffset - (codePos + 4));
-			return;
-
-		case 4:
-			emit(uint16_t(0x8b41)); //mov
-			emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-			emitByte(0x25); //and
-			emit(ScratchpadL2 - 1); //whole scratchpad
-			emitByte(0xf3);
-			emit(0xc604e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rax*8]
-			return;
-
-		default:
-			emit(uint16_t(0x8b41)); //mov
-			emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-			emitByte(0x25); //and
+		emit(uint16_t(0xe181)); //and ecx,
+		if (instr.loca & 3) {
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
-			emitByte(0xf3);
-			emit(0xc604e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rax*8]
-			return;
 		}
+		else {
+			emit(ScratchpadL2 - 1); //whole scratchpad
+		}
+		emitByte(0xf3);
+		emit(0xce04e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rcx*8]
 	}
 
 	void JitCompilerX86::genbr0(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
@@ -274,8 +250,13 @@ namespace RandomX {
 	}
 
 
-	void JitCompilerX86::scratchpadStoreR(Instruction& instr, uint32_t scratchpadSize) {
-		emit(0x41c88b48); //mov rcx, rax; REX
+	void JitCompilerX86::scratchpadStoreR(Instruction& instr, uint32_t scratchpadSize, bool rax) {
+		if (rax) {
+			emit(0x41c88b48); //mov rcx, rax; REX
+		}
+		else {
+			emitByte(0x41);
+		}
 		emitByte(0x8b); // mov
 		emitByte(0xc0 + (instr.regc % RegistersCount)); //eax, regc
 		emitByte(0x35); // xor eax
@@ -285,22 +266,27 @@ namespace RandomX {
 		emit(0xc60c8948); // mov    QWORD PTR [rsi+rax*8],rcx
 	}
 
-	void JitCompilerX86::gencr(Instruction& instr) {
+	void JitCompilerX86::gencr(Instruction& instr, bool rax = true) {
 		switch (instr.locc & 7)
 		{
 			case 0:
-				scratchpadStoreR(instr, ScratchpadL2);
+				scratchpadStoreR(instr, ScratchpadL2, rax);
 				break;
 
 			case 1:
 			case 2:
 			case 3:
-				scratchpadStoreR(instr, ScratchpadL1);
+				scratchpadStoreR(instr, ScratchpadL1, rax);
 				break;
 
 			default:
 				emit(uint16_t(0x8b4c)); //mov
-				emitByte(0xc0 + 8 * (instr.regc % RegistersCount)); //regc, rax
+				if (rax) {
+					emitByte(0xc0 + 8 * (instr.regc % RegistersCount)); //regc, rax
+				}
+				else {
+					emitByte(0xc1 + 8 * (instr.regc % RegistersCount)); //regc, rcx
+				}
 				break;
 		}
 	}
@@ -322,29 +308,21 @@ namespace RandomX {
 		emitByte(0xc6);
 	}
 
-	void JitCompilerX86::gencf(Instruction& instr, bool alwaysLow = false) {
+	void JitCompilerX86::gencf(Instruction& instr) {
 		int regc = (instr.regc % RegistersCount);
-		if (!alwaysLow) {
-			if (regc <= 1) {
-				emitByte(0x44); //REX
-			}
-			emit(uint16_t(0x280f)); //movaps
-			emitByte(0xc0 + 8 * regc); // regc, xmm0
+		if (regc <= 1) {
+			emitByte(0x44); //REX
 		}
-		switch (instr.locc & 7)
+		emit(uint16_t(0x280f)); //movaps
+		emitByte(0xc0 + 8 * regc); // regc, xmm0
+		if (instr.locc & 4) //C.LOC.R
 		{
-			case 4:
-				scratchpadStoreF(instr, regc, ScratchpadL2, !alwaysLow && (instr.locc & 8));
-				break;
-
-			case 5:
-			case 6:
-			case 7:
-				scratchpadStoreF(instr, regc, ScratchpadL1, !alwaysLow && (instr.locc & 8));
-				break;
-
-			default:
-				break;
+			if (instr.locc & 3) { //C.LOC.W
+				scratchpadStoreF(instr, regc, ScratchpadL1, (instr.locc & 128)); //first 16 KiB of scratchpad
+			}
+			else {
+				scratchpadStoreF(instr, regc, ScratchpadL2, (instr.locc & 128)); //whole scratchpad
+			}
 		}
 	}
 
@@ -596,24 +574,11 @@ namespace RandomX {
 
 	void JitCompilerX86::h_FPROUND(Instruction& instr, int i) {
 		genar(instr);
-		emit(0x81480de0c1c88b48);
-		emit(0x600025fffff800e1);
-		emit(uint16_t(0x0000));
-		emitByte(0xf2);
-		int regc = (instr.regc % RegistersCount);
-		if (regc <= 1) {
-			emitByte(0x4c); //REX
-		}
-		else {
-			emitByte(0x48); //REX
-		}
-		emit(uint16_t(0x2a0f));
-		emitByte(0xc1 + 8 * regc);
-		emitByte(0x0d);
-		emit(0xf824448900009fc0);
-		emit(0x2454ae0f); //ldmxcsr DWORD PTR [rsp-0x8]
+		emit(0x00250de0c1c88b48); //mov rcx,rax; shl eax,0xd
+		emit(0x00009fc00d000060); //and eax,0x6000; or eax,0x9fc0
+		emit(0x2454ae0ff8244489); //ldmxcsr DWORD PTR [rsp-0x8]
 		emitByte(0xf8);
-		gencf(instr, true);
+		gencr(instr, false); //result in rcx
 	}
 
 	static inline uint8_t jumpCondition(Instruction& instr, bool invert = false) {
@@ -670,7 +635,7 @@ namespace RandomX {
 		if ((instr.locc & 7) <= 3) {
 			crlen = 17;
 		}
-		emit(0x74e53b48); //cmp rsp, rbp; je
+		emit(0x74e73b48); //cmp rsp, rdi; je
 		emitByte(11 + crlen);
 		emitByte(0x48);
 		emit(0x08244433); //xor rax,QWORD PTR [rsp+0x8]

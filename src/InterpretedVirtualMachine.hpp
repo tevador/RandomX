@@ -83,6 +83,12 @@ namespace RandomX {
 		int count_retdepth_max = 0;
 		int count_endstack = 0;
 		int count_instructions[ProgramLength] = { 0 };
+		int count_FPADD_nop = 0;
+		int count_FPADD_nop2 = 0;
+		int count_FPSUB_nop = 0;
+		int count_FPSUB_nop2 = 0;
+		int count_FPMUL_nop = 0;
+		int count_FPMUL_nop2 = 0;
 #endif
 
 		convertible_t loada(Instruction&);

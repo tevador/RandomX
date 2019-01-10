@@ -20,9 +20,11 @@ _RANDOMX_JITX86_STATIC SEGMENT PAGE READ EXECUTE
 PUBLIC randomx_program_prologue
 PUBLIC randomx_program_begin
 PUBLIC randomx_program_epilogue
-PUBLIC randomx_program_read_r
-PUBLIC randomx_program_read_f
+PUBLIC randomx_program_read_l1
+PUBLIC randomx_program_read_l2
 PUBLIC randomx_program_end
+PUBLIC randomx_program_transform
+
 
 ALIGN 64
 randomx_program_prologue PROC
@@ -39,20 +41,33 @@ randomx_program_epilogue PROC
 	include asm/program_epilogue_win64.inc
 randomx_program_epilogue ENDP
 
-ALIGN 64
-randomx_program_read_r PROC
-	include asm/program_read_r.inc
-randomx_program_read_r ENDP
+scratchpad_mask MACRO
+	and ecx, 2040
+ENDM
 
 ALIGN 64
-randomx_program_read_f PROC
-	include asm/program_read_f.inc
-randomx_program_read_f ENDP
+randomx_program_read_l1 PROC
+	include asm/program_read.inc
+randomx_program_read_l1 ENDP
+
+scratchpad_mask MACRO
+	and ecx, 32760
+ENDM
+
+ALIGN 64
+randomx_program_read_l2 PROC
+	include asm/program_read.inc
+randomx_program_read_l2 ENDP
 
 ALIGN 64
 randomx_program_end PROC
 	nop
 randomx_program_end ENDP
+
+ALIGN 8
+randomx_program_transform PROC
+	include asm/program_transform_address.inc
+randomx_program_transform ENDP
 
 _RANDOMX_JITX86_STATIC ENDS
 

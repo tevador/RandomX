@@ -1,7 +1,8 @@
 	;# unroll VM stack
-	mov rsp, rbp
+	mov rsp, rdi
 
 	;# save VM register values
+	pop rcx
 	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9

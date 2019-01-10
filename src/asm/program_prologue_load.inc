@@ -1,5 +1,5 @@
-	mov rbp, rsp      ;# beginning of VM stack
-	mov rdi, 1048577  ;# number of VM instructions to execute + 1
+	mov rdi, rsp      ;# beginning of VM stack
+	mov ebx, 1048577  ;# number of VM instructions to execute + 1
 
 	xorps xmm10, xmm10
 	cmpeqpd xmm10, xmm10

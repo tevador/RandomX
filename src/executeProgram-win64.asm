@@ -158,10 +158,14 @@ executeProgram PROC
 	pslldq xmm7, 8
 	cvtsi2sd xmm7, qword ptr [rcx+112]
 
-	; program body
+	jmp program_begin
 
+	; program body
+ALIGN 64
+program_begin:
 	include program.inc
 
+ALIGN 64
 rx_finish:
 	; unroll the stack
 	mov rsp, rdi

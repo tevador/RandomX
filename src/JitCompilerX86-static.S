@@ -29,9 +29,12 @@
 .global DECL(randomx_program_prologue)
 .global DECL(randomx_program_begin)
 .global DECL(randomx_program_epilogue)
-.global DECL(randomx_program_read_r)
-.global DECL(randomx_program_read_f)
+.global DECL(randomx_program_read_l1)
+.global DECL(randomx_program_read_l2)
 .global DECL(randomx_program_end)
+.global DECL(randomx_program_transform)
+
+#define db .byte
 
 .align 64
 DECL(randomx_program_prologue):
@@ -45,14 +48,26 @@ DECL(randomx_program_begin):
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_linux.inc"
 
-.align 64
-DECL(randomx_program_read_r):
-	#include "asm/program_read_r.inc"
+#define scratchpad_mask and ecx, 2040
 
 .align 64
-DECL(randomx_program_read_f):
-	#include "asm/program_read_f.inc"
+DECL(randomx_program_read_l1):
+	#include "asm/program_read.inc"
+
+#undef scratchpad_mask
+
+#define scratchpad_mask and ecx, 32760
+
+.align 64
+DECL(randomx_program_read_l2):
+	#include "asm/program_read.inc"
+
+#undef scratchpad_mask
 
 .align 64
 DECL(randomx_program_end):
 	nop
+
+.align 8
+DECL(randomx_program_transform):
+	#include "asm/program_transform_address.inc"

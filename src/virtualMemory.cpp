@@ -74,21 +74,21 @@ void setPrivilege(const char* pszPrivilege, BOOL bEnable) {
 }
 #endif
 
-void* allocExecutableMemory(size_t bytes) {
+void* allocExecutableMemory(std::size_t bytes) {
 	void* mem;
 #ifdef _WIN32
 	mem = VirtualAlloc(nullptr, bytes, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocExecutableMemory - VirtualAlloc"));
 #else
-	mem = mmap(nullptr, CodeSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (mem == MAP_FAILED)
 		throw std::runtime_error("allocExecutableMemory - mmap failed");
 #endif
 	return mem;
 }
 
-void* allocLargePagesMemory(size_t bytes) {
+void* allocLargePagesMemory(std::size_t bytes) {
 	void* mem;
 #ifdef _WIN32
 	setPrivilege("SeLockMemoryPrivilege", 1);

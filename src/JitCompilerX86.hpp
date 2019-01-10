@@ -64,10 +64,10 @@ namespace RandomX {
 		void genbr1(Instruction&, uint16_t, uint16_t);
 		void genbr132(Instruction&, uint16_t, uint8_t);
 		void genbf(Instruction&, uint8_t);
-		void scratchpadStoreR(Instruction&, uint32_t);
+		void scratchpadStoreR(Instruction&, uint32_t, bool);
 		void scratchpadStoreF(Instruction&, int, uint32_t, bool);
-		void gencr(Instruction&);
-		void gencf(Instruction&, bool);
+		void gencr(Instruction&, bool);
+		void gencf(Instruction&);
 		void generateCode(Instruction&, int);
 		void fixCallOffsets();
 

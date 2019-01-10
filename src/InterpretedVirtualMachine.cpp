@@ -197,6 +197,17 @@ namespace RandomX {
 #define ALU_RETIRE(x) x(a, b, c); \
 	if(trace) std::cout << std::hex << /*a.u64 << " " << b.u64 << " " <<*/ c.u64 << std::endl;
 
+#define CHECK_NOP_FPDIV(b, c)
+#ifndef STATS
+#define CHECK_NOP_FPADD(b, c)
+#define CHECK_NOP_FPSUB(b, c)
+#define CHECK_NOP_FPMUL(b, c)
+#else
+#define CHECK_NOP_FPADD(b, c) bool loeq = (b.lo.u64 == c.lo.u64); bool hieq = (b.hi.u64 == c.hi.u64); count_FPADD_nop += loeq + hieq; if(loeq && hieq) count_FPADD_nop2++;
+#define CHECK_NOP_FPSUB(b, c) bool loeq = ((b.lo.u64 & INT64_MAX) == (c.lo.u64 & INT64_MAX)); bool hieq = ((b.hi.u64 & INT64_MAX) == (c.hi.u64 & INT64_MAX)); count_FPSUB_nop += loeq + hieq; if(loeq && hieq) count_FPSUB_nop2++; 
+#define CHECK_NOP_FPMUL(b, c) bool loeq = (b.lo.u64 == c.lo.u64); bool hieq = (b.hi.u64 == c.hi.u64); count_FPMUL_nop += loeq + hieq; if(loeq && hieq) count_FPMUL_nop2++;
+#endif
+
 #define FPU_RETIRE(x) x(a, b, c); \
 	writecf(inst, c); \
 	if(trace) { \
@@ -248,8 +259,10 @@ namespace RandomX {
 	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
 	fpu_reg_t& b = reg.f[inst.regb % RegistersCount]; \
+	fpu_reg_t btemp = b; \
 	fpu_reg_t& c = reg.f[inst.regc % RegistersCount]; \
 	FPU_RETIRE(x) \
+	CHECK_NOP_##x(btemp, c) \
 	}
 
 #define FPU_INST_NB(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \

@@ -76,11 +76,13 @@ rx_body_3:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov r8, rcx
 
 rx_i_4: ;MULH_64
 	dec ebx
@@ -153,7 +155,7 @@ rx_body_7:
 	mov eax, r14d
 	xor eax, 057c8c41bh
 	and eax, 32767
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_8: ;SHL_64
 	dec ebx
@@ -218,7 +220,7 @@ rx_body_11:
 	mov eax, r12d
 	xor eax, 0852d40d8h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm4
+	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_12: ;CALL
 	dec ebx
@@ -355,7 +357,7 @@ rx_body_18:
 	mov eax, r11d
 	xor eax, 0869baa81h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm3
+	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_19: ;FPSUB
 	dec ebx
@@ -372,7 +374,7 @@ rx_body_19:
 	subpd xmm0, xmm8
 	movaps xmm7, xmm0
 
-rx_i_20: ;FPMUL
+rx_i_20: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r13, 0ecca967dh
@@ -383,15 +385,12 @@ rx_i_20: ;FPMUL
 rx_body_20:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm2
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm2
 	movaps xmm7, xmm0
 	mov eax, r15d
 	xor eax, 0aad81365h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm7
+	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_21: ;FPADD
 	dec ebx
@@ -482,7 +481,7 @@ rx_body_25:
 	mov eax, r14d
 	xor eax, 0baf5c2d4h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_26: ;IMUL_32
 	dec ebx
@@ -580,7 +579,7 @@ rx_body_31:
 	mov eax, r14d
 	xor eax, 01e2da792h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_32: ;XOR_64
 	dec ebx
@@ -668,7 +667,7 @@ rx_body_36:
 	andps xmm0, xmm1
 	movaps xmm7, xmm0
 
-rx_i_37: ;FPMUL
+rx_i_37: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r12, 0d0706601h
@@ -679,10 +678,7 @@ rx_i_37: ;FPMUL
 rx_body_37:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm2
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm2
 	movaps xmm9, xmm0
 	mov eax, r9d
 	xor eax, 0bca81c78h
@@ -764,7 +760,7 @@ taken_call_41:
 	push rax
 	call rx_i_127
 
-rx_i_42: ;FPSUB
+rx_i_42: ;FPADD
 	dec ebx
 	jz rx_finish
 	xor r15, 0bc1de9f6h
@@ -776,7 +772,7 @@ rx_body_42:
 	xor rbp, rcx
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	subpd xmm0, xmm6
+	addpd xmm0, xmm6
 	movaps xmm6, xmm0
 
 rx_i_43: ;SUB_64
@@ -887,7 +883,7 @@ rx_body_48:
 	and eax, 2047
 	movhpd qword ptr [rsi + rax * 8], xmm9
 
-rx_i_49: ;FPMUL
+rx_i_49: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r8, 0f96c6a45h
@@ -898,10 +894,7 @@ rx_i_49: ;FPMUL
 rx_body_49:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm3
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm3
 	movaps xmm5, xmm0
 
 rx_i_50: ;OR_32
@@ -1018,7 +1011,7 @@ rx_body_55:
 	mov eax, r11d
 	xor eax, 07c79cddh
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm3
+	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_56: ;AND_64
 	dec ebx
@@ -1144,7 +1137,7 @@ taken_call_61:
 	push rax
 	call rx_i_120
 
-rx_i_62: ;FPMUL
+rx_i_62: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r15, 0c3089414h
@@ -1155,17 +1148,14 @@ rx_i_62: ;FPMUL
 rx_body_62:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm8
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm8
 	movaps xmm2, xmm0
 	mov eax, r10d
 	xor eax, 05c4789e3h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm2
+	movhpd qword ptr [rsi + rax * 8], xmm2
 
-rx_i_63: ;FPMUL
+rx_i_63: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r9, 065cf272eh
@@ -1176,10 +1166,7 @@ rx_i_63: ;FPMUL
 rx_body_63:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm7
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm7
 	movaps xmm8, xmm0
 
 rx_i_64: ;SUB_64
@@ -1253,7 +1240,7 @@ taken_call_67:
 	push rax
 	call rx_i_79
 
-rx_i_68: ;FPSUB
+rx_i_68: ;FPADD
 	dec ebx
 	jz rx_finish
 	xor r13, 03aa5c3a4h
@@ -1264,7 +1251,7 @@ rx_i_68: ;FPSUB
 rx_body_68:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	subpd xmm0, xmm2
+	addpd xmm0, xmm2
 	movaps xmm4, xmm0
 	mov eax, r12d
 	xor eax, 03c51ef39h
@@ -1354,11 +1341,16 @@ rx_i_73: ;FPROUND
 rx_body_73:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov eax, r10d
+	xor eax, 040624270h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_74: ;MUL_64
 	dec ebx
@@ -1722,7 +1714,7 @@ rx_body_93:
 	mov eax, r10d
 	xor eax, 07e48a0d8h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm2
+	movhpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_94: ;RET
 	dec ebx
@@ -1830,7 +1822,7 @@ rx_body_99:
 	mov eax, r12d
 	xor eax, 04c21df83h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm4
+	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_100: ;ADD_64
 	dec ebx
@@ -1955,7 +1947,7 @@ rx_body_106:
 	mov eax, r12d
 	xor eax, 03cb2505h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm4
+	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_107: ;CALL
 	dec ebx
@@ -1999,7 +1991,7 @@ rx_body_108:
 	mov eax, r9d
 	xor eax, 0678b65beh
 	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm9
+	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_109: ;FPADD
 	dec ebx
@@ -2207,7 +2199,7 @@ rx_body_120:
 	addpd xmm0, xmm4
 	movaps xmm8, xmm0
 
-rx_i_121: ;FPMUL
+rx_i_121: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r9, 03ab8f73h
@@ -2218,10 +2210,7 @@ rx_i_121: ;FPMUL
 rx_body_121:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm5
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm5
 	movaps xmm8, xmm0
 
 rx_i_122: ;RET
@@ -2813,7 +2802,7 @@ rx_body_153:
 	mov eax, r8d
 	xor eax, 09111c981h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm8
+	movhpd qword ptr [rsi + rax * 8], xmm8
 
 rx_i_154: ;MUL_32
 	dec ebx
@@ -3196,11 +3185,13 @@ rx_i_174: ;FPROUND
 rx_body_174:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov r14, rcx
 
 rx_i_175: ;SAR_64
 	dec ebx
@@ -3431,7 +3422,7 @@ rx_body_187:
 	andps xmm0, xmm1
 	movaps xmm5, xmm0
 
-rx_i_188: ;FPMUL
+rx_i_188: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r9, 04659becbh
@@ -3443,10 +3434,7 @@ rx_body_188:
 	xor rbp, rcx
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm3
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm3
 	movaps xmm4, xmm0
 
 rx_i_189: ;FPROUND
@@ -3460,11 +3448,16 @@ rx_i_189: ;FPROUND
 rx_body_189:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov eax, r13d
+	xor eax, 0e6f1a3b7h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_190: ;RET
 	dec ebx
@@ -3761,7 +3754,7 @@ rx_body_205:
 	andps xmm0, xmm1
 	movaps xmm5, xmm0
 
-rx_i_206: ;FPMUL
+rx_i_206: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r11, 0e836a177h
@@ -3773,10 +3766,7 @@ rx_body_206:
 	xor rbp, rcx
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm7
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm7
 	movaps xmm4, xmm0
 
 rx_i_207: ;AND_32
@@ -4085,7 +4075,7 @@ rx_body_223:
 	mov eax, r10d
 	xor eax, 07fca59eeh
 	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm2
+	movhpd qword ptr [rsi + rax * 8], xmm2
 
 rx_i_224: ;SAR_64
 	dec ebx
@@ -4171,7 +4161,7 @@ rx_body_227:
 	mov eax, r11d
 	xor eax, 0aabe2a0ah
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm3
+	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_228: ;CALL
 	dec ebx
@@ -4313,11 +4303,16 @@ rx_i_234: ;FPROUND
 rx_body_234:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov eax, r12d
+	xor eax, 04d2e9e7dh
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 
 rx_i_235: ;IMUL_32
 	dec ebx
@@ -4438,7 +4433,7 @@ rx_body_241:
 	mov eax, r15d
 	xor eax, 0bc2423ebh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm7
+	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_242: ;MULH_64
 	dec ebx
@@ -4734,7 +4729,7 @@ rx_body_257:
 	mov eax, r11d
 	xor eax, 0373b1b6fh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm3
+	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_258: ;MUL_32
 	dec ebx
@@ -4771,7 +4766,7 @@ rx_body_259:
 	addpd xmm0, xmm9
 	movaps xmm3, xmm0
 
-rx_i_260: ;FPMUL
+rx_i_260: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r13, 0f94e9fa9h
@@ -4783,10 +4778,7 @@ rx_body_260:
 	xor rbp, rcx
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm5
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm5
 	movaps xmm9, xmm0
 
 rx_i_261: ;FPSQRT
@@ -4806,7 +4798,7 @@ rx_body_261:
 	mov eax, r11d
 	xor eax, 0745a48e9h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm3
+	movhpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_262: ;OR_32
 	dec ebx
@@ -5044,7 +5036,7 @@ rx_body_274:
 	mov eax, r14d
 	xor eax, 06a2b2b5bh
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm6
+	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_275: ;OR_64
 	dec ebx
@@ -5121,7 +5113,7 @@ rx_body_278:
 	mov eax, r12d
 	xor eax, 02d00ad10h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm4
+	movhpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_279: ;FPSUB
 	dec ebx
@@ -5139,7 +5131,7 @@ rx_body_279:
 	mov eax, r9d
 	xor eax, 0475ade01h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm9
+	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_280: ;AND_64
 	dec ebx
@@ -5210,7 +5202,7 @@ rx_body_283:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_284: ;FPSUB
+rx_i_284: ;FPADD
 	dec ebx
 	jz rx_finish
 	xor r15, 0e68f36ach
@@ -5222,7 +5214,7 @@ rx_body_284:
 	xor rbp, rcx
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	subpd xmm0, xmm6
+	addpd xmm0, xmm6
 	movaps xmm9, xmm0
 	mov eax, r9d
 	xor eax, 0936f2960h
@@ -5313,7 +5305,7 @@ rx_body_289:
 	andps xmm0, xmm1
 	movaps xmm8, xmm0
 
-rx_i_290: ;FPMUL
+rx_i_290: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r15, 060665748h
@@ -5324,10 +5316,7 @@ rx_i_290: ;FPMUL
 rx_body_290:
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm8
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm8
 	movaps xmm9, xmm0
 
 rx_i_291: ;RET
@@ -5531,7 +5520,7 @@ rx_body_301:
 	mov eax, r15d
 	xor eax, 0433cf2d6h
 	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm7
+	movhpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_302: ;ADD_64
 	dec ebx
@@ -5937,7 +5926,7 @@ rx_body_324:
 	mov eax, r9d
 	xor eax, 0944856d4h
 	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm9
+	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_325: ;SHL_64
 	dec ebx
@@ -6076,7 +6065,7 @@ rx_body_332:
 	mov eax, r11d
 	xor eax, 0116c919eh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm3
+	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_333: ;XOR_64
 	dec ebx
@@ -6222,7 +6211,7 @@ rx_body_341:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_342: ;FPMUL
+rx_i_342: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r9, 09ccc7abah
@@ -6233,10 +6222,7 @@ rx_i_342: ;FPMUL
 rx_body_342:
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm2
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm2
 	movaps xmm3, xmm0
 
 rx_i_343: ;SHR_64
@@ -6258,7 +6244,7 @@ rx_body_343:
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_344: ;FPMUL
+rx_i_344: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r10, 03ef9bcc4h
@@ -6269,10 +6255,7 @@ rx_i_344: ;FPMUL
 rx_body_344:
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm6
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm6
 	movaps xmm5, xmm0
 
 rx_i_345: ;MULH_64
@@ -6343,7 +6326,7 @@ rx_body_348:
 	mov eax, r9d
 	xor eax, 039c35461h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm9
+	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_349: ;XOR_32
 	dec ebx
@@ -6413,9 +6396,9 @@ rx_body_352:
 	mov eax, r10d
 	xor eax, 03bf686f2h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm2
+	movlpd qword ptr [rsi + rax * 8], xmm2
 
-rx_i_353: ;FPMUL
+rx_i_353: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r13, 02e65278bh
@@ -6426,15 +6409,12 @@ rx_i_353: ;FPMUL
 rx_body_353:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm2
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm2
 	movaps xmm7, xmm0
 	mov eax, r15d
 	xor eax, 0b3c9f7aeh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm7
+	movlpd qword ptr [rsi + rax * 8], xmm7
 
 rx_i_354: ;MULH_64
 	dec ebx
@@ -6535,7 +6515,7 @@ rx_body_359:
 	mov eax, r12d
 	xor eax, 0f16b9be3h
 	and eax, 32767
-	movhpd qword ptr [rsi + rax * 8], xmm4
+	movlpd qword ptr [rsi + rax * 8], xmm4
 
 rx_i_360: ;FPMUL
 	dec ebx
@@ -6570,7 +6550,7 @@ rx_body_361:
 	mov eax, r14d
 	xor eax, 0ad0b81f5h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_362: ;SUB_64
 	dec ebx
@@ -6726,7 +6706,7 @@ rx_body_370:
 	mov eax, r14d
 	xor eax, 0a120e0edh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_371: ;FPADD
 	dec ebx
@@ -6948,7 +6928,7 @@ rx_body_383:
 	mov eax, r13d
 	xor eax, 0c9f5cc22h
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm5
+	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_384: ;SHR_64
 	dec ebx
@@ -7256,7 +7236,7 @@ rx_body_400:
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_401: ;FPMUL
+rx_i_401: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r13, 032e81f25h
@@ -7267,15 +7247,12 @@ rx_i_401: ;FPMUL
 rx_body_401:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm4
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm4
 	movaps xmm6, xmm0
 	mov eax, r14d
 	xor eax, 03ea60344h
 	and eax, 32767
-	movhpd qword ptr [rsi + rax * 8], xmm6
+	movlpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_402: ;RET
 	dec ebx
@@ -7382,13 +7359,15 @@ rx_i_406: ;FPROUND
 rx_body_406:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
 	shl eax, 13
 	and eax, 24576
 	or eax, 40896
 	mov dword ptr [rsp - 8], eax
 	ldmxcsr dword ptr [rsp - 8]
+	mov r9, rcx
 
-rx_i_407: ;FPMUL
+rx_i_407: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r14, 09699566fh
@@ -7400,10 +7379,7 @@ rx_body_407:
 	xor rbp, rcx
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm9
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm9
 	movaps xmm8, xmm0
 
 rx_i_408: ;MUL_64
@@ -7493,7 +7469,7 @@ rx_body_412:
 	mov eax, r11d
 	xor eax, 0bbd2640ah
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm3
+	movlpd qword ptr [rsi + rax * 8], xmm3
 
 rx_i_413: ;FPDIV
 	dec ebx
@@ -7704,7 +7680,7 @@ rx_body_424:
 	mov eax, r9d
 	xor eax, 0565ae8aah
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm9
+	movlpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_425: ;IMUL_32
 	dec ebx
@@ -7887,7 +7863,7 @@ rx_body_434:
 	mov eax, r9d
 	xor eax, 08c1cfc74h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm9
+	movhpd qword ptr [rsi + rax * 8], xmm9
 
 rx_i_435: ;MUL_64
 	dec ebx
@@ -8068,7 +8044,7 @@ not_taken_ret_443:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_444: ;FPMUL
+rx_i_444: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r8, 042455dd8h
@@ -8079,15 +8055,12 @@ rx_i_444: ;FPMUL
 rx_body_444:
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm7
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm7
 	movaps xmm5, xmm0
 	mov eax, r13d
 	xor eax, 0ce416070h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm5
+	movhpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_445: ;ADD_64
 	dec ebx
@@ -8128,7 +8101,7 @@ rx_body_446:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_447: ;FPSUB
+rx_i_447: ;FPADD
 	dec ebx
 	jz rx_finish
 	xor r8, 01596d0e8h
@@ -8139,12 +8112,12 @@ rx_i_447: ;FPSUB
 rx_body_447:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	subpd xmm0, xmm7
+	addpd xmm0, xmm7
 	movaps xmm5, xmm0
 	mov eax, r13d
 	xor eax, 0b384d4afh
 	and eax, 2047
-	movhpd qword ptr [rsi + rax * 8], xmm5
+	movlpd qword ptr [rsi + rax * 8], xmm5
 
 rx_i_448: ;FPSUB
 	dec ebx
@@ -8668,7 +8641,7 @@ rx_body_477:
 	mov eax, r14d
 	xor eax, 0e81fc7a6h
 	and eax, 2047
-	movlpd qword ptr [rsi + rax * 8], xmm6
+	movhpd qword ptr [rsi + rax * 8], xmm6
 
 rx_i_478: ;MUL_64
 	dec ebx
@@ -9143,7 +9116,7 @@ rx_body_504:
 	and eax, 32767
 	movhpd qword ptr [rsi + rax * 8], xmm4
 
-rx_i_505: ;FPMUL
+rx_i_505: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r12, 032c0a28ah
@@ -9154,17 +9127,14 @@ rx_i_505: ;FPMUL
 rx_body_505:
 	and ecx, 32767
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm4
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm4
 	movaps xmm8, xmm0
 	mov eax, r8d
 	xor eax, 021b54eaeh
 	and eax, 32767
-	movlpd qword ptr [rsi + rax * 8], xmm8
+	movhpd qword ptr [rsi + rax * 8], xmm8
 
-rx_i_506: ;FPMUL
+rx_i_506: ;FPSUB
 	dec ebx
 	jz rx_finish
 	xor r9, 0a973d58ch
@@ -9175,10 +9145,7 @@ rx_i_506: ;FPMUL
 rx_body_506:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	mulpd xmm0, xmm9
-	movaps xmm1, xmm0
-	cmpeqpd xmm1, xmm1
-	andps xmm0, xmm1
+	subpd xmm0, xmm9
 	movaps xmm3, xmm0
 
 rx_i_507: ;RET
@@ -9238,7 +9205,7 @@ taken_call_509:
 	push rax
 	call rx_i_42
 
-rx_i_510: ;FPSUB
+rx_i_510: ;FPADD
 	dec ebx
 	jz rx_finish
 	xor r8, 0db65513ch
@@ -9249,7 +9216,7 @@ rx_i_510: ;FPSUB
 rx_body_510:
 	and ecx, 2047
 	cvtdq2pd xmm0, qword ptr [rsi+rcx*8]
-	subpd xmm0, xmm2
+	addpd xmm0, xmm2
 	movaps xmm9, xmm0
 
 rx_i_511: ;ROL_64

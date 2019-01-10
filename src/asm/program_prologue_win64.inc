@@ -15,9 +15,11 @@
 	movdqu xmmword ptr [rsp+0], xmm10
 
 	;# function arguments
-	push rcx        ;# RegisterFile& registerFile
-	mov rbx, rdx    ;# MemoryRegisters& memory
-	mov rsi, r8     ;# convertible_t* scratchpad
+	push rcx                    ;# RegisterFile& registerFile
+	mov rbp, qword ptr [rdx]    ;# "mx", "ma"
+	mov rax, qword ptr [rdx+8]  ;# uint8_t* dataset
+	push rax
+	mov rsi, r8                 ;# convertible_t* scratchpad
 
 	include program_prologue_load.inc
 

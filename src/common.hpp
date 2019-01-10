@@ -77,6 +77,7 @@ namespace RandomX {
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 16 / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL2 = ScratchpadSize / sizeof(convertible_t);
+	constexpr uint32_t TransformationCount = 90;
 	constexpr int RegistersCount = 8;
 
 	class Cache;

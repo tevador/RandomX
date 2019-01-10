@@ -19,5 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-void* allocExecutableMemory(size_t);
-void* allocLargePagesMemory(size_t);
+#include <cstddef>
+
+void* allocExecutableMemory(std::size_t);
+void* allocLargePagesMemory(std::size_t);

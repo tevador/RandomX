@@ -11,7 +11,7 @@ SRCDIR=src
 OBJDIR=obj
 LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o)
 ifeq ($(PLATFORM),x86_64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o
 endif
@@ -60,7 +60,7 @@ $(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp Pcg32.hpp) | 
 $(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp instructionWeights.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/JitCompilerX86.cpp -o $@
 
-$(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read_r.inc read_f.inc)) | $(OBJDIR)
+$(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read.inc)) | $(OBJDIR)
 	$(CXX) -x assembler-with-cpp -c $(SRCDIR)/JitCompilerX86-static.S -o $@
 
 $(OBJDIR)/instructionsPortable.o: $(addprefix $(SRCDIR)/,instructionsPortable.cpp instructions.hpp intrinPortable.h) | $(OBJDIR)
@@ -86,6 +86,9 @@ $(OBJDIR)/softAes.o: $(addprefix $(SRCDIR)/,softAes.cpp softAes.h) | $(OBJDIR)
   
 $(OBJDIR)/VirtualMachine.o: $(addprefix $(SRCDIR)/,VirtualMachine.cpp VirtualMachine.hpp common.hpp dataset.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/VirtualMachine.cpp -o $@
+
+$(OBJDIR)/virtualMemory.o: $(addprefix $(SRCDIR)/,virtualMemory.cpp virtualMemory.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/virtualMemory.cpp -o $@
 
 $(OBJDIR)/t1ha2.o: $(addprefix $(SRCDIR)/t1ha/,t1ha2.c t1ha.h t1ha_bits.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/t1ha/t1ha2.c -o $@
