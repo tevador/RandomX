@@ -11,7 +11,7 @@ SRCDIR=src
 OBJDIR=obj
 LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o divideByConstantCodegen.o)
 ifeq ($(PLATFORM),x86_64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o
 endif
@@ -56,6 +56,9 @@ $(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachin
   
 $(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp Pcg32.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/dataset.cpp -o $@
+
+$(OBJDIR)/divideByConstantCodegen.o: $(addprefix $(SRCDIR)/,divideByConstantCodegen.c divideByConstantCodegen.h) | $(OBJDIR)
+	$(CC) $(CCFLAGS) -c $(SRCDIR)/divideByConstantCodegen.c -o $@
 
 $(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp instructionWeights.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/JitCompilerX86.cpp -o $@

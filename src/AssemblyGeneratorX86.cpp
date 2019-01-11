@@ -17,10 +17,14 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 //#define TRACE
+//#define MAGIC_DIVISION
 #include "AssemblyGeneratorX86.hpp"
 #include "Pcg32.hpp"
 #include "common.hpp"
 #include "instructions.hpp"
+#ifdef MAGIC_DIVISION
+#include "divideByConstantCodegen.h"
+#endif
 
 namespace RandomX {
 
@@ -315,34 +319,118 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_DIV_64(Instruction& instr, int i) {
 		genar(instr, i);
 		if ((instr.locb & 7) >= 6) {
+#ifdef MAGIC_DIVISION
+			if (instr.imm32 != 0) {
+				uint32_t divisor = instr.imm32;
+				asmCode << "\t; magic divide by " << divisor << std::endl;
+				if (divisor & (divisor - 1)) {
+					magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+					if (mi.pre_shift > 0)
+						asmCode << "\tshr rax, " << mi.pre_shift << std::endl;
+					if (mi.increment) {
+						asmCode << "\tadd rax, 1" << std::endl;
+						asmCode << "\tsbb rax, 0" << std::endl;
+					}
+					asmCode << "\tmov rcx, " << mi.multiplier << std::endl;
+					asmCode << "\tmul rcx" << std::endl;
+					asmCode << "\tmov rax, rdx" << std::endl;
+					if (mi.post_shift > 0)
+						asmCode << "\tshr rax, " << mi.post_shift << std::endl;
+				}
+				else { //divisor is a power of two
+					int shift = 0;
+					while (divisor >>= 1)
+						++shift;
+					if(shift > 0)
+						asmCode << "\tshr rax, " << shift << std::endl;
+				}
+			}
+#else
 			if (instr.imm32 == 0) {
 				asmCode << "\tmov ecx, 1" << std::endl;
 			}
 			else {
 				asmCode << "\tmov ecx, " << instr.imm32 << std::endl;
 			}
+#endif
 		}
 		else {
 			asmCode << "\tmov ecx, 1" << std::endl;
 			asmCode << "\tmov edx, " << regR32[instr.regb % RegistersCount] << std::endl;
 			asmCode << "\ttest edx, edx" << std::endl;
 			asmCode << "\tcmovne ecx, edx" << std::endl;
+#ifdef MAGIC_DIVISION
+			asmCode << "\txor edx, edx" << std::endl;
+			asmCode << "\tdiv rcx" << std::endl;
+#endif
 		}
+#ifndef MAGIC_DIVISION
 		asmCode << "\txor edx, edx" << std::endl;
 		asmCode << "\tdiv rcx" << std::endl;
+#endif
 		gencr(instr);
 	}
 
 	void AssemblyGeneratorX86::h_IDIV_64(Instruction& instr, int i) {
 		genar(instr, i);
+#ifdef MAGIC_DIVISION
+		if ((instr.locb & 7) >= 6) {
+			int64_t divisor = instr.imm32;
+			asmCode << "\t; magic divide by " << divisor << std::endl;
+			if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
+				// +/- power of two
+				bool negative = divisor < 0;
+				if (negative)
+					divisor = -divisor;
+				int shift = 0;
+				uint64_t unsignedDivisor = divisor;
+				while (unsignedDivisor >>= 1)
+					++shift;
+				if (shift > 0) {
+					asmCode << "\tmov rcx, rax" << std::endl;
+					asmCode << "\tsar rcx, 63" << std::endl;
+					uint32_t mask = (1ULL << shift) + 0xFFFFFFFF;
+					asmCode << "\tand ecx, 0" << std::hex << mask << std::dec << "h" << std::endl;
+					asmCode << "\tadd rax, rcx" << std::endl;
+					asmCode << "\tsar rax, " << shift << std::endl;
+				}
+				if(negative)
+					asmCode << "\tneg rax" << std::endl;
+			} else if(divisor != 0) {
+				magics_info mi = compute_signed_magic_info(divisor);
+				if ((divisor >= 0) != (mi.multiplier >= 0))
+					asmCode << "\tmov rcx, rax" << std::endl;
+				asmCode << "\tmov rdx, " << mi.multiplier << std::endl;
+				asmCode << "\timul rdx" << std::endl;
+				asmCode << "\tmov rax, rdx" << std::endl;
+				asmCode << "\txor edx, edx" << std::endl;
+				bool haveSF = false;
+				if (divisor > 0 && mi.multiplier < 0) {
+					asmCode << "\tadd rax, rcx" << std::endl;
+					haveSF = true;
+				}
+				if (divisor < 0 && mi.multiplier > 0) {
+					asmCode << "\tsub rax, rcx" << std::endl;
+					haveSF = true;
+				}
+				if (mi.shift > 0) {
+					asmCode << "\tsar rax, " << mi.shift << std::endl;
+					haveSF = true;
+				}
+				if (!haveSF)
+					asmCode << "\ttest rax, rax" << std::endl;
+				asmCode << "\tsets dl" << std::endl;
+				asmCode << "\tadd rax, rdx" << std::endl;
+			}
+		}
+		else {
+#endif
 		asmCode << "\tmov edx, ";
 		genbr132(instr);
 		asmCode << "\tcmp edx, -1" << std::endl;
 		asmCode << "\tjne short safe_idiv_" << i << std::endl;
-		asmCode << "\tmov rcx, rax" << std::endl;
-		asmCode << "\trol rcx, 1" << std::endl;
-		asmCode << "\tdec rcx" << std::endl;
-		asmCode << "\tjz short result_idiv_" << i << std::endl;
+		asmCode << "\tneg rax" << std::endl;
+		asmCode << "\tjmp short result_idiv_" << i << std::endl;
 		asmCode << "safe_idiv_" << i << ":" << std::endl;
 		asmCode << "\tmov ecx, 1" << std::endl;
 		asmCode << "\ttest edx, edx" << std::endl;
@@ -351,6 +439,9 @@ namespace RandomX {
 		asmCode << "\tcqo" << std::endl;
 		asmCode << "\tidiv rcx" << std::endl;
 		asmCode << "result_idiv_" << i << ":" << std::endl;
+#ifdef MAGIC_DIVISION
+		}
+#endif
 		gencr(instr);
 	}
 
