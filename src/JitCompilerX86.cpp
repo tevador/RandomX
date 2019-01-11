@@ -17,10 +17,14 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+//#define MAGIC_DIVISION
 #include "JitCompilerX86.hpp"
 #include "Pcg32.hpp"
 #include <cstring>
 #include <stdexcept>
+#ifdef MAGIC_DIVISION
+#include "divideByConstantCodegen.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -152,6 +156,17 @@ namespace RandomX {
 		instructionOffsets.push_back(codePos);
 		emit(0x840fcbff); //dec ebx; jz <epilogue>
 		emit(epilogueOffset - (codePos + 4)); //jump offset (RIP-relative)
+		auto generator = engine[instr.opcode];
+		(this->*generator)(instr, i);
+	}
+
+	void JitCompilerX86::fixCallOffsets() {
+		for (CallOffset& co : callOffsets) {
+			*reinterpret_cast<int32_t*>(code + co.pos) = instructionOffsets[co.index] - (co.pos + 4);
+		}
+	}
+
+	void JitCompilerX86::gena(Instruction& instr) {
 		emit(uint16_t(0x8149)); //xor
 		emitByte(0xf0 + (instr.rega % RegistersCount));
 		emit(instr.addra);
@@ -169,41 +184,28 @@ namespace RandomX {
 			emit(uint16_t(0x3348));
 			emitByte(0xe9); //xor rbp, rcx
 		}
-		auto generator = engine[instr.opcode];
-		(this->*generator)(instr, i);
-	}
-
-	void JitCompilerX86::fixCallOffsets() {
-		for (CallOffset& co : callOffsets) {
-			*reinterpret_cast<int32_t*>(code + co.pos) = instructionOffsets[co.index] - (co.pos + 4);
+		emit(uint16_t(0xe181)); //and ecx,
+		if (instr.loca & 3) {
+			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
+		}
+		else {
+			emit(ScratchpadL2 - 1); //whole scratchpad
 		}
 	}
 
 	void JitCompilerX86::genar(Instruction& instr) {
-		emit(uint16_t(0xe181)); //and ecx,
-		if (instr.loca & 3) {
-			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
-		}
-		else {
-			emit(ScratchpadL2 - 1); //whole scratchpad
-		}
+		gena(instr);
 		emit(0xce048b48); //mov rax,QWORD PTR [rsi+rcx*8]
 	}
 
 	void JitCompilerX86::genaf(Instruction& instr) {
-		emit(uint16_t(0xe181)); //and ecx,
-		if (instr.loca & 3) {
-			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
-		}
-		else {
-			emit(ScratchpadL2 - 1); //whole scratchpad
-		}
+		gena(instr);
 		emitByte(0xf3);
 		emit(0xce04e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rcx*8]
 	}
 
-	void JitCompilerX86::genbr0(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
-		if ((instr.locb & 7) <= 3) {
+	void JitCompilerX86::genbiashift(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
+		if (instr.locb & 1)	{
 			emit(uint16_t(0x8b49)); //mov
 			emitByte(0xc8 + (instr.regb % RegistersCount)); //rcx, regb
 			emitByte(0x48); //REX.W
@@ -216,8 +218,8 @@ namespace RandomX {
 		}
 	}
 
-	void JitCompilerX86::genbr1(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
-		if ((instr.locb & 7) <= 5) {
+	void JitCompilerX86::genbia(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
+		if (instr.locb & 3) {
 			emit(opcodeReg); // xxx rax, r64
 			emitByte(0xc0 + (instr.regb % RegistersCount));
 		}
@@ -227,8 +229,8 @@ namespace RandomX {
 		}
 	}
 
-	void JitCompilerX86::genbr132(Instruction& instr, uint16_t opcodeReg, uint8_t opcodeImm) {
-		if ((instr.locb & 7) <= 5) {
+	void JitCompilerX86::genbia32(Instruction& instr, uint16_t opcodeReg, uint8_t opcodeImm) {
+		if (instr.locb & 3) {
 			emit(opcodeReg); // xxx eax, r32
 			emitByte(0xc0 + (instr.regb % RegistersCount));
 		}
@@ -328,25 +330,25 @@ namespace RandomX {
 
 	void JitCompilerX86::h_ADD_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr1(instr, 0x0349, 0x0548);
+		genbia(instr, 0x0349, 0x0548);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_ADD_32(Instruction& instr, int i) {
 		genar(instr);
-		genbr132(instr, 0x0341, 0x05);
+		genbia32(instr, 0x0341, 0x05);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_SUB_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr1(instr, 0x2b49, 0x2d48);
+		genbia(instr, 0x2b49, 0x2d48);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_SUB_32(Instruction& instr, int i) {
 		genar(instr);
-		genbr132(instr, 0x2b41, 0x2d);
+		genbia32(instr, 0x2b41, 0x2d);
 		gencr(instr);
 	}
 
@@ -435,104 +437,209 @@ namespace RandomX {
 
 	void JitCompilerX86::h_DIV_64(Instruction& instr, int i) {
 		genar(instr);
-		if ((instr.locb & 7) <= 5) {
+		if (instr.locb & 3) {
+#ifdef MAGIC_DIVISION
+			if (instr.imm32 != 0) {
+				uint32_t divisor = instr.imm32;
+				if (divisor & (divisor - 1)) {
+					magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+					if (mi.pre_shift > 0) {
+						if (mi.pre_shift == 1) {
+							emitByte(0x48);
+							emit(uint16_t(0xe8d1)); //shr rax,1
+						}
+						else {
+							emit(0x00e8c148 | (mi.pre_shift << 24)); //shr rax, pre_shift
+						}
+					}
+					if (mi.increment) {
+						emit(0x00d8834801c08348); //add rax,1; sbb rax,0
+					}
+					emit(uint16_t(0xb948)); //movabs rcx, multiplier
+					emit(mi.multiplier);
+					emit(0x48e1f748); //mul rcx; REX
+					emit(uint16_t(0xc28b)); //mov rax,rdx
+					if (mi.post_shift > 0)
+						emit(0x00e8c148 | (mi.post_shift << 24)); //shr rax, post_shift
+			}
+				else { //divisor is a power of two
+					int shift = 0;
+					while (divisor >>= 1)
+						++shift;
+					if (shift > 0)
+						emit(0x00e8c148 | (shift << 24)); //shr rax, shift
+				}
+		}
+#else
+			emitByte(0xb9); //mov ecx, imm32
+			emit(instr.imm32 != 0 ? instr.imm32 : 1);
+#endif
+		}
+		else {
 			emitByte(0xb9); //mov ecx, 1
 			emit(1);
 			emit(uint16_t(0x8b41)); //mov edx, r32
 			emitByte(0xd0 + (instr.regb % RegistersCount));
 			emit(0x450fd285); //test edx, edx; cmovne ecx,edx
 			emitByte(0xca);
+#ifdef MAGIC_DIVISION
+			emit(0xf748d233); //xor edx,edx; div rcx
+			emitByte(0xf1);
+#endif
 		}
-		else {
-			emitByte(0xb9); //mov ecx, imm32
-			emit(instr.imm32 != 0 ? instr.imm32 : 1);
-		}
+#ifndef MAGIC_DIVISION
 		emit(0xf748d233); //xor edx,edx; div rcx
 		emitByte(0xf1);
+#endif
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_IDIV_64(Instruction& instr, int i) {
 		genar(instr);
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8b41)); //mov edx, r32
-			emitByte(0xd0 + (instr.regb % RegistersCount));
+		if (instr.locb & 3) {
+#ifdef MAGIC_DIVISION
+			int64_t divisor = instr.imm32;
+			if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
+				// +/- power of two
+				bool negative = divisor < 0;
+				if (negative)
+					divisor = -divisor;
+				int shift = 0;
+				uint64_t unsignedDivisor = divisor;
+				while (unsignedDivisor >>= 1)
+					++shift;
+				if (shift > 0) {
+					emitByte(0x48);
+					emit(uint16_t(0xc88b)); //mov rcx, rax
+					emit(0x3ff9c148); //sar rcx, 63
+					uint32_t mask = (1ULL << shift) - 1;
+					emit(uint16_t(0xe181)); //and ecx, mask
+					emit(mask);
+					emitByte(0x48);
+					emit(uint16_t(0xc103)); //add rax, rcx
+					emit(0x00f8c148 | (shift << 24)); //sar rax, shift
+				}
+				if (negative) {
+					emitByte(0x48);
+					emit(uint16_t(0xd8f7)); //neg rax
+				}
+			}
+			else if (divisor != 0) {
+				magics_info mi = compute_signed_magic_info(divisor);
+				if ((divisor >= 0) != (mi.multiplier >= 0)) {
+					emitByte(0x48);
+					emit(uint16_t(0xc88b)); //mov rcx, rax
+				}
+				emit(uint16_t(0xba48)); //movabs rdx, multiplier
+				emit(mi.multiplier);
+				emit(0xd233c28b48eaf748); //imul rdx; mov rax,rdx; xor edx,edx
+				bool haveSF = false;
+				if (divisor > 0 && mi.multiplier < 0) {
+					emitByte(0x48);
+					emit(uint16_t(0xc103)); //add rax, rcx
+					haveSF = true;
+				}
+				if (divisor < 0 && mi.multiplier > 0) {
+					emitByte(0x48);
+					emit(uint16_t(0xc12b)); //sub rax, rcx
+					haveSF = true;
+				}
+				if (mi.shift > 0) {
+					emit(0x00f8c148 | (mi.shift << 24)); //sar rax, shift
+					haveSF = true;
+				}
+				if (!haveSF) {
+					emitByte(0x48);
+					emit(uint16_t(0x85c0));
+				}
+				emit(0x48c2980f); //sets dl; add rax, rdx
+				emit(uint16_t(0xc203));
+			}
+#else
+			emitByte(0xba); // mov edx, imm32
+			emit(instr.imm32);
+#endif
 		}
 		else {
-			emitByte(0xba); // xxx edx, imm32
-			emit(instr.imm32);
+			emit(uint16_t(0x8b41)); //mov edx, r32
+			emitByte(0xd0 + (instr.regb % RegistersCount));
+#ifndef MAGIC_DIVISION
 		}
+#endif
 		emit(0xc88b480b75fffa83);
 		emit(0x1274c9ff48c1d148);
 		emit(0x0fd28500000001b9);
 		emit(0x489948c96348ca45);
 		emit(uint16_t(0xf9f7)); //idiv rcx
+#ifdef MAGIC_DIVISION
+	}
+#endif
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_AND_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr1(instr, 0x2349, 0x2548);
+		genbia(instr, 0x2349, 0x2548);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_AND_32(Instruction& instr, int i) {
 		genar(instr);
-		genbr132(instr, 0x2341, 0x25);
+		genbia32(instr, 0x2341, 0x25);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_OR_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr1(instr, 0x0b49, 0x0d48);
+		genbia(instr, 0x0b49, 0x0d48);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_OR_32(Instruction& instr, int i) {
 		genar(instr);
-		genbr132(instr, 0x0b41, 0x0d);
+		genbia32(instr, 0x0b41, 0x0d);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_XOR_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr1(instr, 0x3349, 0x3548);
+		genbia(instr, 0x3349, 0x3548);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_XOR_32(Instruction& instr, int i) {
 		genar(instr);
-		genbr132(instr, 0x3341, 0x35);
+		genbia32(instr, 0x3341, 0x35);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_SHL_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr0(instr, 0xe0d3, 0xe0c1);
+		genbiashift(instr, 0xe0d3, 0xe0c1);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_SHR_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr0(instr, 0xe8d3, 0xe8c1);
+		genbiashift(instr, 0xe8d3, 0xe8c1);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_SAR_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr0(instr, 0xf8d3, 0xf8c1);
+		genbiashift(instr, 0xf8d3, 0xf8c1);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_ROL_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr0(instr, 0xc0d3, 0xc0c1);
+		genbiashift(instr, 0xc0d3, 0xc0c1);
 		gencr(instr);
 	}
 
 	void JitCompilerX86::h_ROR_64(Instruction& instr, int i) {
 		genar(instr);
-		genbr0(instr, 0xc8d3, 0xc8c1);
+		genbiashift(instr, 0xc8d3, 0xc8c1);
 		gencr(instr);
 	}
 

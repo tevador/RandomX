@@ -24,11 +24,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-	typedef uint64_t uint;
-	typedef int64_t sint;
+	typedef uint64_t unsigned_type;
+	typedef int64_t signed_type;
 
 	/* Computes "magic info" for performing signed division by a fixed integer D.
-	   The type 'sint' is assumed to be defined as a signed integer type large enough
+	   The type 'signed_type' is assumed to be defined as a signed integer type large enough
 	   to hold both the dividend and the divisor.
 	   Here >> is arithmetic (signed) shift, and >>> is logical shift.
 
@@ -55,17 +55,17 @@ extern "C" {
 	 */
 
 	struct magics_info {
-		sint multiplier; // the "magic number" multiplier
+		signed_type multiplier; // the "magic number" multiplier
 		unsigned shift; // shift for the dividend after multiplying
 	};
-	struct magics_info compute_signed_magic_info(sint D);
+	struct magics_info compute_signed_magic_info(signed_type D);
 
 
 	/* Computes "magic info" for performing unsigned division by a fixed positive integer D.
-	   The type 'uint' is assumed to be defined as an unsigned integer type large enough
+	   The type 'unsigned_type' is assumed to be defined as an unsigned integer type large enough
 	   to hold both the dividend and the divisor. num_bits can be set appropriately if n is
-	   known to be smaller than the largest uint; if this is not known then pass
-	   (sizeof(uint) * CHAR_BIT) for num_bits.
+	   known to be smaller than the largest unsigned_type; if this is not known then pass
+	   (sizeof(unsigned_type) * CHAR_BIT) for num_bits.
 
 	   Assume we have a hardware register of width UINT_BITS, a known constant D which is
 	   not zero and not a power of 2, and a variable n of width num_bits (which may be
@@ -105,12 +105,12 @@ extern "C" {
 	 */
 
 	struct magicu_info {
-		uint multiplier; // the "magic number" multiplier
+		unsigned_type multiplier; // the "magic number" multiplier
 		unsigned pre_shift; // shift for the dividend before multiplying
 		unsigned post_shift; //shift for the dividend after multiplying
 		int increment; // 0 or 1; if set then increment the numerator, using one of the two strategies
 	};
-	struct magicu_info compute_unsigned_magic_info(uint D, unsigned num_bits);
+	struct magicu_info compute_unsigned_magic_info(unsigned_type D, unsigned num_bits);
 
 #if defined(__cplusplus)
 }

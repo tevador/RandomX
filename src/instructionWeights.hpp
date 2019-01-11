@@ -19,17 +19,17 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#define WT_ADD_64 15
+#define WT_ADD_64 12
 #define WT_ADD_32 2
-#define WT_SUB_64 15
+#define WT_SUB_64 12
 #define WT_SUB_32 2
 #define WT_MUL_64 23
 #define WT_MULH_64 10
 #define WT_MUL_32 15
 #define WT_IMUL_32 15
 #define WT_IMULH_64 6
-#define WT_DIV_64 1
-#define WT_IDIV_64 1
+#define WT_DIV_64 4
+#define WT_IDIV_64 4
 #define WT_AND_64 4
 #define WT_AND_32 2
 #define WT_OR_64 4

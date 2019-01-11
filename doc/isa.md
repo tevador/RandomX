@@ -83,10 +83,10 @@ The `B.LOC.L` flag determines the B operand. It can be either a register or imme
 
 |`B.LOC.L`|IA/DIV|IA/SHIFT|IA/MATH|FP|CL|
 |----|--------|----|------|----|---|
-|0|register|register|register|register|register|
+|0|register|`imm8`|`imm32`|register|register|
 |1|`imm32`|register|register|register|register|
 |2|`imm32`|`imm8`|register|register|register|
-|3|`imm32`|`imm8`|`imm32`|register|register|
+|3|`imm32`|register|register|register|register|
 
 Integer instructions are split into 3 classes: integer division (IA/DIV), shift and rotate (IA/SHIFT) and other (IA/MATH). Floating point (FP) and control (CL) instructions always use a register operand.
 
