@@ -466,7 +466,9 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_FPROUND(Instruction& instr, int i) {
 		genar(instr, i);
 		asmCode << "\tmov rcx, rax" << std::endl;
-		asmCode << "\tshl eax, 13" << std::endl;
+		int rotate = (13 - (instr.imm8 & 63)) & 63;
+		if (rotate != 0)
+			asmCode << "\trol rax, " << rotate << std::endl;
 		asmCode << "\tand eax, 24576" << std::endl;
 		asmCode << "\tor eax, 40896" << std::endl;
 		asmCode << "\tmov dword ptr [rsp - 8], eax" << std::endl;

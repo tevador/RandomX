@@ -9,6 +9,7 @@ The encoding of each 128-bit instruction word is following:
 There are 256 opcodes, which are distributed between 3 groups of instructions. There are 31 distinct operations (each operation can be encoded using multiple opcodes - for example opcodes `0x00` to `0x0d` correspond to integer addition).
 
 **Table 1: Instruction groups**
+
 |group|# operations|# opcodes||
 |---------|-----------------|----|-|
 |integer (IA)|22|144|56.3%|
@@ -31,8 +32,8 @@ The `A.LOC.W` flag determines the address width when reading operand A from the 
 
 **Table 3: Operand A read address width**
 
-|`A.LOC.W`|address width (W)
-|---------|-|-|
+|`A.LOC.W`|address width (W)|
+|---------|-|
 |0|15 bits (256 KiB)|
 |1-3|11 bits (16 KiB)|
 
@@ -125,8 +126,8 @@ The `C.LOC.W` flag determines the address width when writing operand C to the sc
 
 **Table 10: Operand C write address width**
 
-|`C.LOC.W`|address width (W)
-|---------|-|-|
+|`C.LOC.W`|address width (W)|
+|---------|-|
 |0|15 bits (256 KiB)|
 |1-3|11 bits (16 KiB)|
 

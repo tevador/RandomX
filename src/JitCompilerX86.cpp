@@ -574,7 +574,15 @@ namespace RandomX {
 
 	void JitCompilerX86::h_FPROUND(Instruction& instr, int i) {
 		genar(instr);
-		emit(0x00250de0c1c88b48); //mov rcx,rax; shl eax,0xd
+		emitByte(0x48);
+		emit(uint16_t(0xc88b)); //mov rcx,rax
+		int rotate = (13 - (instr.imm8 & 63)) & 63;
+		if (rotate != 0) {
+			emitByte(0x48);
+			emit(uint16_t(0xc0c1)); //rol rax
+			emitByte(rotate);
+		}
+		emit(uint16_t(0x0025));
 		emit(0x00009fc00d000060); //and eax,0x6000; or eax,0x9fc0
 		emit(0x2454ae0ff8244489); //ldmxcsr DWORD PTR [rsp-0x8]
 		emitByte(0xf8);

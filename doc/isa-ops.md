@@ -12,6 +12,7 @@ There are 31 unique instructions divided into 3 groups:
 
 ## Integer instructions
 There are 22 integer instructions. They are divided into 3 classes (MATH, DIV, SHIFT) with different B operand selection rules.
+
 |# opcodes|instruction|class|signed|A width|B width|C|C width|
 |-|-|-|-|-|-|-|-|
 |12|ADD_64|MATH|no|64|64|`A + B`|64|
@@ -55,7 +56,7 @@ The shift/rotate instructions use just the bottom 6 bits of the `B` operand (`im
 There are 5 floating point instructions. All floating point instructions are vector instructions that operate on two packed double precision floating point values.
 
 |# opcodes|instruction|C|
-|-|-|-|-|
+|-|-|-|
 |20|FPADD|`A + B`|
 |20|FPSUB|`A - B`|
 |22|FPMUL|`A * B`|
