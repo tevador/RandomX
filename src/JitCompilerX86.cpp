@@ -603,6 +603,24 @@ namespace RandomX {
 		}
 	}
 
+	void JitCompilerX86::h_JUMP(Instruction& instr, int i) {
+		genar(instr);
+		gencr(instr);
+		emit(uint16_t(0x8141)); //cmp regb, imm32
+		emitByte(0xf8 + (instr.regb % RegistersCount));
+		emit(instr.imm32);
+		emitByte(0x0f); //near jump
+		emitByte(jumpCondition(instr) + 0x10);
+		i = wrapInstr(i + (instr.imm8 & 127) + 2);
+		if (i < instructionOffsets.size()) {
+			emit(instructionOffsets[i] - (codePos + 4));
+		}
+		else {
+			callOffsets.push_back(CallOffset(codePos, i));
+			codePos += 4;
+		}
+	}
+
 	void JitCompilerX86::h_CALL(Instruction& instr, int i) {
 		genar(instr);
 		emit(uint16_t(0x8141)); //cmp regb, imm32
@@ -677,6 +695,7 @@ namespace RandomX {
 		INST_HANDLE(FPDIV)
 		INST_HANDLE(FPSQRT)
 		INST_HANDLE(FPROUND)
+		INST_HANDLE(JUMP)
 		INST_HANDLE(CALL)
 		INST_HANDLE(RET)
 	};

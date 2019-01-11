@@ -496,6 +496,14 @@ namespace RandomX {
 		}
 	}
 
+	void AssemblyGeneratorX86::h_JUMP(Instruction& instr, int i) {
+		genar(instr, i);
+		gencr(instr);
+		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
+		asmCode << "\t" << jumpCondition(instr);
+		asmCode << " rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
+	}
+
 	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
 		genar(instr, i);
 		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
@@ -554,6 +562,7 @@ namespace RandomX {
 		INST_HANDLE(FPDIV)
 		INST_HANDLE(FPSQRT)
 		INST_HANDLE(FPROUND)
+		INST_HANDLE(JUMP)
 		INST_HANDLE(CALL)
 		INST_HANDLE(RET)
 	};

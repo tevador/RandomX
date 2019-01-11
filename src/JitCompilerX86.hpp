@@ -110,6 +110,7 @@ namespace RandomX {
 		void h_FPDIV(Instruction&, int);
 		void h_FPSQRT(Instruction&, int);
 		void h_FPROUND(Instruction&, int);
+		void h_JUMP(Instruction&, int);
 		void h_CALL(Instruction&, int);
 		void h_RET(Instruction&, int);
 	};
