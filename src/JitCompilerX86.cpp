@@ -623,19 +623,12 @@ namespace RandomX {
 
 	void JitCompilerX86::h_CALL(Instruction& instr, int i) {
 		genar(instr);
+		gencr(instr);
 		emit(uint16_t(0x8141)); //cmp regb, imm32
 		emitByte(0xf8 + (instr.regb % RegistersCount));
 		emit(instr.imm32);
-		emitByte(jumpCondition(instr));
-		if ((instr.locc & 7) <= 3) {
-			emitByte(0x16);
-		}
-		else {
-			emitByte(0x05);
-		}
-		gencr(instr);
-		emit(uint16_t(0x06eb)); //jmp to next
-		emitByte(0x50); //push rax
+		emitByte(jumpCondition(instr, true));
+		emitByte(0x05);
 		emitByte(0xe8); //call
 		i = wrapInstr(i + (instr.imm8 & 127) + 2);
 		if (i < instructionOffsets.size()) {
@@ -654,13 +647,8 @@ namespace RandomX {
 			crlen = 17;
 		}
 		emit(0x74e73b48); //cmp rsp, rdi; je
-		emitByte(11 + crlen);
-		emitByte(0x48);
-		emit(0x08244433); //xor rax,QWORD PTR [rsp+0x8]
-		gencr(instr);
-		emitByte(0xc2); //ret 8
-		emit(uint16_t(0x0008));
-		gencr(instr);
+		emitByte(0x01);
+		emitByte(0xc3); //ret
 	}
 
 #include "instructionWeights.hpp"

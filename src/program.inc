@@ -10,16 +10,13 @@ rx_body_0:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r11d, 445530481
-	jbe short taken_call_0
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 01a8e4171h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_1
-taken_call_0:
-	push rax
+	cmp r11d, 445530481
+	ja short rx_i_1
 	call rx_i_30
 
 rx_i_1: ;IMULH_64
@@ -283,21 +280,14 @@ rx_i_15: ;RET
 rx_body_15:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r14d
+	xor eax, 0468b38b8h
+	and eax, 32767
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_15
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r14d
-	xor eax, 0468b38b8h
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_15:
-	mov rcx, rax
-	mov eax, r14d
-	xor eax, 0468b38b8h
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_16
+	ret
 
 rx_i_16: ;ADD_64
 	dec ebx
@@ -620,12 +610,9 @@ rx_body_34:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r14d, -380224718
-	js short taken_call_34
 	mov r15, rax
-	jmp rx_i_35
-taken_call_34:
-	push rax
+	cmp r14d, -380224718
+	jns short rx_i_35
 	call rx_i_108
 
 rx_i_35: ;CALL
@@ -639,12 +626,9 @@ rx_i_35: ;CALL
 rx_body_35:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r9d, -2040787098
-	js short taken_call_35
 	mov r8, rax
-	jmp rx_i_36
-taken_call_35:
-	push rax
+	cmp r9d, -2040787098
+	jns short rx_i_36
 	call rx_i_58
 
 rx_i_36: ;FPMUL
@@ -722,16 +706,13 @@ rx_i_40: ;CALL
 rx_body_40:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r12d, -1297973554
-	js short taken_call_40
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0b2a27eceh
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_41
-taken_call_40:
-	push rax
+	cmp r12d, -1297973554
+	jns short rx_i_41
 	call rx_i_90
 
 rx_i_41: ;JUMP
@@ -943,13 +924,10 @@ rx_i_53: ;RET
 rx_body_53:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r13, rax
 	cmp rsp, rdi
-	je short not_taken_ret_53
-	xor rax, qword ptr [rsp + 8]
-	mov r13, rax
-	ret 8
-not_taken_ret_53:
-	mov r13, rax
+	je short rx_i_54
+	ret
 
 rx_i_54: ;IMUL_32
 	dec ebx
@@ -1071,16 +1049,13 @@ rx_i_60: ;CALL
 rx_body_60:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r11d, 2075529029
-	jno short taken_call_60
 	mov rcx, rax
 	mov eax, r11d
 	xor eax, 07bb60f45h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_61
-taken_call_60:
-	push rax
+	cmp r11d, 2075529029
+	jo short rx_i_61
 	call rx_i_116
 
 rx_i_61: ;JUMP
@@ -1327,12 +1302,9 @@ rx_i_75: ;CALL
 rx_body_75:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r11d, -1160798683
-	jo short taken_call_75
 	mov r13, rax
-	jmp rx_i_76
-taken_call_75:
-	push rax
+	cmp r11d, -1160798683
+	jno short rx_i_76
 	call rx_i_202
 
 rx_i_76: ;FPADD
@@ -1364,21 +1336,14 @@ rx_i_77: ;RET
 rx_body_77:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r11d
+	xor eax, 03a92bc7ah
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_77
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 03a92bc7ah
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_77:
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 03a92bc7ah
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_78
+	ret
 
 rx_i_78: ;MULH_64
 	dec ebx
@@ -1407,16 +1372,13 @@ rx_i_79: ;CALL
 rx_body_79:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r13d, 1800043331
-	jbe short taken_call_79
 	mov rcx, rax
 	mov eax, r11d
 	xor eax, 06b4a7b43h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_80
-taken_call_79:
-	push rax
+	cmp r13d, 1800043331
+	ja short rx_i_80
 	call rx_i_93
 
 rx_i_80: ;ROR_64
@@ -1664,12 +1626,9 @@ rx_body_94:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r13d, -343122976
-	js short taken_call_94
 	mov r8, rax
-	jmp rx_i_95
-taken_call_94:
-	push rax
+	cmp r13d, -343122976
+	jns short rx_i_95
 	call rx_i_157
 
 rx_i_95: ;MUL_64
@@ -1978,16 +1937,13 @@ rx_i_111: ;CALL
 rx_body_111:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r14d, 1562606859
-	jge short taken_call_111
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 05d237d0bh
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_112
-taken_call_111:
-	push rax
+	cmp r14d, 1562606859
+	jl short rx_i_112
 	call rx_i_212
 
 rx_i_112: ;SUB_64
@@ -2174,16 +2130,13 @@ rx_i_122: ;CALL
 rx_body_122:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r11d, 2029448233
-	jo short taken_call_122
 	mov rcx, rax
 	mov eax, r14d
 	xor eax, 078f6ec29h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_123
-taken_call_122:
-	push rax
+	cmp r11d, 2029448233
+	jno short rx_i_123
 	call rx_i_192
 
 rx_i_123: ;ADD_64
@@ -2330,21 +2283,14 @@ rx_i_131: ;RET
 rx_body_131:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r15d
+	xor eax, 0dff06f75h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_131
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r15d
-	xor eax, 0dff06f75h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_131:
-	mov rcx, rax
-	mov eax, r15d
-	xor eax, 0dff06f75h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_132
+	ret
 
 rx_i_132: ;FPADD
 	dec ebx
@@ -2457,13 +2403,10 @@ rx_i_138: ;RET
 rx_body_138:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r10, rax
 	cmp rsp, rdi
-	je short not_taken_ret_138
-	xor rax, qword ptr [rsp + 8]
-	mov r10, rax
-	ret 8
-not_taken_ret_138:
-	mov r10, rax
+	je short rx_i_139
+	ret
 
 rx_i_139: ;ADD_64
 	dec ebx
@@ -2828,16 +2771,13 @@ rx_i_159: ;CALL
 rx_body_159:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r15d, -8571241
-	jbe short taken_call_159
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 0ff7d3697h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_160
-taken_call_159:
-	push rax
+	cmp r15d, -8571241
+	ja short rx_i_160
 	call rx_i_181
 
 rx_i_160: ;ADD_32
@@ -2953,21 +2893,14 @@ rx_i_165: ;RET
 rx_body_165:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r9d
+	xor eax, 06450685ch
+	and eax, 32767
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_165
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 06450685ch
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_165:
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 06450685ch
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_166
+	ret
 
 rx_i_166: ;SHR_64
 	dec ebx
@@ -3037,16 +2970,13 @@ rx_i_169: ;CALL
 rx_body_169:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r10d, -1286357107
-	jbe short taken_call_169
 	mov rcx, rax
 	mov eax, r14d
 	xor eax, 0b353bf8dh
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_170
-taken_call_169:
-	push rax
+	cmp r10d, -1286357107
+	ja short rx_i_170
 	call rx_i_197
 
 rx_i_170: ;FPSQRT
@@ -3194,21 +3124,14 @@ rx_i_178: ;RET
 rx_body_178:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r12d
+	xor eax, 0c366b275h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_178
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r12d
-	xor eax, 0c366b275h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_178:
-	mov rcx, rax
-	mov eax, r12d
-	xor eax, 0c366b275h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_179
+	ret
 
 rx_i_179: ;FPADD
 	dec ebx
@@ -3254,12 +3177,9 @@ rx_body_181:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r12d, -1612576918
-	ja short taken_call_181
 	mov r10, rax
-	jmp rx_i_182
-taken_call_181:
-	push rax
+	cmp r12d, -1612576918
+	jbe short rx_i_182
 	call rx_i_211
 
 rx_i_182: ;FPSUB
@@ -3404,13 +3324,10 @@ rx_i_190: ;RET
 rx_body_190:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r13, rax
 	cmp rsp, rdi
-	je short not_taken_ret_190
-	xor rax, qword ptr [rsp + 8]
-	mov r13, rax
-	ret 8
-not_taken_ret_190:
-	mov r13, rax
+	je short rx_i_191
+	ret
 
 rx_i_191: ;FPSQRT
 	dec ebx
@@ -4147,21 +4064,14 @@ rx_body_231:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r9d
+	xor eax, 0e6c9edaah
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_231
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 0e6c9edaah
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_231:
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 0e6c9edaah
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_232
+	ret
 
 rx_i_232: ;FPMUL
 	dec ebx
@@ -4546,16 +4456,13 @@ rx_i_253: ;CALL
 rx_body_253:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r15d, 1699431947
-	jns short taken_call_253
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 0654b460bh
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_254
-taken_call_253:
-	push rax
+	cmp r15d, 1699431947
+	js short rx_i_254
 	call rx_i_367
 
 rx_i_254: ;FPADD
@@ -4787,12 +4694,9 @@ rx_i_266: ;CALL
 rx_body_266:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r12d, 136160027
-	ja short taken_call_266
 	mov r10, rax
-	jmp rx_i_267
-taken_call_266:
-	push rax
+	cmp r12d, 136160027
+	jbe short rx_i_267
 	call rx_i_295
 
 rx_i_267: ;ROL_64
@@ -5247,21 +5151,14 @@ rx_i_291: ;RET
 rx_body_291:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r14d
+	xor eax, 0768a9d75h
+	and eax, 32767
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_291
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r14d
-	xor eax, 0768a9d75h
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_291:
-	mov rcx, rax
-	mov eax, r14d
-	xor eax, 0768a9d75h
-	and eax, 32767
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_292
+	ret
 
 rx_i_292: ;ROL_64
 	dec ebx
@@ -5302,21 +5199,14 @@ rx_i_294: ;RET
 rx_body_294:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r8d
+	xor eax, 0ef8571b7h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_294
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 0ef8571b7h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_294:
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 0ef8571b7h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_295
+	ret
 
 rx_i_295: ;FPSUB
 	dec ebx
@@ -5672,21 +5562,14 @@ rx_body_316:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r8d
+	xor eax, 03602c513h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_316
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 03602c513h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_316:
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 03602c513h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_317
+	ret
 
 rx_i_317: ;FPADD
 	dec ebx
@@ -5788,16 +5671,13 @@ rx_i_322: ;CALL
 rx_body_322:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r11d, 1411981860
-	jo short taken_call_322
 	mov rcx, rax
 	mov eax, r11d
 	xor eax, 054292224h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_323
-taken_call_322:
-	push rax
+	cmp r11d, 1411981860
+	jno short rx_i_323
 	call rx_i_343
 
 rx_i_323: ;MUL_64
@@ -5916,13 +5796,10 @@ rx_i_329: ;RET
 rx_body_329:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r11, rax
 	cmp rsp, rdi
-	je short not_taken_ret_329
-	xor rax, qword ptr [rsp + 8]
-	mov r11, rax
-	ret 8
-not_taken_ret_329:
-	mov r11, rax
+	je short rx_i_330
+	ret
 
 rx_i_330: ;MUL_32
 	dec ebx
@@ -6268,16 +6145,13 @@ rx_i_350: ;CALL
 rx_body_350:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r9d, -980411581
-	jbe short taken_call_350
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 0c5901b43h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_351
-taken_call_350:
-	push rax
+	cmp r9d, -980411581
+	ja short rx_i_351
 	call rx_i_352
 
 rx_i_351: ;MUL_64
@@ -6909,21 +6783,14 @@ rx_i_388: ;RET
 rx_body_388:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r11d
+	xor eax, 0a0985cc2h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_388
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 0a0985cc2h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_388:
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 0a0985cc2h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_389
+	ret
 
 rx_i_389: ;JUMP
 	dec ebx
@@ -7155,13 +7022,10 @@ rx_i_402: ;RET
 rx_body_402:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r14, rax
 	cmp rsp, rdi
-	je short not_taken_ret_402
-	xor rax, qword ptr [rsp + 8]
-	mov r14, rax
-	ret 8
-not_taken_ret_402:
-	mov r14, rax
+	je short rx_i_403
+	ret
 
 rx_i_403: ;IMUL_32
 	dec ebx
@@ -7210,16 +7074,13 @@ rx_i_405: ;CALL
 rx_body_405:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r10d, 1795880641
-	jbe short taken_call_405
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 06b0af6c1h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
-	jmp rx_i_406
-taken_call_405:
-	push rax
+	cmp r10d, 1795880641
+	ja short rx_i_406
 	call rx_i_494
 
 rx_i_406: ;FPDIV
@@ -7302,13 +7163,10 @@ rx_i_410: ;RET
 rx_body_410:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r8, rax
 	cmp rsp, rdi
-	je short not_taken_ret_410
-	xor rax, qword ptr [rsp + 8]
-	mov r8, rax
-	ret 8
-not_taken_ret_410:
-	mov r8, rax
+	je short rx_i_411
+	ret
 
 rx_i_411: ;RET
 	dec ebx
@@ -7321,13 +7179,10 @@ rx_i_411: ;RET
 rx_body_411:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r12, rax
 	cmp rsp, rdi
-	je short not_taken_ret_411
-	xor rax, qword ptr [rsp + 8]
-	mov r12, rax
-	ret 8
-not_taken_ret_411:
-	mov r12, rax
+	je short rx_i_412
+	ret
 
 rx_i_412: ;FPDIV
 	dec ebx
@@ -7495,12 +7350,9 @@ rx_body_421:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r8d, -1600409762
-	jno short taken_call_421
 	mov r10, rax
-	jmp rx_i_422
-taken_call_421:
-	push rax
+	cmp r8d, -1600409762
+	jo short rx_i_422
 	call rx_i_31
 
 rx_i_422: ;MUL_32
@@ -7624,21 +7476,14 @@ rx_i_428: ;RET
 rx_body_428:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r8d
+	xor eax, 0e3b86b2fh
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_428
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 0e3b86b2fh
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_428:
-	mov rcx, rax
-	mov eax, r8d
-	xor eax, 0e3b86b2fh
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_429
+	ret
 
 rx_i_429: ;MUL_64
 	dec ebx
@@ -7843,12 +7688,9 @@ rx_body_440:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	cmp r12d, 2127765370
-	js short taken_call_440
 	mov r9, rax
-	jmp rx_i_441
-taken_call_440:
-	push rax
+	cmp r12d, 2127765370
+	jns short rx_i_441
 	call rx_i_41
 
 rx_i_441: ;ADD_64
@@ -7895,21 +7737,14 @@ rx_i_443: ;RET
 rx_body_443:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r9d
+	xor eax, 04f71c419h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_443
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 04f71c419h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_443:
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 04f71c419h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_444
+	ret
 
 rx_i_444: ;FPSUB
 	dec ebx
@@ -8060,21 +7895,14 @@ rx_i_452: ;RET
 rx_body_452:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r11d
+	xor eax, 0e27dea25h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_452
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 0e27dea25h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_452:
-	mov rcx, rax
-	mov eax, r11d
-	xor eax, 0e27dea25h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_453
+	ret
 
 rx_i_453: ;IMUL_32
 	dec ebx
@@ -8910,21 +8738,14 @@ rx_body_502:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov rcx, rax
+	mov eax, r9d
+	xor eax, 08d85312h
+	and eax, 2047
+	mov qword ptr [rsi + rax * 8], rcx
 	cmp rsp, rdi
-	je short not_taken_ret_502
-	xor rax, qword ptr [rsp + 8]
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 08d85312h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
-	ret 8
-not_taken_ret_502:
-	mov rcx, rax
-	mov eax, r9d
-	xor eax, 08d85312h
-	and eax, 2047
-	mov qword ptr [rsi + rax * 8], rcx
+	je short rx_i_503
+	ret
 
 rx_i_503: ;FPSUB
 	dec ebx
@@ -9005,13 +8826,10 @@ rx_i_507: ;RET
 rx_body_507:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r14, rax
 	cmp rsp, rdi
-	je short not_taken_ret_507
-	xor rax, qword ptr [rsp + 8]
-	mov r14, rax
-	ret 8
-not_taken_ret_507:
-	mov r14, rax
+	je short rx_i_508
+	ret
 
 rx_i_508: ;RET
 	dec ebx
@@ -9024,13 +8842,10 @@ rx_i_508: ;RET
 rx_body_508:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
+	mov r8, rax
 	cmp rsp, rdi
-	je short not_taken_ret_508
-	xor rax, qword ptr [rsp + 8]
-	mov r8, rax
-	ret 8
-not_taken_ret_508:
-	mov r8, rax
+	je short rx_i_509
+	ret
 
 rx_i_509: ;FPROUND
 	dec ebx

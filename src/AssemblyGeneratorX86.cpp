@@ -506,28 +506,19 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
 		genar(instr, i);
-		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-		asmCode << "\t" << jumpCondition(instr);
-		asmCode << " short taken_call_" << i << std::endl;
 		gencr(instr);
-		asmCode << "\tjmp rx_i_" << wrapInstr(i + 1) << std::endl;
-		asmCode << "taken_call_" << i << ":" << std::endl;
-		if (trace) {
-			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rax" << std::endl;
-		}
-		asmCode << "\tpush rax" << std::endl;
+		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
+		asmCode << "\t" << jumpCondition(instr, true);
+		asmCode << " short rx_i_" << wrapInstr(i + 1) << std::endl;
 		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {
 		genar(instr, i);
+		gencr(instr);
 		asmCode << "\tcmp rsp, " << regStackBeginAddr << std::endl;
-		asmCode << "\tje short not_taken_ret_" << i << std::endl;
-		asmCode << "\txor rax, qword ptr [rsp + 8]" << std::endl;
-		gencr(instr);
-		asmCode << "\tret 8" << std::endl;
-		asmCode << "not_taken_ret_" << i << ":" << std::endl;
-		gencr(instr);
+		asmCode << "\tje short rx_i_" << wrapInstr(i + 1) << std::endl;
+		asmCode << "\tret" << std::endl;
 	}
 
 #include "instructionWeights.hpp"
