@@ -19,7 +19,7 @@ rx_body_0:
 	ja short rx_i_1
 	call rx_i_30
 
-rx_i_1: ;DIV_64
+rx_i_1: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r15, 06afc2fa4h
@@ -30,12 +30,19 @@ rx_i_1: ;DIV_64
 rx_body_1:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, 1
 	mov edx, r10d
+	cmp edx, -1
+	jne short body_idiv_1
+	neg rax
+	jmp short result_idiv_1
+body_idiv_1:
+	mov ecx, 1
 	test edx, edx
 	cmovne ecx, edx
-	xor edx, edx
-	div rcx
+	movsxd rcx, ecx
+	cqo
+	idiv rcx
+result_idiv_1:
 	mov r12, rax
 
 rx_i_2: ;JUMP
@@ -80,7 +87,7 @@ rx_body_3:
 	and eax, 32767
 	movhpd qword ptr [rsi + rax * 8], xmm8
 
-rx_i_4: ;MULH_64
+rx_i_4: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r14, 077daefb4h
@@ -91,16 +98,16 @@ rx_i_4: ;MULH_64
 rx_body_4:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r14
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r14d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 06ce10c20h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_5: ;MUL_32
+rx_i_5: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r15, 0379f9ee0h
@@ -112,8 +119,8 @@ rx_body_5:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, 1037420699
+	movsxd rcx, eax
+	movsxd rax, r12d
 	imul rax, rcx
 	mov r12, rax
 
@@ -171,7 +178,7 @@ rx_body_8:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_9: ;DIV_64
+rx_i_9: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r14, 085121c54h
@@ -184,10 +191,13 @@ rx_body_9:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
 	; magic divide by 565870810
-	mov rcx, 8750690209911200579
-	mul rcx
+	mov rdx, 8750690209911200579
+	imul rdx
 	mov rax, rdx
-	shr rax, 28
+	xor edx, edx
+	sar rax, 28
+	sets dl
+	add rax, rdx
 	mov r10, rax
 
 rx_i_10: ;AND_64
@@ -434,10 +444,10 @@ rx_i_23: ;MUL_64
 rx_body_23:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 1283724485
+	imul rax, rax, 1283724485
 	mov r8, rax
 
-rx_i_24: ;IMUL_32
+rx_i_24: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r8, 070d3b8c7h
@@ -449,9 +459,12 @@ rx_body_24:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	movsxd rax, r15d
-	imul rax, rcx
+	mov ecx, 1
+	mov edx, r15d
+	test edx, edx
+	cmovne ecx, edx
+	xor edx, edx
+	div rcx
 	mov rcx, rax
 	mov eax, r15d
 	xor eax, 099b77a68h
@@ -480,7 +493,7 @@ rx_body_25:
 	and eax, 2047
 	movlpd qword ptr [rsi + rax * 8], xmm6
 
-rx_i_26: ;IMUL_32
+rx_i_26: ;IMULH_64
 	dec ebx
 	jz rx_finish
 	xor r11, 0e311468ch
@@ -491,9 +504,9 @@ rx_i_26: ;IMUL_32
 rx_body_26:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	movsxd rax, r13d
-	imul rax, rcx
+	mov rcx, 812644844
+	imul rcx
+	mov rax, rdx
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0306ff9ech
@@ -933,7 +946,7 @@ rx_body_53:
 	je short rx_i_54
 	ret
 
-rx_i_54: ;IMULH_64
+rx_i_54: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r11, 060638de0h
@@ -944,9 +957,11 @@ rx_i_54: ;IMULH_64
 rx_body_54:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r8
-	imul rcx
+	; magic divide by 282209221
+	mov rcx, 1096650948274100047
+	mul rcx
 	mov rax, rdx
+	shr rax, 24
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 010d22bc5h
@@ -974,7 +989,7 @@ rx_body_55:
 	and eax, 2047
 	movhpd qword ptr [rsi + rax * 8], xmm3
 
-rx_i_56: ;DIV_64
+rx_i_56: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r14, 0f1456b8eh
@@ -985,13 +1000,16 @@ rx_i_56: ;DIV_64
 rx_body_56:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	; magic divide by 4244198545
-	add rax, 1
-	sbb rax, 0
-	mov rcx, 9333701248213440683
-	mul rcx
+	; magic divide by -50768751
+	mov rcx, rax
+	mov rdx, 6254795139557318139
+	imul rdx
 	mov rax, rdx
-	shr rax, 31
+	xor edx, edx
+	sub rax, rcx
+	sar rax, 25
+	sets dl
+	add rax, rdx
 	mov rcx, rax
 	mov eax, r8d
 	xor eax, 0fcf95491h
@@ -1009,14 +1027,14 @@ rx_i_57: ;MUL_64
 rx_body_57:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 172123015
+	imul rax, rax, 172123015
 	mov rcx, rax
 	mov eax, r15d
 	xor eax, 0a426387h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_58: ;IMULH_64
+rx_i_58: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r14, 0bcec0ebah
@@ -1027,9 +1045,11 @@ rx_i_58: ;IMULH_64
 rx_body_58:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r13
-	imul rcx
+	; magic divide by 1506547423
+	mov rcx, 6573653217342526495
+	mul rcx
 	mov rax, rdx
+	shr rax, 29
 	mov r8, rax
 
 rx_i_59: ;FPSUB
@@ -1294,7 +1314,7 @@ rx_body_74:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r13
+	imul rax, r13
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0aaaacb32h
@@ -1355,7 +1375,7 @@ rx_body_77:
 	je short rx_i_78
 	ret
 
-rx_i_78: ;MULH_64
+rx_i_78: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r9, 0edeca680h
@@ -1366,9 +1386,9 @@ rx_i_78: ;MULH_64
 rx_body_78:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r8
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r8d
+	imul rax, rcx
 	mov r15, rax
 
 rx_i_79: ;CALL
@@ -1443,7 +1463,7 @@ rx_body_82:
 	cmp r12d, -68969733
 	jo rx_i_145
 
-rx_i_83: ;DIV_64
+rx_i_83: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r10, 0d9b6a533h
@@ -1455,10 +1475,13 @@ rx_body_83:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
 	; magic divide by 91850728
-	mov rcx, 13477737914993774191
-	mul rcx
+	mov rdx, 842358619687110887
+	imul rdx
 	mov rax, rdx
-	shr rax, 26
+	xor edx, edx
+	sar rax, 22
+	sets dl
+	add rax, rdx
 	mov r12, rax
 
 rx_i_84: ;SAR_64
@@ -1490,7 +1513,7 @@ rx_i_85: ;MUL_64
 rx_body_85:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 20014507
+	imul rax, rax, 20014507
 	mov r10, rax
 
 rx_i_86: ;AND_64
@@ -1661,7 +1684,7 @@ rx_body_95:
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_96: ;MUL_32
+rx_i_96: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r11, 04f912ef8h
@@ -1673,8 +1696,8 @@ rx_body_96:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, r11d
+	movsxd rcx, eax
+	mov rax, -1354397081
 	imul rax, rcx
 	mov r11, rax
 
@@ -1797,7 +1820,7 @@ rx_body_103:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_104: ;IMUL_32
+rx_i_104: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r11, 075deaf71h
@@ -1808,9 +1831,11 @@ rx_i_104: ;IMUL_32
 rx_body_104:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	mov rax, -1913070089
-	imul rax, rcx
+	; magic divide by 2381897207
+	mov rcx, 16631314374404138087
+	mul rcx
+	mov rax, rdx
+	shr rax, 31
 	mov rcx, rax
 	mov eax, r15d
 	xor eax, 08df8ddf7h
@@ -1992,7 +2017,7 @@ rx_body_113:
 	mov rax, rdx
 	mov r13, rax
 
-rx_i_114: ;IMULH_64
+rx_i_114: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r13, 06e83e2cdh
@@ -2003,9 +2028,11 @@ rx_i_114: ;IMULH_64
 rx_body_114:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r15
-	imul rcx
+	; magic divide by 770835683
+	mov rcx, 12847770974664443757
+	mul rcx
 	mov rax, rdx
+	shr rax, 29
 	mov r14, rax
 
 rx_i_115: ;IDIV_64
@@ -2029,7 +2056,7 @@ rx_body_115:
 	add rax, rdx
 	mov r14, rax
 
-rx_i_116: ;IMUL_32
+rx_i_116: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r10, 0d122702eh
@@ -2040,16 +2067,18 @@ rx_i_116: ;IMUL_32
 rx_body_116:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	mov rax, -1850776691
-	imul rax, rcx
+	; magic divide by 2444190605
+	mov rcx, 16207443550472271289
+	mul rcx
+	mov rax, rdx
+	shr rax, 31
 	mov rcx, rax
 	mov eax, r8d
 	xor eax, 091af638dh
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_117: ;DIV_64
+rx_i_117: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r11, 015f2012bh
@@ -2060,11 +2089,14 @@ rx_i_117: ;DIV_64
 rx_body_117:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	; magic divide by 3089140324
-	mov rcx, 12823658721283834045
-	mul rcx
+	; magic divide by -1205826972
+	mov rdx, -8213052572424165513
+	imul rdx
 	mov rax, rdx
-	shr rax, 31
+	xor edx, edx
+	sar rax, 29
+	sets dl
+	add rax, rdx
 	mov rcx, rax
 	mov eax, r15d
 	xor eax, 0b8208a64h
@@ -2181,7 +2213,7 @@ rx_body_124:
 	cmp r11d, 1719505436
 	jns rx_i_237
 
-rx_i_125: ;MUL_32
+rx_i_125: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r8, 0ebec27cdh
@@ -2193,8 +2225,8 @@ rx_body_125:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, 1774711622
+	movsxd rcx, eax
+	movsxd rax, r14d
 	imul rax, rcx
 	mov r14, rax
 
@@ -2511,7 +2543,7 @@ rx_body_143:
 	imul rax, rcx
 	mov r9, rax
 
-rx_i_144: ;IMULH_64
+rx_i_144: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r10, 02e59e00ah
@@ -2522,12 +2554,15 @@ rx_i_144: ;IMULH_64
 rx_body_144:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, -1304483355
-	imul rcx
-	mov rax, rdx
+	mov ecx, 1
+	mov edx, r11d
+	test edx, edx
+	cmovne ecx, edx
+	xor edx, edx
+	div rcx
 	mov r15, rax
 
-rx_i_145: ;IMULH_64
+rx_i_145: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r13, 08d5c798h
@@ -2538,16 +2573,18 @@ rx_i_145: ;IMULH_64
 rx_body_145:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r11
-	imul rcx
+	; magic divide by 3712555397
+	mov rcx, 10670300378317066981
+	mul rcx
 	mov rax, rdx
+	shr rax, 31
 	mov rcx, rax
 	mov eax, r10d
 	xor eax, 0dd491985h
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_146: ;IMUL_32
+rx_i_146: ;IMULH_64
 	dec ebx
 	jz rx_finish
 	xor r13, 02327e6e2h
@@ -2559,9 +2596,9 @@ rx_body_146:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	movsxd rax, r12d
-	imul rax, rcx
+	mov rcx, r12
+	imul rcx
+	mov rax, rdx
 	mov r10, rax
 
 rx_i_147: ;MUL_64
@@ -2576,7 +2613,7 @@ rx_body_147:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r11
+	imul rax, r11
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 06a5bda88h
@@ -2621,7 +2658,7 @@ rx_body_149:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_150: ;IMULH_64
+rx_i_150: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 01504ca7ah
@@ -2632,9 +2669,12 @@ rx_i_150: ;IMULH_64
 rx_body_150:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, -933976796
-	imul rcx
-	mov rax, rdx
+	mov ecx, 1
+	mov edx, r8d
+	test edx, edx
+	cmovne ecx, edx
+	xor edx, edx
+	div rcx
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0c854a524h
@@ -2872,7 +2912,7 @@ rx_body_163:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_164: ;MULH_64
+rx_i_164: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r12, 01f0c2737h
@@ -2884,9 +2924,9 @@ rx_body_164:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r9
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r9d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 09aa6da19h
@@ -3007,7 +3047,7 @@ rx_body_170:
 	and eax, 32767
 	movlpd qword ptr [rsi + rax * 8], xmm6
 
-rx_i_171: ;IMULH_64
+rx_i_171: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r15, 09901e05bh
@@ -3018,9 +3058,13 @@ rx_i_171: ;IMULH_64
 rx_body_171:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r12
-	imul rcx
+	; magic divide by 2064150457
+	add rax, 1
+	sbb rax, 0
+	mov rcx, 4797867461985617359
+	mul rcx
 	mov rax, rdx
+	shr rax, 29
 	mov r12, rax
 
 rx_i_172: ;SUB_64
@@ -3049,7 +3093,7 @@ rx_body_173:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, -1386172772
+	imul rax, rax, -1386172772
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 0ad60ae9ch
@@ -3371,7 +3415,7 @@ rx_body_192:
 	and eax, 32767
 	movlpd qword ptr [rsi + rax * 8], xmm8
 
-rx_i_193: ;MULH_64
+rx_i_193: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r12, 0e9939ach
@@ -3382,9 +3426,9 @@ rx_i_193: ;MULH_64
 rx_body_193:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r12
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r12d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r15d
 	xor eax, 074e097dch
@@ -3656,7 +3700,7 @@ rx_i_208: ;MUL_64
 rx_body_208:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, -486588965
+	imul rax, rax, -486588965
 	mov r10, rax
 
 rx_i_209: ;XOR_64
@@ -3878,7 +3922,7 @@ rx_body_220:
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_221: ;IMULH_64
+rx_i_221: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 0a3deb512h
@@ -3889,9 +3933,12 @@ rx_i_221: ;IMULH_64
 rx_body_221:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, 2146087761
-	imul rcx
-	mov rax, rdx
+	mov ecx, 1
+	mov edx, r15d
+	test edx, edx
+	cmovne ecx, edx
+	xor edx, edx
+	div rcx
 	mov rcx, rax
 	mov eax, r11d
 	xor eax, 07feab351h
@@ -3956,7 +4003,7 @@ rx_body_224:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_225: ;IMULH_64
+rx_i_225: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r13, 0c558367eh
@@ -3967,9 +4014,12 @@ rx_i_225: ;IMULH_64
 rx_body_225:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r10
-	imul rcx
+	; magic divide by 4264577610
+	shr rax, 1
+	mov rcx, 9289098447696480965
+	mul rcx
 	mov rax, rdx
+	shr rax, 30
 	mov rcx, rax
 	mov eax, r12d
 	xor eax, 0fe304a4ah
@@ -4030,7 +4080,7 @@ rx_body_228:
 	andps xmm0, xmm10
 	sqrtpd xmm7, xmm0
 
-rx_i_229: ;IMUL_32
+rx_i_229: ;IMULH_64
 	dec ebx
 	jz rx_finish
 	xor r11, 05c535836h
@@ -4041,9 +4091,9 @@ rx_i_229: ;IMUL_32
 rx_body_229:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	movsxd rax, r12d
-	imul rax, rcx
+	mov rcx, 334017248
+	imul rcx
+	mov rax, rdx
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 013e8b2e0h
@@ -4142,7 +4192,7 @@ rx_body_234:
 	andps xmm0, xmm1
 	movaps xmm4, xmm0
 
-rx_i_235: ;MUL_32
+rx_i_235: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r13, 0b6cb9ff2h
@@ -4153,8 +4203,8 @@ rx_i_235: ;MUL_32
 rx_body_235:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, 212286089
+	movsxd rcx, eax
+	movsxd rax, r12d
 	imul rax, rcx
 	mov rcx, rax
 	mov eax, r15d
@@ -4224,7 +4274,7 @@ rx_body_239:
 	add rax, r10
 	mov r10, rax
 
-rx_i_240: ;IMUL_32
+rx_i_240: ;IMULH_64
 	dec ebx
 	jz rx_finish
 	xor r9, 0d65d29f9h
@@ -4236,9 +4286,9 @@ rx_body_240:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	mov rax, -423830277
-	imul rax, rcx
+	mov rcx, r14
+	imul rcx
+	mov rax, rdx
 	mov r8, rax
 
 rx_i_241: ;FPADD
@@ -4259,7 +4309,7 @@ rx_body_241:
 	and eax, 2047
 	movlpd qword ptr [rsi + rax * 8], xmm7
 
-rx_i_242: ;MULH_64
+rx_i_242: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r12, 01119b0f9h
@@ -4270,9 +4320,9 @@ rx_i_242: ;MULH_64
 rx_body_242:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r12
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r12d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r10d
 	xor eax, 0130882f2h
@@ -4331,7 +4381,7 @@ rx_body_245:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_246: ;DIV_64
+rx_i_246: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r15, 027eeaa2eh
@@ -4343,14 +4393,17 @@ rx_body_246:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	; magic divide by 4138158808
-	mov rcx, 9572876028959826425
-	mul rcx
+	; magic divide by -156808488
+	mov rdx, -3947299202596036367
+	imul rdx
 	mov rax, rdx
-	shr rax, 31
+	xor edx, edx
+	sar rax, 25
+	sets dl
+	add rax, rdx
 	mov r12, rax
 
-rx_i_247: ;MUL_32
+rx_i_247: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r10, 0c4de0296h
@@ -4361,8 +4414,8 @@ rx_i_247: ;MUL_32
 rx_body_247:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, r14d
+	movsxd rcx, eax
+	movsxd rax, r14d
 	imul rax, rcx
 	mov rcx, rax
 	mov eax, r9d
@@ -4391,7 +4444,7 @@ rx_body_248:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_249: ;IMUL_32
+rx_i_249: ;IMULH_64
 	dec ebx
 	jz rx_finish
 	xor r15, 0499552cch
@@ -4403,9 +4456,9 @@ rx_body_249:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	movsxd rax, r11d
-	imul rax, rcx
+	mov rcx, -508571655
+	imul rcx
+	mov rax, rdx
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 0e1afcff9h
@@ -4957,7 +5010,7 @@ rx_body_279:
 	and eax, 2047
 	movlpd qword ptr [rsi + rax * 8], xmm9
 
-rx_i_280: ;DIV_64
+rx_i_280: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r12, 066246b43h
@@ -4969,10 +5022,13 @@ rx_body_280:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
 	; magic divide by 555412224
-	mov rcx, 2228867111296024113
-	mul rcx
+	mov rdx, 2228867111296024113
+	imul rdx
 	mov rax, rdx
-	shr rax, 26
+	xor edx, edx
+	sar rax, 26
+	sets dl
+	add rax, rdx
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 0211aeb00h
@@ -5384,7 +5440,7 @@ rx_i_304: ;MUL_64
 rx_body_304:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 2007686513
+	imul rax, rax, 2007686513
 	mov r13, rax
 
 rx_i_305: ;MUL_64
@@ -5398,7 +5454,7 @@ rx_i_305: ;MUL_64
 rx_body_305:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r15
+	imul rax, r15
 	mov r10, rax
 
 rx_i_306: ;ADD_64
@@ -5443,7 +5499,7 @@ rx_body_308:
 	imul rax, r13
 	mov r15, rax
 
-rx_i_309: ;IMUL_32
+rx_i_309: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 090c42304h
@@ -5454,9 +5510,11 @@ rx_i_309: ;IMUL_32
 rx_body_309:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	mov rax, -1652850028
-	imul rax, rcx
+	; magic divide by 2642117268
+	mov rcx, 14993309243657753043
+	mul rcx
+	mov rax, rdx
+	shr rax, 31
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 09d7b8294h
@@ -5776,7 +5834,7 @@ rx_body_326:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_327: ;DIV_64
+rx_i_327: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 09665f98dh
@@ -5789,10 +5847,15 @@ rx_body_327:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
 	; magic divide by 1572662125
-	mov rcx, 12594593786994192665
-	mul rcx
+	mov rcx, rax
+	mov rdx, -5852150286715358951
+	imul rdx
 	mov rax, rdx
-	shr rax, 30
+	xor edx, edx
+	add rax, rcx
+	sar rax, 30
+	sets dl
+	add rax, rdx
 	mov r12, rax
 
 rx_i_328: ;SHR_64
@@ -5825,7 +5888,7 @@ rx_body_329:
 	je short rx_i_330
 	ret
 
-rx_i_330: ;MUL_32
+rx_i_330: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r9, 0f6a93f19h
@@ -5837,8 +5900,8 @@ rx_body_330:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, -1349816041
+	movsxd rcx, eax
+	movsxd rax, r13d
 	imul rax, rcx
 	mov rcx, rax
 	mov eax, r11d
@@ -6008,7 +6071,7 @@ rx_body_340:
 	addpd xmm0, xmm5
 	movaps xmm5, xmm0
 
-rx_i_341: ;MULH_64
+rx_i_341: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r12, 019eb9ea5h
@@ -6019,9 +6082,9 @@ rx_i_341: ;MULH_64
 rx_body_341:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r15
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r15d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r8d
 	xor eax, 024736405h
@@ -6230,7 +6293,7 @@ rx_body_353:
 	and eax, 2047
 	movlpd qword ptr [rsi + rax * 8], xmm7
 
-rx_i_354: ;MULH_64
+rx_i_354: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r13, 02412fc10h
@@ -6241,9 +6304,9 @@ rx_i_354: ;MULH_64
 rx_body_354:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r13
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r13d
+	imul rax, rcx
 	mov r13, rax
 
 rx_i_355: ;MUL_64
@@ -6293,7 +6356,7 @@ rx_body_357:
 	add rax, r11
 	mov r11, rax
 
-rx_i_358: ;IMULH_64
+rx_i_358: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r13, 088fa6e5ah
@@ -6304,9 +6367,12 @@ rx_i_358: ;IMULH_64
 rx_body_358:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r11
-	imul rcx
+	; magic divide by 3667831238
+	shr rax, 1
+	mov rcx, 2700102505175032865
+	mul rcx
 	mov rax, rdx
+	shr rax, 28
 	mov r9, rax
 
 rx_i_359: ;FPSUB
@@ -6401,7 +6467,7 @@ rx_body_363:
 	andps xmm0, xmm1
 	movaps xmm3, xmm0
 
-rx_i_364: ;MULH_64
+rx_i_364: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r11, 0badaf867h
@@ -6412,9 +6478,9 @@ rx_i_364: ;MULH_64
 rx_body_364:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r8
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r8d
+	imul rax, rcx
 	mov r8, rax
 
 rx_i_365: ;IMUL_32
@@ -6486,7 +6552,7 @@ rx_body_368:
 	sub eax, r10d
 	mov r8, rax
 
-rx_i_369: ;DIV_64
+rx_i_369: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 053fe22e2h
@@ -6498,10 +6564,13 @@ rx_body_369:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
 	; magic divide by 470792991
-	mov rcx, 1314739240972876203
-	mul rcx
+	mov rdx, 1314739240972876203
+	imul rdx
 	mov rax, rdx
-	shr rax, 25
+	xor edx, edx
+	sar rax, 25
+	sets dl
+	add rax, rdx
 	mov r9, rax
 
 rx_i_370: ;FPSUB
@@ -6682,7 +6751,7 @@ rx_i_380: ;MUL_64
 rx_body_380:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r10
+	imul rax, r10
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 0a9fd85e0h
@@ -6915,7 +6984,7 @@ rx_body_394:
 	addpd xmm0, xmm9
 	movaps xmm6, xmm0
 
-rx_i_395: ;IMULH_64
+rx_i_395: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r8, 04ae4fe8ch
@@ -6927,9 +6996,11 @@ rx_body_395:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r13
-	imul rcx
+	; magic divide by 939698704
+	mov rcx, 5269518980991934091
+	mul rcx
 	mov rax, rdx
+	shr rax, 28
 	mov r8, rax
 
 rx_i_396: ;ROR_64
@@ -7058,7 +7129,7 @@ rx_body_402:
 	je short rx_i_403
 	ret
 
-rx_i_403: ;IMULH_64
+rx_i_403: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r9, 0e59500f7h
@@ -7069,9 +7140,11 @@ rx_i_403: ;IMULH_64
 rx_body_403:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r12
-	imul rcx
+	; magic divide by 536056992
+	mov rcx, 4618688153536407095
+	mul rcx
 	mov rax, rdx
+	shr rax, 27
 	mov rcx, rax
 	mov eax, r11d
 	xor eax, 01ff394a0h
@@ -7161,7 +7234,7 @@ rx_i_408: ;MUL_64
 rx_body_408:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 693109961
+	imul rax, rax, 693109961
 	mov rcx, rax
 	mov eax, r10d
 	xor eax, 0295004c9h
@@ -7272,7 +7345,7 @@ rx_body_414:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_415: ;IMULH_64
+rx_i_415: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r8, 08c3e59a1h
@@ -7284,9 +7357,13 @@ rx_body_415:
 	xor rbp, rcx
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r8
-	imul rcx
+	; magic divide by 3756873911
+	add rax, 1
+	sbb rax, 0
+	mov rcx, 10544426615208851175
+	mul rcx
 	mov rax, rdx
+	shr rax, 31
 	mov r9, rax
 
 rx_i_416: ;FPADD
@@ -7456,7 +7533,7 @@ rx_body_425:
 	imul rax, rcx
 	mov r14, rax
 
-rx_i_426: ;DIV_64
+rx_i_426: ;IDIV_64
 	dec ebx
 	jz rx_finish
 	xor r12, 09dd55ba0h
@@ -7467,18 +7544,21 @@ rx_i_426: ;DIV_64
 rx_body_426:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	; magic divide by 3704238575
-	mov rcx, 1336782190693946083
-	mul rcx
+	; magic divide by -590728721
+	mov rdx, -4191230239118101979
+	imul rdx
 	mov rax, rdx
-	shr rax, 28
+	xor edx, edx
+	sar rax, 27
+	sets dl
+	add rax, rdx
 	mov rcx, rax
 	mov eax, r14d
 	xor eax, 0dcca31efh
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_427: ;MULH_64
+rx_i_427: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r11, 0d6cae9aeh
@@ -7490,9 +7570,9 @@ rx_body_427:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, -2146332428
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, -2146332428
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0801190f4h
@@ -7530,7 +7610,7 @@ rx_i_429: ;MUL_64
 rx_body_429:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r9
+	imul rax, r9
 	mov r15, rax
 
 rx_i_430: ;FPADD
@@ -7632,7 +7712,7 @@ rx_body_435:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, 1971717631
+	imul rax, rax, 1971717631
 	mov rcx, rax
 	mov eax, r9d
 	xor eax, 0758605ffh
@@ -7816,7 +7896,7 @@ rx_body_445:
 	and eax, 2047
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_446: ;MULH_64
+rx_i_446: ;MUL_32
 	dec ebx
 	jz rx_finish
 	xor r12, 01734708eh
@@ -7828,9 +7908,9 @@ rx_body_446:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r15
-	mul rcx
-	mov rax, rdx
+	mov ecx, eax
+	mov eax, r15d
+	imul rax, rcx
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 03166163h
@@ -7938,7 +8018,7 @@ rx_body_452:
 	je short rx_i_453
 	ret
 
-rx_i_453: ;IMULH_64
+rx_i_453: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r11, 0a2096aa4h
@@ -7949,9 +8029,12 @@ rx_i_453: ;IMULH_64
 rx_body_453:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r14
-	imul rcx
+	; magic divide by 380157076
+	shr rax, 2
+	mov rcx, 3256390890604862173
+	mul rcx
 	mov rax, rdx
+	shr rax, 24
 	mov r8, rax
 
 rx_i_454: ;FPADD
@@ -8050,7 +8133,7 @@ rx_i_459: ;MUL_64
 rx_body_459:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r9
+	imul rax, r9
 	mov rcx, rax
 	mov eax, r13d
 	xor eax, 016bb0164h
@@ -8185,7 +8268,7 @@ rx_body_467:
 	addpd xmm0, xmm9
 	movaps xmm8, xmm0
 
-rx_i_468: ;IMULH_64
+rx_i_468: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r8, 091044dc3h
@@ -8197,16 +8280,20 @@ rx_body_468:
 	xor rbp, rcx
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r8
-	imul rcx
+	; magic divide by 4281572471
+	add rax, 1
+	sbb rax, 0
+	mov rcx, 9252227195836753313
+	mul rcx
 	mov rax, rdx
+	shr rax, 31
 	mov rcx, rax
 	mov eax, r8d
 	xor eax, 0ff339c77h
 	and eax, 32767
 	mov qword ptr [rsi + rax * 8], rcx
 
-rx_i_469: ;MUL_32
+rx_i_469: ;IMUL_32
 	dec ebx
 	jz rx_finish
 	xor r9, 0c0186beh
@@ -8217,8 +8304,8 @@ rx_i_469: ;MUL_32
 rx_body_469:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	mov ecx, eax
-	mov eax, r9d
+	movsxd rcx, eax
+	mov rax, 294019485
 	imul rax, rcx
 	mov rcx, rax
 	mov eax, r9d
@@ -8287,7 +8374,7 @@ rx_i_473: ;MUL_64
 rx_body_473:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	imul rax, rax, r11
+	imul rax, r11
 	mov r12, rax
 
 rx_i_474: ;JUMP
@@ -8398,7 +8485,7 @@ rx_body_480:
 	addpd xmm0, xmm4
 	movaps xmm6, xmm0
 
-rx_i_481: ;IMULH_64
+rx_i_481: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r14, 0225ba1f9h
@@ -8409,9 +8496,12 @@ rx_i_481: ;IMULH_64
 rx_body_481:
 	and ecx, 2047
 	mov rax, qword ptr [rsi+rcx*8]
-	mov rcx, r13
-	imul rcx
+	; magic divide by 2101516912
+	shr rax, 4
+	mov rcx, 147267437180322377
+	mul rcx
 	mov rax, rdx
+	shr rax, 20
 	mov r12, rax
 
 rx_i_482: ;AND_32
@@ -8509,7 +8599,7 @@ rx_body_487:
 	sub rax, r9
 	mov r11, rax
 
-rx_i_488: ;IMUL_32
+rx_i_488: ;DIV_64
 	dec ebx
 	jz rx_finish
 	xor r12, 0d8b1788eh
@@ -8520,9 +8610,11 @@ rx_i_488: ;IMUL_32
 rx_body_488:
 	and ecx, 32767
 	mov rax, qword ptr [rsi+rcx*8]
-	movsxd rcx, eax
-	mov rax, 297357073
-	imul rax, rcx
+	; magic divide by 297357073
+	mov rcx, 16652572300311555393
+	mul rcx
+	mov rax, rdx
+	shr rax, 28
 	mov r12, rax
 
 rx_i_489: ;JUMP

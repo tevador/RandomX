@@ -51,6 +51,7 @@ namespace RandomX {
 		uint8_t* getCode() {
 			return code;
 		}
+		size_t getCodeSize();
 	private:
 		static InstructionGeneratorX86 engine[256];
 		uint8_t* code;
@@ -114,6 +115,7 @@ namespace RandomX {
 		void h_JUMP(Instruction&, int);
 		void h_CALL(Instruction&, int);
 		void h_RET(Instruction&, int);
+		void h_NOP(Instruction&, int);
 	};
 
 }

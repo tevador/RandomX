@@ -222,7 +222,7 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_MUL_64(Instruction& instr, int i) {
 		genar(instr, i);
 		asmCode << "\timul rax, ";
-		if ((instr.locb & 7) >= 6) {
+		if ((instr.locb & 3) == 0) {
 			asmCode << "rax, ";
 		}
 		genbia(instr);
@@ -250,7 +250,7 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_IMUL_32(Instruction& instr, int i) {
 		genar(instr, i);
 		asmCode << "\tmovsxd rcx, eax" << std::endl;
-		if ((instr.locb & 7) >= 6) {
+		if ((instr.locb & 3) == 0) {
 			asmCode << "\tmov rax, " << instr.imm32 << std::endl;
 		}
 		else {

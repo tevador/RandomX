@@ -24,12 +24,12 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_SUB_64 12
 #define WT_SUB_32 2
 #define WT_MUL_64 23
-#define WT_MULH_64 10
+#define WT_MULH_64 5
 #define WT_MUL_32 15
 #define WT_IMUL_32 15
-#define WT_IMULH_64 6
-#define WT_DIV_64 4
-#define WT_IDIV_64 4
+#define WT_IMULH_64 3
+#define WT_DIV_64 8
+#define WT_IDIV_64 8
 #define WT_AND_64 4
 #define WT_AND_32 2
 #define WT_OR_64 4
@@ -50,6 +50,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_JUMP 11
 #define WT_CALL 11
 #define WT_RET 12
+#define WT_NOP 0
 
 
 constexpr int wtSum = WT_ADD_64 + WT_ADD_32 + WT_SUB_64 + WT_SUB_32 + \
@@ -57,7 +58,7 @@ WT_MUL_64 + WT_MULH_64 + WT_MUL_32 + WT_IMUL_32 + WT_IMULH_64 + \
 WT_DIV_64 + WT_IDIV_64 + WT_AND_64 + WT_AND_32 + WT_OR_64 + \
 WT_OR_32 + WT_XOR_64 + WT_XOR_32 + WT_SHL_64 + WT_SHR_64 + \
 WT_SAR_64 + WT_ROL_64 + WT_ROR_64 + WT_FPADD + WT_FPSUB + WT_FPMUL \
-+ WT_FPDIV + WT_FPSQRT + WT_FPROUND + WT_JUMP + WT_CALL + WT_RET;
++ WT_FPDIV + WT_FPSQRT + WT_FPROUND + WT_JUMP + WT_CALL + WT_RET + WT_NOP;
 
 static_assert(wtSum == 256,
 	"Sum of instruction weights must be 256");

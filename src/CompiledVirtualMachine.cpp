@@ -26,7 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	CompiledVirtualMachine::CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {
-
+		totalSize = 0;
 	}
 
 	void CompiledVirtualMachine::setDataset(dataset_t ds, bool lightClient) {
@@ -48,6 +48,7 @@ namespace RandomX {
 
 	void CompiledVirtualMachine::execute() {
 		//executeProgram(reg, mem, scratchpad, readDataset);
+		totalSize += compiler.getCodeSize();
 		compiler.getProgramFunc()(reg, mem, scratchpad);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {

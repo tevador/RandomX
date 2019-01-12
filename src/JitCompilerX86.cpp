@@ -116,6 +116,10 @@ namespace RandomX {
 	const int32_t readDatasetL1Offset = readDatasetL2Offset - readDatasetL1Size;
 	const int32_t epilogueOffset = readDatasetL1Offset - epilogueSize;
 
+	size_t JitCompilerX86::getCodeSize() {
+		return codePos - prologueSize + readDatasetL1Size + readDatasetL2Size;
+	}
+
 	JitCompilerX86::JitCompilerX86() {
 #ifdef _WIN32
 		code = (uint8_t*)VirtualAlloc(nullptr, CodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -196,6 +200,7 @@ namespace RandomX {
 	void JitCompilerX86::genar(Instruction& instr) {
 		gena(instr);
 		emit(0xce048b48); //mov rax,QWORD PTR [rsi+rcx*8]
+		emit(0xdc580f66);
 	}
 
 	void JitCompilerX86::genaf(Instruction& instr) {
@@ -437,7 +442,7 @@ namespace RandomX {
 
 	void JitCompilerX86::h_DIV_64(Instruction& instr, int i) {
 		genar(instr);
-		if (instr.locb & 3) {
+		if (instr.locb & 7) {
 #ifdef MAGIC_DIVISION
 			if (instr.imm32 != 0) {
 				uint32_t divisor = instr.imm32;
@@ -496,7 +501,7 @@ namespace RandomX {
 
 	void JitCompilerX86::h_IDIV_64(Instruction& instr, int i) {
 		genar(instr);
-		if (instr.locb & 3) {
+		if (instr.locb & 7) {
 #ifdef MAGIC_DIVISION
 			int64_t divisor = instr.imm32;
 			if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
@@ -566,8 +571,8 @@ namespace RandomX {
 #ifndef MAGIC_DIVISION
 		}
 #endif
-		emit(0xc88b480b75fffa83);
-		emit(0x1274c9ff48c1d148);
+		emit(0xd8f7480575fffa83); //cmp edx,-1
+		emit(uint16_t(0x12eb)); //jmp result
 		emit(0x0fd28500000001b9);
 		emit(0x489948c96348ca45);
 		emit(uint16_t(0xf9f7)); //idiv rcx
@@ -766,6 +771,10 @@ namespace RandomX {
 		emitByte(0xc3); //ret
 	}
 
+	void JitCompilerX86::h_NOP(Instruction& instr, int i) {
+		genar(instr);
+	}
+
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
@@ -801,6 +810,7 @@ namespace RandomX {
 		INST_HANDLE(JUMP)
 		INST_HANDLE(CALL)
 		INST_HANDLE(RET)
+		INST_HANDLE(NOP)
 	};
 
 #endif

@@ -44,10 +44,14 @@ namespace RandomX {
 		void* getProgram() {
 			return compiler.getCode();
 		}
+		uint64_t getTotalSize() {
+			return totalSize;
+		}
 	private:
 #ifdef TRACEVM
 		convertible_t tracepad[InstructionCount];
 #endif
 		JitCompilerX86 compiler;
+		uint64_t totalSize;
 	};
 }

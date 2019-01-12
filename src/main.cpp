@@ -270,6 +270,8 @@ int main(int argc, char** argv) {
 		}
 		else {
 			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0);
+			if (compiled)
+				std::cout << "Average program size: " << ((RandomX::CompiledVirtualMachine*)vms[0])->getTotalSize() / programCount << std::endl;
 		}
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
