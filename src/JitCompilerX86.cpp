@@ -175,7 +175,7 @@ namespace RandomX {
 		emitByte(0xf0 + (instr.rega % RegistersCount));
 		emit(instr.addra);
 		emit(uint16_t(0x8b41)); //mov
-		emitByte(0xc8 + (instr.rega % RegistersCount)); //ecx, rega
+		emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
 		emit(0x753fc3f6); //test bl,0x3f; jne
 		emit(uint16_t(0xe805));
 		if (instr.loca & 3) { //A.LOC.W
@@ -186,9 +186,9 @@ namespace RandomX {
 		}
 		if ((instr.loca & 192) == 0) { //A.LOC.X
 			emit(uint16_t(0x3348));
-			emitByte(0xe9); //xor rbp, rcx
+			emitByte(0xe8); //xor rbp, rax
 		}
-		emit(uint16_t(0xe181)); //and ecx,
+		emitByte(0x25); //and eax,
 		if (instr.loca & 3) {
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
 		}
@@ -199,14 +199,13 @@ namespace RandomX {
 
 	void JitCompilerX86::genar(Instruction& instr) {
 		gena(instr);
-		emit(0xce048b48); //mov rax,QWORD PTR [rsi+rcx*8]
-		emit(0xdc580f66);
+		emit(0xc6048b48); //mov rax,QWORD PTR [rsi+rax*8]
 	}
 
 	void JitCompilerX86::genaf(Instruction& instr) {
 		gena(instr);
 		emitByte(0xf3);
-		emit(0xce04e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rcx*8]
+		emit(0xc604e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rax*8]
 	}
 
 	void JitCompilerX86::genbiashift(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {

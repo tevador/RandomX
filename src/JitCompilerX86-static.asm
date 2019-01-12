@@ -42,7 +42,7 @@ randomx_program_epilogue PROC
 randomx_program_epilogue ENDP
 
 scratchpad_mask MACRO
-	and ecx, 2040
+	and eax, 2040
 ENDM
 
 ALIGN 64
@@ -51,7 +51,7 @@ randomx_program_read_l1 PROC
 randomx_program_read_l1 ENDP
 
 scratchpad_mask MACRO
-	and ecx, 32760
+	and eax, 32760
 ENDM
 
 ALIGN 64

@@ -48,7 +48,7 @@ DECL(randomx_program_begin):
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_linux.inc"
 
-#define scratchpad_mask and ecx, 2040
+#define scratchpad_mask and eax, 2040
 
 .align 64
 DECL(randomx_program_read_l1):
@@ -56,7 +56,7 @@ DECL(randomx_program_read_l1):
 
 #undef scratchpad_mask
 
-#define scratchpad_mask and ecx, 32760
+#define scratchpad_mask and eax, 32760
 
 .align 64
 DECL(randomx_program_read_l2):
