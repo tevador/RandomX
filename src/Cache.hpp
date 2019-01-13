@@ -47,11 +47,11 @@ namespace RandomX {
 		}
 
 		const uint8_t* getCache() {
-			return memory + CacheShift;
+			return memory;
 		}
 	private:
 		alignas(16) KeysContainer keys;
-		uint8_t memory[CacheSize + CacheShift];
+		uint8_t memory[CacheSize];
 		void argonFill(const void* seed, size_t seedSize);
 	};
 }

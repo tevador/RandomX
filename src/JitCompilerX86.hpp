@@ -33,7 +33,6 @@ namespace RandomX {
 	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
 
 	constexpr uint32_t CodeSize = 64 * 1024;
-	constexpr uint32_t CacheLineSize = 64;
 
 	struct CallOffset {
 		CallOffset(int32_t p, int32_t i) : pos(p), index(i) {}

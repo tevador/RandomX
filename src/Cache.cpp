@@ -134,11 +134,6 @@ namespace RandomX {
 		//Argon2d memory fill
 		argonFill(seed, seedSize);
 
-		//Circular shift of the cache buffer by 512 bytes
-		//realized by copying the first 512 bytes to the back 
-		//of the buffer and shifting the start by 512 bytes
-		memcpy(memory + CacheSize, memory, CacheShift);
-
 		//AES keys
 		expandAesKeys<softAes>((__m128i*)seed, keys.data());
 	}

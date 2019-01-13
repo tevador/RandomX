@@ -56,59 +56,55 @@ namespace RandomX {
 		return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
 	}
 
-	template<bool soft, bool enc>
+#define AES_ROUND(i) x0 = aesdec<soft>(x0, keys[i]); \
+	x1 = aesenc<soft>(x1, keys[i]); \
+	x2 = aesdec<soft>(x2, keys[i]); \
+	x3 = aesenc<soft>(x3, keys[i])
+
+	template<bool soft>
 	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
-		__m128i xin, xout;
+		__m128i x0, x1, x2, x3, iv;
+		//block number 0..67108863
 		//Initialization vector = block number extended to 128 bits
-		xout = _mm_cvtsi32_si128(blockNumber);
-		//Expand + AES
-		for (uint32_t i = 0; i < DatasetBlockSize / sizeof(__m128i); ++i) {
-			if ((i % 32) == 0) {
-				xin = _mm_set_epi64x(*(uint64_t*)(in + i / 4), 0);
-				xout = _mm_xor_si128(xin, xout);
-			}
-			if (enc) {
-				xout = aesenc<soft>(xout, keys[0]);
-				xout = aesenc<soft>(xout, keys[1]);
-				xout = aesenc<soft>(xout, keys[2]);
-				xout = aesenc<soft>(xout, keys[3]);
-				xout = aesenc<soft>(xout, keys[4]);
-				xout = aesenc<soft>(xout, keys[5]);
-				xout = aesenc<soft>(xout, keys[6]);
-				xout = aesenc<soft>(xout, keys[7]);
-				xout = aesenc<soft>(xout, keys[8]);
-				xout = aesenc<soft>(xout, keys[9]);
-			}
-			else {
-				xout = aesdec<soft>(xout, keys[0]);
-				xout = aesdec<soft>(xout, keys[1]);
-				xout = aesdec<soft>(xout, keys[2]);
-				xout = aesdec<soft>(xout, keys[3]);
-				xout = aesdec<soft>(xout, keys[4]);
-				xout = aesdec<soft>(xout, keys[5]);
-				xout = aesdec<soft>(xout, keys[6]);
-				xout = aesdec<soft>(xout, keys[7]);
-				xout = aesdec<soft>(xout, keys[8]);
-				xout = aesdec<soft>(xout, keys[9]);
-			}
-			_mm_store_si128((__m128i*)(out + i * sizeof(__m128i)), xout);
+		iv = _mm_cvtsi32_si128(blockNumber);
+		uint32_t cacheBlockNumber = blockNumber / BlockExpansionRatio; //0..1048575
+		__m128i* cacheCacheLine = (__m128i*)(in + cacheBlockNumber * CacheLineSize);
+		__m128i* datasetCacheLine = (__m128i*)out;
+
+		x0 = _mm_load_si128(cacheCacheLine + 0);
+		x1 = _mm_load_si128(cacheCacheLine + 1);
+		x2 = _mm_load_si128(cacheCacheLine + 2);
+		x3 = _mm_load_si128(cacheCacheLine + 3);
+
+		x0 = _mm_xor_si128(x0, iv);
+		x1 = _mm_xor_si128(x1, iv);
+		x2 = _mm_xor_si128(x2, iv);
+		x3 = _mm_xor_si128(x3, iv);
+
+		for (auto i = 0; i < DatasetIterations; ++i) {
+			AES_ROUND(0);
+			AES_ROUND(1);
+			AES_ROUND(2);
+			AES_ROUND(3);
+			AES_ROUND(4);
+			AES_ROUND(5);
+			AES_ROUND(6);
+			AES_ROUND(7);
+			AES_ROUND(8);
+			AES_ROUND(9);
 		}
-		//Shuffle
-		Pcg32 gen(&xout);
-		shuffle<uint32_t>((uint32_t*)out, DatasetBlockSize, gen);
+
+		_mm_store_si128(datasetCacheLine + 0, x0);
+		_mm_store_si128(datasetCacheLine + 1, x1);
+		_mm_store_si128(datasetCacheLine + 2, x2);
+		_mm_store_si128(datasetCacheLine + 3, x3);
 	}
 
 	template
-		void initBlock<true, true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
+		void initBlock<true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
 
 	template
-		void initBlock<true, false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
-
-	template
-		void initBlock<false, true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
-
-	template
-		void initBlock<false, false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
+		void initBlock<false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
 
 	convertible_t datasetRead(addr_t addr, MemoryRegisters& memory) {
 		convertible_t data;
@@ -123,36 +119,11 @@ namespace RandomX {
 	}
 
 	template<bool softAes>
-	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber, const KeysContainer& keys) {
-		if (blockNumber % 2 == 1) {
-			initBlock<softAes, true>(cache + blockNumber * CacheBlockSize, block, blockNumber, keys);
-		}
-		else {
-			initBlock<softAes, false>(cache + blockNumber * CacheBlockSize, block, blockNumber, keys);
-		}
-	}
-
-	template
-		void initBlock<true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
-
-	template
-		void initBlock<false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
-
-	template<bool softAes>
 	convertible_t datasetReadLight(addr_t addr, MemoryRegisters& memory) {
 		convertible_t data;
 		LightClientDataset* lds = memory.ds.lightDataset;
-		auto blockNumber = memory.ma / DatasetBlockSize;
-		if (lds->blockNumber != blockNumber) {
-			initBlock<softAes>(lds->cache->getCache(), (uint8_t*)lds->block, blockNumber, lds->cache->getKeys());
-			lds->blockNumber = blockNumber;
-		}
-		data.u64 = *(uint64_t*)(lds->block + (memory.ma % DatasetBlockSize));
-		memory.ma += 8;
-		memory.mx ^= addr;
-		if ((memory.mx & 0xFFF8) == 0) {
-			memory.ma = memory.mx & ~7;
-		}
+		auto blockNumber = memory.ma / CacheLineSize;
+
 		return data;
 	}
 
@@ -179,7 +150,7 @@ namespace RandomX {
 	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount) {
 		for (uint32_t i = startBlock; i < startBlock + blockCount; ++i) {
-			initBlock<softAes>(cache->getCache(), ds.dataset + i * DatasetBlockSize, i, cache->getKeys());
+			initBlock<softAes>(cache->getCache(), ds.dataset + i * CacheLineSize, i, cache->getKeys());
 		}
 	}
 

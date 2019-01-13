@@ -34,13 +34,13 @@ namespace RandomX {
 	constexpr int SeedSize = 32;
 	constexpr int ResultSize = 32;
 
-	constexpr int CacheBlockSize = 1024;
-	constexpr int CacheShift = CacheBlockSize / 2;
+	constexpr int CacheBlockCount = 1024 * 1024;
+	constexpr int CacheLineSize = 64;
 	constexpr int BlockExpansionRatio = 64;
-	constexpr uint32_t DatasetBlockSize = BlockExpansionRatio * CacheBlockSize;
-	constexpr uint32_t DatasetBlockCount = 65536;
-	constexpr uint32_t CacheSize = DatasetBlockCount * CacheBlockSize;
-	constexpr uint64_t DatasetSize = (uint64_t)DatasetBlockCount * DatasetBlockSize;
+	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
+	constexpr int DatasetIterations = 64;
+	constexpr uint32_t CacheSize = CacheBlockCount * CacheLineSize;
+	constexpr uint64_t DatasetSize = (uint64_t)CacheSize * BlockExpansionRatio;
 
 	constexpr int ArgonIterations = 12;
 	constexpr uint32_t ArgonMemorySize = 65536; //KiB

@@ -56,7 +56,7 @@ namespace RandomX {
 		if (light) {
 			auto lds = mem.ds.lightDataset = new LightClientDataset();
 			lds->cache = ds.cache;
-			lds->block = (uint8_t*)_mm_malloc(DatasetBlockSize, sizeof(__m128i));
+			//lds->block = (uint8_t*)_mm_malloc(DatasetBlockSize, sizeof(__m128i));
 			lds->blockNumber = -1;
 			if (lds->block == nullptr) {
 				throw std::bad_alloc();
@@ -78,13 +78,13 @@ namespace RandomX {
 		if (lightClient) {
 			auto cache = mem.ds.lightDataset->cache;
 			if (softAes) {
-				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
-					initBlock<true>(cache->getCache(), ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, cache->getKeys());
+				for (int i = 0; i < ScratchpadSize / CacheLineSize; ++i) {
+					initBlock<true>(cache->getCache(), ((uint8_t*)scratchpad) + CacheLineSize * i, (ScratchpadSize / CacheLineSize) * index + i, cache->getKeys());
 				}
 			}
 			else {
-				for (int i = 0; i < ScratchpadSize / DatasetBlockSize; ++i) {
-					initBlock<false>(cache->getCache(), ((uint8_t*)scratchpad) + DatasetBlockSize * i, (ScratchpadSize / DatasetBlockSize) * index + i, cache->getKeys());
+				for (int i = 0; i < ScratchpadSize / CacheLineSize; ++i) {
+					initBlock<false>(cache->getCache(), ((uint8_t*)scratchpad) + CacheLineSize * i, (ScratchpadSize / CacheLineSize) * index + i, cache->getKeys());
 				}
 			}
 		}

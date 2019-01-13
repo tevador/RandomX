@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-//#define MAGIC_DIVISION
+#define MAGIC_DIVISION
 #include "JitCompilerX86.hpp"
 #include "Pcg32.hpp"
 #include <cstring>
