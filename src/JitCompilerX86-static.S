@@ -29,8 +29,7 @@
 .global DECL(randomx_program_prologue)
 .global DECL(randomx_program_begin)
 .global DECL(randomx_program_epilogue)
-.global DECL(randomx_program_read_l1)
-.global DECL(randomx_program_read_l2)
+.global DECL(randomx_program_read)
 .global DECL(randomx_program_end)
 .global DECL(randomx_program_transform)
 
@@ -48,21 +47,9 @@ DECL(randomx_program_begin):
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_linux.inc"
 
-#define scratchpad_mask and eax, 2040
-
 .align 64
-DECL(randomx_program_read_l1):
+DECL(randomx_program_read):
 	#include "asm/program_read.inc"
-
-#undef scratchpad_mask
-
-#define scratchpad_mask and eax, 32760
-
-.align 64
-DECL(randomx_program_read_l2):
-	#include "asm/program_read.inc"
-
-#undef scratchpad_mask
 
 .align 64
 DECL(randomx_program_end):

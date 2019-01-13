@@ -22,7 +22,6 @@ extern "C" {
   void randomx_program_begin();
   void randomx_program_epilogue();
   void randomx_program_transform();
-  void randomx_program_read_l1();
-  void randomx_program_read_l2();
+  void randomx_program_read();
   void randomx_program_end();
 }

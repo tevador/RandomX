@@ -221,54 +221,33 @@ TransformAddress MACRO reg32, reg64
 	;xor reg32, -8                   ;# C = all except 0 to 7
 ENDM
 
-ReadMemoryRandom MACRO spmask
+ALIGN 64
+rx_read:
 ;# IN     eax = random 32-bit address
 ;# GLOBAL rdi = address of the dataset address
 ;# GLOBAL rsi = address of the scratchpad
 ;# GLOBAL rbp = low 32 bits = "mx", high 32 bits = "ma"
 ;# MODIFY rcx, rdx
-	push rax                        ;# preserve eax
 	TransformAddress eax, rax       ;# TransformAddress function
 	mov rcx, qword ptr [rdi]        ;# load the dataset address
 	xor rbp, rax                    ;# modify "mx"
-	; prefetch cacheline "mx"
+	;# prefetch cacheline "mx"
 	and rbp, -64                    ;# align "mx" to the start of a cache line
 	mov edx, ebp                    ;# edx = mx
 	prefetchnta byte ptr [rcx+rdx]
-	; read cacheline "ma"
+	;# read cacheline "ma"
 	ror rbp, 32                     ;# swap "ma" and "mx"
 	mov edx, ebp                    ;# edx = ma
-	and eax, spmask-7               ;# limit address to the specified scratchpad size aligned to multiple of 8
-	lea rax, [rsi+rax*8]            ;# scratchpad cache line
 	lea rcx, [rcx+rdx]              ;# dataset cache line
-	mov rdx, qword ptr [rcx+0]      ;# load first dataset quadword (prefetched into the cache by now)
-	xor qword ptr [rax+0], rdx      ;# XOR the dataset item with a scratchpad item, repeat for the rest of the cacheline
-	mov rdx, qword ptr [rcx+8]
-	xor qword ptr [rax+8], rdx
-	mov rdx, qword ptr [rcx+16]
-	xor qword ptr [rax+16], rdx
-	mov rdx, qword ptr [rcx+24]
-	xor qword ptr [rax+24], rdx
-	mov rdx, qword ptr [rcx+32]
-	xor qword ptr [rax+32], rdx
-	mov rdx, qword ptr [rcx+40]
-	xor qword ptr [rax+40], rdx
-	mov rdx, qword ptr [rcx+48]
-	xor qword ptr [rax+48], rdx
-	mov rdx, qword ptr [rcx+56]
-	xor qword ptr [rax+56], rdx
-	pop rax                         ;# restore eax
+	xor r8,  qword ptr [rcx+0]
+	xor r9,  qword ptr [rcx+8]
+	xor r10, qword ptr [rcx+16]
+	xor r11, qword ptr [rcx+24]
+	xor r12, qword ptr [rcx+32]
+	xor r13, qword ptr [rcx+40]
+	xor r14, qword ptr [rcx+48]
+	xor r15, qword ptr [rcx+56]
 	ret
-ENDM
-
-ALIGN 64
-rx_read_l1:
-ReadMemoryRandom 2047
-
-ALIGN 64
-rx_read_l2:
-ReadMemoryRandom 32767
-
 executeProgram ENDP
 
 _RANDOMX_EXECUTE_PROGRAM ENDS

@@ -102,22 +102,19 @@ namespace RandomX {
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
 	const uint8_t* codeProgramBegin = (uint8_t*)&randomx_program_begin;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
-	const uint8_t* codeReadDatasetL1 = (uint8_t*)&randomx_program_read_l1;
-	const uint8_t* codeReadDatasetL2 = (uint8_t*)&randomx_program_read_l2;
+	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
 	const uint32_t* addressTransformations = (uint32_t*)&randomx_program_transform;
 
 	const int32_t prologueSize = codeProgramBegin - codePrologue;
-	const int32_t epilogueSize = codeReadDatasetL1 - codeEpilogue;
-	const int32_t readDatasetL1Size = codeReadDatasetL2 - codeReadDatasetL1;
-	const int32_t readDatasetL2Size = codeProgramEnd - codeReadDatasetL2;
+	const int32_t epilogueSize = codeReadDataset - codeEpilogue;
+	const int32_t readDatasetSize = codeProgramEnd - codeReadDataset;
 
-	const int32_t readDatasetL2Offset = CodeSize - readDatasetL2Size;
-	const int32_t readDatasetL1Offset = readDatasetL2Offset - readDatasetL1Size;
-	const int32_t epilogueOffset = readDatasetL1Offset - epilogueSize;
+	const int32_t readDatasetOffset = CodeSize - readDatasetSize;
+	const int32_t epilogueOffset = readDatasetOffset - epilogueSize;
 
 	size_t JitCompilerX86::getCodeSize() {
-		return codePos - prologueSize + readDatasetL1Size + readDatasetL2Size;
+		return codePos - prologueSize + readDatasetSize;
 	}
 
 	JitCompilerX86::JitCompilerX86() {
@@ -131,9 +128,8 @@ namespace RandomX {
 			throw std::runtime_error("mmap failed");
 #endif
 		memcpy(code, codePrologue, prologueSize);
-		memcpy(code + CodeSize - epilogueSize - readDatasetL1Size - readDatasetL2Size, codeEpilogue, epilogueSize);
-		memcpy(code + CodeSize - readDatasetL1Size - readDatasetL2Size, codeReadDatasetL1, readDatasetL1Size);
-		memcpy(code + CodeSize - readDatasetL2Size, codeReadDatasetL2, readDatasetL2Size);
+		memcpy(code + CodeSize - epilogueSize - readDatasetSize, codeEpilogue, epilogueSize);
+		memcpy(code + CodeSize - readDatasetSize, codeReadDataset, readDatasetSize);
 	}
 
 	void JitCompilerX86::generateProgram(Pcg32& gen) {
@@ -150,10 +146,8 @@ namespace RandomX {
 		emitByte(0xe9);
 		emit(instructionOffsets[0] - (codePos + 4));
 		fixCallOffsets();
-		uint32_t transformL1 = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
-		uint32_t transformL2 = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
-		*reinterpret_cast<uint32_t*>(code + readDatasetL1Offset + 1) = transformL1;
-		*reinterpret_cast<uint32_t*>(code + readDatasetL2Offset + 1) = transformL2;
+		uint32_t transform = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
+		*reinterpret_cast<uint32_t*>(code + readDatasetOffset) = transform;
 	}
 
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
@@ -176,18 +170,13 @@ namespace RandomX {
 		emit(instr.addra);
 		emit(uint16_t(0x8b41)); //mov
 		emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-		emit(0x753fc3f6); //test bl,0x3f; jne
-		emit(uint16_t(0xe805));
-		if (instr.loca & 3) { //A.LOC.W
-			emit(readDatasetL1Offset - (codePos + 4));
-		}
-		else {
-			emit(readDatasetL2Offset - (codePos + 4));
-		}
 		if ((instr.loca & 192) == 0) { //A.LOC.X
 			emit(uint16_t(0x3348));
 			emitByte(0xe8); //xor rbp, rax
 		}
+		emit(0x753fc3f6); //test bl,0x3f; jne
+		emit(uint16_t(0xe805));
+		emit(readDatasetOffset - (codePos + 4));
 		emitByte(0x25); //and eax,
 		if (instr.loca & 3) {
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
