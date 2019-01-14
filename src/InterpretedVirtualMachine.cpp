@@ -21,11 +21,15 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "InterpretedVirtualMachine.hpp"
 #include "Pcg32.hpp"
 #include "instructions.hpp"
+#include "dataset.hpp"
+#include "Cache.hpp"
+#include "LightClientAsyncWorker.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
+#include <thread>
 #ifdef STATS
 #include <algorithm>
 #endif
@@ -37,6 +41,57 @@ constexpr bool fpuCheck = false;
 #endif
 
 namespace RandomX {
+
+	InterpretedVirtualMachine::~InterpretedVirtualMachine() {
+		if (asyncWorker) {
+			delete mem.ds.asyncWorker;
+		}
+	}
+
+	void InterpretedVirtualMachine::setDataset(dataset_t ds) {
+		if (asyncWorker) {
+			if (softAes) {
+				mem.ds.asyncWorker = new LightClientAsyncWorker<true>(ds.cache);
+			}
+			else {
+				mem.ds.asyncWorker = new LightClientAsyncWorker<false>(ds.cache);
+			}
+			readDataset = &datasetReadLightAsync;
+		}
+		else {
+			mem.ds = ds;
+			if (softAes) {
+				readDataset = &datasetReadLight<true>;
+			}
+			else {
+				readDataset = &datasetReadLight<false>;
+			}
+		}
+	}
+
+	void InterpretedVirtualMachine::initializeScratchpad(uint32_t index) {
+		uint32_t startingBlock = (ScratchpadSize / CacheLineSize) * index;
+		if (asyncWorker) {
+			ILightClientAsyncWorker* worker = mem.ds.asyncWorker;
+			const uint32_t blocksPerThread = (ScratchpadSize / CacheLineSize) / 2;
+			worker->prepareBlocks(scratchpad, startingBlock, blocksPerThread);                                       //async first half
+			worker->getBlocks(scratchpad + ScratchpadLength / 2, startingBlock + blocksPerThread, blocksPerThread);  //sync second half
+			worker->sync();
+		}
+		else {
+			auto cache = mem.ds.cache;
+			if (softAes) {
+				for (int i = 0; i < ScratchpadSize / CacheLineSize; ++i) {
+					initBlock<true>(cache->getCache(), ((uint8_t*)scratchpad) + CacheLineSize * i, (ScratchpadSize / CacheLineSize) * index + i, cache->getKeys());
+				}
+			}
+			else {
+				for (int i = 0; i < ScratchpadSize / CacheLineSize; ++i) {
+					initBlock<false>(cache->getCache(), ((uint8_t*)scratchpad) + CacheLineSize * i, (ScratchpadSize / CacheLineSize) * index + i, cache->getKeys());
+				}
+			}
+		}
+	}
 
 	void InterpretedVirtualMachine::initializeProgram(const void* seed) {
 		Pcg32 gen(seed);
@@ -50,6 +105,7 @@ namespace RandomX {
 		}
 		//std::cout << reg;
 		p.initialize(gen);
+		currentTransform = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
 		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;
 		mem.mx = *(((uint32_t*)seed) + 5);
 		pc = 0;
@@ -74,61 +130,61 @@ namespace RandomX {
 #endif
 	}
 
-	convertible_t InterpretedVirtualMachine::loada(Instruction& inst) {
-		convertible_t& rega = reg.r[inst.rega % RegistersCount];
-		rega.i64 ^= inst.addra; //sign-extend addra
+	convertible_t InterpretedVirtualMachine::loada(Instruction& instr) {
+		convertible_t& rega = reg.r[instr.rega % RegistersCount];
+		rega.i64 ^= instr.addra; //sign-extend addra
 		addr_t addr = rega.u32;
-		switch (inst.loca & 7)
-		{
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-				return readDataset(addr, mem);
 
-			case 4:
-				return scratchpad[addr % ScratchpadL2];
+		if ((ic % 64) == 0) {
+			addr = currentTransform->apply(addr);
+#ifdef STATS
+			datasetAccess[mem.ma / (DatasetBlockCount / 256) / CacheLineSize]++;
+#endif
+			readDataset(addr, mem, reg);
+		}
 
-			case 5:
-			case 6:
-			case 7:
-				return scratchpad[addr % ScratchpadL1];
+		if ((instr.loca & 192) == 0) {
+			mem.mx ^= addr;
+		}
+
+		if (instr.loca & 3) {
+			return scratchpad[addr % ScratchpadL1];
+		}
+		else {
+			return scratchpad[addr % ScratchpadL2];
 		}
 	}
 
-	convertible_t InterpretedVirtualMachine::loadbr1(Instruction& inst) {
-		switch (inst.locb & 7)
-		{
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-				return reg.r[inst.regb % RegistersCount];
-			case 6:
-			case 7:
-				convertible_t temp;
-				temp.i64 = inst.imm32; //sign-extend imm32
-				return temp;
+	convertible_t InterpretedVirtualMachine::loadbia(Instruction& instr) {
+		if (instr.locb & 3) {
+			return reg.r[instr.regb % RegistersCount];
+		}
+		else {
+			convertible_t temp;
+			temp.i64 = instr.imm32; //sign-extend imm32
+			return temp;
 		}
 	}
 
-	convertible_t InterpretedVirtualMachine::loadbr0(Instruction& inst) {
-		switch (inst.locb & 7)
-		{
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-				return reg.r[inst.regb % RegistersCount];
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-				convertible_t temp;
-				temp.u64 = inst.imm8;
-				return temp;
+	convertible_t InterpretedVirtualMachine::loadbiashift(Instruction& instr) {
+		if (instr.locb & 1) {
+			return reg.r[instr.regb % RegistersCount];
+		}
+		else {
+			convertible_t temp;
+			temp.u64 = instr.imm8;
+			return temp;
+		}
+	}
+
+	convertible_t InterpretedVirtualMachine::loadbiadiv(Instruction& instr) {
+		if (instr.locb & 3) {
+			convertible_t temp;
+			temp.u64 = instr.imm32;
+			return temp;
+		}
+		else {
+			return reg.r[instr.regb % RegistersCount];
 		}
 	}
 
@@ -168,26 +224,6 @@ namespace RandomX {
 			case 7:
 				addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
 				scratchpad[addr % ScratchpadL1] = (inst.locc & 8) ? regc.hi : regc.lo;
-
-			default:
-				break;
-		}
-	}
-
-	void InterpretedVirtualMachine::writecflo(Instruction& inst, fpu_reg_t& regc) {
-		addr_t addr;
-		switch (inst.locc & 7)
-		{
-			case 4:
-				addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
-				scratchpad[addr % ScratchpadL2] = regc.lo;
-				break;
-
-			case 5:
-			case 6:
-			case 7:
-				addr = reg.r[inst.regc % RegistersCount].u32 ^ inst.addrc;
-				scratchpad[addr % ScratchpadL1] = regc.lo;
 
 			default:
 				break;
@@ -242,7 +278,7 @@ namespace RandomX {
 #define ALU_INST(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
 	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
-	convertible_t b = loadbr1(inst); \
+	convertible_t b = loadbia(inst); \
 	convertible_t& c = getcr(inst); \
 	ALU_RETIRE(x) \
 	}
@@ -250,7 +286,15 @@ namespace RandomX {
 #define ALU_INST_SR(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
 	INC_COUNT(x) \
 	convertible_t a = loada(inst); \
-	convertible_t b = loadbr0(inst); \
+	convertible_t b = loadbiashift(inst); \
+	convertible_t& c = getcr(inst); \
+	ALU_RETIRE(x) \
+	}
+
+#define ALU_INST_DIV(x) void InterpretedVirtualMachine::h_##x(Instruction& inst) { \
+	INC_COUNT(x) \
+	convertible_t a = loada(inst); \
+	convertible_t b = loadbiadiv(inst); \
 	convertible_t& c = getcr(inst); \
 	ALU_RETIRE(x) \
 	}
@@ -282,8 +326,8 @@ namespace RandomX {
 	ALU_INST(MUL_32)
 	ALU_INST(IMUL_32)
 	ALU_INST(IMULH_64)
-	ALU_INST(DIV_64)
-	ALU_INST(IDIV_64)
+	ALU_INST_DIV(DIV_64)
+	ALU_INST_DIV(IDIV_64)
 	ALU_INST(AND_64)
 	ALU_INST(AND_32)
 	ALU_INST(OR_64)
@@ -301,42 +345,68 @@ namespace RandomX {
 	FPU_INST(FPSUB)
 	FPU_INST(FPMUL)
 	FPU_INST(FPDIV)
-
 	FPU_INST_NB(FPSQRT)
-	FPU_INST_NB(FPROUND)
+
+	void InterpretedVirtualMachine::h_FPROUND(Instruction& inst) {
+		convertible_t a = loada(inst);
+		convertible_t& c = getcr(inst);
+		c.u64 = a.u64;
+		if (trace) std::cout << std::hex << a.u64 << std::endl;
+		FPROUND(a, inst.imm8);
+	}
+
+	void InterpretedVirtualMachine::h_JUMP(Instruction& inst) {
+		convertible_t a = loada(inst);
+		convertible_t& c = getcr(inst);
+		c.u64 = a.u64;
+		if (trace) std::cout << std::hex << a.u64 << std::endl;
+		if (JMP_COND(inst.locb, reg.r[inst.regb % RegistersCount], inst.imm32)) {
+#ifdef STATS
+			count_JUMP_taken++;
+			count_jump_taken[inst.locb & 7]++;
+#endif
+			pc += (inst.imm8 & 127) + 1;
+			pc = pc % ProgramLength;
+		}
+#ifdef STATS
+		else {
+			count_JUMP_not_taken++;
+			count_jump_not_taken[inst.locb & 7]++;
+		}
+#endif
+	}
 
 	void InterpretedVirtualMachine::h_CALL(Instruction& inst) {
 		convertible_t a = loada(inst);
+		convertible_t& c = getcr(inst);
+		c.u64 = a.u64;
+		if (trace) std::cout << std::hex << a.u64 << std::endl;
 		if (JMP_COND(inst.locb, reg.r[inst.regb % RegistersCount], inst.imm32)) {
 #ifdef STATS
 			count_CALL_taken++;
 			count_jump_taken[inst.locb & 7]++;
 			count_retdepth = std::max(0, count_retdepth - 1);
 #endif
-			stackPush(a);
 			stackPush(pc);
 #ifdef STATS
 			count_max_stack = std::max(count_max_stack, (int)stack.size());
 #endif
 			pc += (inst.imm8 & 127) + 1;
 			pc = pc % ProgramLength;
-			if (trace) std::cout << std::hex << a.u64 << std::endl;
 		}
-		else {
-			convertible_t& c = getcr(inst);
 #ifdef STATS
+		else {
 			count_CALL_not_taken++;
 			count_jump_not_taken[inst.locb & 7]++;
-#endif
-			c.u64 = a.u64;
-			if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
 		}
+#endif
 	}
 
 	void InterpretedVirtualMachine::h_RET(Instruction& inst) {
 		convertible_t a = loada(inst);
-		convertible_t b = loadbr1(inst);
 		convertible_t& c = getcr(inst);
+		c.u64 = a.u64;
+		if (trace) std::cout << std::hex << a.u64 << std::endl;
 		if (stack.size() > 0) {
 #ifdef STATS
 			count_RET_taken++;
@@ -344,22 +414,13 @@ namespace RandomX {
 			count_retdepth_max = std::max(count_retdepth_max, count_retdepth);
 #endif
 			auto raddr = stackPopAddress();
-			auto retval = stackPopValue();
-			c.u64 = a.u64 ^ retval.u64;
 			pc = raddr;
 		}
-		else {
 #ifdef STATS
-			if (stack.size() == 0)
-				count_RET_stack_empty++;
-			else {
-				count_RET_not_taken++;
-				count_jump_not_taken[inst.locb & 7]++;
-			}
-#endif
-			c.u64 = a.u64;
+		else {
+			count_RET_stack_empty++;
 		}
-		if (trace) std::cout << std::hex << /*a.u64 << " " <<*/ c.u64 << std::endl;
+#endif
 	}
 
 #include "instructionWeights.hpp"
@@ -394,6 +455,7 @@ namespace RandomX {
 		INST_HANDLE(FPDIV)
 		INST_HANDLE(FPSQRT)
 		INST_HANDLE(FPROUND)
+		INST_HANDLE(JUMP)
 		INST_HANDLE(CALL)
 		INST_HANDLE(RET)
 	};

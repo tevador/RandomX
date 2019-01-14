@@ -25,23 +25,37 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	class ITransform {
+	public:
+		virtual int32_t apply(int32_t) const = 0;
+		virtual const char* getName() const = 0;
+		virtual std::ostream& printAsm(std::ostream&) const = 0;
+		virtual std::ostream& printCxx(std::ostream&) const = 0;
+	};
+
 	class InterpretedVirtualMachine;
 
 	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
 
 	class InterpretedVirtualMachine : public VirtualMachine {
 	public:
-		InterpretedVirtualMachine(bool softAes) : VirtualMachine(softAes) {}
-		virtual void initializeProgram(const void* seed) override;
-		virtual void execute() override;
+		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
+		~InterpretedVirtualMachine();
+		void setDataset(dataset_t ds) override;
+		void initializeScratchpad(uint32_t index) override;
+		void initializeProgram(const void* seed) override;
+		void execute() override;
 		const Program& getProgam() {
 			return p;
 		}
 	private:
 		static InstructionHandler engine[256];
+		static const ITransform* addressTransformations[TransformationCount];
+		bool softAes, asyncWorker;
 		Program p;
 		std::vector<convertible_t> stack;
 		uint64_t pc, ic;
+		const ITransform* currentTransform;
 #ifdef STATS
 		int count_ADD_64 = 0;
 		int count_ADD_32 = 0;
@@ -71,11 +85,12 @@ namespace RandomX {
 		int count_FPDIV = 0;
 		int count_FPSQRT = 0;
 		int count_FPROUND = 0;
+		int count_JUMP_taken = 0;
+		int count_JUMP_not_taken = 0;
 		int count_CALL_taken = 0;
 		int count_CALL_not_taken = 0;
 		int count_RET_stack_empty = 0;
 		int count_RET_taken = 0;
-		int count_RET_not_taken = 0;
 		int count_jump_taken[8] = { 0 };
 		int count_jump_not_taken[8] = { 0 };
 		int count_max_stack = 0;
@@ -89,14 +104,15 @@ namespace RandomX {
 		int count_FPSUB_nop2 = 0;
 		int count_FPMUL_nop = 0;
 		int count_FPMUL_nop2 = 0;
+		int datasetAccess[256] = { 0 };
 #endif
 
 		convertible_t loada(Instruction&);
-		convertible_t loadbr0(Instruction&);
-		convertible_t loadbr1(Instruction&);
+		convertible_t loadbiashift(Instruction&);
+		convertible_t loadbiadiv(Instruction&);
+		convertible_t loadbia(Instruction&);
 		convertible_t& getcr(Instruction&);
 		void writecf(Instruction&, fpu_reg_t&);
-		void writecflo(Instruction&, fpu_reg_t&);
 
 		void stackPush(convertible_t& c) {
 			stack.push_back(c);
@@ -148,6 +164,7 @@ namespace RandomX {
 		void h_FPDIV(Instruction&);
 		void h_FPSQRT(Instruction&);
 		void h_FPROUND(Instruction&);
+		void h_JUMP(Instruction&);
 		void h_CALL(Instruction&);
 		void h_RET(Instruction&);
 	};

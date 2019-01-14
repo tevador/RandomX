@@ -25,10 +25,10 @@ namespace RandomX {
 
 	class VirtualMachine {
 	public:
-		VirtualMachine(bool softAes);
-		virtual ~VirtualMachine();
-		virtual void setDataset(dataset_t ds, bool light = false);
-		void initializeScratchpad(uint32_t index);
+		VirtualMachine();
+		virtual ~VirtualMachine() {}
+		virtual void setDataset(dataset_t ds) = 0;
+		virtual void initializeScratchpad(uint32_t index) = 0;
 		virtual void initializeProgram(const void* seed) = 0;
 		virtual void execute() = 0;
 		void getResult(void*);
@@ -36,7 +36,6 @@ namespace RandomX {
 			return reg;
 		}
 	protected:
-		bool softAes, lightClient;
 		DatasetReadFunc readDataset;
 		alignas(16) RegisterFile reg;
 		MemoryRegisters mem;

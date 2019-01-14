@@ -40,12 +40,14 @@ namespace RandomX {
 	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);
 
-	convertible_t datasetRead(addr_t addr, MemoryRegisters& memory);
+	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
 	template<bool softAes>
 	void datasetInitCache(const void* seed, dataset_t& dataset);
 
 	template<bool softAes>
-	convertible_t datasetReadLight(addr_t addr, MemoryRegisters& memory);
+	void datasetReadLight(addr_t addr, MemoryRegisters& memory, RegisterFile&);
+
+	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
 }
 

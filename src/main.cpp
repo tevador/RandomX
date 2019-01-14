@@ -162,7 +162,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled, help, largePages;
+	bool softAes, lightClient, genAsm, compiled, help, largePages, async;
 	int programCount, threadCount;
 	readOption("--help", argc, argv, help);
 
@@ -178,6 +178,7 @@ int main(int argc, char** argv) {
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, programCount, 1000);
 	readOption("--largePages", argc, argv, largePages);
+	readOption("--async", argc, argv, async);
 
 	if (genAsm) {
 		generateAsm(programCount);
@@ -250,12 +251,12 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < threadCount; ++i) {
 			RandomX::VirtualMachine* vm;
 			if (compiled) {
-				vm = new RandomX::CompiledVirtualMachine(softAes);
+				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				vm = new RandomX::InterpretedVirtualMachine(softAes);
+				vm = new RandomX::InterpretedVirtualMachine(softAes, async);
 			}
-			vm->setDataset(dataset, lightClient);
+			vm->setDataset(dataset);
 			vms.push_back(vm);
 		}
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
@@ -278,7 +279,12 @@ int main(int argc, char** argv) {
 		result.print(std::cout);
 		if(programCount == 1000)
 		std::cout << "Reference result:  3e1c5f9b9d0bf8ffa250f860bf5f7ab76ac823b206ddee6a592660119a3640c6" << std::endl;
-		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
+		if (lightClient) {
+			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per program" << std::endl;
+		}
+		else {
+			std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
+		}
 	}
 	catch (std::exception& e) {
 		std::cout << "ERROR: " << e.what() << std::endl;

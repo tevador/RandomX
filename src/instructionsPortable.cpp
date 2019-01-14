@@ -370,9 +370,9 @@ namespace RandomX {
 #endif
 		}
 
-		void FPROUND(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-			c.lo.f64 = convertSigned52(a.i64);
-			switch (a.u64 & 3) {
+		void FPROUND(convertible_t a, uint8_t rot) {
+			uint64_t flag = ror64(a.u64, rot);
+			switch (flag & 3) {
 				case RoundDown:
 #ifdef DEBUG
 					std::cout << "Round FE_DOWNWARD (" << FE_DOWNWARD << ") = " <<

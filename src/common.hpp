@@ -38,7 +38,7 @@ namespace RandomX {
 	constexpr int CacheLineSize = 64;
 	constexpr int BlockExpansionRatio = 64;
 	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = 64;
+	constexpr int DatasetIterations = 16;
 	constexpr uint32_t CacheSize = CacheBlockCount * CacheLineSize;
 	constexpr uint64_t DatasetSize = (uint64_t)CacheSize * BlockExpansionRatio;
 
@@ -86,16 +86,25 @@ namespace RandomX {
 		return i % RandomX::ProgramLength;
 	}
 
-	struct LightClientDataset {
-		Cache* cache;
-		uint8_t* block;
-		uint32_t blockNumber;
+	class ILightClientAsyncWorker {
+	public:
+		virtual void prepareBlock(addr_t) = 0;
+		virtual void prepareBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
+		virtual const uint64_t* getBlock(addr_t) = 0;
+		virtual void getBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
+		virtual void sync() = 0;
+		const Cache* getCache() {
+			return cache;
+		}
+	protected:
+		ILightClientAsyncWorker(const Cache* c) : cache(c) {}
+		const Cache* cache;
 	};
 
 	union dataset_t {
 		uint8_t* dataset;
 		Cache* cache;
-		LightClientDataset* lightDataset;
+		ILightClientAsyncWorker* asyncWorker;
 	};
 
 	struct MemoryRegisters {
@@ -112,7 +121,7 @@ namespace RandomX {
 
 	static_assert(sizeof(RegisterFile) == 3 * RegistersCount * sizeof(convertible_t), "Invalid alignment of struct RandomX::RegisterFile");
 
-	typedef convertible_t(*DatasetReadFunc)(addr_t, MemoryRegisters&);
+	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, RegisterFile&);
 
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*);
 

@@ -67,12 +67,12 @@ namespace RandomX {
 	void AssemblyGeneratorX86::gena(Instruction& instr, int i) {
 		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
 		asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-		if ((instr.loca & 192) == 0)
-			asmCode << "\txor " << regMx << ", rax" << std::endl;
 		asmCode << "\ttest " << regIc8 << ", 63" << std::endl;
 		asmCode << "\tjnz short rx_body_" << i << std::endl;
 		asmCode << "\tcall rx_read" << std::endl;
 		asmCode << "rx_body_" << i << ":" << std::endl;
+		if ((instr.loca & 192) == 0)
+			asmCode << "\txor " << regMx << ", rax" << std::endl;
 		if (instr.loca & 3) {
 			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
 		}

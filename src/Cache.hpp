@@ -46,7 +46,7 @@ namespace RandomX {
 			return keys;
 		}
 
-		const uint8_t* getCache() {
+		const uint8_t* getCache() const {
 			return memory;
 		}
 	private:

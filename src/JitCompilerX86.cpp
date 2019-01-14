@@ -170,13 +170,13 @@ namespace RandomX {
 		emit(instr.addra);
 		emit(uint16_t(0x8b41)); //mov
 		emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
+		emit(0x753fc3f6); //test bl,0x3f; jne
+		emit(uint16_t(0xe805));
+		emit(readDatasetOffset - (codePos + 4));
 		if ((instr.loca & 192) == 0) { //A.LOC.X
 			emit(uint16_t(0x3348));
 			emitByte(0xe8); //xor rbp, rax
 		}
-		emit(0x753fc3f6); //test bl,0x3f; jne
-		emit(uint16_t(0xe805));
-		emit(readDatasetOffset - (codePos + 4));
 		emitByte(0x25); //and eax,
 		if (instr.loca & 3) {
 			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad

@@ -37,8 +37,9 @@ namespace RandomX {
 		void operator delete(void* ptr) {
 			_mm_free(ptr);
 		}
-		CompiledVirtualMachine(bool softAes);
-		void setDataset(dataset_t ds, bool light = false) override;
+		CompiledVirtualMachine();
+		void setDataset(dataset_t ds) override;
+		void initializeScratchpad(uint32_t index) override;
 		void initializeProgram(const void* seed) override;
 		virtual void execute() override;
 		void* getProgram() {

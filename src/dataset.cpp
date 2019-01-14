@@ -30,7 +30,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
-#define PREFETCH(memory) _mm_prefetch((const char *)((memory).ds.dataset + (memory).ma), _MM_HINT_T0)
+#define PREFETCH(memory) _mm_prefetch((const char *)((memory).ds.dataset + (memory).ma), _MM_HINT_NTA)
 #else
 #define PREFETCH(memory)
 #endif
@@ -106,32 +106,44 @@ namespace RandomX {
 	template
 		void initBlock<false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
 
-	convertible_t datasetRead(addr_t addr, MemoryRegisters& memory) {
-		convertible_t data;
-		data.u64 = *(uint64_t*)(memory.ds.dataset + memory.ma);
-		memory.ma += 8;
+	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
+		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset + memory.ma);
 		memory.mx ^= addr;
-		if ((memory.mx & 0xFFF8) == 0) {
-			memory.ma = memory.mx & ~7;
-			PREFETCH(memory);
-		}
-		return data;
+		memory.mx &= -64; //align to cache line
+		std::swap(memory.mx, memory.ma);
+		PREFETCH(memory);
+		for (int i = 0; i < RegistersCount; ++i)
+			reg.r[i].u64 ^= datasetLine[i];
 	}
 
 	template<bool softAes>
-	convertible_t datasetReadLight(addr_t addr, MemoryRegisters& memory) {
-		convertible_t data;
-		LightClientDataset* lds = memory.ds.lightDataset;
-		auto blockNumber = memory.ma / CacheLineSize;
-
-		return data;
+	void datasetReadLight(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
+		Cache* cache = memory.ds.cache;
+		uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
+		initBlock<softAes>(cache->getCache(), (uint8_t*)datasetLine, memory.ma / CacheLineSize, cache->getKeys());
+		for (int i = 0; i < RegistersCount; ++i)
+			reg.r[i].u64 ^= datasetLine[i];
+		memory.mx ^= addr;
+		memory.mx &= -64; //align to cache line
+		std::swap(memory.mx, memory.ma);
 	}
 
 	template
-		convertible_t datasetReadLight<false>(addr_t addr, MemoryRegisters& memory);
+		void datasetReadLight<false>(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
 
 	template
-		convertible_t datasetReadLight<true>(addr_t addr, MemoryRegisters& memory);
+		void datasetReadLight<true>(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
+
+	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
+		ILightClientAsyncWorker* aw = memory.ds.asyncWorker;
+		const uint64_t* datasetLine = aw->getBlock(memory.ma);
+		for (int i = 0; i < RegistersCount; ++i)
+			reg.r[i].u64 ^= datasetLine[i];
+		memory.mx ^= addr;
+		memory.mx &= -64; //align to cache line
+		std::swap(memory.mx, memory.ma);
+		aw->prepareBlock(memory.ma);
+	}
 
 	void datasetAlloc(dataset_t& ds, bool largePages) {
 		if (sizeof(size_t) <= 4)

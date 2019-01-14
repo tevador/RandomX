@@ -25,15 +25,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	CompiledVirtualMachine::CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {
+	CompiledVirtualMachine::CompiledVirtualMachine() {
 		totalSize = 0;
 	}
 
-	void CompiledVirtualMachine::setDataset(dataset_t ds, bool lightClient) {
-		if (lightClient) {
-			throw std::runtime_error("Compiled VM does not support light-client mode");
-		}
-		VirtualMachine::setDataset(ds, lightClient);
+	void CompiledVirtualMachine::setDataset(dataset_t ds) {
+		mem.ds = ds;
+	}
+
+	void CompiledVirtualMachine::initializeScratchpad(uint32_t index) {
+		memcpy(scratchpad, mem.ds.dataset + ScratchpadSize * index, ScratchpadSize);
 	}
 
 	void CompiledVirtualMachine::initializeProgram(const void* seed) {
