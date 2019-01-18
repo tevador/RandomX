@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
 			std::cout << std::endl;
 		}
 		if (lightClient) {
-			std::cout << "Cache (64 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
+			std::cout << "Cache (256 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
 		else {
 			RandomX::Cache* cache = dataset.cache;
