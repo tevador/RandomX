@@ -162,7 +162,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled, help, largePages, async;
+	bool softAes, lightClient, genAsm, compiled, help, largePages, async, aesBench;
 	int programCount, threadCount;
 	readOption("--help", argc, argv, help);
 
@@ -179,9 +179,27 @@ int main(int argc, char** argv) {
 	readIntOption("--nonces", argc, argv, programCount, 1000);
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--async", argc, argv, async);
+	readOption("--aesBench", argc, argv, aesBench);
 
 	if (genAsm) {
 		generateAsm(programCount);
+		return 0;
+	}
+
+	if (softAes)
+		std::cout << "Using software AES." << std::endl;
+
+	if(aesBench) {
+		programCount *= 10;
+		Stopwatch sw(true);
+		if (softAes) {
+			RandomX::aesBench<true>(programCount);
+		}
+		else {
+			RandomX::aesBench<false>(programCount);
+		}
+		sw.stop();
+		std::cout << "AES performance: " << programCount / sw.getElapsed() << " blocks/s" << std::endl;
 		return 0;
 	}
 
@@ -191,17 +209,14 @@ int main(int argc, char** argv) {
 	std::vector<std::thread> threads;
 	RandomX::dataset_t dataset;
 
-	if (softAes)
-		std::cout << "Using software AES." << std::endl;
 	std::cout << "Initializing..." << std::endl;
-
 	try {
 		Stopwatch sw(true);
 		if (softAes) {
-			RandomX::datasetInitCache<true>(seed, dataset);
+			RandomX::datasetInitCache<true>(seed, dataset, largePages);
 		}
 		else {
-			RandomX::datasetInitCache<false>(seed, dataset);
+			RandomX::datasetInitCache<false>(seed, dataset, largePages);
 		}
 		if (RandomX::trace) {
 			std::cout << "Keys: " << std::endl;
@@ -243,7 +258,7 @@ int main(int argc, char** argv) {
 					RandomX::datasetInit<false>(cache, dataset, 0, RandomX::DatasetBlockCount);
 				}
 			}
-			delete cache;
+			RandomX::Cache::dealloc(cache, largePages);
 			threads.clear();
 			std::cout << "Dataset (4 GiB) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}

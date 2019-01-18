@@ -88,11 +88,15 @@ void* allocExecutableMemory(std::size_t bytes) {
 	return mem;
 }
 
+constexpr std::size_t align(std::size_t pos, uint32_t align) {
+	return ((pos - 1) / align + 1) * align;
+}
+
 void* allocLargePagesMemory(std::size_t bytes) {
 	void* mem;
 #ifdef _WIN32
 	setPrivilege("SeLockMemoryPrivilege", 1);
-	mem = VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
+	mem = VirtualAlloc(NULL, align(bytes, 2 * 1024 * 1024), MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocLargePagesMemory - VirtualAlloc"));
 #else

@@ -17,12 +17,17 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+//#define TRACE
 #include "common.hpp"
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <array>
+#ifdef TRACE
+#include "Stopwatch.hpp"
+#include <iostream>
+#endif
 
 namespace RandomX {
 
@@ -43,10 +48,13 @@ namespace RandomX {
 		void runWorker();
 		std::condition_variable notifier;
 		std::mutex mutex;
-		DatasetLine currentLine;
+		alignas(16) DatasetLine currentLine;
 		void* output;
 		uint32_t startBlock, blockCount;
 		bool hasWork;
+#ifdef TRACE
+		Stopwatch sw;
+#endif
 		std::thread workerThread;
 	};
 }

@@ -11,7 +11,7 @@ SRCDIR=src
 OBJDIR=obj
 LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o divideByConstantCodegen.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o divideByConstantCodegen.o LightClientAsyncWorker.o AddressTransform.o)
 ifeq ($(PLATFORM),x86_64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o
 endif
@@ -27,6 +27,11 @@ debug: CCFLAGS += -g
 debug: LDFLAGS += -g
 debug: $(BINDIR)/randomx
 
+profile: CXXFLAGS += -pg
+profile: CCFLAGS += -pg
+profile: LDFLAGS += -pg
+profile: $(BINDIR)/randomx
+
 test: CXXFLAGS += -O0
 test: $(BINDIR)/AluFpuTest
 
@@ -38,6 +43,9 @@ $(BINDIR)/AluFpuTest: $(TOBJS) | $(BINDIR)
   
 $(OBJDIR)/TestAluFpu.o: $(addprefix $(SRCDIR)/,TestAluFpu.cpp instructions.hpp Pcg32.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/TestAluFpu.cpp -o $@
+
+$(OBJDIR)/AddressTransform.o: $(addprefix $(SRCDIR)/,AddressTransform.cpp InterpretedVirtualMachine.hpp common.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/AddressTransform.cpp -o $@
   
 $(OBJDIR)/argon2_core.o: $(addprefix $(SRCDIR)/,argon2_core.c argon2_core.h blake2/blake2.h blake2/blake2-impl.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/argon2_core.c -o $@
@@ -74,6 +82,9 @@ $(OBJDIR)/Instruction.o: $(addprefix $(SRCDIR)/,Instruction.cpp Instruction.hpp 
   
 $(OBJDIR)/InterpretedVirtualMachine.o: $(addprefix $(SRCDIR)/,InterpretedVirtualMachine.cpp InterpretedVirtualMachine.hpp Pcg32.hpp instructions.hpp instructionWeights.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/InterpretedVirtualMachine.cpp -o $@
+
+$(OBJDIR)/LightClientAsyncWorker.o: $(addprefix $(SRCDIR)/,LightClientAsyncWorker.cpp LightClientAsyncWorker.hpp common.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/LightClientAsyncWorker.cpp -o $@
   
 $(OBJDIR)/main.o: $(addprefix $(SRCDIR)/,main.cpp InterpretedVirtualMachine.hpp Stopwatch.hpp blake2/blake2.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/main.cpp -o $@

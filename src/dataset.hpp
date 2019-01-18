@@ -43,11 +43,14 @@ namespace RandomX {
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
 	template<bool softAes>
-	void datasetInitCache(const void* seed, dataset_t& dataset);
+	void datasetInitCache(const void* seed, dataset_t& dataset, bool largePages);
 
 	template<bool softAes>
 	void datasetReadLight(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
 	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
+
+	template<bool softAes>
+	void aesBench(uint32_t blockCount);
 }
 

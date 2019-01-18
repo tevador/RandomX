@@ -24,12 +24,19 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	template<bool softAes>
-	LightClientAsyncWorker<softAes>::LightClientAsyncWorker(const Cache* c) : ILightClientAsyncWorker(c), output(nullptr), hasWork(false), workerThread(&LightClientAsyncWorker::runWorker, this) {
+	LightClientAsyncWorker<softAes>::LightClientAsyncWorker(const Cache* c) : ILightClientAsyncWorker(c), output(nullptr), hasWork(false), 
+#ifdef TRACE
+		sw(true),
+#endif
+		workerThread(&LightClientAsyncWorker::runWorker, this) {
 
 	}
 
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::prepareBlock(addr_t addr) {
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": prepareBlock-enter " << addr << std::endl;
+#endif
 		{
 			std::lock_guard<std::mutex> lk(mutex);
 			startBlock = addr / CacheLineSize;
@@ -37,6 +44,9 @@ namespace RandomX {
 			output = currentLine.data();
 			hasWork = true;
 		}
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": prepareBlock-notify " << startBlock << "/" << blockCount << std::endl;
+#endif
 		notifier.notify_all();
 	}
 
@@ -54,10 +64,13 @@ namespace RandomX {
 
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::prepareBlocks(void* out, uint32_t startBlock, uint32_t blockCount) {
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": prepareBlocks-enter " << startBlock << "/" << blockCount << std::endl;
+#endif
 		{
 			std::lock_guard<std::mutex> lk(mutex);
-			startBlock = startBlock;
-			blockCount = blockCount;
+			this->startBlock = startBlock;
+			this->blockCount = blockCount;
 			output = out;
 			hasWork = true;
 		}
@@ -79,6 +92,9 @@ namespace RandomX {
 
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::runWorker() {
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": runWorker-enter " << std::endl;
+#endif
 		for (;;) {
 			std::unique_lock<std::mutex> lk(mutex);
 			notifier.wait(lk, [this] { return hasWork; });

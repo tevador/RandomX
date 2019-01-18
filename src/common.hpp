@@ -34,19 +34,20 @@ namespace RandomX {
 	constexpr int SeedSize = 32;
 	constexpr int ResultSize = 32;
 
-	constexpr int CacheBlockCount = 1024 * 1024;
-	constexpr int CacheLineSize = 64;
-	constexpr int BlockExpansionRatio = 64;
-	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = 16;
-	constexpr uint32_t CacheSize = CacheBlockCount * CacheLineSize;
-	constexpr uint64_t DatasetSize = (uint64_t)CacheSize * BlockExpansionRatio;
-
-	constexpr int ArgonIterations = 12;
-	constexpr uint32_t ArgonMemorySize = 65536; //KiB
+	constexpr int ArgonIterations = 6;
+	constexpr uint32_t ArgonMemorySize = 131072; //KiB
 	constexpr int ArgonLanes = 1;
 	const char ArgonSalt[] = "Monero\x1A$";
 	constexpr int ArgonSaltSize = sizeof(ArgonSalt) - 1;
+
+	constexpr int CacheLineSize = 64;
+	constexpr uint64_t DatasetSize = 4ULL * 1024 * 1024 * 1024; //4 GiB
+	constexpr uint32_t CacheSize = ArgonMemorySize * 1024;
+	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
+	constexpr int BlockExpansionRatio = DatasetSize / CacheSize;
+	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
+	constexpr int DatasetIterations = 32;
+
 
 #ifdef TRACE
 	constexpr bool trace = true;

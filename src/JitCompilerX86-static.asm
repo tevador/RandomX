@@ -15,6 +15,8 @@
 ;# You should have received a copy of the GNU General Public License
 ;# along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
+IFDEF RAX
+
 _RANDOMX_JITX86_STATIC SEGMENT PAGE READ EXECUTE
 
 PUBLIC randomx_program_prologue
@@ -56,5 +58,7 @@ randomx_program_transform PROC
 randomx_program_transform ENDP
 
 _RANDOMX_JITX86_STATIC ENDS
+
+ENDIF
 
 END

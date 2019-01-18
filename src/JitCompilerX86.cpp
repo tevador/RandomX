@@ -46,6 +46,10 @@ namespace RandomX {
 	void JitCompilerX86::generateProgram(Pcg32& gen) {
 
 	}
+
+	size_t JitCompilerX86::getCodeSize() {
+		return 0;
+	}
 #else
 
 	/*

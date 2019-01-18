@@ -15,6 +15,8 @@
 ;# You should have received a copy of the GNU General Public License
 ;# along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
+IFDEF RAX
+
 _RANDOMX_EXECUTE_PROGRAM SEGMENT PAGE READ EXECUTE
 
 PUBLIC executeProgram
@@ -251,5 +253,7 @@ rx_read:
 executeProgram ENDP
 
 _RANDOMX_EXECUTE_PROGRAM ENDS
+
+ENDIF
 
 END

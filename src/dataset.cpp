@@ -67,7 +67,7 @@ namespace RandomX {
 		//block number 0..67108863
 		//Initialization vector = block number extended to 128 bits
 		iv = _mm_cvtsi32_si128(blockNumber);
-		uint32_t cacheBlockNumber = blockNumber / BlockExpansionRatio; //0..1048575
+		uint32_t cacheBlockNumber = blockNumber / BlockExpansionRatio; //0..2097151
 		__m128i* cacheCacheLine = (__m128i*)(in + cacheBlockNumber * CacheLineSize);
 		__m128i* datasetCacheLine = (__m128i*)out;
 
@@ -173,14 +173,26 @@ namespace RandomX {
 		void datasetInit<true>(Cache*, dataset_t, uint32_t, uint32_t);
 
 	template<bool softAes>
-	void datasetInitCache(const void* seed, dataset_t& ds) {
-		ds.cache = new Cache();
+	void datasetInitCache(const void* seed, dataset_t& ds, bool largePages) {
+		ds.cache = new(Cache::alloc(largePages)) Cache();
 		ds.cache->initialize<softAes>(seed, SeedSize);
 	}
 
 	template
-		void datasetInitCache<false>(const void*, dataset_t&);
+		void datasetInitCache<false>(const void*, dataset_t&, bool);
 
 	template
-		void datasetInitCache<true>(const void*, dataset_t&);
+		void datasetInitCache<true>(const void*, dataset_t&, bool);
+
+	template<bool softAes>
+	void aesBench(uint32_t blockCount) {
+		alignas(16) KeysContainer keys;
+		alignas(16) uint8_t buffer[CacheLineSize];
+		for (uint32_t block = 0; block < blockCount; ++block) {
+			initBlock<softAes>(buffer, buffer, 0, keys);
+		}
+	}
+
+	template void aesBench<false>(uint32_t blockCount);
+	template void aesBench<true>(uint32_t blockCount);
 }
