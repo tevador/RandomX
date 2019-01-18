@@ -62,42 +62,43 @@ namespace RandomX {
 	x3 = aesenc<soft>(x3, keys[i])
 
 	template<bool soft>
-	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
-		__m128i x0, x1, x2, x3, iv;
-		//block number 0..67108863
-		//Initialization vector = block number extended to 128 bits
-		iv = _mm_cvtsi32_si128(blockNumber);
-		uint32_t cacheBlockNumber = blockNumber / BlockExpansionRatio; //0..2097151
-		__m128i* cacheCacheLine = (__m128i*)(in + cacheBlockNumber * CacheLineSize);
-		__m128i* datasetCacheLine = (__m128i*)out;
+	void initBlock(const uint8_t* intermediate, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
+		__m128i x0, x1, x2, x3;
 
-		x0 = _mm_load_si128(cacheCacheLine + 0);
-		x1 = _mm_load_si128(cacheCacheLine + 1);
-		x2 = _mm_load_si128(cacheCacheLine + 2);
-		x3 = _mm_load_si128(cacheCacheLine + 3);
+		__m128i* xit = (__m128i*)intermediate;
+		__m128i* xout = (__m128i*)out;
 
-		x0 = _mm_xor_si128(x0, iv);
-		x1 = _mm_xor_si128(x1, iv);
-		x2 = _mm_xor_si128(x2, iv);
-		x3 = _mm_xor_si128(x3, iv);
+		x0 = _mm_cvtsi32_si128(blockNumber);
+		constexpr int mask = (CacheSize / CacheLineSize) - 1;
 
 		for (auto i = 0; i < DatasetIterations; ++i) {
-			AES_ROUND(0);
-			AES_ROUND(1);
-			AES_ROUND(2);
-			AES_ROUND(3);
-			AES_ROUND(4);
-			AES_ROUND(5);
-			AES_ROUND(6);
-			AES_ROUND(7);
-			AES_ROUND(8);
-			AES_ROUND(9);
+			x0 = aesenc<soft>(x0, keys[0]);
+			x0 = aesenc<soft>(x0, keys[1]);
+			x1 = aesenc<soft>(x0, keys[2]);
+			x1 = aesenc<soft>(x1, keys[3]);
+			x2 = aesenc<soft>(x1, keys[4]);
+			x2 = aesenc<soft>(x2, keys[5]);
+			x3 = aesenc<soft>(x2, keys[6]);
+			x3 = aesenc<soft>(x3, keys[7]);
+
+			int index = _mm_cvtsi128_si32(x3);
+			index &= mask;
+
+			__m128i t0 = _mm_load_si128(xit + 4 * index + 0);
+			__m128i t1 = _mm_load_si128(xit + 4 * index + 1);
+			__m128i t2 = _mm_load_si128(xit + 4 * index + 2);
+			__m128i t3 = _mm_load_si128(xit + 4 * index + 3);
+
+			x0 = _mm_xor_si128(x0, t0);
+			x1 = _mm_xor_si128(x1, t1);
+			x2 = _mm_xor_si128(x2, t2);
+			x3 = _mm_xor_si128(x3, t3);
 		}
 
-		_mm_store_si128(datasetCacheLine + 0, x0);
-		_mm_store_si128(datasetCacheLine + 1, x1);
-		_mm_store_si128(datasetCacheLine + 2, x2);
-		_mm_store_si128(datasetCacheLine + 3, x3);
+		_mm_store_si128(xout + 0, x0);
+		_mm_store_si128(xout + 1, x1);
+		_mm_store_si128(xout + 2, x2);
+		_mm_store_si128(xout + 3, x3);
 	}
 
 	template
