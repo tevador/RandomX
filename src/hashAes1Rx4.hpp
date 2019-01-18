@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -17,22 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-#include <stdint.h>
-#include "intrinPortable.h"
+#include "softAes.h"
 
-__m128i soft_aeskeygenassist(__m128i key, uint8_t rcon);
-
-__m128i soft_aesenc(__m128i in, __m128i key);
-
-__m128i soft_aesdec(__m128i in, __m128i key);
-
-template<bool soft>
-inline __m128i aesenc(__m128i in, __m128i key) {
-	return soft ? soft_aesenc(in, key) : _mm_aesenc_si128(in, key);
-}
-
-template<bool soft>
-inline __m128i aesdec(__m128i in, __m128i key) {
-	return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
-}
+template<bool softAes>
+void hashAes1Rx4(const void *input, size_t inputSize, void *hash);

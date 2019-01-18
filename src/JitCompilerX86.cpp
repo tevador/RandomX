@@ -182,11 +182,16 @@ namespace RandomX {
 			emitByte(0xe8); //xor rbp, rax
 		}
 		emitByte(0x25); //and eax,
-		if (instr.loca & 3) {
-			emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
+		if (instr.loca & 15) {
+			if (instr.loca & 3) {
+				emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
+			}
+			else {
+				emit(ScratchpadL2 - 1); //first 256 KiB of scratchpad
+			}
 		}
 		else {
-			emit(ScratchpadL2 - 1); //whole scratchpad
+			emit(ScratchpadL3 - 1); //whole scratchpad
 		}
 	}
 
@@ -266,27 +271,27 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::gencr(Instruction& instr, bool rax = true) {
-		switch (instr.locc & 7)
-		{
-			case 0:
-				scratchpadStoreR(instr, ScratchpadL2, rax);
-				break;
-
-			case 1:
-			case 2:
-			case 3:
-				scratchpadStoreR(instr, ScratchpadL1, rax);
-				break;
-
-			default:
-				emit(uint16_t(0x8b4c)); //mov
-				if (rax) {
-					emitByte(0xc0 + 8 * (instr.regc % RegistersCount)); //regc, rax
+		if (instr.locc & 16) { //write to register
+			emit(uint16_t(0x8b4c)); //mov
+			if (rax) {
+				emitByte(0xc0 + 8 * (instr.regc % RegistersCount)); //regc, rax
+			}
+			else {
+				emitByte(0xc1 + 8 * (instr.regc % RegistersCount)); //regc, rcx
+			}
+		}
+		else {
+			if (instr.locc & 15) {
+				if (instr.locc & 3) {
+					scratchpadStoreR(instr, ScratchpadL1, rax);
 				}
 				else {
-					emitByte(0xc1 + 8 * (instr.regc % RegistersCount)); //regc, rcx
+					scratchpadStoreR(instr, ScratchpadL2, rax);
 				}
-				break;
+			}
+			else {
+				scratchpadStoreR(instr, ScratchpadL3, rax);
+			}
 		}
 	}
 
@@ -314,13 +319,17 @@ namespace RandomX {
 		}
 		emit(uint16_t(0x280f)); //movaps
 		emitByte(0xc0 + 8 * regc); // regc, xmm0
-		if (instr.locc & 4) //C.LOC.R
-		{
-			if (instr.locc & 3) { //C.LOC.W
-				scratchpadStoreF(instr, regc, ScratchpadL1, (instr.locc & 128)); //first 16 KiB of scratchpad
+		if (instr.locc & 16) { //write to scratchpad
+			if (instr.locc & 15) {
+				if (instr.locc & 3) { //C.LOC.W
+					scratchpadStoreF(instr, regc, ScratchpadL1, (instr.locc & 128)); //first 16 KiB of scratchpad
+				}
+				else {
+					scratchpadStoreF(instr, regc, ScratchpadL2, (instr.locc & 128)); //first 256 KiB of scratchpad
+				}
 			}
 			else {
-				scratchpadStoreF(instr, regc, ScratchpadL2, (instr.locc & 128)); //whole scratchpad
+				scratchpadStoreF(instr, regc, ScratchpadL3, (instr.locc & 128)); //whole scratchpad
 			}
 		}
 	}

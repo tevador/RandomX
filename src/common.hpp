@@ -74,10 +74,11 @@ namespace RandomX {
 
 	constexpr int ProgramLength = 512;
 	constexpr uint32_t InstructionCount = 1024 * 1024;
-	constexpr uint32_t ScratchpadSize = 256 * 1024;
+	constexpr uint32_t ScratchpadSize = 1024 * 1024;
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(convertible_t);
-	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 16 / sizeof(convertible_t);
-	constexpr uint32_t ScratchpadL2 = ScratchpadSize / sizeof(convertible_t);
+	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 64 / sizeof(convertible_t);
+	constexpr uint32_t ScratchpadL2 = ScratchpadSize / 4 / sizeof(convertible_t);
+	constexpr uint32_t ScratchpadL3 = ScratchpadSize / sizeof(convertible_t);
 	constexpr uint32_t TransformationCount = 90;
 	constexpr int RegistersCount = 8;
 

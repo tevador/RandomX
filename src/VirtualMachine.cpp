@@ -19,7 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "VirtualMachine.hpp"
 #include "common.hpp"
-#include "t1ha/t1ha.h"
+#include "hashAes1Rx4.hpp"
 #include "blake2/blake2.h"
 #include <cstring>
 #include <iomanip>
@@ -40,10 +40,10 @@ namespace RandomX {
 	}
 
 	void VirtualMachine::getResult(void* out) {
-		constexpr size_t smallStateLength = sizeof(RegisterFile) / sizeof(uint64_t) + 2;
-		uint64_t smallState[smallStateLength];
+		constexpr size_t smallStateLength = sizeof(RegisterFile) / sizeof(uint64_t) + 8;
+		alignas(16) uint64_t smallState[smallStateLength];
 		memcpy(smallState, &reg, sizeof(RegisterFile));
-		smallState[smallStateLength - 1] = t1ha2_atonce128(&smallState[smallStateLength - 2], scratchpad, ScratchpadSize, reg.r[0].u64);
+		hashAes1Rx4<false>(scratchpad, ScratchpadSize, smallState + 24);
 		blake2b(out, ResultSize, smallState, sizeof(smallState), nullptr, 0);
 	}
 }

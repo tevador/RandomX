@@ -73,11 +73,16 @@ namespace RandomX {
 		asmCode << "rx_body_" << i << ":" << std::endl;
 		if ((instr.loca & 192) == 0)
 			asmCode << "\txor " << regMx << ", rax" << std::endl;
-		if (instr.loca & 3) {
-			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
+		if (instr.loca & 15) {
+			if (instr.loca & 3) {
+				asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
+			}
+			else {
+				asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
+			}
 		}
 		else {
-			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
+			asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
 		}
 	}
 
@@ -123,40 +128,32 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::gencr(Instruction& instr, bool rax = true) {
-		switch (instr.locc & 7)
-		{
-		case 0:
-			if(rax)
-				asmCode << "\tmov rcx, rax" << std::endl;
-			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
-			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
-			}
-			return;
-
-		case 1:
-		case 2:
-		case 3:
-			if (rax)
-				asmCode << "\tmov rcx, rax" << std::endl;
-			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-			asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
-			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
-			}
-			return;
-
-		default:
+		if (instr.locc & 16) { //write to register
 			asmCode << "\tmov " << regR[instr.regc % RegistersCount] << ", " << (rax ? "rax" : "rcx") << std::endl;
 			if (trace) {
 				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], " << (rax ? "rax" : "rcx") << std::endl;
 			}
-			return;
+		}
+		else { //write to scratchpad
+			if (rax)
+				asmCode << "\tmov rcx, rax" << std::endl;
+			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
+			if (instr.locc & 15) {
+				if (instr.locc & 3) {
+					asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
+				}
+				else {
+					asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
+				}
+			}
+			else {
+				asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
+			}
+			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
+			if (trace) {
+				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
+			}
 		}
 	}
 
@@ -164,23 +161,21 @@ namespace RandomX {
 		if(move)
 			asmCode << "\tmovaps " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
 		const char* store = (instr.locc & 128) ? "movhpd" : "movlpd";
-		switch (instr.locc & 7)
-		{
-			case 4:
-				asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-				asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-				asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-				asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
-				break;
-
-			case 5:
-			case 6:
-			case 7:
-				asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-				asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-				asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-				asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
-				break;
+		if (instr.locc & 16) { //write to scratchpad
+			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
+			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
+			if (instr.locc & 15) {
+				if (instr.locc & 3) {
+					asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
+				}
+				else {
+					asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
+				}
+			}
+			else {
+				asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
+			}
+			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
 		}
 		if (trace) {
 			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;

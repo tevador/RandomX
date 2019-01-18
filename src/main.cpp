@@ -145,7 +145,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		//std::cout << "Thread " << thread << " nonce " << nonce << std::endl;
 		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 63) << 8);
+		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 15) << 8);
 		vm->initializeScratchpad(spIndex);
 		vm->initializeProgram(hash);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");

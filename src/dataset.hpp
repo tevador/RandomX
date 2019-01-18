@@ -23,7 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <array>
 #include "intrinPortable.h"
 #include "common.hpp"
-#include "softAes.h"
 
 namespace RandomX {
 

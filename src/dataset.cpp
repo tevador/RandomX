@@ -27,6 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Pcg32.hpp"
 #include "Cache.hpp"
 #include "virtualMemory.hpp"
+#include "softAes.h"
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
@@ -47,21 +48,6 @@ namespace RandomX {
 	}
 
 	template<bool soft>
-	static inline __m128i aesenc(__m128i in, __m128i key) {
-		return soft ? soft_aesenc(in, key) : _mm_aesenc_si128(in, key);
-	}
-
-	template<bool soft>
-	static inline __m128i aesdec(__m128i in, __m128i key) {
-		return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
-	}
-
-#define AES_ROUND(i) x0 = aesdec<soft>(x0, keys[i]); \
-	x1 = aesenc<soft>(x1, keys[i]); \
-	x2 = aesdec<soft>(x2, keys[i]); \
-	x3 = aesenc<soft>(x3, keys[i])
-
-	template<bool soft>
 	void initBlock(const uint8_t* intermediate, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
 		__m128i x0, x1, x2, x3;
 
@@ -73,13 +59,13 @@ namespace RandomX {
 
 		for (auto i = 0; i < DatasetIterations; ++i) {
 			x0 = aesenc<soft>(x0, keys[0]);
-			x0 = aesenc<soft>(x0, keys[1]);
+			//x0 = aesenc<soft>(x0, keys[1]);
 			x1 = aesenc<soft>(x0, keys[2]);
-			x1 = aesenc<soft>(x1, keys[3]);
+			//x1 = aesenc<soft>(x1, keys[3]);
 			x2 = aesenc<soft>(x1, keys[4]);
-			x2 = aesenc<soft>(x2, keys[5]);
+			//x2 = aesenc<soft>(x2, keys[5]);
 			x3 = aesenc<soft>(x2, keys[6]);
-			x3 = aesenc<soft>(x3, keys[7]);
+			//x3 = aesenc<soft>(x3, keys[7]);
 
 			int index = _mm_cvtsi128_si32(x3);
 			index &= mask;
