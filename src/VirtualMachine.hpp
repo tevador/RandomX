@@ -28,10 +28,13 @@ namespace RandomX {
 		VirtualMachine();
 		virtual ~VirtualMachine() {}
 		virtual void setDataset(dataset_t ds) = 0;
-		virtual void initializeScratchpad(uint32_t index) = 0;
+		virtual void initializeScratchpad(uint8_t* scratchpad, int32_t index) = 0;
+		void setScratchpad(void* ptr) {
+			scratchpad = (convertible_t*)ptr;
+		}
 		virtual void initializeProgram(const void* seed) = 0;
 		virtual void execute() = 0;
-		void getResult(void*);
+		void getResult(void*, size_t, void*);
 		const RegisterFile& getRegisterFile() {
 			return reg;
 		}
@@ -39,6 +42,6 @@ namespace RandomX {
 		DatasetReadFunc readDataset;
 		alignas(16) RegisterFile reg;
 		MemoryRegisters mem;
-		alignas(64) convertible_t scratchpad[ScratchpadLength];
+		convertible_t* scratchpad;
 	};
 }

@@ -42,7 +42,7 @@ namespace RandomX {
 		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
 		~InterpretedVirtualMachine();
 		void setDataset(dataset_t ds) override;
-		void initializeScratchpad(uint32_t index) override;
+		void initializeScratchpad(uint8_t* scratchpad, int32_t index) override;
 		void initializeProgram(const void* seed) override;
 		void execute() override;
 		const Program& getProgam() {

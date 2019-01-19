@@ -33,7 +33,7 @@ namespace RandomX {
 		mem.ds = ds;
 	}
 
-	void CompiledVirtualMachine::initializeScratchpad(uint32_t index) {
+	void CompiledVirtualMachine::initializeScratchpad(uint8_t* scratchpad, int32_t index) {
 		memcpy(scratchpad, mem.ds.dataset + ScratchpadSize * index, ScratchpadSize);
 	}
 
@@ -41,6 +41,11 @@ namespace RandomX {
 		Pcg32 gen(seed);
 		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
 			*(((uint32_t*)&reg) + i) = gen();
+		}
+		FPINIT();
+		for (int i = 0; i < RegistersCount; ++i) {
+			reg.f[i].lo.f64 = (double)reg.f[i].lo.i64;
+			reg.f[i].hi.f64 = (double)reg.f[i].hi.i64;
 		}
 		compiler.generateProgram(gen);
 		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;

@@ -130,7 +130,7 @@ void generateAsm(int nonce) {
 	asmX86.printCode(std::cout);
 }
 
-void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread) {
+void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread, uint8_t* scratchpad) {
 	uint64_t hash[4];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
@@ -146,11 +146,20 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 15) << 8);
-		vm->initializeScratchpad(spIndex);
+		vm->initializeScratchpad(scratchpad, spIndex);
 		vm->initializeProgram(hash);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
+		vm->setScratchpad(scratchpad + 3 * RandomX::ScratchpadSize / 4);
 		vm->execute();
-		vm->getResult(hash);
+		vm->setScratchpad(scratchpad + 2 * RandomX::ScratchpadSize / 4);
+		vm->execute();
+		vm->getResult(nullptr, 0, hash);
+		vm->initializeProgram(hash);
+		vm->setScratchpad(scratchpad + 1 * RandomX::ScratchpadSize / 4);
+		vm->execute();
+		vm->setScratchpad(scratchpad + 0 * RandomX::ScratchpadSize / 4);
+		vm->execute();
+		vm->getResult(scratchpad, RandomX::ScratchpadSize, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";
@@ -274,18 +283,25 @@ int main(int argc, char** argv) {
 			vm->setDataset(dataset);
 			vms.push_back(vm);
 		}
+		uint8_t* scratchpadMem;
+		if (largePages) {
+			scratchpadMem = (uint8_t*)allocLargePagesMemory(RandomX::ScratchpadSize * (threadCount + 1) / 2);
+		}
+		else {
+			scratchpadMem = (uint8_t*)_mm_malloc(threadCount * RandomX::ScratchpadSize, RandomX::CacheLineSize);
+		}
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
 		sw.restart();
 		if (threadCount > 1) {
 			for (int i = 0; i < vms.size(); ++i) {
-				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i));
+				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i, scratchpadMem + RandomX::ScratchpadSize * i));
 			}
 			for (int i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
 		else {
-			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0);
+			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0, scratchpadMem);
 			if (compiled)
 				std::cout << "Average program size: " << ((RandomX::CompiledVirtualMachine*)vms[0])->getTotalSize() / programCount << std::endl;
 		}

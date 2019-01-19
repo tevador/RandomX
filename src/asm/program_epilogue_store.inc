@@ -12,12 +12,12 @@
 	mov qword ptr [rcx+40], r13
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
-	movdqa xmmword ptr [rcx+64], xmm8
-	movdqa xmmword ptr [rcx+80], xmm9
-	movdqa xmmword ptr [rcx+96], xmm2
-	movdqa xmmword ptr [rcx+112], xmm3
+	movapd xmmword ptr [rcx+64], xmm8
+	movapd xmmword ptr [rcx+80], xmm9
+	movapd xmmword ptr [rcx+96], xmm2
+	movapd xmmword ptr [rcx+112], xmm3
 	lea rcx, [rcx+64]
-	movdqa xmmword ptr [rcx+64], xmm4
-	movdqa xmmword ptr [rcx+80], xmm5
-	movdqa xmmword ptr [rcx+96], xmm6
-	movdqa xmmword ptr [rcx+112], xmm7
+	movapd xmmword ptr [rcx+64], xmm4
+	movapd xmmword ptr [rcx+80], xmm5
+	movapd xmmword ptr [rcx+96], xmm6
+	movapd xmmword ptr [rcx+112], xmm7

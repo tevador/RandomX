@@ -39,11 +39,16 @@ namespace RandomX {
 		mem.ds.dataset = nullptr;
 	}
 
-	void VirtualMachine::getResult(void* out) {
+	void VirtualMachine::getResult(void* scratchpad, size_t scratchpadSize, void* out) {
 		constexpr size_t smallStateLength = sizeof(RegisterFile) / sizeof(uint64_t) + 8;
 		alignas(16) uint64_t smallState[smallStateLength];
 		memcpy(smallState, &reg, sizeof(RegisterFile));
-		hashAes1Rx4<false>(scratchpad, ScratchpadSize, smallState + 24);
+		if (scratchpadSize > 0) {
+			hashAes1Rx4<false>(scratchpad, scratchpadSize, smallState + 24);
+		}
+		else {
+			memset(smallState + 24, 0, 64);
+		}
 		blake2b(out, ResultSize, smallState, sizeof(smallState), nullptr, 0);
 	}
 }

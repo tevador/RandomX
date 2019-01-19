@@ -69,7 +69,7 @@ namespace RandomX {
 		}
 	}
 
-	void InterpretedVirtualMachine::initializeScratchpad(uint32_t index) {
+	void InterpretedVirtualMachine::initializeScratchpad(uint8_t* scratchpad, int32_t index) {
 		uint32_t startingBlock = (ScratchpadSize / CacheLineSize) * index;
 		if (asyncWorker) {
 			ILightClientAsyncWorker* worker = mem.ds.asyncWorker;
