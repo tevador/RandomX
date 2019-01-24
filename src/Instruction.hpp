@@ -24,21 +24,17 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	class Instruction;
+
+	typedef void(Instruction::*InstructionVisualizer)(std::ostream&) const;
+
 	class Instruction {
 	public:
 		uint8_t opcode;
-		uint8_t loca;
-		uint8_t rega;
-		uint8_t locb;
-		uint8_t regb;
-		uint8_t locc;
-		uint8_t regc;
-		uint8_t imm8;
-		int32_t addra;
-		union {
-			uint32_t addrc;
-			int32_t imm32;
-		};
+		uint8_t dst;
+		uint8_t src;
+		uint8_t alt;
+		int32_t imm32;
 		const char* getName() const {
 			return names[opcode];
 		}
@@ -49,8 +45,46 @@ namespace RandomX {
 	private:
 		void print(std::ostream&) const;
 		static const char* names[256];
+		static InstructionVisualizer engine[256];
+
+		void genAddressReg(std::ostream& os) const;
+		void genAddressImm(std::ostream& os) const;
+
+		void  h_IADD_R(std::ostream&) const;
+		void  h_IADD_M(std::ostream&) const;
+		void  h_IADD_RC(std::ostream&) const;
+		void  h_ISUB_R(std::ostream&) const;
+		void  h_ISUB_M(std::ostream&) const;
+		void  h_IMUL_9C(std::ostream&) const;
+		void  h_IMUL_R(std::ostream&) const;
+		void  h_IMUL_M(std::ostream&) const;
+		void  h_IMULH_R(std::ostream&) const;
+		void  h_IMULH_M(std::ostream&) const;
+		void  h_ISMULH_R(std::ostream&) const;
+		void  h_ISMULH_M(std::ostream&) const;
+		void  h_IDIV_C(std::ostream&) const;
+		void  h_ISDIV_C(std::ostream&) const;
+		void  h_INEG_R(std::ostream&) const;
+		void  h_IXOR_R(std::ostream&) const;
+		void  h_IXOR_M(std::ostream&) const;
+		void  h_IROR_R(std::ostream&) const;
+		void  h_IROL_R(std::ostream&) const;
+		void  h_FPSWAP_R(std::ostream&) const;
+		void  h_FPADD_R(std::ostream&) const;
+		void  h_FPADD_M(std::ostream&) const;
+		void  h_FPSUB_R(std::ostream&) const;
+		void  h_FPSUB_M(std::ostream&) const;
+		void  h_FPNEG_R(std::ostream&) const;
+		void  h_FPMUL_R(std::ostream&) const;
+		void  h_FPMUL_M(std::ostream&) const;
+		void  h_FPDIV_R(std::ostream&) const;
+		void  h_FPDIV_M(std::ostream&) const;
+		void  h_FPSQRT_R(std::ostream&) const;
+		void  h_COND_R(std::ostream&) const;
+		void  h_COND_M(std::ostream&) const;
+		void  h_CFROUND(std::ostream&) const;
 	};
 
-	static_assert(sizeof(Instruction) == 16, "Invalid alignment of struct Instruction");
+	static_assert(sizeof(Instruction) == 8, "Invalid alignment of struct Instruction");
 
 }

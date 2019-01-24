@@ -30,12 +30,20 @@ namespace RandomX {
 
 	static const char* regR[8] = { "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
 	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
-	static const char* regF[8] = { "xmm8", "xmm9", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regFE[8] = { "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regF[4] = { "xmm0", "xmm1", "xmm2", "xmm3" };
+	static const char* regE[4] = { "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regA[4] = { "xmm8", "xmm9", "xmm10", "xmm11" };
 
+	static const char* regA4 = "xmm12";
+	static const char* dblMin = "xmm13";
+	static const char* absMask = "xmm14";
+	static const char* signMask = "xmm15";
 	static const char* regMx = "rbp";
-	static const char* regIc = "ebx";
+	static const char* regIc = "rbx";
+	static const char* regIc32 = "ebx";
 	static const char* regIc8 = "bl";
-	static const char* regStackBeginAddr = "rdi";
+	static const char* regDatasetAddr = "rdi";
 	static const char* regScratchpadAddr = "rsi";
 
 	void AssemblyGeneratorX86::generateProgram(const void* seed) {
@@ -49,226 +57,217 @@ namespace RandomX {
 			for (unsigned j = 0; j < sizeof(instr) / sizeof(Pcg32::result_type); ++j) {
 				*(((uint32_t*)&instr) + j) = gen();
 			}
+			instr.src %= RegistersCount;
+			instr.dst %= RegistersCount;
 			generateCode(instr, i);
-			asmCode << std::endl;
+			//asmCode << std::endl;
 		}
-		if(ProgramLength > 0)
-			asmCode << "\tjmp rx_i_0" << std::endl;
 	}
 
 	void AssemblyGeneratorX86::generateCode(Instruction& instr, int i) {
-		asmCode << "rx_i_" << i << ": ;" << instr.getName() << std::endl;
-		asmCode << "\tdec " << regIc << std::endl;
-		asmCode << "\tjz rx_finish" << std::endl;
+		asmCode << "\t; " << instr;
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
 
-	void AssemblyGeneratorX86::gena(Instruction& instr, int i) {
-		asmCode << "\txor " << regR[instr.rega % RegistersCount] << ", 0" << std::hex << instr.addra << "h" << std::dec << std::endl;
-		asmCode << "\tmov eax, " << regR32[instr.rega % RegistersCount] << std::endl;
-		asmCode << "\ttest " << regIc8 << ", 63" << std::endl;
-		asmCode << "\tjnz short rx_body_" << i << std::endl;
-		asmCode << "\tcall rx_read" << std::endl;
-		asmCode << "rx_body_" << i << ":" << std::endl;
-		if ((instr.loca & 192) == 0)
-			asmCode << "\txor " << regMx << ", rax" << std::endl;
-		if (instr.loca & 15) {
-			if (instr.loca & 3) {
-				asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-			}
-			else {
-				asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-			}
+	void AssemblyGeneratorX86::genAddressReg(Instruction& instr, const char* reg = "eax") {
+		asmCode << "\tmov " << reg << ", " << regR32[instr.src] << std::endl;
+		asmCode << "\tand " << reg << ", " << ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask) << std::endl;
+	}
+
+	int32_t AssemblyGeneratorX86::genAddressImm(Instruction& instr) {
+		return instr.imm32 & ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+	}
+
+	//1 uOP
+	void AssemblyGeneratorX86::h_IADD_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tadd " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
 		else {
-			asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
+			asmCode << "\tadd " << regR[instr.dst] << ", " << instr.imm32 << std::endl;
 		}
 	}
 
-	void AssemblyGeneratorX86::genar(Instruction& instr, int i) {
-		gena(instr, i);
-		asmCode << "\tmov rax, qword ptr [" << regScratchpadAddr << "+rax*8]" << std::endl;
-	}
-
-
-	void AssemblyGeneratorX86::genaf(Instruction& instr, int i) {
-		gena(instr, i);
-		asmCode << "\tcvtdq2pd xmm0, qword ptr [" << regScratchpadAddr << "+rax*8]" << std::endl;
-	}
-
-	void AssemblyGeneratorX86::genbiashift(Instruction& instr, const char* instrx86) {
-		if (instr.locb & 1)	{
-			asmCode << "\tmov rcx, " << regR[instr.regb % RegistersCount] << std::endl;
-			asmCode << "\t" << instrx86 << " rax, cl" << std::endl;
-		} else {
-			asmCode << "\t" << instrx86 << " rax, " << (instr.imm8 & 63) << std::endl;;
-		}
-	}
-
-	void AssemblyGeneratorX86::genbia(Instruction& instr) {
-		if (instr.locb & 3)	{
-			asmCode << regR[instr.regb % RegistersCount] << std::endl;
-		} else {
-			asmCode  << instr.imm32 << std::endl;;
-		}
-	}
-
-	void AssemblyGeneratorX86::genbia32(Instruction& instr) {
-		if (instr.locb & 3)	{
-			asmCode << regR32[instr.regb % RegistersCount] << std::endl;
+	//2.75 uOP
+	void AssemblyGeneratorX86::h_IADD_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			asmCode << "\tadd " << regR[instr.dst] << ", qword ptr [rsi+rax]" << std::endl;
 		}
 		else {
-			asmCode << instr.imm32 << std::endl;;
+			asmCode << "\tadd " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
 	}
 
-	void AssemblyGeneratorX86::genbf(Instruction& instr, const char* instrx86) {
-		asmCode << "\t" << instrx86 << " xmm0, " << regF[instr.regb % RegistersCount] << std::endl;
+	//1 uOP
+	void AssemblyGeneratorX86::h_IADD_RC(Instruction& instr, int i) {
+		asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << std::showpos << instr.imm32 << std::noshowpos << "]" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::gencr(Instruction& instr, bool rax = true) {
-		if (instr.locc & 16) { //write to register
-			asmCode << "\tmov " << regR[instr.regc % RegistersCount] << ", " << (rax ? "rax" : "rcx") << std::endl;
-			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], " << (rax ? "rax" : "rcx") << std::endl;
-			}
+	//1 uOP
+	void AssemblyGeneratorX86::h_ISUB_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tsub " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
-		else { //write to scratchpad
-			if (rax)
-				asmCode << "\tmov rcx, rax" << std::endl;
-			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-			if (instr.locc & 15) {
-				if (instr.locc & 3) {
-					asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-				}
-				else {
-					asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-				}
-			}
-			else {
-				asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
-			}
-			asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + rax * 8], rcx" << std::endl;
-			if (trace) {
-				asmCode << "\tmov qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], rcx" << std::endl;
-			}
+		else {
+			asmCode << "\tsub " << regR[instr.dst] << ", " << instr.imm32 << std::endl;
 		}
 	}
 
-	void AssemblyGeneratorX86::gencf(Instruction& instr, bool move = true) {
-		if(move)
-			asmCode << "\tmovaps " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
-		const char* store = (instr.locc & 128) ? "movhpd" : "movlpd";
-		if (instr.locc & 16) { //write to scratchpad
-			asmCode << "\tmov eax, " << regR32[instr.regc % RegistersCount] << std::endl;
-			asmCode << "\txor eax, 0" << std::hex << instr.addrc << "h" << std::dec << std::endl;
-			if (instr.locc & 15) {
-				if (instr.locc & 3) {
-					asmCode << "\tand eax, " << (ScratchpadL1 - 1) << std::endl;
-				}
-				else {
-					asmCode << "\tand eax, " << (ScratchpadL2 - 1) << std::endl;
-				}
-			}
-			else {
-				asmCode << "\tand eax, " << (ScratchpadL3 - 1) << std::endl;
-			}
-			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + rax * 8], " << regF[instr.regc % RegistersCount] << std::endl;
+	//2.75 uOP
+	void AssemblyGeneratorX86::h_ISUB_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			asmCode << "\tsub " << regR[instr.dst] << ", qword ptr [rsi+rax]" << std::endl;
 		}
-		if (trace) {
-			asmCode << "\t" << store << " qword ptr [" << regScratchpadAddr << " + " << regIc << " * 8 + 262136], " << regF[instr.regc % RegistersCount] << std::endl;
+		else {
+			asmCode << "\tsub " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
 	}
 
-	void AssemblyGeneratorX86::h_ADD_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tadd rax, ";
-		genbia(instr);
-		gencr(instr);
+	//1 uOP
+	void AssemblyGeneratorX86::h_IMUL_9C(Instruction& instr, int i) {
+		asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.dst] << "*8" << std::showpos << instr.imm32 << std::noshowpos << "]" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_ADD_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tadd eax, ";
-		genbia32(instr);
-		gencr(instr);
-	}
-
-	void AssemblyGeneratorX86::h_SUB_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tsub rax, ";
-		genbia(instr);
-		gencr(instr);
-	}
-
-	void AssemblyGeneratorX86::h_SUB_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tsub eax, ";
-		genbia32(instr);
-		gencr(instr);
-	}
-
-	void AssemblyGeneratorX86::h_MUL_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\timul rax, ";
-		if ((instr.locb & 3) == 0) {
-			asmCode << "rax, ";
+	//1 uOP
+	void AssemblyGeneratorX86::h_IMUL_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\timul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
-		genbia(instr);
-		gencr(instr);
+		else {
+			asmCode << "\timul " << regR[instr.dst] << ", " << instr.imm32 << std::endl;
+		}
 	}
 
-	void AssemblyGeneratorX86::h_MULH_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tmov rcx, ";
-		genbia(instr);
-		asmCode << "\tmul rcx" << std::endl;
-		asmCode << "\tmov rax, rdx" << std::endl;
-		gencr(instr);
+	//2.75 uOP
+	void AssemblyGeneratorX86::h_IMUL_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			asmCode << "\timul " << regR[instr.dst] << ", qword ptr [rsi+rax]" << std::endl;
+		}
+		else {
+			asmCode << "\timul " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
+		}
 	}
 
-	void AssemblyGeneratorX86::h_MUL_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tmov ecx, eax" << std::endl;
-		asmCode << "\tmov eax, ";
-		genbia32(instr);
-		asmCode << "\timul rax, rcx" << std::endl;
-		gencr(instr);
+	//4 uOPs
+	void AssemblyGeneratorX86::h_IMULH_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\tmul " << regR[instr.src] << std::endl;
+			asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		}
+		else {
+			asmCode << "\tmov eax, " << instr.imm32 << std::endl;
+			asmCode << "\tmul " << regR[instr.dst] << std::endl;
+			asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
+		}
 	}
 
-	void AssemblyGeneratorX86::h_IMUL_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tmovsxd rcx, eax" << std::endl;
-		if ((instr.locb & 3) == 0) {
+	//5.75 uOPs
+	void AssemblyGeneratorX86::h_IMULH_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr, "ecx");
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\tmul qword ptr [rsi+rcx]" << std::endl;
+		}
+		else {
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\tmul qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
+		}
+		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+	}
+
+	//4 uOPs
+	void AssemblyGeneratorX86::h_ISMULH_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\timul " << regR[instr.src] << std::endl;
+			asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		}
+		else {
 			asmCode << "\tmov rax, " << instr.imm32 << std::endl;
+			asmCode << "\timul " << regR[instr.dst] << std::endl;
+			asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
+		}
+	}
+
+	//5.75 uOPs
+	void AssemblyGeneratorX86::h_ISMULH_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr, "ecx");
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\timul qword ptr [rsi+rcx]" << std::endl;
 		}
 		else {
-			asmCode << "\tmovsxd rax, " << regR32[instr.regb % RegistersCount] << std::endl;
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			asmCode << "\timul qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
-		asmCode << "\timul rax, rcx" << std::endl;
-		gencr(instr);
+		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_IMULH_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tmov rcx, ";
-		genbia(instr);
-		asmCode << "\timul rcx" << std::endl;
-		asmCode << "\tmov rax, rdx" << std::endl;
-		gencr(instr);
+	//1 uOP
+	void AssemblyGeneratorX86::h_INEG_R(Instruction& instr, int i) {
+		asmCode << "\tneg " << regR[instr.dst] << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_DIV_64(Instruction& instr, int i) {
-		genar(instr, i);
-		if (instr.locb & 3) {
-#ifdef MAGIC_DIVISION
-			if (instr.imm32 != 0) {
-				uint32_t divisor = instr.imm32;
-				asmCode << "\t; magic divide by " << divisor << std::endl;
-				if (divisor & (divisor - 1)) {
-					magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+	//1 uOP
+	void AssemblyGeneratorX86::h_IXOR_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\txor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+		}
+		else {
+			asmCode << "\txor " << regR[instr.dst] << ", " << instr.imm32 << std::endl;
+		}
+	}
+
+	//2.75 uOP
+	void AssemblyGeneratorX86::h_IXOR_M(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			asmCode << "\txor " << regR[instr.dst] << ", qword ptr [rsi+rax]" << std::endl;
+		}
+		else {
+			asmCode << "\txor " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
+		}
+	}
+
+	//1.75 uOPs
+	void AssemblyGeneratorX86::h_IROR_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tmov ecx, " << regR32[instr.src] << std::endl;
+			asmCode << "\tror " << regR[instr.dst] << ", cl" << std::endl;
+		}
+		else {
+			asmCode << "\tror " << regR[instr.dst] << ", " << (instr.imm32 & 63) << std::endl;
+		}
+	}
+
+	//1.75 uOPs
+	void AssemblyGeneratorX86::h_IROL_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\tmov ecx, " << regR32[instr.src] << std::endl;
+			asmCode << "\trol " << regR[instr.dst] << ", cl" << std::endl;
+		}
+		else {
+			asmCode << "\trol " << regR[instr.dst] << ", " << (instr.imm32 & 63) << std::endl;
+		}
+	}
+
+	//~6 uOPs
+	void AssemblyGeneratorX86::h_IDIV_C(Instruction& instr, int i) {
+		if (instr.imm32 != 0) {
+			uint32_t divisor = instr.imm32;
+			if (divisor & (divisor - 1)) {
+				magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+				if (mi.pre_shift == 0 && !mi.increment) {
+					asmCode << "\tmov rax, " << mi.multiplier << std::endl;
+					asmCode << "\tmul " << regR[instr.dst] << std::endl;
+				}
+				else {
+					asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
 					if (mi.pre_shift > 0)
 						asmCode << "\tshr rax, " << mi.pre_shift << std::endl;
 					if (mi.increment) {
@@ -277,326 +276,249 @@ namespace RandomX {
 					}
 					asmCode << "\tmov rcx, " << mi.multiplier << std::endl;
 					asmCode << "\tmul rcx" << std::endl;
-					asmCode << "\tmov rax, rdx" << std::endl;
-					if (mi.post_shift > 0)
-						asmCode << "\tshr rax, " << mi.post_shift << std::endl;
 				}
-				else { //divisor is a power of two
-					int shift = 0;
-					while (divisor >>= 1)
-						++shift;
-					if(shift > 0)
-						asmCode << "\tshr rax, " << shift << std::endl;
-				}
+				if (mi.post_shift > 0)
+					asmCode << "\tshr rdx, " << mi.post_shift << std::endl;
+				asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
 			}
-#else
-			if (instr.imm32 == 0) {
-				asmCode << "\tmov ecx, 1" << std::endl;
-			}
-			else {
-				asmCode << "\tmov ecx, " << instr.imm32 << std::endl;
-			}
-#endif
-		}
-		else {
-			asmCode << "\tmov ecx, 1" << std::endl;
-			asmCode << "\tmov edx, " << regR32[instr.regb % RegistersCount] << std::endl;
-			asmCode << "\ttest edx, edx" << std::endl;
-			asmCode << "\tcmovne ecx, edx" << std::endl;
-#ifdef MAGIC_DIVISION
-			asmCode << "\txor edx, edx" << std::endl;
-			asmCode << "\tdiv rcx" << std::endl;
-#endif
-		}
-#ifndef MAGIC_DIVISION
-		asmCode << "\txor edx, edx" << std::endl;
-		asmCode << "\tdiv rcx" << std::endl;
-#endif
-		gencr(instr);
-	}
-
-	void AssemblyGeneratorX86::h_IDIV_64(Instruction& instr, int i) {
-		genar(instr, i);
-		if (instr.locb & 3) {
-#ifdef MAGIC_DIVISION
-			int64_t divisor = instr.imm32;
-			asmCode << "\t; magic divide by " << divisor << std::endl;
-			if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
-				// +/- power of two
-				bool negative = divisor < 0;
-				if (negative)
-					divisor = -divisor;
+			else { //divisor is a power of two
 				int shift = 0;
-				uint64_t unsignedDivisor = divisor;
-				while (unsignedDivisor >>= 1)
+				while (divisor >>= 1)
 					++shift;
-				if (shift > 0) {
-					asmCode << "\tmov rcx, rax" << std::endl;
-					asmCode << "\tsar rcx, 63" << std::endl;
-					uint32_t mask = (1ULL << shift) + 0xFFFFFFFF;
-					asmCode << "\tand ecx, 0" << std::hex << mask << std::dec << "h" << std::endl;
-					asmCode << "\tadd rax, rcx" << std::endl;
-					asmCode << "\tsar rax, " << shift << std::endl;
-				}
-				if (negative)
-					asmCode << "\tneg rax" << std::endl;
+				if(shift > 0)
+					asmCode << "\tshr " << regR[instr.dst] << ", " << shift << std::endl;
 			}
-			else if (divisor != 0) {
-				magics_info mi = compute_signed_magic_info(divisor);
-				if ((divisor >= 0) != (mi.multiplier >= 0))
-					asmCode << "\tmov rcx, rax" << std::endl;
-				asmCode << "\tmov rdx, " << mi.multiplier << std::endl;
-				asmCode << "\timul rdx" << std::endl;
-				asmCode << "\tmov rax, rdx" << std::endl;
-				asmCode << "\txor edx, edx" << std::endl;
-				bool haveSF = false;
-				if (divisor > 0 && mi.multiplier < 0) {
-					asmCode << "\tadd rax, rcx" << std::endl;
-					haveSF = true;
-				}
-				if (divisor < 0 && mi.multiplier > 0) {
-					asmCode << "\tsub rax, rcx" << std::endl;
-					haveSF = true;
-				}
-				if (mi.shift > 0) {
-					asmCode << "\tsar rax, " << mi.shift << std::endl;
-					haveSF = true;
-				}
-				if (!haveSF)
-					asmCode << "\ttest rax, rax" << std::endl;
-				asmCode << "\tsets dl" << std::endl;
-				asmCode << "\tadd rax, rdx" << std::endl;
+		}	
+	}
+
+	//~8.5 uOPs
+	void AssemblyGeneratorX86::h_ISDIV_C(Instruction& instr, int i) {
+		int64_t divisor = instr.imm32;
+		if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
+			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+			// +/- power of two
+			bool negative = divisor < 0;
+			if (negative)
+				divisor = -divisor;
+			int shift = 0;
+			uint64_t unsignedDivisor = divisor;
+			while (unsignedDivisor >>= 1)
+				++shift;
+			if (shift > 0) {
+				asmCode << "\tmov rcx, rax" << std::endl;
+				asmCode << "\tsar rcx, 63" << std::endl;
+				uint32_t mask = (1ULL << shift) + 0xFFFFFFFF;
+				asmCode << "\tand ecx, 0" << std::hex << mask << std::dec << "h" << std::endl;
+				asmCode << "\tadd rax, rcx" << std::endl;
+				asmCode << "\tsar rax, " << shift << std::endl;
 			}
-#else
-			asmCode << "\tmov edx, " << instr.imm32 << std::endl;
-#endif
+			if (negative)
+				asmCode << "\tneg rax" << std::endl;
+			asmCode << "\tadd " << regR[instr.dst] << ", rax" << std::endl;
 		}
-		else {
-			asmCode << "\tmov edx, " << regR32[instr.regb % RegistersCount] << std::endl;
-#ifndef MAGIC_DIVISION
+		else if (divisor != 0) {
+			magics_info mi = compute_signed_magic_info(divisor);
+			asmCode << "\tmov rax, " << mi.multiplier << std::endl;
+			asmCode << "\timul " << regR[instr.dst] << std::endl;
+			//asmCode << "\tmov rax, rdx" << std::endl;
+			asmCode << "\txor eax, eax" << std::endl;
+			bool haveSF = false;
+			if (divisor > 0 && mi.multiplier < 0) {
+				asmCode << "\tadd rdx, " << regR[instr.dst] << std::endl;
+				haveSF = true;
+			}
+			if (divisor < 0 && mi.multiplier > 0) {
+				asmCode << "\tsub rdx, " << regR[instr.dst] << std::endl;
+				haveSF = true;
+			}
+			if (mi.shift > 0) {
+				asmCode << "\tsar rdx, " << mi.shift << std::endl;
+				haveSF = true;
+			}
+			if (!haveSF)
+				asmCode << "\ttest rdx, rdx" << std::endl;
+			asmCode << "\tsets al" << std::endl;
+			asmCode << "\tadd rdx, rax" << std::endl;
+			asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
 		}
-#endif
-			asmCode << "\tcmp edx, -1" << std::endl;
-			asmCode << "\tjne short body_idiv_" << i << std::endl;
-			asmCode << "\tneg rax" << std::endl;
-			asmCode << "\tjmp short result_idiv_" << i << std::endl;
-			asmCode << "body_idiv_" << i << ":" << std::endl;
-			asmCode << "\tmov ecx, 1" << std::endl;
-			asmCode << "\ttest edx, edx" << std::endl;
-			asmCode << "\tcmovne ecx, edx" << std::endl;
-			asmCode << "\tmovsxd rcx, ecx" << std::endl;
-			asmCode << "\tcqo" << std::endl;
-			asmCode << "\tidiv rcx" << std::endl;
-			asmCode << "result_idiv_" << i << ":" << std::endl;
-#ifdef MAGIC_DIVISION
-	}
-#endif
-		gencr(instr);
 	}
 
-	void AssemblyGeneratorX86::h_AND_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tand rax, ";
-		genbia(instr);
-		gencr(instr);
+	//1 uOPs
+	void AssemblyGeneratorX86::h_FPSWAP_R(Instruction& instr, int i) {
+		asmCode << "\tshufpd " << regFE[instr.dst] << ", " << regFE[instr.dst] << ", 1" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_AND_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tand eax, ";
-		genbia32(instr);
-		gencr(instr);
+	//1 uOP
+	void AssemblyGeneratorX86::h_FPADD_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_OR_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tor rax, ";
-		genbia(instr);
-		gencr(instr);
+	//5 uOPs
+	void AssemblyGeneratorX86::h_FPADD_M(Instruction& instr, int i) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\taddpd " << regF[instr.dst] << ", xmm12" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_OR_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tor eax, ";
-		genbia32(instr);
-		gencr(instr);
+	//1 uOP
+	void AssemblyGeneratorX86::h_FPSUB_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_XOR_64(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\txor rax, ";
-		genbia(instr);
-		gencr(instr);
+	//5 uOPs
+	void AssemblyGeneratorX86::h_FPSUB_M(Instruction& instr, int i) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\tsubpd " << regF[instr.dst] << ", xmm12" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_XOR_32(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\txor eax, ";
-		genbia32(instr);
-		gencr(instr);
+	//1 uOP
+	void AssemblyGeneratorX86::h_FPNEG_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		asmCode << "\txorps " << regF[instr.dst] << ", " << signMask << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_SHL_64(Instruction& instr, int i) {
-		genar(instr, i);
-		genbiashift(instr, "shl");
-		gencr(instr);
+	//1 uOPs
+	void AssemblyGeneratorX86::h_FPMUL_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		asmCode << "\tmulpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_SHR_64(Instruction& instr, int i) {
-		genar(instr, i);
-		genbiashift(instr, "shr");
-		gencr(instr);
+	//6 uOPs
+	void AssemblyGeneratorX86::h_FPMUL_M(Instruction& instr, int i) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\tmulpd " << regE[instr.dst] << ", xmm12" << std::endl;
+		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_SAR_64(Instruction& instr, int i) {
-		genar(instr, i);
-		genbiashift(instr, "sar");
-		gencr(instr);
+	//2 uOPs
+	void AssemblyGeneratorX86::h_FPDIV_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		asmCode << "\tdivpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
+		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_ROL_64(Instruction& instr, int i) {
-		genar(instr, i);
-		genbiashift(instr, "rol");
-		gencr(instr);
+	//6 uOPs
+	void AssemblyGeneratorX86::h_FPDIV_M(Instruction& instr, int i) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\tdivpd " << regE[instr.dst] << ", xmm12" << std::endl;
+		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_ROR_64(Instruction& instr, int i) {
-		genar(instr, i);
-		genbiashift(instr, "ror");
-		gencr(instr);
-	}
+	//1 uOP
+	void AssemblyGeneratorX86::h_FPSQRT_R(Instruction& instr, int i) {
+		instr.dst %= 4;
+		asmCode << "\tsqrtpd " << regE[instr.dst] << ", " << regE[instr.dst] << std::endl;
+	}	
 
-	void AssemblyGeneratorX86::h_FPADD(Instruction& instr, int i) {
-		genaf(instr, i);
-		genbf(instr, "addpd");
-		gencf(instr);
-	}
-
-	void AssemblyGeneratorX86::h_FPSUB(Instruction& instr, int i) {
-		genaf(instr, i);
-		genbf(instr, "subpd");
-		gencf(instr);
-	}
-
-	void AssemblyGeneratorX86::h_FPMUL(Instruction& instr, int i) {
-		genaf(instr, i);
-		genbf(instr, "mulpd");
-		asmCode << "\tmovaps xmm1, xmm0" << std::endl;
-		asmCode << "\tcmpeqpd xmm1, xmm1" << std::endl;
-		asmCode << "\tandps xmm0, xmm1" << std::endl;
-		gencf(instr);
-	}
-
-	void AssemblyGeneratorX86::h_FPDIV(Instruction& instr, int i) {
-		genaf(instr, i);
-		genbf(instr, "divpd");
-		asmCode << "\tmovaps xmm1, xmm0" << std::endl;
-		asmCode << "\tcmpeqpd xmm1, xmm1" << std::endl;
-		asmCode << "\tandps xmm0, xmm1" << std::endl;
-		gencf(instr);
-	}
-
-	void AssemblyGeneratorX86::h_FPSQRT(Instruction& instr, int i) {
-		genaf(instr, i);
-		asmCode << "\tandps xmm0, xmm10" << std::endl;
-		asmCode << "\tsqrtpd " << regF[instr.regc % RegistersCount] << ", xmm0" << std::endl;
-		gencf(instr, false);
-	}
-
-	void AssemblyGeneratorX86::h_FPROUND(Instruction& instr, int i) {
-		genar(instr, i);
-		asmCode << "\tmov rcx, rax" << std::endl;
-		int rotate = (13 - (instr.imm8 & 63)) & 63;
+	//6 uOPs
+	void AssemblyGeneratorX86::h_CFROUND(Instruction& instr, int i) {
+		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+		int rotate = (13 - (instr.alt & 63)) & 63;
 		if (rotate != 0)
 			asmCode << "\trol rax, " << rotate << std::endl;
 		asmCode << "\tand eax, 24576" << std::endl;
 		asmCode << "\tor eax, 40896" << std::endl;
-		asmCode << "\tmov dword ptr [rsp - 8], eax" << std::endl;
-		asmCode << "\tldmxcsr dword ptr [rsp - 8]" << std::endl;
-		gencr(instr, false);
+		asmCode << "\tmov dword ptr [rsp-8], eax" << std::endl;
+		asmCode << "\tldmxcsr dword ptr [rsp-8]" << std::endl;
 	}
 
-	static inline const char* jumpCondition(Instruction& instr, bool invert = false) {
-		switch ((instr.locb & 7) ^ invert)
+	static inline const char* condition(Instruction& instr, bool invert = false) {
+		switch (((instr.alt >> 2) & 7) ^ invert)
 		{
 			case 0:
-				return "jbe";
+				return "be";
 			case 1:
-				return "ja";
+				return "a";
 			case 2:
-				return "js";
+				return "s";
 			case 3:
-				return "jns";
+				return "ns";
 			case 4:
-				return "jo";
+				return "o";
 			case 5:
-				return "jno";
+				return "no";
 			case 6:
-				return "jl";
+				return "l";
 			case 7:
-				return "jge";
+				return "ge";
 		}
 	}
 
-	void AssemblyGeneratorX86::h_JUMP(Instruction& instr, int i) {
-		genar(instr, i);
-		gencr(instr);
-		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-		asmCode << "\t" << jumpCondition(instr);
-		asmCode << " rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
+	//4 uOPs
+	void AssemblyGeneratorX86::h_COND_R(Instruction& instr, int i) {
+		asmCode << "\txor ecx, ecx" << std::endl;
+		asmCode << "\tcmp " << regR32[instr.src] << ", " << instr.imm32 << std::endl;
+		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
+		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
 	}
 
-	void AssemblyGeneratorX86::h_CALL(Instruction& instr, int i) {
-		genar(instr, i);
-		gencr(instr);
-		asmCode << "\tcmp " << regR32[instr.regb % RegistersCount] << ", " << instr.imm32 << std::endl;
-		asmCode << "\t" << jumpCondition(instr, true);
-		asmCode << " short rx_i_" << wrapInstr(i + 1) << std::endl;
-		asmCode << "\tcall rx_i_" << wrapInstr(i + (instr.imm8 & 127) + 2) << std::endl;
-	}
-
-	void AssemblyGeneratorX86::h_RET(Instruction& instr, int i) {
-		genar(instr, i);
-		gencr(instr);
-		asmCode << "\tcmp rsp, " << regStackBeginAddr << std::endl;
-		asmCode << "\tje short rx_i_" << wrapInstr(i + 1) << std::endl;
-		asmCode << "\tret" << std::endl;
+	//6 uOPs
+	void AssemblyGeneratorX86::h_COND_M(Instruction& instr, int i) {
+		asmCode << "\txor ecx, ecx" << std::endl;
+		genAddressReg(instr);
+		asmCode << "\tcmp dword ptr [rsi+rax], " << instr.imm32 << std::endl;
+		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
+		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
 	}
 
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&AssemblyGeneratorX86::h_##x, WT(x))
 
 	InstructionGenerator AssemblyGeneratorX86::engine[256] = {
-		INST_HANDLE(ADD_64)
-		INST_HANDLE(ADD_32)
-		INST_HANDLE(SUB_64)
-		INST_HANDLE(SUB_32)
-		INST_HANDLE(MUL_64)
-		INST_HANDLE(MULH_64)
-		INST_HANDLE(MUL_32)
-		INST_HANDLE(IMUL_32)
-		INST_HANDLE(IMULH_64)
-		INST_HANDLE(DIV_64)
-		INST_HANDLE(IDIV_64)
-		INST_HANDLE(AND_64)
-		INST_HANDLE(AND_32)
-		INST_HANDLE(OR_64)
-		INST_HANDLE(OR_32)
-		INST_HANDLE(XOR_64)
-		INST_HANDLE(XOR_32)
-		INST_HANDLE(SHL_64)
-		INST_HANDLE(SHR_64)
-		INST_HANDLE(SAR_64)
-		INST_HANDLE(ROL_64)
-		INST_HANDLE(ROR_64)
-		INST_HANDLE(FPADD)
-		INST_HANDLE(FPSUB)
-		INST_HANDLE(FPMUL)
-		INST_HANDLE(FPDIV)
-		INST_HANDLE(FPSQRT)
-		INST_HANDLE(FPROUND)
-		INST_HANDLE(JUMP)
-		INST_HANDLE(CALL)
-		INST_HANDLE(RET)
+		//Integer
+		INST_HANDLE(IADD_R)
+		INST_HANDLE(IADD_M)
+		INST_HANDLE(IADD_RC)
+		INST_HANDLE(ISUB_R)
+		INST_HANDLE(ISUB_M)
+		INST_HANDLE(IMUL_9C)
+		INST_HANDLE(IMUL_R)
+		INST_HANDLE(IMUL_M)
+		INST_HANDLE(IMULH_R)
+		INST_HANDLE(IMULH_M)
+		INST_HANDLE(ISMULH_R)
+		INST_HANDLE(ISMULH_M)
+		INST_HANDLE(IDIV_C)
+		INST_HANDLE(ISDIV_C)
+		INST_HANDLE(INEG_R)
+		INST_HANDLE(IXOR_R)
+		INST_HANDLE(IXOR_M)
+		INST_HANDLE(IROR_R)
+		INST_HANDLE(IROL_R)
+
+		//Common floating point
+		INST_HANDLE(FPSWAP_R)
+
+		//Floating point group F
+		INST_HANDLE(FPADD_R)
+		INST_HANDLE(FPADD_M)
+		INST_HANDLE(FPSUB_R)
+		INST_HANDLE(FPSUB_M)
+		INST_HANDLE(FPNEG_R)
+
+		//Floating point group E
+		INST_HANDLE(FPMUL_R)
+		INST_HANDLE(FPMUL_M)
+		INST_HANDLE(FPDIV_R)
+		INST_HANDLE(FPDIV_M)
+		INST_HANDLE(FPSQRT_R)
+
+		//Control
+		INST_HANDLE(COND_R)
+		INST_HANDLE(COND_M)
+		INST_HANDLE(CFROUND)
 	};
 }

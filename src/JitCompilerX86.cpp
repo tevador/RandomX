@@ -38,9 +38,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-#if !defined(_M_X64) && !defined(__x86_64__)
+#if true || !defined(_M_X64) && !defined(__x86_64__)
 	JitCompilerX86::JitCompilerX86() {
-		throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
+		//throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
 
 	void JitCompilerX86::generateProgram(Pcg32& gen) {

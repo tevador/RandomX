@@ -19,46 +19,58 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#define WT_ADD_64 12
-#define WT_ADD_32 2
-#define WT_SUB_64 12
-#define WT_SUB_32 2
-#define WT_MUL_64 23
-#define WT_MULH_64 5
-#define WT_MUL_32 15
-#define WT_IMUL_32 15
-#define WT_IMULH_64 3
-#define WT_DIV_64 8
-#define WT_IDIV_64 8
-#define WT_AND_64 4
-#define WT_AND_32 2
-#define WT_OR_64 4
-#define WT_OR_32 2
-#define WT_XOR_64 4
-#define WT_XOR_32 2
-#define WT_SHL_64 3
-#define WT_SHR_64 3
-#define WT_SAR_64 3
-#define WT_ROL_64 6
-#define WT_ROR_64 6
-#define WT_FPADD 20
-#define WT_FPSUB 20
-#define WT_FPMUL 22
-#define WT_FPDIV 8
-#define WT_FPSQRT 6
-#define WT_FPROUND 2
-#define WT_JUMP 11
-#define WT_CALL 11
-#define WT_RET 12
+//Integer
+#define WT_IADD_R 10
+#define WT_IADD_M 3
+#define WT_IADD_RC 12
+#define WT_ISUB_R 10
+#define WT_ISUB_M 3
+#define WT_IMUL_9C 12
+#define WT_IMUL_R 24
+#define WT_IMUL_M 8
+#define WT_IMULH_R 6
+#define WT_IMULH_M 2
+#define WT_ISMULH_R 6
+#define WT_ISMULH_M 2
+#define WT_IDIV_C 4
+#define WT_ISDIV_C 2
+#define WT_INEG_R 4
+#define WT_IXOR_R 15
+#define WT_IXOR_M 5
+#define WT_IROR_R 10
+#define WT_IROL_R 10
+
+//Common floating point
+#define WT_FPSWAP_R 6
+
+//Floating point group F
+#define WT_FPADD_R 18
+#define WT_FPADD_M 3
+#define WT_FPSUB_R 18
+#define WT_FPSUB_M 3
+#define WT_FPNEG_R 5
+
+//Floating point group E
+#define WT_FPMUL_R 18
+#define WT_FPMUL_M 3
+#define WT_FPDIV_R 6
+#define WT_FPDIV_M 1
+#define WT_FPSQRT_R 6
+
+//Control
+#define WT_COND_R 15
+#define WT_COND_M 5
+#define WT_CFROUND 1
+
 #define WT_NOP 0
 
-
-constexpr int wtSum = WT_ADD_64 + WT_ADD_32 + WT_SUB_64 + WT_SUB_32 + \
-WT_MUL_64 + WT_MULH_64 + WT_MUL_32 + WT_IMUL_32 + WT_IMULH_64 + \
-WT_DIV_64 + WT_IDIV_64 + WT_AND_64 + WT_AND_32 + WT_OR_64 + \
-WT_OR_32 + WT_XOR_64 + WT_XOR_32 + WT_SHL_64 + WT_SHR_64 + \
-WT_SAR_64 + WT_ROL_64 + WT_ROR_64 + WT_FPADD + WT_FPSUB + WT_FPMUL \
-+ WT_FPDIV + WT_FPSQRT + WT_FPROUND + WT_JUMP + WT_CALL + WT_RET + WT_NOP;
+constexpr int wtSum = WT_IADD_R + WT_IADD_M + WT_IADD_RC + WT_ISUB_R + \
+WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
+WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
+WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
+WT_FPSWAP_R + WT_FPADD_R + WT_FPADD_M + WT_FPSUB_R + WT_FPSUB_M + \
+WT_FPNEG_R + WT_FPMUL_R + WT_FPMUL_M + WT_FPDIV_R + WT_FPDIV_M + \
+WT_FPSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_NOP;
 
 static_assert(wtSum == 256,
 	"Sum of instruction weights must be 256");

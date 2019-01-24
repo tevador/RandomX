@@ -30,7 +30,6 @@ namespace RandomX {
 	void Program::print(std::ostream& os) const {
 		for (int i = 0; i < RandomX::ProgramLength; ++i) {
 			auto instr = programBuffer[i];
-			os << std::dec << instr.getName() << " (" << i << "):" << std::endl;
 			os << instr;
 		}
 	}

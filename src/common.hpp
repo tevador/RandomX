@@ -46,7 +46,7 @@ namespace RandomX {
 	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
 	constexpr int BlockExpansionRatio = DatasetSize / CacheSize;
 	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = 10;
+	constexpr int DatasetIterations = 3;
 
 
 #ifdef TRACE
@@ -72,13 +72,15 @@ namespace RandomX {
 		convertible_t hi;
 	};
 
-	constexpr int ProgramLength = 512;
-	constexpr uint32_t InstructionCount = 1024 * 1024;
+	constexpr int ProgramLength = 256;
+	constexpr uint32_t InstructionCount = 1024;
 	constexpr uint32_t ScratchpadSize = 1024 * 1024;
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 64 / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL2 = ScratchpadSize / 4 / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL3 = ScratchpadSize / sizeof(convertible_t);
+	constexpr int ScratchpadL1Mask = (ScratchpadL1 - 1) * 8;
+	constexpr int ScratchpadL2Mask = (ScratchpadL2 - 1) * 8;
 	constexpr uint32_t TransformationCount = 90;
 	constexpr int RegistersCount = 8;
 
@@ -118,17 +120,19 @@ namespace RandomX {
 
 	struct RegisterFile {
 		convertible_t r[RegistersCount];
-		fpu_reg_t f[RegistersCount];
+		fpu_reg_t f[RegistersCount / 2];
+		fpu_reg_t g[RegistersCount / 2];
+		fpu_reg_t a[RegistersCount / 2];
 	};
 
-	static_assert(sizeof(RegisterFile) == 3 * RegistersCount * sizeof(convertible_t), "Invalid alignment of struct RandomX::RegisterFile");
+	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct RandomX::RegisterFile");
 
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, RegisterFile&);
 
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*);
 
 	extern "C" {
-		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, DatasetReadFunc);
+		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, uint64_t);
 	}
 }
 

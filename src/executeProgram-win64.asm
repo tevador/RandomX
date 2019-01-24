@@ -21,16 +21,24 @@ _RANDOMX_EXECUTE_PROGRAM SEGMENT PAGE READ EXECUTE
 
 PUBLIC executeProgram
 
+ALIGN 16
+minDbl:
+db 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 16, 0
+absMask:
+db 255, 255, 255, 255, 255, 255, 255, 127, 255, 255, 255, 255, 255, 255, 255, 127
+signMask:
+db 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 128
+
 executeProgram PROC
 	; REGISTER ALLOCATION:
 	; rax -> temporary
 	; rbx -> "ic"
 	; rcx -> temporary
 	; rdx -> temporary
-	; rsi -> convertible_t& scratchpad
-	; rdi -> beginning of VM stack
+	; rsi -> scratchpad pointer
+	; rdi -> dataset pointer
 	; rbp -> "ma", "mx"
-	; rsp -> end of VM stack
+	; rsp -> stack pointer
 	; r8 	-> "r0"
 	; r9 	-> "r1"
 	; r10 -> "r2"
@@ -39,32 +47,22 @@ executeProgram PROC
 	; r13 -> "r5"
 	; r14 -> "r6"
 	; r15 -> "r7"
-	; xmm0 -> temporary
-	; xmm1 -> temporary
+	; xmm0 -> "f0"
+	; xmm1 -> "f1"
 	; xmm2 -> "f2"
 	; xmm3 -> "f3"
-	; xmm4 -> "f4"
-	; xmm5 -> "f5"
-	; xmm6 -> "f6"
-	; xmm7 -> "f7"
-	; xmm8 -> "f0"
-	; xmm9 -> "f1"
-	; xmm10 -> absolute value mask
-
-	; STACK STRUCTURE:
-	;   |
-	;   |
-	;   | saved registers
-	;   |
-	;   v
-	; [rbx+8] RegisterFile& registerFile
-	; [rbx+0] uint8_t* dataset
-	;   |
-	;   |
-	;   | VM stack
-	;   |
-	;   v
-	; [rsp] last element of VM stack
+	; xmm4 -> "e0"
+	; xmm5 -> "e1"
+	; xmm6 -> "e2"
+	; xmm7 -> "e3"
+	; xmm8 -> "a0"
+	; xmm9 -> "a1"
+	; xmm10 -> "a2"
+	; xmm11 -> "a3"
+	; xmm12 -> temporary
+	; xmm13 -> DBL_MIN
+	; xmm14 -> absolute value mask
+	; xmm15 -> sign mask
 
 	; store callee-saved registers
 	push rbx
@@ -81,99 +79,116 @@ executeProgram PROC
 	movdqu xmmword ptr [rsp+32], xmm8
 	movdqu xmmword ptr [rsp+16], xmm9
 	movdqu xmmword ptr [rsp+0], xmm10
+	sub rsp, 80
+	movdqu xmmword ptr [rsp+64], xmm11
+	movdqu xmmword ptr [rsp+48], xmm12
+	movdqu xmmword ptr [rsp+32], xmm13
+	movdqu xmmword ptr [rsp+16], xmm14
+	movdqu xmmword ptr [rsp+0], xmm15
 
 	; function arguments
 	push rcx                    ; RegisterFile& registerFile
 	mov rbp, qword ptr [rdx]    ; "mx", "ma"
-	mov rax, qword ptr [rdx+8]  ; uint8_t* dataset
-	push rax
+	mov eax, ebp                ; "mx"
+	mov rdi, qword ptr [rdx+8]  ; uint8_t* dataset
 	mov rsi, r8                 ; convertible_t* scratchpad
+	mov rbx, r9                 ; loop counter
+	
+	;# zero integer registers
+	xor r8, r8
+	xor r9, r9
+	xor r10, r10
+	xor r11, r11
+	xor r12, r12
+	xor r13, r13
+	xor r14, r14
+	xor r15, r15
+	
+	;# load constant registers
+	lea rcx, [rcx+120]
+	movapd xmm8, xmmword ptr [rcx+72]
+	movapd xmm9, xmmword ptr [rcx+88]
+	movapd xmm10, xmmword ptr [rcx+104]
+	movapd xmm11, xmmword ptr [rcx+120]
+	movapd xmm13, xmmword ptr [minDbl]
+	movapd xmm14, xmmword ptr [absMask]
+	movapd xmm15, xmmword ptr [signMask]
 
-	mov rdi, rsp                ; beginning of VM stack
-	mov ebx, 1048577            ; number of VM instructions to execute + 1
-
-	xorps xmm10, xmm10
-	cmpeqpd xmm10, xmm10
-	psrlq xmm10, 1		          ; mask for absolute value = 0x7fffffffffffffff7fffffffffffffff
-
-	; reset rounding mode
-	mov dword ptr [rsp-8], 40896
-	ldmxcsr dword ptr [rsp-8]
-
-	; load integer registers
-	mov r8, qword ptr [rcx+0]
-	mov r9, qword ptr [rcx+8]
-	mov r10, qword ptr [rcx+16]
-	mov r11, qword ptr [rcx+24]
-	mov r12, qword ptr [rcx+32]
-	mov r13, qword ptr [rcx+40]
-	mov r14, qword ptr [rcx+48]
-	mov r15, qword ptr [rcx+56]
-
-	; load register f0 hi, lo
-	xorps xmm8, xmm8
-	cvtsi2sd xmm8, qword ptr [rcx+72]
-	pslldq xmm8, 8
-	cvtsi2sd xmm8, qword ptr [rcx+64]
-
-	; load register f1 hi, lo
-	xorps xmm9, xmm9
-	cvtsi2sd xmm9, qword ptr [rcx+88]
-	pslldq xmm9, 8
-	cvtsi2sd xmm9, qword ptr [rcx+80]
-
-	; load register f2 hi, lo
-	xorps xmm2, xmm2
-	cvtsi2sd xmm2, qword ptr [rcx+104]
-	pslldq xmm2, 8
-	cvtsi2sd xmm2, qword ptr [rcx+96]
-
-	; load register f3 hi, lo
-	xorps xmm3, xmm3
-	cvtsi2sd xmm3, qword ptr [rcx+120]
-	pslldq xmm3, 8
-	cvtsi2sd xmm3, qword ptr [rcx+112]
-
-	lea rcx, [rcx+64]
-
-	; load register f4 hi, lo
-	xorps xmm4, xmm4
-	cvtsi2sd xmm4, qword ptr [rcx+72]
-	pslldq xmm4, 8
-	cvtsi2sd xmm4, qword ptr [rcx+64]
-
-	; load register f5 hi, lo
-	xorps xmm5, xmm5
-	cvtsi2sd xmm5, qword ptr [rcx+88]
-	pslldq xmm5, 8
-	cvtsi2sd xmm5, qword ptr [rcx+80]
-
-	; load register f6 hi, lo
-	xorps xmm6, xmm6
-	cvtsi2sd xmm6, qword ptr [rcx+104]
-	pslldq xmm6, 8
-	cvtsi2sd xmm6, qword ptr [rcx+96]
-
-	; load register f7 hi, lo
-	xorps xmm7, xmm7
-	cvtsi2sd xmm7, qword ptr [rcx+120]
-	pslldq xmm7, 8
-	cvtsi2sd xmm7, qword ptr [rcx+112]
-
-	jmp program_begin
-
-	; program body
-ALIGN 64
 program_begin:
+	xor eax, r8d                      ;# read address register 1
+	and eax, 262080
+	lea rcx, [rsi+rax]
+	xor r8,  qword ptr [rcx+0]
+	xor r9,  qword ptr [rcx+8]
+	xor r10, qword ptr [rcx+16]
+	xor r11, qword ptr [rcx+24]
+	xor r12, qword ptr [rcx+32]
+	xor r13, qword ptr [rcx+40]
+	xor r14, qword ptr [rcx+48]
+	xor r15, qword ptr [rcx+56]
+	xor eax, r9d                      ;# read address register 2
+	and eax, 262080
+	lea rcx, [rsi+rax]
+	cvtdq2pd xmm0, qword ptr [rcx+0]
+	cvtdq2pd xmm1, qword ptr [rcx+8]
+	cvtdq2pd xmm2, qword ptr [rcx+16]
+	cvtdq2pd xmm3, qword ptr [rcx+24]
+	cvtdq2pd xmm4, qword ptr [rcx+32]
+	cvtdq2pd xmm5, qword ptr [rcx+40]
+	cvtdq2pd xmm6, qword ptr [rcx+48]
+	cvtdq2pd xmm7, qword ptr [rcx+56]
+	andps xmm4, xmm14
+	andps xmm5, xmm14
+	andps xmm6, xmm14
+	andps xmm7, xmm14
+
+	;# 256 instructions
 	include program.inc
-
-ALIGN 64
+	
+	mov eax, r8d                       ;# read address register 1
+	xor eax, r9d                       ;# read address register 2
+	xor rbp, rax                       ;# modify "mx"
+	and rbp, -64                       ;# align "mx" to the start of a cache line
+	mov edx, ebp                       ;# edx = mx
+	prefetchnta byte ptr [rdi+rdx]
+	ror rbp, 32                        ;# swap "ma" and "mx"
+	mov edx, ebp                       ;# edx = ma
+	lea rcx, [rdi+rdx]                 ;# dataset cache line
+	xor r8,  qword ptr [rcx+0]
+	xor r9,  qword ptr [rcx+8]
+	xor r10, qword ptr [rcx+16]
+	xor r11, qword ptr [rcx+24]
+	xor r12, qword ptr [rcx+32]
+	xor r13, qword ptr [rcx+40]
+	xor r14, qword ptr [rcx+48]
+	xor r15, qword ptr [rcx+56]                 
+	mov eax, r12d                      ;# write address register 1
+	and eax, 262080
+	lea rcx, [rsi+rax]
+	mov qword ptr [rcx+0], r8
+	mov qword ptr [rcx+8], r9
+	mov qword ptr [rcx+16], r10
+	mov qword ptr [rcx+24], r11
+	mov qword ptr [rcx+32], r12
+	mov qword ptr [rcx+40], r13
+	mov qword ptr [rcx+48], r14
+	mov qword ptr [rcx+56], r15
+	xor eax, r13d                      ;# write address register 2
+	and eax, 262080
+	lea rcx, [rsi+rax]
+	mulpd xmm0, xmm4
+	mulpd xmm1, xmm5
+	mulpd xmm2, xmm6
+	mulpd xmm3, xmm7
+	movapd xmmword ptr [rcx+0], xmm0
+	movapd xmmword ptr [rcx+16], xmm1
+	movapd xmmword ptr [rcx+32], xmm2
+	movapd xmmword ptr [rcx+48], xmm3
+	dec ebx
+	jnz program_begin
+	
 rx_finish:
-	; unroll the stack
-	mov rsp, rdi
-
 	; save VM register values
-	pop rcx
 	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
@@ -183,8 +198,8 @@ rx_finish:
 	mov qword ptr [rcx+40], r13
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
-	movdqa xmmword ptr [rcx+64], xmm8
-	movdqa xmmword ptr [rcx+80], xmm9
+	movdqa xmmword ptr [rcx+64], xmm0
+	movdqa xmmword ptr [rcx+80], xmm1
 	movdqa xmmword ptr [rcx+96], xmm2
 	movdqa xmmword ptr [rcx+112], xmm3
 	lea rcx, [rcx+64]
@@ -194,6 +209,12 @@ rx_finish:
 	movdqa xmmword ptr [rcx+112], xmm7
 
 	; load callee-saved registers
+	movdqu xmm15, xmmword ptr [rsp]
+	movdqu xmm14, xmmword ptr [rsp+16]
+	movdqu xmm13, xmmword ptr [rsp+32]
+	movdqu xmm12, xmmword ptr [rsp+48]
+	movdqu xmm11, xmmword ptr [rsp+64]
+	add rsp, 80
 	movdqu xmm10, xmmword ptr [rsp]
 	movdqu xmm9, xmmword ptr [rsp+16]
 	movdqu xmm8, xmmword ptr [rsp+32]

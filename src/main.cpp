@@ -34,6 +34,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <atomic>
 #include "dataset.hpp"
 #include "Cache.hpp"
+#include "Pcg32.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -130,6 +131,27 @@ void generateAsm(int nonce) {
 	asmX86.printCode(std::cout);
 }
 
+void generateNative(int nonce) {
+	uint64_t hash[4];
+	unsigned char blockTemplate[] = {
+		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
+		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
+		0xea, 0x00, 0x00, 0x00, 0x00, 0x77, 0xb2, 0x06, 0xa0, 0x2c, 0xa5, 0xb1, 0xd4, 0xce, 0x6b, 0xbf, 0xdf, 0x0a, 0xca,
+		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
+	};
+	int* noncePtr = (int*)(blockTemplate + 39);
+	*noncePtr = nonce;
+	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
+	RandomX::Program prog;
+	Pcg32 gen(hash);
+	prog.initialize(gen);
+	for (int i = 0; i < RandomX::ProgramLength; ++i) {
+		prog(i).dst %= 8;
+		prog(i).src %= 8;
+	}
+	std::cout << prog << std::endl;
+}
+
 void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread, uint8_t* scratchpad) {
 	uint64_t hash[4];
 	unsigned char blockTemplate[] = {
@@ -147,18 +169,16 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 15) << 8);
 		vm->initializeScratchpad(scratchpad, spIndex);
-		vm->initializeProgram(hash);
+		//vm->initializeProgram(hash);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
-		vm->setScratchpad(scratchpad + 3 * RandomX::ScratchpadSize / 4);
-		vm->execute();
-		vm->setScratchpad(scratchpad + 2 * RandomX::ScratchpadSize / 4);
-		vm->execute();
-		vm->getResult(nullptr, 0, hash);
-		vm->initializeProgram(hash);
-		vm->setScratchpad(scratchpad + 1 * RandomX::ScratchpadSize / 4);
-		vm->execute();
-		vm->setScratchpad(scratchpad + 0 * RandomX::ScratchpadSize / 4);
-		vm->execute();
+		for (int chain = 0; chain < 16; ++chain) {
+			vm->initializeProgram(hash);
+			int segment = hash[3] & 3;
+			vm->setScratchpad(scratchpad);// +segment * RandomX::ScratchpadSize / 4);
+			vm->execute();
+			vm->getResult(nullptr, 0, hash);
+		}
+		//vm->initializeProgram(hash);
 		vm->getResult(scratchpad, RandomX::ScratchpadSize, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {
@@ -171,7 +191,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled, help, largePages, async, aesBench;
+	bool softAes, lightClient, genAsm, compiled, help, largePages, async, aesBench, genNative;
 	int programCount, threadCount;
 	readOption("--help", argc, argv, help);
 
@@ -189,9 +209,15 @@ int main(int argc, char** argv) {
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--async", argc, argv, async);
 	readOption("--aesBench", argc, argv, aesBench);
+	readOption("--genNative", argc, argv, genNative);
 
 	if (genAsm) {
 		generateAsm(programCount);
+		return 0;
+	}
+
+	if (genNative) {
+		generateNative(programCount);
 		return 0;
 	}
 
