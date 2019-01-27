@@ -27,13 +27,11 @@
 #define DECL(x) x
 #endif
 .global DECL(randomx_program_prologue)
-.global DECL(randomx_loop_begin)
-.global DECL(randomx_program_load_int)
-.global DECL(randomx_program_load_flt)
+.global DECL(randomx_program_loop_begin)
+.global DECL(randomx_program_loop_load)
 .global DECL(randomx_program_start)
 .global DECL(randomx_program_read_dataset)
-.global DECL(randomx_program_store_int)
-.global DECL(randomx_program_store_flt)
+.global DECL(randomx_program_loop_store)
 .global DECL(randomx_program_loop_end)
 .global DECL(randomx_program_epilogue)
 .global DECL(randomx_program_end)
@@ -48,14 +46,11 @@ DECL(randomx_program_prologue):
 	#include "asm/program_xmm_constants.inc"
 
 .align 64
-DECL(randomx_loop_begin):
+DECL(randomx_program_loop_begin):
 	nop
 
-DECL(randomx_program_load_int):
-	#include "asm/program_load_int.inc"
-
-DECL(randomx_program_load_flt):
-	#include "asm/program_load_flt.inc"
+DECL(randomx_program_loop_load):
+	#include "asm/program_loop_load.inc"
 
 DECL(randomx_program_start):
 	nop
@@ -63,11 +58,8 @@ DECL(randomx_program_start):
 DECL(randomx_program_read_dataset):
 	#include "asm/program_read_dataset.inc"
 
-DECL(randomx_program_store_int):
-	#include "asm/program_store_int.inc"
-
-DECL(randomx_program_store_flt):
-	#include "asm/program_store_flt.inc"
+DECL(randomx_program_loop_store):
+	#include "asm/program_loop_store.inc"
 
 DECL(randomx_program_loop_end):
 	nop

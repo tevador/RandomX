@@ -11,10 +11,9 @@
 	push rdi                    ;# RegisterFile& registerFile
 	mov rcx, rdi
 	mov rbp, qword ptr [rsi]    ;# "mx", "ma"
-	mov eax, ebp                ;# "mx"
 	mov rdi, qword ptr [rsi+8]  ;# uint8_t* dataset
 	mov rsi, rdx                ;# convertible_t* scratchpad
 
 	#include "program_prologue_load.inc"
 
-	jmp DECL(randomx_loop_begin)
+	jmp DECL(randomx_program_loop_begin)

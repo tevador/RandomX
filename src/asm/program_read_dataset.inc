@@ -1,4 +1,5 @@
 	xor rbp, rax                       ;# modify "mx"
+	xor eax, eax
 	and rbp, -64                       ;# align "mx" to the start of a cache line
 	mov edx, ebp                       ;# edx = mx
 	prefetchnta byte ptr [rdi+rdx]

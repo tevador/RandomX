@@ -23,11 +23,10 @@
 	; function arguments
 	push rcx                    ; RegisterFile& registerFile
 	mov rbp, qword ptr [rdx]    ; "mx", "ma"
-	mov eax, ebp                ; "mx"
 	mov rdi, qword ptr [rdx+8]  ; uint8_t* dataset
 	mov rsi, r8                 ; convertible_t* scratchpad
 	mov rbx, r9                 ; loop counter
 
 	include program_prologue_load.inc
 
-	jmp randomx_loop_begin
+	jmp randomx_program_loop_begin

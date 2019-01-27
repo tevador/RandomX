@@ -94,13 +94,11 @@ namespace RandomX {
 #include "JitCompilerX86-static.hpp"
 
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
-	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_loop_begin;
-	const uint8_t* codeLoadInt = (uint8_t*)&randomx_program_load_int;
-	const uint8_t* codeLoadFlt = (uint8_t*)&randomx_program_load_flt;
+	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_program_loop_begin;
+	const uint8_t* codeLoopLoad = (uint8_t*)&randomx_program_loop_load;
 	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
 	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
-	const uint8_t* codeStoreInt = (uint8_t*)&randomx_program_store_int;
-	const uint8_t* codeStoreFlt = (uint8_t*)&randomx_program_store_flt;
+	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
 	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
@@ -108,11 +106,9 @@ namespace RandomX {
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
 	const int32_t epilogueSize = codeProgramEnd - codeEpilogue;
 
-	const int32_t loadIntSize = codeLoadFlt - codeLoadInt;
-	const int32_t loadFltSize = codeProgamStart - codeLoadFlt;
-	const int32_t readDatasetSize = codeStoreInt - codeReadDataset;
-	const int32_t storeIntSize = codeStoreFlt - codeStoreInt;
-	const int32_t storeFltSize = codeLoopEnd - codeStoreFlt;
+	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
+	const int32_t readDatasetSize = codeLoopStore - codeReadDataset;
+	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
 
 	const int32_t epilogueOffset = CodeSize - epilogueSize;
 
@@ -179,6 +175,7 @@ namespace RandomX {
 	static const uint8_t SUB_EBX[] = { 0x83, 0xEB, 0x01 };
 	static const uint8_t JNZ[] = { 0x0f, 0x85 };
 	static const uint8_t JMP = 0xe9;
+	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize;
@@ -204,18 +201,16 @@ namespace RandomX {
 		addressRegisters >>= 1;
 		int readReg2 = 2 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		int writeReg1 = 4 + (addressRegisters & 1);
+		int readReg3 = 4 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		int writeReg2 = 6 + (addressRegisters & 1);
+		int readReg4 = 6 + (addressRegisters & 1);
 		codePos = prologueSize;
-		emit(REX_XOR_EAX);
+		emit(REX_XOR_RAX_R64);
 		emitByte(0xc0 + readReg1);
-		memcpy(code + codePos, codeLoadInt, loadIntSize);
-		codePos += loadIntSize;
-		emit(REX_XOR_EAX);
+		emit(REX_XOR_RAX_R64);
 		emitByte(0xc0 + readReg2);
-		memcpy(code + codePos, codeLoadFlt, loadFltSize);
-		codePos += loadFltSize;
+		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
+		codePos += loopLoadSize;
 		Instruction instr;
 		for (unsigned i = 0; i < ProgramLength; ++i) {
 			for (unsigned j = 0; j < sizeof(instr) / sizeof(Pcg32::result_type); ++j) {
@@ -226,19 +221,13 @@ namespace RandomX {
 			generateCode(instr);
 		}
 		emit(REX_MOV_RR);
-		emitByte(0xc0 + readReg1);
+		emitByte(0xc0 + readReg3);
 		emit(REX_XOR_EAX);
-		emitByte(0xc0 + readReg2);
+		emitByte(0xc0 + readReg4);
 		memcpy(code + codePos, codeReadDataset, readDatasetSize);
 		codePos += readDatasetSize;
-		emit(REX_MOV_RR);
-		emitByte(0xc0 + writeReg1);
-		memcpy(code + codePos, codeStoreInt, storeIntSize);
-		codePos += storeIntSize;
-		emit(REX_XOR_EAX);
-		emitByte(0xc0 + writeReg2);
-		memcpy(code + codePos, codeStoreFlt, storeFltSize);
-		codePos += storeFltSize;
+		memcpy(code + codePos, codeLoopStore, loopStoreSize);
+		codePos += loopStoreSize;
 		emit(SUB_EBX);
 		emit(JNZ);
 		emit32(prologueSize - codePos - 4);

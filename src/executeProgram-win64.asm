@@ -118,8 +118,11 @@ signMask:
 
 ALIGN 64
 program_begin:
-	xor eax, r8d                      ;# read address register 1
+	xor rax, r8                      ;# read address register 1
+	xor rax, r9
+	mov rdx, rax
 	and eax, 1048512
+	push rax
 	lea rcx, [rsi+rax]
 	xor r8,  qword ptr [rcx+0]
 	xor r9,  qword ptr [rcx+8]
@@ -129,9 +132,10 @@ program_begin:
 	xor r13, qword ptr [rcx+40]
 	xor r14, qword ptr [rcx+48]
 	xor r15, qword ptr [rcx+56]
-	xor eax, r9d                      ;# read address register 2
-	and eax, 1048512
-	lea rcx, [rsi+rax]
+	ror rdx, 32
+	and edx, 1048512
+	push rdx
+	lea rcx, [rsi+rdx]
 	cvtdq2pd xmm0, qword ptr [rcx+0]
 	cvtdq2pd xmm1, qword ptr [rcx+8]
 	cvtdq2pd xmm2, qword ptr [rcx+16]
@@ -164,9 +168,8 @@ program_begin:
 	xor r12, qword ptr [rcx+32]
 	xor r13, qword ptr [rcx+40]
 	xor r14, qword ptr [rcx+48]
-	xor r15, qword ptr [rcx+56]                 
-	mov eax, r12d                      ;# write address register 1
-	and eax, 1048512
+	xor r15, qword ptr [rcx+56]
+	pop rax
 	lea rcx, [rsi+rax]
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
@@ -176,8 +179,7 @@ program_begin:
 	mov qword ptr [rcx+40], r13
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
-	xor eax, r13d                      ;# write address register 2
-	and eax, 1048512
+	pop rax
 	lea rcx, [rsi+rax]
 	mulpd xmm0, xmm4
 	mulpd xmm1, xmm5
@@ -187,6 +189,7 @@ program_begin:
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2
 	movapd xmmword ptr [rcx+48], xmm3
+	xor eax, eax
 	dec ebx
 	jnz program_begin
 	

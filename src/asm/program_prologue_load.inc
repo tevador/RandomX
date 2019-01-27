@@ -1,3 +1,5 @@
+	mov rax, rbp
+
 	;# zero integer registers
 	xor r8, r8
 	xor r9, r9
