@@ -1,4 +1,4 @@
-	and eax, 262080
+	and eax, 1048512
 	lea rcx, [rsi+rax]
 	mulpd xmm0, xmm4
 	mulpd xmm1, xmm5

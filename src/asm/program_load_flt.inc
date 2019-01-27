@@ -1,4 +1,4 @@
-	and eax, 262080
+	and eax, 1048512
 	lea rcx, [rsi+rax]
 	cvtdq2pd xmm0, qword ptr [rcx+0]
 	cvtdq2pd xmm1, qword ptr [rcx+8]

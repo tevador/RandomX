@@ -79,5 +79,6 @@ namespace RandomX {
 		void  h_CFROUND(Instruction&, int);
 		void  h_ISTORE(Instruction&, int);
 		void  h_FSTORE(Instruction&, int);
+		void  h_NOP(Instruction&, int);
 	};
 }

@@ -20,51 +20,51 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 //Integer
-#define WT_IADD_R 10
+#define WT_IADD_R 12
 #define WT_IADD_M 3
-#define WT_IADD_RC 10
-#define WT_ISUB_R 10
+#define WT_IADD_RC 12
+#define WT_ISUB_R 12
 #define WT_ISUB_M 3
 #define WT_IMUL_9C 10
-#define WT_IMUL_R 20
-#define WT_IMUL_M 6
-#define WT_IMULH_R 6
-#define WT_IMULH_M 2
-#define WT_ISMULH_R 6
-#define WT_ISMULH_M 2
+#define WT_IMUL_R 16
+#define WT_IMUL_M 4
+#define WT_IMULH_R 4
+#define WT_IMULH_M 1
+#define WT_ISMULH_R 4
+#define WT_ISMULH_M 1
 #define WT_IDIV_C 4
 #define WT_ISDIV_C 4
 #define WT_INEG_R 2
 #define WT_IXOR_R 12
-#define WT_IXOR_M 4
-#define WT_IROR_R 10
-#define WT_IROL_R 10
+#define WT_IXOR_M 3
+#define WT_IROR_R 12
+#define WT_IROL_R 12
 
 //Common floating point
-#define WT_FPSWAP_R 6
+#define WT_FPSWAP_R 8
 
 //Floating point group F
-#define WT_FPADD_R 18
-#define WT_FPADD_M 3
-#define WT_FPSUB_R 18
-#define WT_FPSUB_M 3
-#define WT_FPNEG_R 5
+#define WT_FPADD_R 20
+#define WT_FPADD_M 5
+#define WT_FPSUB_R 20
+#define WT_FPSUB_M 5
+#define WT_FPNEG_R 6
 
 //Floating point group E
-#define WT_FPMUL_R 18
-#define WT_FPMUL_M 3
-#define WT_FPDIV_R 6
+#define WT_FPMUL_R 16
+#define WT_FPMUL_M 4
+#define WT_FPDIV_R 7
 #define WT_FPDIV_M 1
 #define WT_FPSQRT_R 6
 
 //Control
-#define WT_COND_R 12
-#define WT_COND_M 4
+#define WT_COND_R 7
+#define WT_COND_M 1
 #define WT_CFROUND 1
 
 //Store
-#define WT_ISTORE 12
-#define WT_FSTORE 6
+#define WT_ISTORE 18
+#define WT_FSTORE 0
 
 #define WT_NOP 0
 
@@ -115,6 +115,7 @@ static_assert(wtSum == 256,
 #define REP33(x) REP32(x) x,
 #define REP40(x) REP32(x) REP8(x)
 #define REP128(x) REP32(x) REP32(x) REP32(x) REP32(x)
+#define REP232(x) REP128(x) REP40(x) REP40(x) REP24(x)
 #define REP256(x) REP128(x) REP128(x)
 #define REPNX(x,N) REP##N(x)
 #define REPN(x,N) REPNX(x,N)

@@ -72,7 +72,7 @@ namespace RandomX {
 		convertible_t hi;
 	};
 
-	constexpr int ProgramLength = 256;
+	constexpr int ProgramLength = 128;
 	constexpr uint32_t InstructionCount = 1024;
 	constexpr uint32_t ScratchpadSize = 1024 * 1024;
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(convertible_t);

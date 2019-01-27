@@ -1,4 +1,4 @@
-	and eax, 262080
+	and eax, 1048512
 	lea rcx, [rsi+rax]
 	xor r8,  qword ptr [rcx+0]
 	xor r9,  qword ptr [rcx+8]

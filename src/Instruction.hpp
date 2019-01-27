@@ -86,6 +86,7 @@ namespace RandomX {
 		void  h_CFROUND(std::ostream&) const;
 		void  h_ISTORE(std::ostream&) const;
 		void  h_FSTORE(std::ostream&) const;
+		void  h_NOP(std::ostream&) const;
 	};
 
 	static_assert(sizeof(Instruction) == 8, "Invalid alignment of struct Instruction");

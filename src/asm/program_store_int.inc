@@ -1,4 +1,4 @@
-	and eax, 262080
+	and eax, 1048512
 	lea rcx, [rsi+rax]
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9

@@ -169,12 +169,10 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 15) << 8);
 		vm->initializeScratchpad(scratchpad, spIndex);
-		//vm->initializeProgram(hash);
+		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
 		for (int chain = 0; chain < 16; ++chain) {
 			vm->initializeProgram(hash);
-			int segment = hash[3] & 3;
-			vm->setScratchpad(scratchpad + segment * RandomX::ScratchpadSize / 4);
 			vm->execute();
 			vm->getResult(nullptr, 0, hash);
 		}

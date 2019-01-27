@@ -181,7 +181,7 @@ namespace RandomX {
 	static const uint8_t JMP = 0xe9;
 
 	size_t JitCompilerX86::getCodeSize() {
-		return codePos - prologueSize + readDatasetSize;
+		return codePos - prologueSize;
 	}
 
 	JitCompilerX86::JitCompilerX86() {
@@ -761,6 +761,10 @@ namespace RandomX {
 		emitByte(0x06);
 	}
 
+	void JitCompilerX86::h_NOP(Instruction& instr) {
+		emitByte(0x90);
+	}
+
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
@@ -800,6 +804,7 @@ namespace RandomX {
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(FSTORE)
+		INST_HANDLE(NOP)
 	};
 
 

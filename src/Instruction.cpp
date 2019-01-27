@@ -327,6 +327,10 @@ namespace RandomX {
 		os << ", " << reg << srcIndex << std::endl;
 	}
 
+	void  Instruction::h_NOP(std::ostream& os) const {
+		os << std::endl;
+	}
+
 #include "instructionWeights.hpp"
 #define INST_NAME(x) REPN(#x, WT(x))
 #define INST_HANDLE(x) REPN(&Instruction::h_##x, WT(x))
@@ -377,6 +381,8 @@ namespace RandomX {
 
 		INST_NAME(ISTORE)
 		INST_NAME(FSTORE)
+
+		INST_NAME(NOP)
 	};
 
 	InstructionVisualizer Instruction::engine[256] = {
@@ -425,6 +431,8 @@ namespace RandomX {
 
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(FSTORE)
+
+		INST_HANDLE(NOP)
 	};
 
 }

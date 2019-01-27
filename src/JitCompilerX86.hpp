@@ -125,6 +125,7 @@ namespace RandomX {
 		void  h_CFROUND(Instruction&);
 		void  h_ISTORE(Instruction&);
 		void  h_FSTORE(Instruction&);
+		void  h_NOP(Instruction&);
 	};
 
 }

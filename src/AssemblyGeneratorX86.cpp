@@ -491,6 +491,10 @@ namespace RandomX {
 		asmCode << "\tmovapd xmmword ptr [rsi+rax], " << regFE[instr.src] << std::endl;
 	}
 
+	void AssemblyGeneratorX86::h_NOP(Instruction& instr, int i) {
+		asmCode << "\tnop" << std::endl;
+	}
+
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&AssemblyGeneratorX86::h_##x, WT(x))
 
@@ -540,5 +544,7 @@ namespace RandomX {
 
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(FSTORE)
+
+		INST_HANDLE(NOP)
 	};
 }
