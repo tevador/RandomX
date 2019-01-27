@@ -75,6 +75,11 @@ namespace RandomX {
 		asmCode << "\tand " << reg << ", " << ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask) << std::endl;
 	}
 
+	void AssemblyGeneratorX86::genAddressRegDst(Instruction& instr, int maskAlign = 8) {
+		asmCode << "\tmov eax" << ", " << regR32[instr.dst] << std::endl;
+		asmCode << "\tand eax" << ", " << ((instr.alt % 4) ? (ScratchpadL1Mask & (-maskAlign)) : (ScratchpadL2Mask & (-maskAlign))) << std::endl;
+	}
+
 	int32_t AssemblyGeneratorX86::genAddressImm(Instruction& instr) {
 		return instr.imm32 & ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
@@ -425,7 +430,7 @@ namespace RandomX {
 
 	//6 uOPs
 	void AssemblyGeneratorX86::h_CFROUND(Instruction& instr, int i) {
-		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
+		asmCode << "\tmov rax, " << regR[instr.src] << std::endl;
 		int rotate = (13 - (instr.alt & 63)) & 63;
 		if (rotate != 0)
 			asmCode << "\trol rax, " << rotate << std::endl;
@@ -474,6 +479,18 @@ namespace RandomX {
 		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
 	}
 
+	//3 uOPs
+	void AssemblyGeneratorX86::h_ISTORE(Instruction& instr, int i) {
+		genAddressRegDst(instr);
+		asmCode << "\tmov qword ptr [rsi+rax], " << regR[instr.src] << std::endl;
+	}
+
+	//3 uOPs
+	void AssemblyGeneratorX86::h_FSTORE(Instruction& instr, int i) {
+		genAddressRegDst(instr, 16);
+		asmCode << "\tmovapd xmmword ptr [rsi+rax], " << regFE[instr.src] << std::endl;
+	}
+
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&AssemblyGeneratorX86::h_##x, WT(x))
 
@@ -520,5 +537,8 @@ namespace RandomX {
 		INST_HANDLE(COND_R)
 		INST_HANDLE(COND_M)
 		INST_HANDLE(CFROUND)
+
+		INST_HANDLE(ISTORE)
+		INST_HANDLE(FSTORE)
 	};
 }

@@ -7,13 +7,14 @@
 	push r15
 
 	;# function arguments
+	mov rbx, rcx                ;# loop counter
 	push rdi                    ;# RegisterFile& registerFile
-	mov rbp, qword ptr [rsi]    ;# "mx", "ma"
-	mov rax, qword ptr [rsi+8]  ;# uint8_t* dataset
-	push rax
-	mov rsi, rdx                ;# convertible_t* scratchpad
 	mov rcx, rdi
+	mov rbp, qword ptr [rsi]    ;# "mx", "ma"
+	mov eax, ebp                ;# "mx"
+	mov rdi, qword ptr [rsi+8]  ;# uint8_t* dataset
+	mov rsi, rdx                ;# convertible_t* scratchpad
 
 	#include "program_prologue_load.inc"
 
-	jmp randomx_program_begin
+	jmp DECL(randomx_loop_begin)

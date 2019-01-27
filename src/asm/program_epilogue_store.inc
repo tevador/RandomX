@@ -1,8 +1,4 @@
-	;# unroll VM stack
-	mov rsp, rdi
-
 	;# save VM register values
-	pop rcx
 	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
@@ -12,12 +8,12 @@
 	mov qword ptr [rcx+40], r13
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
-	movapd xmmword ptr [rcx+64], xmm8
-	movapd xmmword ptr [rcx+80], xmm9
-	movapd xmmword ptr [rcx+96], xmm2
-	movapd xmmword ptr [rcx+112], xmm3
+	movdqa xmmword ptr [rcx+64], xmm0
+	movdqa xmmword ptr [rcx+80], xmm1
+	movdqa xmmword ptr [rcx+96], xmm2
+	movdqa xmmword ptr [rcx+112], xmm3
 	lea rcx, [rcx+64]
-	movapd xmmword ptr [rcx+64], xmm4
-	movapd xmmword ptr [rcx+80], xmm5
-	movapd xmmword ptr [rcx+96], xmm6
-	movapd xmmword ptr [rcx+112], xmm7
+	movdqa xmmword ptr [rcx+64], xmm4
+	movdqa xmmword ptr [rcx+80], xmm5
+	movdqa xmmword ptr [rcx+96], xmm6
+	movdqa xmmword ptr [rcx+112], xmm7

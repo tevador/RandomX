@@ -22,21 +22,21 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Integer
 #define WT_IADD_R 10
 #define WT_IADD_M 3
-#define WT_IADD_RC 12
+#define WT_IADD_RC 10
 #define WT_ISUB_R 10
 #define WT_ISUB_M 3
-#define WT_IMUL_9C 12
-#define WT_IMUL_R 24
-#define WT_IMUL_M 8
+#define WT_IMUL_9C 10
+#define WT_IMUL_R 20
+#define WT_IMUL_M 6
 #define WT_IMULH_R 6
 #define WT_IMULH_M 2
 #define WT_ISMULH_R 6
 #define WT_ISMULH_M 2
 #define WT_IDIV_C 4
-#define WT_ISDIV_C 2
-#define WT_INEG_R 4
-#define WT_IXOR_R 15
-#define WT_IXOR_M 5
+#define WT_ISDIV_C 4
+#define WT_INEG_R 2
+#define WT_IXOR_R 12
+#define WT_IXOR_M 4
 #define WT_IROR_R 10
 #define WT_IROL_R 10
 
@@ -58,9 +58,13 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_FPSQRT_R 6
 
 //Control
-#define WT_COND_R 15
-#define WT_COND_M 5
+#define WT_COND_R 12
+#define WT_COND_M 4
 #define WT_CFROUND 1
+
+//Store
+#define WT_ISTORE 12
+#define WT_FSTORE 6
 
 #define WT_NOP 0
 
@@ -70,7 +74,7 @@ WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
 WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
 WT_FPSWAP_R + WT_FPADD_R + WT_FPADD_M + WT_FPSUB_R + WT_FPSUB_M + \
 WT_FPNEG_R + WT_FPMUL_R + WT_FPMUL_M + WT_FPDIV_R + WT_FPDIV_M + \
-WT_FPSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_NOP;
+WT_FPSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
 
 static_assert(wtSum == 256,
 	"Sum of instruction weights must be 256");
@@ -116,3 +120,40 @@ static_assert(wtSum == 256,
 #define REPN(x,N) REPNX(x,N)
 #define NUM(x) x
 #define WT(x) NUM(WT_##x)
+
+#define REPCASE0(x)
+#define REPCASE1(x) case __COUNTER__:
+#define REPCASE2(x) REPCASE1(x) case __COUNTER__:
+#define REPCASE3(x) REPCASE2(x) case __COUNTER__:
+#define REPCASE4(x) REPCASE3(x) case __COUNTER__:
+#define REPCASE5(x) REPCASE4(x) case __COUNTER__:
+#define REPCASE6(x) REPCASE5(x) case __COUNTER__:
+#define REPCASE7(x) REPCASE6(x) case __COUNTER__:
+#define REPCASE8(x) REPCASE7(x) case __COUNTER__:
+#define REPCASE9(x) REPCASE8(x) case __COUNTER__:
+#define REPCASE10(x) REPCASE9(x) case __COUNTER__:
+#define REPCASE11(x) REPCASE10(x) case __COUNTER__:
+#define REPCASE12(x) REPCASE11(x) case __COUNTER__:
+#define REPCASE13(x) REPCASE12(x) case __COUNTER__:
+#define REPCASE14(x) REPCASE13(x) case __COUNTER__:
+#define REPCASE15(x) REPCASE14(x) case __COUNTER__:
+#define REPCASE16(x) REPCASE15(x) case __COUNTER__:
+#define REPCASE17(x) REPCASE16(x) case __COUNTER__:
+#define REPCASE18(x) REPCASE17(x) case __COUNTER__:
+#define REPCASE19(x) REPCASE18(x) case __COUNTER__:
+#define REPCASE20(x) REPCASE19(x) case __COUNTER__:
+#define REPCASE21(x) REPCASE20(x) case __COUNTER__:
+#define REPCASE22(x) REPCASE21(x) case __COUNTER__:
+#define REPCASE23(x) REPCASE22(x) case __COUNTER__:
+#define REPCASE24(x) REPCASE23(x) case __COUNTER__:
+#define REPCASE25(x) REPCASE24(x) case __COUNTER__:
+#define REPCASE26(x) REPCASE25(x) case __COUNTER__:
+#define REPCASE27(x) REPCASE26(x) case __COUNTER__:
+#define REPCASE28(x) REPCASE27(x) case __COUNTER__:
+#define REPCASE29(x) REPCASE28(x) case __COUNTER__:
+#define REPCASE30(x) REPCASE29(x) case __COUNTER__:
+#define REPCASE31(x) REPCASE30(x) case __COUNTER__:
+#define REPCASE32(x) REPCASE31(x) case __COUNTER__:
+#define REPCASENX(x,N) REPCASE##N(x)
+#define REPCASEN(x,N) REPCASENX(x,N)
+#define CASE_REP(x) REPCASEN(x, WT(x))

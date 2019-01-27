@@ -38,16 +38,8 @@ namespace RandomX {
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
 
-		void gena(Instruction&, int);
-		void genar(Instruction&, int);
-		void genaf(Instruction&, int);
-		void genbiashift(Instruction&, const char*);
-		void genbia(Instruction&);
-		void genbia32(Instruction&);
-		void genbf(Instruction&, const char*);
-		void gencr(Instruction&, bool);
-		void gencf(Instruction&, bool);
 		void genAddressReg(Instruction&, const char*);
+		void genAddressRegDst(Instruction&, int);
 		int32_t genAddressImm(Instruction&);
 
 		void generateCode(Instruction&, int);
@@ -85,5 +77,7 @@ namespace RandomX {
 		void  h_COND_R(Instruction&, int);
 		void  h_COND_M(Instruction&, int);
 		void  h_CFROUND(Instruction&, int);
+		void  h_ISTORE(Instruction&, int);
+		void  h_FSTORE(Instruction&, int);
 	};
 }

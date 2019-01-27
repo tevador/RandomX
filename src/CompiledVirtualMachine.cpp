@@ -71,14 +71,14 @@ namespace RandomX {
 			reg.a[i].hi.u64 = getSmallPositiveFloatBits(reg.f[i].hi.u64);
 		}
 		compiler.generateProgram(gen);
-		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;
+		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & -64;
 		mem.mx = *(((uint32_t*)seed) + 5);
 	}
 
 	void CompiledVirtualMachine::execute() {
-		executeProgram(reg, mem, scratchpad, InstructionCount);
+		//executeProgram(reg, mem, scratchpad, InstructionCount);
 		totalSize += compiler.getCodeSize();
-		//compiler.getProgramFunc()(reg, mem, scratchpad);
+		compiler.getProgramFunc()(reg, mem, scratchpad, InstructionCount);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
 			std::cout << std::hex << tracepad[i].u64 << std::endl;

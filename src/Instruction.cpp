@@ -32,6 +32,10 @@ namespace RandomX {
 		os << ((alt % 4) ? "L1" : "L2") << "[r" << (int)src << "]";
 	}
 
+	void Instruction::genAddressRegDst(std::ostream& os) const {
+		os << ((alt % 4) ? "L1" : "L2") << "[r" << (int)dst << "]";
+	}
+
 	void Instruction::genAddressImm(std::ostream& os) const {
 		os << ((alt % 4) ? "L1" : "L2") << "[" << (imm32 & ((alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask)) << "]";
 	}
@@ -276,7 +280,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_CFROUND(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << (alt & 63) << std::endl;
+		os << "r" << (int)src << ", " << (alt & 63) << std::endl;
 	}
 
 	static inline const char* condition(int index) {
@@ -309,6 +313,18 @@ namespace RandomX {
 		os << "r" << (int)dst << ", " << condition((alt >> 2) & 7) << "(";
 		genAddressReg(os);
 		os << ", " << imm32 << ")" << std::endl;
+	}
+
+	void  Instruction::h_ISTORE(std::ostream& os) const {
+		genAddressRegDst(os);
+		os << ", r" << (int)src << std::endl;
+	}
+
+	void  Instruction::h_FSTORE(std::ostream& os) const {
+		const char reg = (src >= 4) ? 'e' : 'f';
+		genAddressRegDst(os);
+		auto srcIndex = src % 4;
+		os << ", " << reg << srcIndex << std::endl;
 	}
 
 #include "instructionWeights.hpp"
@@ -358,6 +374,9 @@ namespace RandomX {
 		INST_NAME(COND_R)
 		INST_NAME(COND_M)
 		INST_NAME(CFROUND)
+
+		INST_NAME(ISTORE)
+		INST_NAME(FSTORE)
 	};
 
 	InstructionVisualizer Instruction::engine[256] = {
@@ -403,6 +422,9 @@ namespace RandomX {
 		INST_HANDLE(COND_R)
 		INST_HANDLE(COND_M)
 		INST_HANDLE(CFROUND)
+
+		INST_HANDLE(ISTORE)
+		INST_HANDLE(FSTORE)
 	};
 
 }

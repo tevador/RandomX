@@ -21,14 +21,6 @@ _RANDOMX_EXECUTE_PROGRAM SEGMENT PAGE READ EXECUTE
 
 PUBLIC executeProgram
 
-ALIGN 16
-minDbl:
-db 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 16, 0
-absMask:
-db 255, 255, 255, 255, 255, 255, 255, 127, 255, 255, 255, 255, 255, 255, 255, 127
-signMask:
-db 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 128
-
 executeProgram PROC
 	; REGISTER ALLOCATION:
 	; rax -> temporary
@@ -114,6 +106,17 @@ executeProgram PROC
 	movapd xmm14, xmmword ptr [absMask]
 	movapd xmm15, xmmword ptr [signMask]
 
+	jmp program_begin
+
+ALIGN 64
+minDbl:
+	db 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 16, 0
+absMask:
+	db 255, 255, 255, 255, 255, 255, 255, 127, 255, 255, 255, 255, 255, 255, 255, 127
+signMask:
+	db 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 128
+
+ALIGN 64
 program_begin:
 	xor eax, r8d                      ;# read address register 1
 	and eax, 262080
@@ -144,7 +147,7 @@ program_begin:
 
 	;# 256 instructions
 	include program.inc
-	
+
 	mov eax, r8d                       ;# read address register 1
 	xor eax, r9d                       ;# read address register 2
 	xor rbp, rax                       ;# modify "mx"

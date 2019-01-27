@@ -81,6 +81,8 @@ namespace RandomX {
 	constexpr uint32_t ScratchpadL3 = ScratchpadSize / sizeof(convertible_t);
 	constexpr int ScratchpadL1Mask = (ScratchpadL1 - 1) * 8;
 	constexpr int ScratchpadL2Mask = (ScratchpadL2 - 1) * 8;
+	constexpr int ScratchpadL1Mask16 = (ScratchpadL1 / 2 - 1) * 16;
+	constexpr int ScratchpadL2Mask16 = (ScratchpadL2 / 2 - 1) * 16;
 	constexpr uint32_t TransformationCount = 90;
 	constexpr int RegistersCount = 8;
 
@@ -129,7 +131,7 @@ namespace RandomX {
 
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, RegisterFile&);
 
-	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*);
+	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*, uint64_t);
 
 	extern "C" {
 		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, uint64_t);

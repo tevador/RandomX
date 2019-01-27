@@ -30,15 +30,9 @@ namespace RandomX {
 
 	class JitCompilerX86;
 
-	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
+	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&);
 
 	constexpr uint32_t CodeSize = 64 * 1024;
-
-	struct CallOffset {
-		CallOffset(int32_t p, int32_t i) : pos(p), index(i) {}
-		int32_t pos;
-		int32_t index;
-	};
 
 	class JitCompilerX86 {
 	public:
@@ -55,66 +49,82 @@ namespace RandomX {
 		static InstructionGeneratorX86 engine[256];
 		uint8_t* code;
 		int32_t codePos;
-		std::vector<int32_t> instructionOffsets;
-		std::vector<CallOffset> callOffsets;
 
-		void gena(Instruction&);
-		void genar(Instruction&);
-		void genaf(Instruction&);
-		void genbiashift(Instruction&, uint16_t, uint16_t);
-		void genbia(Instruction&, uint16_t, uint16_t);
-		void genbia32(Instruction&, uint16_t, uint8_t);
-		void genbf(Instruction&, uint8_t);
-		void scratchpadStoreR(Instruction&, uint32_t, bool);
-		void scratchpadStoreF(Instruction&, int, uint32_t, bool);
-		void gencr(Instruction&, bool);
-		void gencf(Instruction&);
-		void generateCode(Instruction&, int);
-		void fixCallOffsets();
+		void genAddressReg(Instruction&, bool);
+		void genAddressRegDst(Instruction&, bool);
+		void genAddressImm(Instruction&);
+		void genSIB(int scale, int index, int base);
+
+		void generateCode(Instruction&);
 
 		void emitByte(uint8_t val) {
 			code[codePos] = val;
 			codePos++;
 		}
 
-		template<typename T>
-		void emit(T val) {
-			*reinterpret_cast<T*>(code + codePos) = val;
-			codePos += sizeof(T);
+		void emit32(uint32_t val) {
+			code[codePos + 0] = val;
+			code[codePos + 1] = val >> 8;
+			code[codePos + 2] = val >> 16;
+			code[codePos + 3] = val >> 24;
+			codePos += 4;
 		}
 
-		void h_ADD_64(Instruction&, int);
-		void h_ADD_32(Instruction&, int);
-		void h_SUB_64(Instruction&, int);
-		void h_SUB_32(Instruction&, int);
-		void h_MUL_64(Instruction&, int);
-		void h_MULH_64(Instruction&, int);
-		void h_MUL_32(Instruction&, int);
-		void h_IMUL_32(Instruction&, int);
-		void h_IMULH_64(Instruction&, int);
-		void h_DIV_64(Instruction&, int);
-		void h_IDIV_64(Instruction&, int);
-		void h_AND_64(Instruction&, int);
-		void h_AND_32(Instruction&, int);
-		void h_OR_64(Instruction&, int);
-		void h_OR_32(Instruction&, int);
-		void h_XOR_64(Instruction&, int);
-		void h_XOR_32(Instruction&, int);
-		void h_SHL_64(Instruction&, int);
-		void h_SHR_64(Instruction&, int);
-		void h_SAR_64(Instruction&, int);
-		void h_ROL_64(Instruction&, int);
-		void h_ROR_64(Instruction&, int);
-		void h_FPADD(Instruction&, int);
-		void h_FPSUB(Instruction&, int);
-		void h_FPMUL(Instruction&, int);
-		void h_FPDIV(Instruction&, int);
-		void h_FPSQRT(Instruction&, int);
-		void h_FPROUND(Instruction&, int);
-		void h_JUMP(Instruction&, int);
-		void h_CALL(Instruction&, int);
-		void h_RET(Instruction&, int);
-		void h_NOP(Instruction&, int);
+		void emit64(uint64_t val) {
+			code[codePos + 0] = val;
+			code[codePos + 1] = val >> 8;
+			code[codePos + 2] = val >> 16;
+			code[codePos + 3] = val >> 24;
+			code[codePos + 4] = val >> 32;
+			code[codePos + 5] = val >> 40;
+			code[codePos + 6] = val >> 48;
+			code[codePos + 7] = val >> 56;
+			codePos += 8;
+		}
+
+		template<size_t N>
+		void emit(const uint8_t (&src)[N]) {
+			for (int i = 0; i < N; ++i) {
+				code[codePos + i] = src[i];
+			}
+			codePos += N;
+		}
+
+		void  h_IADD_R(Instruction&);
+		void  h_IADD_M(Instruction&);
+		void  h_IADD_RC(Instruction&);
+		void  h_ISUB_R(Instruction&);
+		void  h_ISUB_M(Instruction&);
+		void  h_IMUL_9C(Instruction&);
+		void  h_IMUL_R(Instruction&);
+		void  h_IMUL_M(Instruction&);
+		void  h_IMULH_R(Instruction&);
+		void  h_IMULH_M(Instruction&);
+		void  h_ISMULH_R(Instruction&);
+		void  h_ISMULH_M(Instruction&);
+		void  h_IDIV_C(Instruction&);
+		void  h_ISDIV_C(Instruction&);
+		void  h_INEG_R(Instruction&);
+		void  h_IXOR_R(Instruction&);
+		void  h_IXOR_M(Instruction&);
+		void  h_IROR_R(Instruction&);
+		void  h_IROL_R(Instruction&);
+		void  h_FPSWAP_R(Instruction&);
+		void  h_FPADD_R(Instruction&);
+		void  h_FPADD_M(Instruction&);
+		void  h_FPSUB_R(Instruction&);
+		void  h_FPSUB_M(Instruction&);
+		void  h_FPNEG_R(Instruction&);
+		void  h_FPMUL_R(Instruction&);
+		void  h_FPMUL_M(Instruction&);
+		void  h_FPDIV_R(Instruction&);
+		void  h_FPDIV_M(Instruction&);
+		void  h_FPSQRT_R(Instruction&);
+		void  h_COND_R(Instruction&);
+		void  h_COND_M(Instruction&);
+		void  h_CFROUND(Instruction&);
+		void  h_ISTORE(Instruction&);
+		void  h_FSTORE(Instruction&);
 	};
 
 }

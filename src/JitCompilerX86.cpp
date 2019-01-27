@@ -38,7 +38,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-#if true || !defined(_M_X64) && !defined(__x86_64__)
+#if !defined(_M_X64) && !defined(__x86_64__)
 	JitCompilerX86::JitCompilerX86() {
 		//throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
@@ -53,69 +53,132 @@ namespace RandomX {
 #else
 
 	/*
-	 REGISTER ALLOCATION:
 
-	 rax -> temporary
-	 rbx -> "ic"
-	 rcx -> temporary
-	 rdx -> temporary
-	 rsi -> convertible_t* scratchpad
-	 rdi -> beginning of VM stack
-	 rbp -> "ma", "mx"
-	 rsp -> end of VM stack
-	 r8  -> "r0"
-	 r9  -> "r1"
-	 r10 -> "r2"
-	 r11 -> "r3"
-	 r12 -> "r4"
-	 r13 -> "r5"
-	 r14 -> "r6"
-	 r15 -> "r7"
-	 xmm0 -> temporary
-	 xmm1 -> temporary
-	 xmm2 -> "f2"
-	 xmm3 -> "f3"
-	 xmm4 -> "f4"
-	 xmm5 -> "f5"
-	 xmm6 -> "f6"
-	 xmm7 -> "f7"
-	 xmm8 -> "f0"
-	 xmm9 -> "f1"
-	 xmm10 -> absolute value mask 0x7fffffffffffffff7fffffffffffffff
+	REGISTER ALLOCATION:
 
-	 STACK STRUCTURE:
-
-	   |
-	   |
-	   | saved registers
-	   |
-	   v
-	 [rdi+8] RegisterFile& registerFile
-	 [rdi]   uint8_t* dataset
-	   |
-	   |
-	   | VM stack
-	   |
-	   v
-	 [rsp] last element of VM stack
+	; rax -> temporary
+	; rbx -> loop counter "lc"
+	; rcx -> temporary
+	; rdx -> temporary
+	; rsi -> scratchpad pointer
+	; rdi -> dataset pointer
+	; rbp -> memory registers "ma" (high 32 bits), "mx" (low 32 bits)
+	; rsp -> stack pointer
+	; r8  -> "r0"
+	; r9  -> "r1"
+	; r10 -> "r2"
+	; r11 -> "r3"
+	; r12 -> "r4"
+	; r13 -> "r5"
+	; r14 -> "r6"
+	; r15 -> "r7"
+	; xmm0 -> "f0"
+	; xmm1 -> "f1"
+	; xmm2 -> "f2"
+	; xmm3 -> "f3"
+	; xmm4 -> "e0"
+	; xmm5 -> "e1"
+	; xmm6 -> "e2"
+	; xmm7 -> "e3"
+	; xmm8 -> "a0"
+	; xmm9 -> "a1"
+	; xmm10 -> "a2"
+	; xmm11 -> "a3"
+	; xmm12 -> temporary
+	; xmm13 -> DBL_MIN
+	; xmm14 -> absolute value mask 0x7fffffffffffffff7fffffffffffffff
+	; xmm15 -> sign mask           0x80000000000000008000000000000000
 
 	*/
 
 #include "JitCompilerX86-static.hpp"
 
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
-	const uint8_t* codeProgramBegin = (uint8_t*)&randomx_program_begin;
+	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_loop_begin;
+	const uint8_t* codeLoadInt = (uint8_t*)&randomx_program_load_int;
+	const uint8_t* codeLoadFlt = (uint8_t*)&randomx_program_load_flt;
+	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
+	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
+	const uint8_t* codeStoreInt = (uint8_t*)&randomx_program_store_int;
+	const uint8_t* codeStoreFlt = (uint8_t*)&randomx_program_store_flt;
+	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
-	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
-	const uint32_t* addressTransformations = (uint32_t*)&randomx_program_transform;
 
-	const int32_t prologueSize = codeProgramBegin - codePrologue;
-	const int32_t epilogueSize = codeReadDataset - codeEpilogue;
-	const int32_t readDatasetSize = codeProgramEnd - codeReadDataset;
+	const int32_t prologueSize = codeLoopBegin - codePrologue;
+	const int32_t epilogueSize = codeProgramEnd - codeEpilogue;
 
-	const int32_t readDatasetOffset = CodeSize - readDatasetSize;
-	const int32_t epilogueOffset = readDatasetOffset - epilogueSize;
+	const int32_t loadIntSize = codeLoadFlt - codeLoadInt;
+	const int32_t loadFltSize = codeProgamStart - codeLoadFlt;
+	const int32_t readDatasetSize = codeStoreInt - codeReadDataset;
+	const int32_t storeIntSize = codeStoreFlt - codeStoreInt;
+	const int32_t storeFltSize = codeLoopEnd - codeStoreFlt;
+
+	const int32_t epilogueOffset = CodeSize - epilogueSize;
+
+	static const uint8_t REX_ADD_RR[] = { 0x4d, 0x03 };
+	static const uint8_t REX_ADD_RM[] = { 0x4c, 0x03 };
+	static const uint8_t REX_SUB_RR[] = { 0x4d, 0x2b };
+	static const uint8_t REX_SUB_RM[] = { 0x4c, 0x2b };
+	static const uint8_t REX_MOV_RR[] = { 0x41, 0x8b };
+	static const uint8_t REX_MOV_RR64[] = { 0x49, 0x8b };
+	static const uint8_t REX_MOV_R64R[] = { 0x4c, 0x8b };
+	static const uint8_t REX_IMUL_RR[] = { 0x4d, 0x0f, 0xaf };
+	static const uint8_t REX_IMUL_RRI[] = { 0x4d, 0x69 };
+	static const uint8_t REX_IMUL_RM[] = { 0x4c, 0x0f, 0xaf };
+	static const uint8_t REX_MUL_R[] = { 0x49, 0xf7 };
+	static const uint8_t REX_MUL_M[] = { 0x48, 0xf7 };
+	static const uint8_t REX_81[] = { 0x49, 0x81 };
+	static const uint8_t AND_EAX_I = 0x25;
+	static const uint8_t MOV_EAX_I = 0xb8;
+	static const uint8_t MOV_RAX_I[] = { 0x48, 0xb8 };
+	static const uint8_t MOV_RCX_I[] = { 0x48, 0xb9 };
+	static const uint8_t REX_LEA[] = { 0x4f, 0x8d };
+	static const uint8_t REX_MUL_MEM[] = { 0x48, 0xf7, 0x24, 0x0e };
+	static const uint8_t REX_IMUL_MEM[] = { 0x48, 0xf7, 0x2c, 0x0e };
+	static const uint8_t REX_SHR_RAX[] = { 0x48, 0xc1, 0xe8 };
+	static const uint8_t RAX_ADD_SBB_1[] = { 0x48, 0x83, 0xC0, 0x01, 0x48, 0x83, 0xD8, 0x00 };
+	static const uint8_t MUL_RCX[] = { 0x48, 0xf7, 0xe1 };
+	static const uint8_t REX_SHR_RDX[] = { 0x48, 0xc1, 0xea };
+	static const uint8_t REX_SH[] = { 0x49, 0xc1 };
+	static const uint8_t MOV_RCX_RAX_SAR_RCX_63[] = { 0x48, 0x89, 0xc1, 0x48, 0xc1, 0xf9, 0x3f };
+	static const uint8_t AND_ECX_I[] = { 0x81, 0xe1 };
+	static const uint8_t ADD_RAX_RCX[] = { 0x48, 0x01, 0xC8 };
+	static const uint8_t SAR_RAX_I8[] = { 0x48, 0xC1, 0xF8 };
+	static const uint8_t NEG_RAX[] = { 0x48, 0xF7, 0xD8 };
+	static const uint8_t ADD_R_RAX[] = { 0x49, 0x01 };
+	static const uint8_t XOR_EAX_EAX[] = { 0x31, 0xC0 };
+	static const uint8_t ADD_RDX_R[] = { 0x4c, 0x01 };
+	static const uint8_t SUB_RDX_R[] = { 0x4c, 0x29 };
+	static const uint8_t SAR_RDX_I8[] = { 0x48, 0xC1, 0xFA };
+	static const uint8_t TEST_RDX_RDX[] = { 0x48, 0x85, 0xD2 };
+	static const uint8_t SETS_AL_ADD_RDX_RAX[] = { 0x0F, 0x98, 0xC0, 0x48, 0x01, 0xC2 };
+	static const uint8_t REX_NEG[] = { 0x49, 0xF7 };
+	static const uint8_t REX_XOR_RR[] = { 0x4D, 0x33 };
+	static const uint8_t REX_XOR_RI[] = { 0x49, 0x81 };
+	static const uint8_t REX_XOR_RM[] = { 0x4c, 0x33 };
+	static const uint8_t REX_ROT_CL[] = { 0x49, 0xd3 };
+	static const uint8_t REX_ROT_I8[] = { 0x49, 0xc1 };
+	static const uint8_t SHUFPD[] = { 0x66, 0x0f, 0xc6 };
+	static const uint8_t REX_ADDPD[] = { 0x66, 0x41, 0x0f, 0x58 };
+	static const uint8_t REX_CVTDQ2PD_XMM12[] = { 0xf3, 0x44, 0x0f, 0xe6, 0x24, 0x06 };
+	static const uint8_t REX_SUBPD[] = { 0x66, 0x41, 0x0f, 0x5c };
+	static const uint8_t REX_XORPS[] = { 0x41, 0x0f, 0x57 };
+	static const uint8_t REX_MULPD[] = { 0x66, 0x41, 0x0f, 0x59 };
+	static const uint8_t REX_MAXPD[] = { 0x66, 0x41, 0x0f, 0x5f };
+	static const uint8_t REX_DIVPD[] = { 0x66, 0x41, 0x0f, 0x5e };
+	static const uint8_t SQRTPD[] = { 0x66, 0x0f, 0x51 };
+	static const uint8_t AND_OR_MOV_LDMXCSR[] = { 0x25, 0x00, 0x60, 0x00, 0x00, 0x0D, 0xC0, 0x9F, 0x00, 0x00, 0x89, 0x44, 0x24, 0xF8, 0x0F, 0xAE, 0x54, 0x24, 0xF8 };
+	static const uint8_t ROL_RAX[] = { 0x48, 0xc1, 0xc0 };
+	static const uint8_t XOR_ECX_ECX[] = { 0x33, 0xC9 };
+	static const uint8_t REX_CMP_R32I[] = { 0x41, 0x81 };
+	static const uint8_t REX_CMP_M32I[] = { 0x81, 0x3c, 0x06 };
+	static const uint8_t MOVAPD[] = { 0x66, 0x0f, 0x29 };
+	static const uint8_t REX_MOV_MR[] = { 0x4c, 0x89 };
+	static const uint8_t REX_XOR_EAX[] = { 0x41, 0x33 };
+	static const uint8_t SUB_EBX[] = { 0x83, 0xEB, 0x01 };
+	static const uint8_t JNZ[] = { 0x0f, 0x85 };
+	static const uint8_t JMP = 0xe9;
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize + readDatasetSize;
@@ -132,687 +195,613 @@ namespace RandomX {
 			throw std::runtime_error("mmap failed");
 #endif
 		memcpy(code, codePrologue, prologueSize);
-		memcpy(code + CodeSize - epilogueSize - readDatasetSize, codeEpilogue, epilogueSize);
-		memcpy(code + CodeSize - readDatasetSize, codeReadDataset, readDatasetSize);
+		memcpy(code + CodeSize - epilogueSize, codeEpilogue, epilogueSize);
 	}
 
 	void JitCompilerX86::generateProgram(Pcg32& gen) {
-		instructionOffsets.clear();
-		callOffsets.clear();
+		auto addressRegisters = gen();
+		int readReg1 = addressRegisters & 1;
+		addressRegisters >>= 1;
+		int readReg2 = 2 + (addressRegisters & 1);
+		addressRegisters >>= 1;
+		int writeReg1 = 4 + (addressRegisters & 1);
+		addressRegisters >>= 1;
+		int writeReg2 = 6 + (addressRegisters & 1);
 		codePos = prologueSize;
+		emit(REX_XOR_EAX);
+		emitByte(0xc0 + readReg1);
+		memcpy(code + codePos, codeLoadInt, loadIntSize);
+		codePos += loadIntSize;
+		emit(REX_XOR_EAX);
+		emitByte(0xc0 + readReg2);
+		memcpy(code + codePos, codeLoadFlt, loadFltSize);
+		codePos += loadFltSize;
 		Instruction instr;
 		for (unsigned i = 0; i < ProgramLength; ++i) {
 			for (unsigned j = 0; j < sizeof(instr) / sizeof(Pcg32::result_type); ++j) {
 				*(((uint32_t*)&instr) + j) = gen();
 			}
-			generateCode(instr, i);
+			instr.src %= RegistersCount;
+			instr.dst %= RegistersCount;
+			generateCode(instr);
 		}
-		emitByte(0xe9);
-		emit(instructionOffsets[0] - (codePos + 4));
-		fixCallOffsets();
-		uint32_t transform = addressTransformations[gen.getUniform(0, TransformationCount - 1)];
-		*reinterpret_cast<uint32_t*>(code + readDatasetOffset) = transform;
+		emit(REX_MOV_RR);
+		emitByte(0xc0 + readReg1);
+		emit(REX_XOR_EAX);
+		emitByte(0xc0 + readReg2);
+		memcpy(code + codePos, codeReadDataset, readDatasetSize);
+		codePos += readDatasetSize;
+		emit(REX_MOV_RR);
+		emitByte(0xc0 + writeReg1);
+		memcpy(code + codePos, codeStoreInt, storeIntSize);
+		codePos += storeIntSize;
+		emit(REX_XOR_EAX);
+		emitByte(0xc0 + writeReg2);
+		memcpy(code + codePos, codeStoreFlt, storeFltSize);
+		codePos += storeFltSize;
+		emit(SUB_EBX);
+		emit(JNZ);
+		emit32(prologueSize - codePos - 4);
+		emitByte(JMP);
+		emit32(epilogueOffset - codePos - 4);
+		emitByte(0x90);
 	}
 
-	void JitCompilerX86::generateCode(Instruction& instr, int i) {
-		instructionOffsets.push_back(codePos);
-		emit(0x840fcbff); //dec ebx; jz <epilogue>
-		emit(epilogueOffset - (codePos + 4)); //jump offset (RIP-relative)
+	void JitCompilerX86::generateCode(Instruction& instr) {
 		auto generator = engine[instr.opcode];
-		(this->*generator)(instr, i);
+		(this->*generator)(instr);
 	}
 
-	void JitCompilerX86::fixCallOffsets() {
-		for (CallOffset& co : callOffsets) {
-			*reinterpret_cast<int32_t*>(code + co.pos) = instructionOffsets[co.index] - (co.pos + 4);
-		}
+	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
+		emit(REX_MOV_RR);
+		emitByte((rax ? 0xc0 : 0xc8) + instr.src);
+		if (rax)
+			emitByte(AND_EAX_I);
+		else
+			emit(AND_ECX_I);
+		emit32((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
-	void JitCompilerX86::gena(Instruction& instr) {
-		emit(uint16_t(0x8149)); //xor
-		emitByte(0xf0 + (instr.rega % RegistersCount));
-		emit(instr.addra);
-		emit(uint16_t(0x8b41)); //mov
-		emitByte(0xc0 + (instr.rega % RegistersCount)); //eax, rega
-		emit(0x753fc3f6); //test bl,0x3f; jne
-		emit(uint16_t(0xe805));
-		emit(readDatasetOffset - (codePos + 4));
-		if ((instr.loca & 192) == 0) { //A.LOC.X
-			emit(uint16_t(0x3348));
-			emitByte(0xe8); //xor rbp, rax
-		}
-		emitByte(0x25); //and eax,
-		//if (instr.loca & 15) {
-			if (instr.loca & 3) {
-				emit(ScratchpadL1 - 1); //first 16 KiB of scratchpad
-			}
-			else {
-				emit(ScratchpadL2 - 1); //first 256 KiB of scratchpad
-			}
-		/*}
-		else {
-			emit(ScratchpadL3 - 1); //whole scratchpad
-		}*/
+	void JitCompilerX86::genAddressRegDst(Instruction& instr, bool align16 = false) {
+		emit(REX_MOV_RR);
+		emitByte(0xc0 + instr.dst);
+		emitByte(AND_EAX_I);
+		int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
+		int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
+		emit32((instr.alt % 4) ? maskL1 : maskL2);
 	}
 
-	void JitCompilerX86::genar(Instruction& instr) {
-		gena(instr);
-		emit(0xc6048b48); //mov rax,QWORD PTR [rsi+rax*8]
+	void JitCompilerX86::genAddressImm(Instruction& instr) {
+		emit32(instr.imm32 & ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask));
 	}
 
-	void JitCompilerX86::genaf(Instruction& instr) {
-		gena(instr);
-		emitByte(0xf3);
-		emit(0xc604e60f); //cvtdq2pd xmm0,QWORD PTR [rsi+rax*8]
-	}
-
-	void JitCompilerX86::genbiashift(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
-		if (instr.locb & 1)	{
-			emit(uint16_t(0x8b49)); //mov
-			emitByte(0xc8 + (instr.regb % RegistersCount)); //rcx, regb
-			emitByte(0x48); //REX.W
-			emit(opcodeReg); //xxx rax, cl
+	void JitCompilerX86::h_IADD_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_ADD_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			emitByte(0x48); //REX.W
-			emit(opcodeImm); //xxx rax, imm8
-			emitByte((instr.imm8 & 63));
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.imm32);
 		}
 	}
 
-	void JitCompilerX86::genbia(Instruction& instr, uint16_t opcodeReg, uint16_t opcodeImm) {
-		if (instr.locb & 3) {
-			emit(opcodeReg); // xxx rax, r64
-			emitByte(0xc0 + (instr.regb % RegistersCount));
+	void JitCompilerX86::h_IADD_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			emit(REX_ADD_RM);
+			emitByte(0x04 + 8 * instr.dst);
+			emitByte(0x06);
 		}
 		else {
-			emit(opcodeImm); // xxx rax, imm32
-			emit(instr.imm32);
+			emit(REX_ADD_RM);
+			emitByte(0x86 + 8 * instr.dst);
+			genAddressImm(instr);
 		}
 	}
 
-	void JitCompilerX86::genbia32(Instruction& instr, uint16_t opcodeReg, uint8_t opcodeImm) {
-		if (instr.locb & 3) {
-			emit(opcodeReg); // xxx eax, r32
-			emitByte(0xc0 + (instr.regb % RegistersCount));
+	void JitCompilerX86::genSIB(int scale, int index, int base) {
+		emitByte((scale << 5) | (index << 3) | base);
+	}
+
+	void JitCompilerX86::h_IADD_RC(Instruction& instr) {
+		emit(REX_LEA);
+		emitByte(0x84 + 8 * instr.dst);
+		genSIB(0, instr.src, instr.dst);
+		emit32(instr.imm32);
+	}
+
+	void JitCompilerX86::h_ISUB_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_SUB_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			emitByte(opcodeImm); // xxx eax, imm32
-			emit(instr.imm32);
+			emit(REX_81);
+			emitByte(0xe8 + instr.dst);
+			genAddressImm(instr);
 		}
 	}
 
-	void JitCompilerX86::genbf(Instruction& instr, uint8_t opcode) {
-		int regb = (instr.regb % RegistersCount);
-		emitByte(0x66); //xxxpd  xmm0,regb
-		if (regb <= 1) {
-			emitByte(0x41); //REX
-		}
-		emitByte(0x0f);
-		emitByte(opcode);
-		emitByte(0xc0 + regb);
-	}
-
-
-	void JitCompilerX86::scratchpadStoreR(Instruction& instr, uint32_t scratchpadSize, bool rax) {
-		if (rax) {
-			emit(0x41c88b48); //mov rcx, rax; REX
+	void JitCompilerX86::h_ISUB_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			emit(REX_SUB_RM);
+			emitByte(0x04 + 8 * instr.dst);
+			emitByte(0x06);
 		}
 		else {
-			emitByte(0x41);
+			emit(REX_SUB_RM);
+			emitByte(0x86 + 8 * instr.dst);
+			genAddressImm(instr);
 		}
-		emitByte(0x8b); // mov
-		emitByte(0xc0 + (instr.regc % RegistersCount)); //eax, regc
-		emitByte(0x35); // xor eax
-		emit(instr.addrc);
-		emitByte(0x25); //and
-		emit(scratchpadSize - 1);
-		emit(0xc60c8948); // mov    QWORD PTR [rsi+rax*8],rcx
 	}
 
-	void JitCompilerX86::gencr(Instruction& instr, bool rax = true) {
-		if (instr.locc & 8) { //write to register
-			emit(uint16_t(0x8b4c)); //mov
-			if (rax) {
-				emitByte(0xc0 + 8 * (instr.regc % RegistersCount)); //regc, rax
-			}
-			else {
-				emitByte(0xc1 + 8 * (instr.regc % RegistersCount)); //regc, rcx
-			}
+	void JitCompilerX86::h_IMUL_9C(Instruction& instr) {
+		emit(REX_LEA);
+		emitByte(0x84 + 8 * instr.dst);
+		genSIB(3, instr.src, instr.dst);
+		emit32(instr.imm32);
+	}
+
+	void JitCompilerX86::h_IMUL_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_IMUL_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			//if (instr.locc & 7) {
-				if (instr.locc & 1) {
-					scratchpadStoreR(instr, ScratchpadL1, rax);
+			emit(REX_IMUL_RRI);
+			emitByte(0xc0 + 9 * instr.dst);
+			genAddressImm(instr);
+		}
+	}
+
+	void JitCompilerX86::h_IMUL_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			emit(REX_IMUL_RM);
+			emitByte(0x04 + 8 * instr.dst);
+			emitByte(0x06);
+		}
+		else {
+			emit(REX_IMUL_RM);
+			emitByte(0x86 + 8 * instr.dst);
+			genAddressImm(instr);
+		}
+	}
+
+	void JitCompilerX86::h_IMULH_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe0 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+		}
+		else {
+			emitByte(MOV_EAX_I);
+			emit32(instr.imm32);
+			emit(REX_MUL_R);
+			emitByte(0xe0 + instr.dst);
+			emit(REX_ADD_RM);
+			emitByte(0xc2 + 8 * instr.dst);
+		}
+	}
+
+	void JitCompilerX86::h_IMULH_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr, false);
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_MEM);
+		}
+		else {
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_M);
+			emitByte(0xa6);
+			genAddressImm(instr);
+		}
+		emit(REX_MOV_R64R);
+		emitByte(0xc2 + 8 * instr.dst);
+	}
+
+	void JitCompilerX86::h_ISMULH_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe8 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+		}
+		else {
+			emitByte(MOV_EAX_I);
+			emit32(instr.imm32);
+			emit(REX_MUL_R);
+			emitByte(0xe8 + instr.dst);
+			emit(REX_ADD_RM);
+			emitByte(0xc2 + 8 * instr.dst);
+		}
+	}
+
+	void JitCompilerX86::h_ISMULH_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr, false);
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_IMUL_MEM);
+		}
+		else {
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_M);
+			emitByte(0xae);
+			genAddressImm(instr);
+		}
+		emit(REX_MOV_R64R);
+		emitByte(0xc2 + 8 * instr.dst);
+	}
+
+	void JitCompilerX86::h_IDIV_C(Instruction& instr) {
+		if (instr.imm32 != 0) {
+			uint32_t divisor = instr.imm32;
+			if (divisor & (divisor - 1)) {
+				magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+				if (mi.pre_shift == 0 && !mi.increment) {
+					emit(MOV_RAX_I);
+					emit64(mi.multiplier);
+					emit(REX_MUL_R);
+					emitByte(0xe0 + instr.dst);
 				}
 				else {
-					scratchpadStoreR(instr, ScratchpadL2, rax);
-				}
-			/*}
-			else {
-				scratchpadStoreR(instr, ScratchpadL3, rax);
-			}*/
-		}
-	}
-
-	void JitCompilerX86::scratchpadStoreF(Instruction& instr, int regc, uint32_t scratchpadSize, bool storeHigh) {
-		emit(uint16_t(0x8b41)); //mov
-		emitByte(0xc0 + regc); //eax, regc
-		emitByte(0x35); // xor eax
-		emit(instr.addrc);
-		emitByte(0x25); //and
-		emit(scratchpadSize - 1);
-		emitByte(0x66); //movhpd/movlpd QWORD PTR [rsi+rax*8], regc
-		if (regc <= 1) {
-			emitByte(0x44); //REX
-		}
-		emitByte(0x0f);
-		emitByte(storeHigh ? 0x17 : 0x13);
-		emitByte(4 + 8 * regc);
-		emitByte(0xc6);
-	}
-
-	void JitCompilerX86::gencf(Instruction& instr) {
-		int regc = (instr.regc % RegistersCount);
-		if (regc <= 1) {
-			emitByte(0x44); //REX
-		}
-		emit(uint16_t(0x280f)); //movaps
-		emitByte(0xc0 + 8 * regc); // regc, xmm0
-		if (instr.locc & 8) { //write to scratchpad
-			//if (instr.locc & 7) {
-				if (instr.locc & 1) { //C.LOC.W
-					scratchpadStoreF(instr, regc, ScratchpadL1, (instr.locc & 128)); //first 16 KiB of scratchpad
-				}
-				else {
-					scratchpadStoreF(instr, regc, ScratchpadL2, (instr.locc & 128)); //first 256 KiB of scratchpad
-				}
-			//}
-			/*else {
-				scratchpadStoreF(instr, regc, ScratchpadL3, (instr.locc & 128)); //whole scratchpad
-			}*/
-		}
-	}
-
-	void JitCompilerX86::h_ADD_64(Instruction& instr, int i) {
-		genar(instr);
-		genbia(instr, 0x0349, 0x0548);
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_ADD_32(Instruction& instr, int i) {
-		genar(instr);
-		genbia32(instr, 0x0341, 0x05);
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_SUB_64(Instruction& instr, int i) {
-		genar(instr);
-		genbia(instr, 0x2b49, 0x2d48);
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_SUB_32(Instruction& instr, int i) {
-		genar(instr);
-		genbia32(instr, 0x2b41, 0x2d);
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_MUL_64(Instruction& instr, int i) {
-		genar(instr);
-		if ((instr.locb & 7) <= 5) {
-			emitByte(0x49); //REX
-			emit(uint16_t(0xaf0f)); // imul rax, r64
-			emitByte(0xc0 + (instr.regb % RegistersCount));
-		}
-		else {
-			emitByte(0x48); //REX
-			emit(uint16_t(0xc069)); // imul rax, rax, imm32
-			emit(instr.imm32);
-		}
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_MULH_64(Instruction& instr, int i) {
-		genar(instr);
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8b49)); //mov rcx, r64
-			emitByte(0xc8 + (instr.regb % RegistersCount));
-		}
-		else {
-			emitByte(0x48);
-			emit(uint16_t(0xc1c7)); // mov rcx, imm32
-			emit(instr.imm32);
-		}
-		emitByte(0x48);
-		emit(uint16_t(0xe1f7)); // mul rcx
-		emitByte(0x48);
-		emit(uint16_t(0xc28b)); //	mov rax,rdx
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_MUL_32(Instruction& instr, int i) {
-		genar(instr);
-		emit(uint16_t(0xc88b)); //mov ecx, eax
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8b41)); // mov eax, r32
-			emitByte(0xc0 + (instr.regb % RegistersCount));
-		}
-		else {
-			emitByte(0xb8); // mov eax, imm32
-			emit(instr.imm32);
-		}
-		emit(0xc1af0f48); //imul rax,rcx
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_IMUL_32(Instruction& instr, int i) {
-		genar(instr);
-		emitByte(0x48);
-		emit(uint16_t(0xc863)); //movsxd rcx,eax
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x6349)); //movsxd rax,r32
-			emitByte(0xc0 + (instr.regb % RegistersCount));
-		}
-		else {
-			emitByte(0x48);
-			emit(uint16_t(0xc0c7)); // mov rax, imm32
-			emit(instr.imm32);
-		}
-		emit(0xc1af0f48); //imul rax,rcx
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_IMULH_64(Instruction& instr, int i) {
-		genar(instr);
-		if ((instr.locb & 7) <= 5) {
-			emit(uint16_t(0x8b49)); //mov rcx, r64
-			emitByte(0xc8 + (instr.regb % RegistersCount));
-		}
-		else {
-			emitByte(0x48);
-			emit(uint16_t(0xc1c7)); // mov rcx, imm32
-			emit(instr.imm32);
-		}
-		emitByte(0x48);
-		emit(uint16_t(0xe9f7)); // imul rcx
-		emitByte(0x48);
-		emit(uint16_t(0xc28b)); //	mov rax,rdx
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_DIV_64(Instruction& instr, int i) {
-		genar(instr);
-		if (instr.locb & 7) {
-#ifdef MAGIC_DIVISION
-			if (instr.imm32 != 0) {
-				uint32_t divisor = instr.imm32;
-				if (divisor & (divisor - 1)) {
-					magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
+					emit(REX_MOV_RR64);
+					emitByte(0xc0 + instr.dst);
 					if (mi.pre_shift > 0) {
-						if (mi.pre_shift == 1) {
-							emitByte(0x48);
-							emit(uint16_t(0xe8d1)); //shr rax,1
-						}
-						else {
-							emit(0x00e8c148 | (mi.pre_shift << 24)); //shr rax, pre_shift
-						}
+						emit(REX_SHR_RAX);
+						emitByte(mi.pre_shift);
 					}
 					if (mi.increment) {
-						emit(0x00d8834801c08348); //add rax,1; sbb rax,0
+						emit(RAX_ADD_SBB_1);
 					}
-					emit(uint16_t(0xb948)); //movabs rcx, multiplier
-					emit(mi.multiplier);
-					emit(0x48e1f748); //mul rcx; REX
-					emit(uint16_t(0xc28b)); //mov rax,rdx
-					if (mi.post_shift > 0)
-						emit(0x00e8c148 | (mi.post_shift << 24)); //shr rax, post_shift
-			}
-				else { //divisor is a power of two
-					int shift = 0;
-					while (divisor >>= 1)
-						++shift;
-					if (shift > 0)
-						emit(0x00e8c148 | (shift << 24)); //shr rax, shift
+					emit(MOV_RCX_I);
+					emit64(mi.multiplier);
+					emit(MUL_RCX);
 				}
-		}
-#else
-			emitByte(0xb9); //mov ecx, imm32
-			emit(instr.imm32 != 0 ? instr.imm32 : 1);
-#endif
-		}
-		else {
-			emitByte(0xb9); //mov ecx, 1
-			emit(1);
-			emit(uint16_t(0x8b41)); //mov edx, r32
-			emitByte(0xd0 + (instr.regb % RegistersCount));
-			emit(0x450fd285); //test edx, edx; cmovne ecx,edx
-			emitByte(0xca);
-#ifdef MAGIC_DIVISION
-			emit(0xf748d233); //xor edx,edx; div rcx
-			emitByte(0xf1);
-#endif
-		}
-#ifndef MAGIC_DIVISION
-		emit(0xf748d233); //xor edx,edx; div rcx
-		emitByte(0xf1);
-#endif
-		gencr(instr);
-	}
-
-	void JitCompilerX86::h_IDIV_64(Instruction& instr, int i) {
-		genar(instr);
-		if (instr.locb & 7) {
-#ifdef MAGIC_DIVISION
-			int64_t divisor = instr.imm32;
-			if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
-				// +/- power of two
-				bool negative = divisor < 0;
-				if (negative)
-					divisor = -divisor;
+				if (mi.post_shift > 0) {
+					emit(REX_SHR_RDX);
+					emitByte(mi.post_shift);
+				}
+				emit(REX_ADD_RR);
+				emitByte(0xc2 + 8 * instr.dst);
+			}
+			else { //divisor is a power of two
 				int shift = 0;
-				uint64_t unsignedDivisor = divisor;
-				while (unsignedDivisor >>= 1)
+				while (divisor >>= 1)
 					++shift;
 				if (shift > 0) {
-					emitByte(0x48);
-					emit(uint16_t(0xc88b)); //mov rcx, rax
-					emit(0x3ff9c148); //sar rcx, 63
-					uint32_t mask = (1ULL << shift) - 1;
-					emit(uint16_t(0xe181)); //and ecx, mask
-					emit(mask);
-					emitByte(0x48);
-					emit(uint16_t(0xc103)); //add rax, rcx
-					emit(0x00f8c148 | (shift << 24)); //sar rax, shift
-				}
-				if (negative) {
-					emitByte(0x48);
-					emit(uint16_t(0xd8f7)); //neg rax
+					emit(REX_SH);
+					emitByte(0xe8 + instr.dst);
 				}
 			}
-			else if (divisor != 0) {
-				magics_info mi = compute_signed_magic_info(divisor);
-				if ((divisor >= 0) != (mi.multiplier >= 0)) {
-					emitByte(0x48);
-					emit(uint16_t(0xc88b)); //mov rcx, rax
-				}
-				emit(uint16_t(0xba48)); //movabs rdx, multiplier
-				emit(mi.multiplier);
-				emit(0xd233c28b48eaf748); //imul rdx; mov rax,rdx; xor edx,edx
-				bool haveSF = false;
-				if (divisor > 0 && mi.multiplier < 0) {
-					emitByte(0x48);
-					emit(uint16_t(0xc103)); //add rax, rcx
-					haveSF = true;
-				}
-				if (divisor < 0 && mi.multiplier > 0) {
-					emitByte(0x48);
-					emit(uint16_t(0xc12b)); //sub rax, rcx
-					haveSF = true;
-				}
-				if (mi.shift > 0) {
-					emit(0x00f8c148 | (mi.shift << 24)); //sar rax, shift
-					haveSF = true;
-				}
-				if (!haveSF) {
-					emitByte(0x48);
-					emit(uint16_t(0x85c0));
-				}
-				emit(0x48c2980f); //sets dl; add rax, rdx
-				emit(uint16_t(0xc203));
+		}
+	}
+
+	void JitCompilerX86::h_ISDIV_C(Instruction& instr) {
+		int64_t divisor = instr.imm32;
+		if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			// +/- power of two
+			bool negative = divisor < 0;
+			if (negative)
+				divisor = -divisor;
+			int shift = 0;
+			uint64_t unsignedDivisor = divisor;
+			while (unsignedDivisor >>= 1)
+				++shift;
+			if (shift > 0) {
+				emit(MOV_RCX_RAX_SAR_RCX_63);
+				uint32_t mask = (1ULL << shift) - 1;
+				emit(AND_ECX_I);
+				emit32(mask);
+				emit(ADD_RAX_RCX);
+				emit(SAR_RAX_I8);
+				emitByte(shift);
 			}
-#else
-			emitByte(0xba); // mov edx, imm32
-			emit(instr.imm32);
-#endif
+			if (negative)
+				emit(NEG_RAX);
+			emit(ADD_R_RAX);
+			emitByte(0xc0 + instr.dst);
+		}
+		else if (divisor != 0) {
+			magics_info mi = compute_signed_magic_info(divisor);
+			emit(MOV_RAX_I);
+			emit64(mi.multiplier);
+			emit(REX_MUL_R);
+			emitByte(0xe8 + instr.dst);
+			emit(XOR_EAX_EAX);
+			bool haveSF = false;
+			if (divisor > 0 && mi.multiplier < 0) {
+				emit(ADD_RDX_R);
+				emitByte(0xc2 + 8 * instr.dst);
+				haveSF = true;
+			}
+			if (divisor < 0 && mi.multiplier > 0) {
+				emit(SUB_RDX_R);
+				emitByte(0xc2 + 8 * instr.dst);
+				haveSF = true;
+			}
+			if (mi.shift > 0) {
+				emit(SAR_RDX_I8);
+				emitByte(mi.shift);
+				haveSF = true;
+			}
+			if (!haveSF)
+				emit(TEST_RDX_RDX);
+			emit(SETS_AL_ADD_RDX_RAX);
+			emit(ADD_R_RAX);
+			emitByte(0xd0 + instr.dst);
+		}
+	}
+
+	void JitCompilerX86::h_INEG_R(Instruction& instr) {
+		emit(REX_NEG);
+		emitByte(0xd8 + instr.dst);
+	}
+
+	void JitCompilerX86::h_IXOR_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_XOR_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			emit(uint16_t(0x8b41)); //mov edx, r32
-			emitByte(0xd0 + (instr.regb % RegistersCount));
-#ifndef MAGIC_DIVISION
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.imm32);
 		}
-#endif
-		emit(0xd8f7480575fffa83); //cmp edx,-1
-		emit(uint16_t(0x12eb)); //jmp result
-		emit(0x0fd28500000001b9);
-		emit(0x489948c96348ca45);
-		emit(uint16_t(0xf9f7)); //idiv rcx
-#ifdef MAGIC_DIVISION
-	}
-#endif
-		gencr(instr);
 	}
 
-	void JitCompilerX86::h_AND_64(Instruction& instr, int i) {
-		genar(instr);
-		genbia(instr, 0x2349, 0x2548);
-		gencr(instr);
+	void JitCompilerX86::h_IXOR_M(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			genAddressReg(instr);
+			emit(REX_XOR_RM);
+			emitByte(0x04 + 8 * instr.dst);
+			emitByte(0x06);
+	}
+		else {
+			emit(REX_XOR_RM);
+			emitByte(0x86 + 8 * instr.dst);
+			genAddressImm(instr);
+		}
 	}
 
-	void JitCompilerX86::h_AND_32(Instruction& instr, int i) {
-		genar(instr);
-		genbia32(instr, 0x2341, 0x25);
-		gencr(instr);
+	void JitCompilerX86::h_IROR_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_MOV_RR);
+			emitByte(0xc8 + instr.src);
+			emit(REX_ROT_CL);
+			emitByte(0xc8 + instr.dst);
+		}
+		else {
+			emit(REX_ROT_I8);
+			emitByte(0xc8 + instr.dst);
+			emitByte(instr.imm32 & 63);
+		}
 	}
 
-	void JitCompilerX86::h_OR_64(Instruction& instr, int i) {
-		genar(instr);
-		genbia(instr, 0x0b49, 0x0d48);
-		gencr(instr);
+	void JitCompilerX86::h_IROL_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_MOV_RR);
+			emitByte(0xc8 + instr.src);
+			emit(REX_ROT_CL);
+			emitByte(0xc0 + instr.dst);
+		}
+		else {
+			emit(REX_ROT_I8);
+			emitByte(0xc0 + instr.dst);
+			emitByte(instr.imm32 & 63);
+		}
 	}
 
-	void JitCompilerX86::h_OR_32(Instruction& instr, int i) {
-		genar(instr);
-		genbia32(instr, 0x0b41, 0x0d);
-		gencr(instr);
+	void JitCompilerX86::h_FPSWAP_R(Instruction& instr) {
+		emit(SHUFPD);
+		emitByte(0xc0 + 9 * instr.dst);
+		emitByte(1);
 	}
 
-	void JitCompilerX86::h_XOR_64(Instruction& instr, int i) {
-		genar(instr);
-		genbia(instr, 0x3349, 0x3548);
-		gencr(instr);
+	void JitCompilerX86::h_FPADD_R(Instruction& instr) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		emit(REX_ADDPD);
+		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_XOR_32(Instruction& instr, int i) {
-		genar(instr);
-		genbia32(instr, 0x3341, 0x35);
-		gencr(instr);
+	void JitCompilerX86::h_FPADD_M(Instruction& instr) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_ADDPD);
+		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_SHL_64(Instruction& instr, int i) {
-		genar(instr);
-		genbiashift(instr, 0xe0d3, 0xe0c1);
-		gencr(instr);
+	void JitCompilerX86::h_FPSUB_R(Instruction& instr) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		emit(REX_SUBPD);
+		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_SHR_64(Instruction& instr, int i) {
-		genar(instr);
-		genbiashift(instr, 0xe8d3, 0xe8c1);
-		gencr(instr);
+	void JitCompilerX86::h_FPSUB_M(Instruction& instr) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_SUBPD);
+		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_SAR_64(Instruction& instr, int i) {
-		genar(instr);
-		genbiashift(instr, 0xf8d3, 0xf8c1);
-		gencr(instr);
+	void JitCompilerX86::h_FPNEG_R(Instruction& instr) {
+		instr.dst %= 4;
+		emit(REX_XORPS);
+		emitByte(0xc7 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_ROL_64(Instruction& instr, int i) {
-		genar(instr);
-		genbiashift(instr, 0xc0d3, 0xc0c1);
-		gencr(instr);
+	void JitCompilerX86::h_FPMUL_R(Instruction& instr) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		emit(REX_MULPD);
+		emitByte(0xe0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_ROR_64(Instruction& instr, int i) {
-		genar(instr);
-		genbiashift(instr, 0xc8d3, 0xc8c1);
-		gencr(instr);
+	void JitCompilerX86::h_FPMUL_M(Instruction& instr) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_MULPD);
+		emitByte(0xe4 + 8 * instr.dst);
+		emit(REX_MAXPD);
+		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPADD(Instruction& instr, int i) {
-		genaf(instr);
-		genbf(instr, 0x58);
-		gencf(instr);
+	void JitCompilerX86::h_FPDIV_R(Instruction& instr) {
+		instr.dst %= 4;
+		instr.src %= 4;
+		emit(REX_DIVPD);
+		emitByte(0xe0 + instr.src + 8 * instr.dst);
+		emit(REX_MAXPD);
+		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPSUB(Instruction& instr, int i) {
-		genaf(instr);
-		genbf(instr, 0x5c);
-		gencf(instr);
+	void JitCompilerX86::h_FPDIV_M(Instruction& instr) {
+		instr.dst %= 4;
+		genAddressReg(instr);
+		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_DIVPD);
+		emitByte(0xe4 + 8 * instr.dst);
+		emit(REX_MAXPD);
+		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPMUL(Instruction& instr, int i) {
-		genaf(instr);
-		genbf(instr, 0x59);
-		emit(0x00c9c20f66c8280f); //movaps xmm1,xmm0; cmpeqpd xmm1,xmm1
-		emit(uint16_t(0x540f)); //andps  xmm0,xmm1
-		emitByte(0xc1);
-		gencf(instr);
+	void JitCompilerX86::h_FPSQRT_R(Instruction& instr) {
+		instr.dst %= 4;
+		emit(SQRTPD);
+		emitByte(0xe4 + 9 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPDIV(Instruction& instr, int i) {
-		genaf(instr);
-		genbf(instr, 0x5e);
-		emit(0x00c9c20f66c8280f); //movaps xmm1,xmm0; cmpeqpd xmm1,xmm1
-		emit(uint16_t(0x540f)); //andps  xmm0,xmm1
-		emitByte(0xc1);
-		gencf(instr);
-	}
-
-	void JitCompilerX86::h_FPSQRT(Instruction& instr, int i) {
-		genaf(instr);
-		emit(0xc0510f66c2540f41); //andps  xmm0,xmm10; sqrtpd xmm0,xmm0
-		gencf(instr);
-	}
-
-	void JitCompilerX86::h_FPROUND(Instruction& instr, int i) {
-		genar(instr);
-		emitByte(0x48);
-		emit(uint16_t(0xc88b)); //mov rcx,rax
-		int rotate = (13 - (instr.imm8 & 63)) & 63;
+	void JitCompilerX86::h_CFROUND(Instruction& instr) {
+		emit(REX_MOV_RR64);
+		emitByte(0xc0 + instr.src);	
+		int rotate = (13 - (instr.alt & 63)) & 63;
 		if (rotate != 0) {
-			emitByte(0x48);
-			emit(uint16_t(0xc0c1)); //rol rax
+			emit(ROL_RAX);
 			emitByte(rotate);
 		}
-		emit(uint16_t(0x0025));
-		emit(0x00009fc00d000060); //and eax,0x6000; or eax,0x9fc0
-		emit(0x2454ae0ff8244489); //ldmxcsr DWORD PTR [rsp-0x8]
-		emitByte(0xf8);
-		gencr(instr, false); //result in rcx
+		emit(AND_OR_MOV_LDMXCSR);
 	}
 
-	static inline uint8_t jumpCondition(Instruction& instr, bool invert = false) {
-		switch ((instr.locb & 7) ^ invert)
+	static inline uint8_t condition(Instruction& instr, bool invert = false) {
+		switch ((instr.alt & 7) ^ invert)
 		{
 			case 0:
-				return 0x76; //jbe
+				return 0x96; //setbe
 			case 1:
-				return 0x77; //ja
+				return 0x97; //seta
 			case 2:
-				return 0x78; //js
+				return 0x98; //sets
 			case 3:
-				return 0x79; //jns
+				return 0x99; //setns
 			case 4:
-				return 0x70; //jo
+				return 0x90; //seto
 			case 5:
-				return 0x71; //jno
+				return 0x91; //setno
 			case 6:
-				return 0x7c; //jl
+				return 0x9c; //setl
 			case 7:
-				return 0x7d; //jge
+				return 0x9d; //setge
 		}
 	}
 
-	void JitCompilerX86::h_JUMP(Instruction& instr, int i) {
-		genar(instr);
-		gencr(instr);
-		emit(uint16_t(0x8141)); //cmp regb, imm32
-		emitByte(0xf8 + (instr.regb % RegistersCount));
-		emit(instr.imm32);
-		emitByte(0x0f); //near jump
-		emitByte(jumpCondition(instr) + 0x10);
-		i = wrapInstr(i + (instr.imm8 & 127) + 2);
-		if (i < instructionOffsets.size()) {
-			emit(instructionOffsets[i] - (codePos + 4));
-		}
-		else {
-			callOffsets.push_back(CallOffset(codePos, i));
-			codePos += 4;
-		}
+	void JitCompilerX86::h_COND_R(Instruction& instr) {
+		emit(XOR_ECX_ECX);
+		emit(REX_CMP_R32I);
+		emitByte(0xf8 + instr.src);
+		emit32(instr.imm32);
+		emitByte(0x0f);
+		emitByte(condition(instr));
+		emitByte(0xc1);
+		emit(REX_ADD_RM);
+		emitByte(0xc1 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_CALL(Instruction& instr, int i) {
-		genar(instr);
-		gencr(instr);
-		emit(uint16_t(0x8141)); //cmp regb, imm32
-		emitByte(0xf8 + (instr.regb % RegistersCount));
-		emit(instr.imm32);
-		emitByte(jumpCondition(instr, true));
-		emitByte(0x05);
-		emitByte(0xe8); //call
-		i = wrapInstr(i + (instr.imm8 & 127) + 2);
-		if (i < instructionOffsets.size()) {
-			emit(instructionOffsets[i] - (codePos + 4));
-		}
-		else {
-			callOffsets.push_back(CallOffset(codePos, i));
-			codePos += 4;
-		}
+	void JitCompilerX86::h_COND_M(Instruction& instr) {
+		emit(XOR_ECX_ECX);
+		genAddressReg(instr);
+		emit(REX_CMP_M32I);
+		emit32(instr.imm32);
+		emitByte(0x0f);
+		emitByte(condition(instr));
+		emitByte(0xc1);
+		emit(REX_ADD_RM);
+		emitByte(0xc1 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_RET(Instruction& instr, int i) {
-		genar(instr);
-		int crlen = 0;
-		if ((instr.locc & 7) <= 3) {
-			crlen = 17;
-		}
-		emit(0x74e73b48); //cmp rsp, rdi; je
-		emitByte(0x01);
-		emitByte(0xc3); //ret
+	void JitCompilerX86::h_ISTORE(Instruction& instr) {
+		genAddressRegDst(instr);
+		emit(REX_MOV_MR);
+		emitByte(0x04 + 8 * instr.src);
+		emitByte(0x06);
 	}
 
-	void JitCompilerX86::h_NOP(Instruction& instr, int i) {
-		genar(instr);
+	void JitCompilerX86::h_FSTORE(Instruction& instr) {
+		genAddressRegDst(instr, true);
+		emit(MOVAPD);
+		emitByte(0x04 + 8 * instr.src);
+		emitByte(0x06);
 	}
 
 #include "instructionWeights.hpp"
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
 	InstructionGeneratorX86 JitCompilerX86::engine[256] = {
-		INST_HANDLE(ADD_64)
-		INST_HANDLE(ADD_32)
-		INST_HANDLE(SUB_64)
-		INST_HANDLE(SUB_32)
-		INST_HANDLE(MUL_64)
-		INST_HANDLE(MULH_64)
-		INST_HANDLE(MUL_32)
-		INST_HANDLE(IMUL_32)
-		INST_HANDLE(IMULH_64)
-		INST_HANDLE(DIV_64)
-		INST_HANDLE(IDIV_64)
-		INST_HANDLE(AND_64)
-		INST_HANDLE(AND_32)
-		INST_HANDLE(OR_64)
-		INST_HANDLE(OR_32)
-		INST_HANDLE(XOR_64)
-		INST_HANDLE(XOR_32)
-		INST_HANDLE(SHL_64)
-		INST_HANDLE(SHR_64)
-		INST_HANDLE(SAR_64)
-		INST_HANDLE(ROL_64)
-		INST_HANDLE(ROR_64)
-		INST_HANDLE(FPADD)
-		INST_HANDLE(FPSUB)
-		INST_HANDLE(FPMUL)
-		INST_HANDLE(FPDIV)
-		INST_HANDLE(FPSQRT)
-		INST_HANDLE(FPROUND)
-		INST_HANDLE(JUMP)
-		INST_HANDLE(CALL)
-		INST_HANDLE(RET)
-		INST_HANDLE(NOP)
+		INST_HANDLE(IADD_R)
+		INST_HANDLE(IADD_M)
+		INST_HANDLE(IADD_RC)
+		INST_HANDLE(ISUB_R)
+		INST_HANDLE(ISUB_M)
+		INST_HANDLE(IMUL_9C)
+		INST_HANDLE(IMUL_R)
+		INST_HANDLE(IMUL_M)
+		INST_HANDLE(IMULH_R)
+		INST_HANDLE(IMULH_M)
+		INST_HANDLE(ISMULH_R)
+		INST_HANDLE(ISMULH_M)
+		INST_HANDLE(IDIV_C)
+		INST_HANDLE(ISDIV_C)
+		INST_HANDLE(INEG_R)
+		INST_HANDLE(IXOR_R)
+		INST_HANDLE(IXOR_M)
+		INST_HANDLE(IROR_R)
+		INST_HANDLE(IROL_R)
+		INST_HANDLE(FPSWAP_R)
+		INST_HANDLE(FPADD_R)
+		INST_HANDLE(FPADD_M)
+		INST_HANDLE(FPSUB_R)
+		INST_HANDLE(FPSUB_M)
+		INST_HANDLE(FPNEG_R)
+		INST_HANDLE(FPMUL_R)
+		INST_HANDLE(FPMUL_M)
+		INST_HANDLE(FPDIV_R)
+		INST_HANDLE(FPDIV_M)
+		INST_HANDLE(FPSQRT_R)
+		INST_HANDLE(COND_R)
+		INST_HANDLE(COND_M)
+		INST_HANDLE(CFROUND)
+		INST_HANDLE(ISTORE)
+		INST_HANDLE(FSTORE)
 	};
+
 
 #endif
 }

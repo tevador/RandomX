@@ -49,6 +49,7 @@ namespace RandomX {
 
 		void genAddressReg(std::ostream& os) const;
 		void genAddressImm(std::ostream& os) const;
+		void genAddressRegDst(std::ostream&) const;
 
 		void  h_IADD_R(std::ostream&) const;
 		void  h_IADD_M(std::ostream&) const;
@@ -83,6 +84,8 @@ namespace RandomX {
 		void  h_COND_R(std::ostream&) const;
 		void  h_COND_M(std::ostream&) const;
 		void  h_CFROUND(std::ostream&) const;
+		void  h_ISTORE(std::ostream&) const;
+		void  h_FSTORE(std::ostream&) const;
 	};
 
 	static_assert(sizeof(Instruction) == 8, "Invalid alignment of struct Instruction");

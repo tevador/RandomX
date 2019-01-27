@@ -20,12 +20,16 @@ IFDEF RAX
 _RANDOMX_JITX86_STATIC SEGMENT PAGE READ EXECUTE
 
 PUBLIC randomx_program_prologue
-PUBLIC randomx_program_begin
+PUBLIC randomx_loop_begin
+PUBLIC randomx_program_load_int
+PUBLIC randomx_program_load_flt
+PUBLIC randomx_program_start
+PUBLIC randomx_program_read_dataset
+PUBLIC randomx_program_store_int
+PUBLIC randomx_program_store_flt
+PUBLIC randomx_program_loop_end
 PUBLIC randomx_program_epilogue
-PUBLIC randomx_program_read
 PUBLIC randomx_program_end
-PUBLIC randomx_program_transform
-
 
 ALIGN 64
 randomx_program_prologue PROC
@@ -33,9 +37,40 @@ randomx_program_prologue PROC
 randomx_program_prologue ENDP
 
 ALIGN 64
-randomx_program_begin PROC
+	include asm/program_xmm_constants.inc
+
+ALIGN 64
+randomx_loop_begin PROC
 	nop
-randomx_program_begin ENDP
+randomx_loop_begin ENDP
+
+randomx_program_load_int PROC
+	include asm/program_load_int.inc
+randomx_program_load_int ENDP
+
+randomx_program_load_flt PROC
+	include asm/program_load_flt.inc
+randomx_program_load_flt ENDP
+
+randomx_program_start PROC
+	nop
+randomx_program_start ENDP
+
+randomx_program_read_dataset PROC
+	include asm/program_read_dataset.inc
+randomx_program_read_dataset ENDP
+
+randomx_program_store_int PROC
+	include asm/program_store_int.inc
+randomx_program_store_int ENDP
+
+randomx_program_store_flt PROC
+	include asm/program_store_flt.inc
+randomx_program_store_flt ENDP
+
+randomx_program_loop_end PROC
+	nop
+randomx_program_loop_end ENDP
 
 ALIGN 64
 randomx_program_epilogue PROC
@@ -43,19 +78,9 @@ randomx_program_epilogue PROC
 randomx_program_epilogue ENDP
 
 ALIGN 64
-randomx_program_read PROC
-	include asm/program_read.inc
-randomx_program_read ENDP
-
-ALIGN 64
 randomx_program_end PROC
 	nop
 randomx_program_end ENDP
-
-ALIGN 8
-randomx_program_transform PROC
-	include asm/program_transform_address.inc
-randomx_program_transform ENDP
 
 _RANDOMX_JITX86_STATIC ENDS
 
