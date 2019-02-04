@@ -63,6 +63,7 @@ namespace RandomX {
 		void  h_IXOR_M(Instruction&, int);
 		void  h_IROR_R(Instruction&, int);
 		void  h_IROL_R(Instruction&, int);
+		void  h_ISWAP_R(Instruction&, int);
 		void  h_FPSWAP_R(Instruction&, int);
 		void  h_FPADD_R(Instruction&, int);
 		void  h_FPADD_M(Instruction&, int);

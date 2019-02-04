@@ -13,7 +13,7 @@ LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
 ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o t1ha2.o Cache.o virtualMemory.o divideByConstantCodegen.o LightClientAsyncWorker.o AddressTransform.o hashAes1Rx4.o)
 ifeq ($(PLATFORM),x86_64)
-    ROBJS += $(OBJDIR)/JitCompilerX86-static.o
+    ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
 endif
 
 all: release test
@@ -76,6 +76,9 @@ $(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompile
 
 $(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read.inc)) | $(OBJDIR)
 	$(CXX) -x assembler-with-cpp -c $(SRCDIR)/JitCompilerX86-static.S -o $@
+
+$(OBJDIR)/squareHash.o: $(addprefix $(SRCDIR)/,squareHash.S $(addprefix asm/, squareHash.inc))  | $(OBJDIR)
+	$(CXX) -x assembler-with-cpp -c $(SRCDIR)/squareHash.S -o $@
 
 $(OBJDIR)/instructionsPortable.o: $(addprefix $(SRCDIR)/,instructionsPortable.cpp instructions.hpp intrinPortable.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/instructionsPortable.cpp -o $@

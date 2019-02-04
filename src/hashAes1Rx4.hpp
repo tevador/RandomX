@@ -21,3 +21,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 template<bool softAes>
 void hashAes1Rx4(const void *input, size_t inputSize, void *hash);
+
+template<bool softAes>
+void fillAes1Rx4(void *state, size_t outputSize, void *buffer);

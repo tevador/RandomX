@@ -176,6 +176,7 @@ namespace RandomX {
 	static const uint8_t JNZ[] = { 0x0f, 0x85 };
 	static const uint8_t JMP = 0xe9;
 	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
+	static const uint8_t REX_XCHG[] = { 0x4d, 0x87 };
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize;
@@ -248,7 +249,7 @@ namespace RandomX {
 			emitByte(AND_EAX_I);
 		else
 			emit(AND_ECX_I);
-		emit32((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+		emit32((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
 	void JitCompilerX86::genAddressRegDst(Instruction& instr, bool align16 = false) {
@@ -257,11 +258,11 @@ namespace RandomX {
 		emitByte(AND_EAX_I);
 		int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
 		int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
-		emit32((instr.alt % 4) ? maskL1 : maskL2);
+		emit32((instr.mod % 4) ? maskL1 : maskL2);
 	}
 
 	void JitCompilerX86::genAddressImm(Instruction& instr) {
-		emit32(instr.imm32 & ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask));
+		emit32(instr.imm32 & ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask));
 	}
 
 	void JitCompilerX86::h_IADD_R(Instruction& instr) {
@@ -595,6 +596,13 @@ namespace RandomX {
 		}
 	}
 
+	void JitCompilerX86::h_ISWAP_R(Instruction& instr) {
+		if (instr.src != instr.dst) {
+			emit(REX_XCHG);
+			emitByte(0xc0 + instr.dst + 8 * instr.src);
+		}
+	}
+
 	void JitCompilerX86::h_FPSWAP_R(Instruction& instr) {
 		emit(SHUFPD);
 		emitByte(0xc0 + 9 * instr.dst);
@@ -682,7 +690,7 @@ namespace RandomX {
 	void JitCompilerX86::h_CFROUND(Instruction& instr) {
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.src);	
-		int rotate = (13 - (instr.alt & 63)) & 63;
+		int rotate = (13 - (instr.imm32 & 63)) & 63;
 		if (rotate != 0) {
 			emit(ROL_RAX);
 			emitByte(rotate);
@@ -691,7 +699,7 @@ namespace RandomX {
 	}
 
 	static inline uint8_t condition(Instruction& instr, bool invert = false) {
-		switch ((instr.alt & 7) ^ invert)
+		switch ((instr.mod & 7) ^ invert)
 		{
 			case 0:
 				return 0x96; //setbe
@@ -777,6 +785,7 @@ namespace RandomX {
 		INST_HANDLE(IXOR_M)
 		INST_HANDLE(IROR_R)
 		INST_HANDLE(IROL_R)
+		INST_HANDLE(ISWAP_R)
 		INST_HANDLE(FPSWAP_R)
 		INST_HANDLE(FPADD_R)
 		INST_HANDLE(FPADD_M)

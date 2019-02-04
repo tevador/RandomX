@@ -1,5 +1,5 @@
 	mov rdx, rax
-	and eax, 1048512
+	and eax, 2097088
 	lea rcx, [rsi+rax]
 	push rcx
 	xor r8,  qword ptr [rcx+0]
@@ -11,7 +11,7 @@
 	xor r14, qword ptr [rcx+48]
 	xor r15, qword ptr [rcx+56]
 	ror rdx, 32
-	and edx, 1048512
+	and edx, 2097088
 	lea rcx, [rsi+rdx]
 	push rcx
 	cvtdq2pd xmm0, qword ptr [rcx+0]

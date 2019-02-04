@@ -30,6 +30,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <cmath>
 #include <thread>
+#include "intrinPortable.h"
 #ifdef STATS
 #include <algorithm>
 #endif
@@ -98,7 +99,7 @@ namespace RandomX {
 		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
 			*(((uint32_t*)&reg) + i) = gen();
 		}
-		FPINIT();
+		initFpu();
 		for (int i = 0; i < RegistersCount; ++i) {
 			reg.f[i].lo.f64 = (double)reg.f[i].lo.i64;
 			reg.f[i].hi.f64 = (double)reg.f[i].hi.i64;
@@ -114,24 +115,32 @@ namespace RandomX {
 	}
 
 	void InterpretedVirtualMachine::execute() {
-		while (ic > 0) {
-#ifdef STATS
-			count_instructions[pc]++;
-#endif
-			auto& inst = p(pc);
-			if(trace) std::cout << inst.getName() << " (" << std::dec << pc << ")" << std::endl;
-			pc = (pc + 1) % ProgramLength;
-			auto handler = engine[inst.opcode];
-			(this->*handler)(inst);
-			ic--;
+		for(int i = 0; i < InstructionCount; ++i) {
+			for (int j = 0; j < ProgramLength; ++j) {
+				auto& ibc = byteCode[j];
+				switch (ibc.type)
+				{
+					case InstructionType::CFROUND: {
+						uint64_t rcFlag = rotr(ibc.isrc->u64, ibc.imm.i32);
+						setRoundMode(rcFlag);
+						}
+						break;
+				}
+			}
 		}
-#ifdef STATS
-		count_endstack += stack.size();
-#endif
+
 	}
 
 #include "instructionWeights.hpp"
-#define INST_HANDLE(x) REPN(&InterpretedVirtualMachine::h_##x, WT(x))
+
+	void InterpretedVirtualMachine::executeInstruction(Instruction& instr) {
+		switch (instr.opcode)
+		{
+			CASE_REP(IADD_R)
+
+				break;
+		}
+	}
 
 	InstructionHandler InterpretedVirtualMachine::engine[256] = {
 

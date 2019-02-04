@@ -57,7 +57,7 @@ namespace RandomX {
 		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
 			*(((uint32_t*)&reg) + i) = gen();
 		}
-		FPINIT();
+		initFpu();
 		/*for (int i = 0; i < RegistersCount / 2; ++i) {
 			reg.f[i].lo.f64 = (double)reg.f[i].lo.i64;
 			reg.f[i].hi.f64 = (double)reg.f[i].hi.i64;

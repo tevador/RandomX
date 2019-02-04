@@ -28,12 +28,52 @@ namespace RandomX {
 
 	typedef void(Instruction::*InstructionVisualizer)(std::ostream&) const;
 
+	namespace InstructionType {
+		constexpr int IADD_R = 0;
+		constexpr int IADD_M = 1;
+		constexpr int IADD_RC = 2;
+		constexpr int ISUB_R = 3;
+		constexpr int ISUB_M = 4;
+		constexpr int IMUL_9C = 5;
+		constexpr int IMUL_R = 6;
+		constexpr int IMUL_M = 7;
+		constexpr int IMULH_R = 8;
+		constexpr int IMULH_M = 9;
+		constexpr int ISMULH_R = 10;
+		constexpr int ISMULH_M = 11;
+		constexpr int IDIV_C = 12;
+		constexpr int ISDIV_C = 13;
+		constexpr int INEG_R = 14;
+		constexpr int IXOR_R = 15;
+		constexpr int IXOR_M = 16;
+		constexpr int IROR_R = 17;
+		constexpr int IROL_R = 18;
+		constexpr int ISWAP_R = 19;
+		constexpr int FPSWAP_R = 20;
+		constexpr int FPADD_R = 21;
+		constexpr int FPADD_M = 22;
+		constexpr int FPSUB_R = 23;
+		constexpr int FPSUB_M = 24;
+		constexpr int FPNEG_R = 25;
+		constexpr int FPMUL_R = 26;
+		constexpr int FPMUL_M = 27;
+		constexpr int FPDIV_R = 28;
+		constexpr int FPDIV_M = 29;
+		constexpr int FPSQRT_R = 30;
+		constexpr int COND_R = 31;
+		constexpr int COND_M = 32;
+		constexpr int CFROUND = 33;
+		constexpr int ISTORE = 34;
+		constexpr int FSTORE = 35;
+		constexpr int NOP = 36;
+	}
+
 	class Instruction {
 	public:
 		uint8_t opcode;
 		uint8_t dst;
 		uint8_t src;
-		uint8_t alt;
+		uint8_t mod;
 		int32_t imm32;
 		const char* getName() const {
 			return names[opcode];
@@ -70,6 +110,7 @@ namespace RandomX {
 		void  h_IXOR_M(std::ostream&) const;
 		void  h_IROR_R(std::ostream&) const;
 		void  h_IROL_R(std::ostream&) const;
+		void  h_ISWAP_R(std::ostream&) const;
 		void  h_FPSWAP_R(std::ostream&) const;
 		void  h_FPADD_R(std::ostream&) const;
 		void  h_FPADD_M(std::ostream&) const;

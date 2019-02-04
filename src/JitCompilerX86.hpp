@@ -109,6 +109,7 @@ namespace RandomX {
 		void  h_IXOR_M(Instruction&);
 		void  h_IROR_R(Instruction&);
 		void  h_IROL_R(Instruction&);
+		void  h_ISWAP_R(Instruction&);
 		void  h_FPSWAP_R(Instruction&);
 		void  h_FPADD_R(Instruction&);
 		void  h_FPADD_M(Instruction&);

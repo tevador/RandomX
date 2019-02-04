@@ -72,16 +72,16 @@ namespace RandomX {
 
 	void AssemblyGeneratorX86::genAddressReg(Instruction& instr, const char* reg = "eax") {
 		asmCode << "\tmov " << reg << ", " << regR32[instr.src] << std::endl;
-		asmCode << "\tand " << reg << ", " << ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask) << std::endl;
+		asmCode << "\tand " << reg << ", " << ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::genAddressRegDst(Instruction& instr, int maskAlign = 8) {
 		asmCode << "\tmov eax" << ", " << regR32[instr.dst] << std::endl;
-		asmCode << "\tand eax" << ", " << ((instr.alt % 4) ? (ScratchpadL1Mask & (-maskAlign)) : (ScratchpadL2Mask & (-maskAlign))) << std::endl;
+		asmCode << "\tand eax" << ", " << ((instr.mod % 4) ? (ScratchpadL1Mask & (-maskAlign)) : (ScratchpadL2Mask & (-maskAlign))) << std::endl;
 	}
 
 	int32_t AssemblyGeneratorX86::genAddressImm(Instruction& instr) {
-		return instr.imm32 & ((instr.alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+		return instr.imm32 & ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
 	//1 uOP
@@ -348,6 +348,13 @@ namespace RandomX {
 		}
 	}
 
+	//2 uOPs
+	void AssemblyGeneratorX86::h_ISWAP_R(Instruction& instr, int i) {
+		if (instr.src != instr.dst) {
+			asmCode << "\txchg " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+		}
+	}
+
 	//1 uOPs
 	void AssemblyGeneratorX86::h_FPSWAP_R(Instruction& instr, int i) {
 		asmCode << "\tshufpd " << regFE[instr.dst] << ", " << regFE[instr.dst] << ", 1" << std::endl;
@@ -431,7 +438,7 @@ namespace RandomX {
 	//6 uOPs
 	void AssemblyGeneratorX86::h_CFROUND(Instruction& instr, int i) {
 		asmCode << "\tmov rax, " << regR[instr.src] << std::endl;
-		int rotate = (13 - (instr.alt & 63)) & 63;
+		int rotate = (13 - (instr.imm32 & 63)) & 63;
 		if (rotate != 0)
 			asmCode << "\trol rax, " << rotate << std::endl;
 		asmCode << "\tand eax, 24576" << std::endl;
@@ -441,7 +448,7 @@ namespace RandomX {
 	}
 
 	static inline const char* condition(Instruction& instr, bool invert = false) {
-		switch (((instr.alt >> 2) & 7) ^ invert)
+		switch (((instr.mod >> 2) & 7) ^ invert)
 		{
 			case 0:
 				return "be";
@@ -519,6 +526,7 @@ namespace RandomX {
 		INST_HANDLE(IXOR_M)
 		INST_HANDLE(IROR_R)
 		INST_HANDLE(IROL_R)
+		INST_HANDLE(ISWAP_R)
 
 		//Common floating point
 		INST_HANDLE(FPSWAP_R)

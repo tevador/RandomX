@@ -26,11 +26,6 @@ namespace RandomX {
 
 	using addr_t = uint32_t;
 
-	constexpr int RoundToNearest = 0;
-	constexpr int RoundDown = 1;
-	constexpr int RoundUp = 2;
-	constexpr int RoundToZero = 3;
-
 	constexpr int SeedSize = 32;
 	constexpr int ResultSize = 32;
 
@@ -46,7 +41,7 @@ namespace RandomX {
 	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
 	constexpr int BlockExpansionRatio = DatasetSize / CacheSize;
 	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = 3;
+	constexpr int DatasetIterations = 10;
 
 
 #ifdef TRACE
@@ -72,12 +67,12 @@ namespace RandomX {
 		convertible_t hi;
 	};
 
-	constexpr int ProgramLength = 128;
+	constexpr int ProgramLength = 256;
 	constexpr uint32_t InstructionCount = 1024;
-	constexpr uint32_t ScratchpadSize = 1024 * 1024;
+	constexpr uint32_t ScratchpadSize = 2 * 1024 * 1024;
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(convertible_t);
-	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 64 / sizeof(convertible_t);
-	constexpr uint32_t ScratchpadL2 = ScratchpadSize / 4 / sizeof(convertible_t);
+	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 128 / sizeof(convertible_t);
+	constexpr uint32_t ScratchpadL2 = ScratchpadSize / 8 / sizeof(convertible_t);
 	constexpr uint32_t ScratchpadL3 = ScratchpadSize / sizeof(convertible_t);
 	constexpr int ScratchpadL1Mask = (ScratchpadL1 - 1) * 8;
 	constexpr int ScratchpadL2Mask = (ScratchpadL2 - 1) * 8;
@@ -132,6 +127,8 @@ namespace RandomX {
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, RegisterFile&);
 
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, convertible_t*, uint64_t);
+
+	typedef bool(*Condition)(convertible_t&, convertible_t&);
 
 	extern "C" {
 		void executeProgram(RegisterFile&, MemoryRegisters&, convertible_t*, uint64_t);

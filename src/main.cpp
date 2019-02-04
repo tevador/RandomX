@@ -35,6 +35,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "Cache.hpp"
 #include "Pcg32.hpp"
+#include "hashAes1Rx4.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -153,7 +154,7 @@ void generateNative(int nonce) {
 }
 
 void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread, uint8_t* scratchpad) {
-	uint64_t hash[4];
+	alignas(16) uint64_t hash[8];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
@@ -167,8 +168,8 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		//std::cout << "Thread " << thread << " nonce " << nonce << std::endl;
 		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 15) << 8);
-		vm->initializeScratchpad(scratchpad, spIndex);
+		fillAes1Rx4<false>((void*)hash, RandomX::ScratchpadSize, scratchpad);
+		//vm->initializeScratchpad(scratchpad, spIndex);
 		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
 		for (int chain = 0; chain < 16; ++chain) {
@@ -309,7 +310,7 @@ int main(int argc, char** argv) {
 		}
 		uint8_t* scratchpadMem;
 		if (largePages) {
-			scratchpadMem = (uint8_t*)allocLargePagesMemory(RandomX::ScratchpadSize * (threadCount + 1) / 2);
+			scratchpadMem = (uint8_t*)allocLargePagesMemory(threadCount * RandomX::ScratchpadSize);
 		}
 		else {
 			scratchpadMem = (uint8_t*)_mm_malloc(threadCount * RandomX::ScratchpadSize, RandomX::CacheLineSize);

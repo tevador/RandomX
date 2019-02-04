@@ -29,15 +29,15 @@ namespace RandomX {
 	}
 
 	void Instruction::genAddressReg(std::ostream& os) const {
-		os << ((alt % 4) ? "L1" : "L2") << "[r" << (int)src << "]";
+		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)src << "]";
 	}
 
 	void Instruction::genAddressRegDst(std::ostream& os) const {
-		os << ((alt % 4) ? "L1" : "L2") << "[r" << (int)dst << "]";
+		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)dst << "]";
 	}
 
 	void Instruction::genAddressImm(std::ostream& os) const {
-		os << ((alt % 4) ? "L1" : "L2") << "[" << (imm32 & ((alt % 4) ? ScratchpadL1Mask : ScratchpadL2Mask)) << "]";
+		os << ((mod % 4) ? "L1" : "L2") << "[" << (imm32 & ((mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask)) << "]";
 	}
 
 	void Instruction::h_IADD_R(std::ostream& os) const {
@@ -211,6 +211,10 @@ namespace RandomX {
 		os << "r" << (int)dst << ", " << imm32 << std::endl;
 	}
 
+	void Instruction::h_ISWAP_R(std::ostream& os) const {
+		os << "r" << (int)dst << ", r" << (int)src << std::endl;
+	}
+
 	void Instruction::h_FPSWAP_R(std::ostream& os) const {
 		const char reg = (dst >= 4) ? 'e' : 'f';
 		auto dstIndex = dst % 4;
@@ -280,7 +284,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_CFROUND(std::ostream& os) const {
-		os << "r" << (int)src << ", " << (alt & 63) << std::endl;
+		os << "r" << (int)src << ", " << (imm32 & 63) << std::endl;
 	}
 
 	static inline const char* condition(int index) {
@@ -306,11 +310,11 @@ namespace RandomX {
 	}
 
 	void Instruction::h_COND_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((alt >> 2) & 7) << "(r" << (int)src << ", " << imm32 << ")" << std::endl;
+		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << imm32 << ")" << std::endl;
 	}
 
 	void Instruction::h_COND_M(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((alt >> 2) & 7) << "(";
+		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(";
 		genAddressReg(os);
 		os << ", " << imm32 << ")" << std::endl;
 	}
@@ -356,6 +360,7 @@ namespace RandomX {
 		INST_NAME(IXOR_M)
 		INST_NAME(IROR_R)
 		INST_NAME(IROL_R)
+		INST_NAME(ISWAP_R)
 
 		//Common floating point
 		INST_NAME(FPSWAP_R)
@@ -406,6 +411,7 @@ namespace RandomX {
 		INST_HANDLE(IXOR_M)
 		INST_HANDLE(IROR_R)
 		INST_HANDLE(IROL_R)
+		INST_HANDLE(ISWAP_R)
 
 		//Common floating point
 		INST_HANDLE(FPSWAP_R)

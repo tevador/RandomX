@@ -28,10 +28,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Cache.hpp"
 #include "virtualMemory.hpp"
 #include "softAes.h"
+#include "squareHash.h"
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
-#define PREFETCH(memory) _mm_prefetch((const char *)((memory).ds.dataset + (memory).ma), _MM_HINT_NTA)
+#define PREFETCHNTA(x) _mm_prefetch((const char *)(x), _MM_HINT_NTA)
 #else
 #define PREFETCH(memory)
 #endif
@@ -49,42 +50,37 @@ namespace RandomX {
 
 	template<bool soft>
 	void initBlock(const uint8_t* intermediate, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
-		__m128i x0, x1, x2, x3;
+		uint64_t r0, r1, r2, r3, r4, r5, r6, r7;
 
-		__m128i* xit = (__m128i*)intermediate;
-		__m128i* xout = (__m128i*)out;
+		r0 = 4ULL * blockNumber;
+		r1 = r2 = r3 = r4 = r5 = r6 = r7 = 0;
 
-		x0 = _mm_cvtsi32_si128(blockNumber);
-		constexpr int mask = (CacheSize / CacheLineSize) - 1;
+		constexpr int mask = (CacheSize - 1) & -64;
 
 		for (auto i = 0; i < DatasetIterations; ++i) {
-			x0 = aesenc<soft>(x0, keys[0]);
-			//x0 = aesenc<soft>(x0, keys[1]);
-			x1 = aesenc<soft>(x0, keys[2]);
-			//x1 = aesenc<soft>(x1, keys[3]);
-			x2 = aesenc<soft>(x1, keys[4]);
-			//x2 = aesenc<soft>(x2, keys[5]);
-			x3 = aesenc<soft>(x2, keys[6]);
-			//x3 = aesenc<soft>(x3, keys[7]);
-
-			int index = _mm_cvtsi128_si32(x3);
-			index &= mask;
-
-			__m128i t0 = _mm_load_si128(xit + 4 * index + 0);
-			__m128i t1 = _mm_load_si128(xit + 4 * index + 1);
-			__m128i t2 = _mm_load_si128(xit + 4 * index + 2);
-			__m128i t3 = _mm_load_si128(xit + 4 * index + 3);
-
-			x0 = _mm_xor_si128(x0, t0);
-			x1 = _mm_xor_si128(x1, t1);
-			x2 = _mm_xor_si128(x2, t2);
-			x3 = _mm_xor_si128(x3, t3);
+			uint64_t* mix = (uint64_t*)(intermediate + (r0 & mask));
+			PREFETCHNTA(mix);
+			r0 = squareHash(r0);
+			r0 ^= mix[0];
+			r1 ^= mix[1];
+			r2 ^= mix[2];
+			r3 ^= mix[3];
+			r4 ^= mix[4];
+			r5 ^= mix[5];
+			r6 ^= mix[6];
+			r7 ^= mix[7];
 		}
 
-		_mm_store_si128(xout + 0, x0);
-		_mm_store_si128(xout + 1, x1);
-		_mm_store_si128(xout + 2, x2);
-		_mm_store_si128(xout + 3, x3);
+		uint64_t* out64 = (uint64_t*)out;
+
+		out64[0] = r0;
+		out64[1] = r1;
+		out64[2] = r2;
+		out64[3] = r3;
+		out64[4] = r4;
+		out64[5] = r5;
+		out64[6] = r6;
+		out64[7] = r7;
 	}
 
 	template
@@ -98,7 +94,7 @@ namespace RandomX {
 		memory.mx ^= addr;
 		memory.mx &= -64; //align to cache line
 		std::swap(memory.mx, memory.ma);
-		PREFETCH(memory);
+		PREFETCHNTA(memory.ds.dataset + memory.ma);
 		for (int i = 0; i < RegistersCount; ++i)
 			reg.r[i].u64 ^= datasetLine[i];
 	}

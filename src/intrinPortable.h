@@ -19,6 +19,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <cstdint>
+
 #if defined(_MSC_VER)
 #if defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)
 #define __SSE2__ 1
@@ -44,6 +46,18 @@ typedef union {
 	uint16_t u16[8];
 	uint8_t u8[16];
 } __m128i;
+
+typedef struct {
+	double lo;
+	double hi;
+} __m128d;
+
+inline __m128d _mm_load_pd(const double* pd) {
+	__m128d x;
+	x.lo = *(pd + 0);
+	x.hi = *(pd + 1);
+	return x;
+}
 
 static const char* platformError = "Platform doesn't support hardware AES";
 
@@ -132,3 +146,16 @@ inline __m128i _mm_slli_si128(__m128i _A, int _Imm) {
 }
 
 #endif
+
+constexpr int RoundToNearest = 0;
+constexpr int RoundDown = 1;
+constexpr int RoundUp = 2;
+constexpr int RoundToZero = 3;
+
+uint64_t mulh(uint64_t, uint64_t);
+int64_t smulh(int64_t, int64_t);
+uint64_t rotl(uint64_t, int);
+uint64_t rotr(uint64_t, int);
+void initFpu();
+void setRoundMode(uint32_t);
+bool condition(uint32_t, int32_t, int32_t);

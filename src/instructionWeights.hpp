@@ -37,8 +37,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_INEG_R 2
 #define WT_IXOR_R 12
 #define WT_IXOR_M 3
-#define WT_IROR_R 12
-#define WT_IROL_R 12
+#define WT_IROR_R 10
+#define WT_IROL_R 10
+#define WT_ISWAP_R 4
 
 //Common floating point
 #define WT_FPSWAP_R 8
@@ -72,7 +73,7 @@ constexpr int wtSum = WT_IADD_R + WT_IADD_M + WT_IADD_RC + WT_ISUB_R + \
 WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
 WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
 WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
-WT_FPSWAP_R + WT_FPADD_R + WT_FPADD_M + WT_FPSUB_R + WT_FPSUB_M + \
+WT_ISWAP_R + WT_FPSWAP_R + WT_FPADD_R + WT_FPADD_M + WT_FPSUB_R + WT_FPSUB_M + \
 WT_FPNEG_R + WT_FPMUL_R + WT_FPMUL_M + WT_FPDIV_R + WT_FPDIV_M + \
 WT_FPSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
 

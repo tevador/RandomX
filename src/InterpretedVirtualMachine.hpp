@@ -33,9 +33,23 @@ namespace RandomX {
 		virtual std::ostream& printCxx(std::ostream&) const = 0;
 	};
 
+	struct InstructionByteCode;
 	class InterpretedVirtualMachine;
 
 	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
+
+	struct alignas(64) InstructionByteCode {
+		convertible_t* idst;
+		convertible_t* isrc;
+		convertible_t imm;
+		fpu_reg_t* fdst;
+		fpu_reg_t* fsrc;
+		uint32_t condition;
+		uint32_t memMask;
+		uint32_t type;
+	};
+
+	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
 
 	class InterpretedVirtualMachine : public VirtualMachine {
 	public:
@@ -53,6 +67,7 @@ namespace RandomX {
 		static const ITransform* addressTransformations[TransformationCount];
 		bool softAes, asyncWorker;
 		Program p;
+		InstructionByteCode byteCode[ProgramLength];
 		std::vector<convertible_t> stack;
 		uint64_t pc, ic;
 		const ITransform* currentTransform;
@@ -106,7 +121,7 @@ namespace RandomX {
 		int count_FPMUL_nop2 = 0;
 		int datasetAccess[256] = { 0 };
 #endif
-
+		void executeInstruction(Instruction&);
 		convertible_t loada(Instruction&);
 		convertible_t loadbiashift(Instruction&);
 		convertible_t loadbiadiv(Instruction&);
