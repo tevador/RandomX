@@ -262,7 +262,7 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::genAddressImm(Instruction& instr) {
-		emit32(instr.imm32 & ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask));
+		emit32(instr.imm32 & ScratchpadL3Mask);
 	}
 
 	void JitCompilerX86::h_IADD_R(Instruction& instr) {

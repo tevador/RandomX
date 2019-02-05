@@ -172,7 +172,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		//vm->initializeScratchpad(scratchpad, spIndex);
 		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
-		for (int chain = 0; chain < 16; ++chain) {
+		for (int chain = 0; chain < 8; ++chain) {
 			vm->initializeProgram(hash);
 			vm->execute();
 			vm->getResult(nullptr, 0, hash);

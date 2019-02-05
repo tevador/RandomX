@@ -25,7 +25,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_IADD_RC 12
 #define WT_ISUB_R 12
 #define WT_ISUB_M 3
-#define WT_IMUL_9C 10
+#define WT_IMUL_9C 9
 #define WT_IMUL_R 16
 #define WT_IMUL_M 4
 #define WT_IMULH_R 4
@@ -36,7 +36,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_ISDIV_C 4
 #define WT_INEG_R 2
 #define WT_IXOR_R 12
-#define WT_IXOR_M 3
+#define WT_IXOR_M 4
 #define WT_IROR_R 10
 #define WT_IROL_R 10
 #define WT_ISWAP_R 4

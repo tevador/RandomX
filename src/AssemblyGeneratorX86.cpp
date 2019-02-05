@@ -81,7 +81,7 @@ namespace RandomX {
 	}
 
 	int32_t AssemblyGeneratorX86::genAddressImm(Instruction& instr) {
-		return instr.imm32 & ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+		return instr.imm32 & ScratchpadL3Mask;
 	}
 
 	//1 uOP

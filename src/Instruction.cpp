@@ -37,7 +37,7 @@ namespace RandomX {
 	}
 
 	void Instruction::genAddressImm(std::ostream& os) const {
-		os << ((mod % 4) ? "L1" : "L2") << "[" << (imm32 & ((mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask)) << "]";
+		os << "L3" << "[" << (imm32 & ScratchpadL3Mask) << "]";
 	}
 
 	void Instruction::h_IADD_R(std::ostream& os) const {
