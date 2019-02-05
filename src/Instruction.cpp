@@ -215,32 +215,32 @@ namespace RandomX {
 		os << "r" << (int)dst << ", r" << (int)src << std::endl;
 	}
 
-	void Instruction::h_FPSWAP_R(std::ostream& os) const {
+	void Instruction::h_FSWAP_R(std::ostream& os) const {
 		const char reg = (dst >= 4) ? 'e' : 'f';
 		auto dstIndex = dst % 4;
 		os << reg << dstIndex << std::endl;
 	}
 
-	void Instruction::h_FPADD_R(std::ostream& os) const {
+	void Instruction::h_FADD_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		auto srcIndex = src % 4;
 		os << "f" << dstIndex << ", a" << srcIndex << std::endl;
 	}
 
-	void Instruction::h_FPADD_M(std::ostream& os) const {
+	void Instruction::h_FADD_M(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "f" << dstIndex << ", ";
 		genAddressReg(os);
 		os << std::endl;
 	}
 
-	void Instruction::h_FPSUB_R(std::ostream& os) const {
+	void Instruction::h_FSUB_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		auto srcIndex = src % 4;
 		os << "f" << dstIndex << ", a" << srcIndex << std::endl;
 	}
 
-	void Instruction::h_FPSUB_M(std::ostream& os) const {
+	void Instruction::h_FSUB_M(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "f" << dstIndex << ", ";
 		genAddressReg(os);
@@ -252,33 +252,33 @@ namespace RandomX {
 		os << "f" << dstIndex << std::endl;
 	}
 
-	void Instruction::h_FPMUL_R(std::ostream& os) const {
+	void Instruction::h_FMUL_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		auto srcIndex = src % 4;
 		os << "e" << dstIndex << ", a" << srcIndex << std::endl;
 	}
 
-	void Instruction::h_FPMUL_M(std::ostream& os) const {
+	void Instruction::h_FMUL_M(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "e" << dstIndex << ", ";
 		genAddressReg(os);
 		os << std::endl;
 	}
 
-	void Instruction::h_FPDIV_R(std::ostream& os) const {
+	void Instruction::h_FDIV_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		auto srcIndex = src % 4;
 		os << "e" << dstIndex << ", a" << srcIndex << std::endl;
 	}
 
-	void Instruction::h_FPDIV_M(std::ostream& os) const {
+	void Instruction::h_FDIV_M(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "e" << dstIndex << ", ";
 		genAddressReg(os);
 		os << std::endl;
 	}
 
-	void Instruction::h_FPSQRT_R(std::ostream& os) const {
+	void Instruction::h_FSQRT_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "e" << dstIndex << std::endl;
 	}
@@ -363,21 +363,21 @@ namespace RandomX {
 		INST_NAME(ISWAP_R)
 
 		//Common floating point
-		INST_NAME(FPSWAP_R)
+		INST_NAME(FSWAP_R)
 
 		//Floating point group F
-		INST_NAME(FPADD_R)
-		INST_NAME(FPADD_M)
-		INST_NAME(FPSUB_R)
-		INST_NAME(FPSUB_M)
+		INST_NAME(FADD_R)
+		INST_NAME(FADD_M)
+		INST_NAME(FSUB_R)
+		INST_NAME(FSUB_M)
 		INST_NAME(FPNEG_R)
 
 		//Floating point group E
-		INST_NAME(FPMUL_R)
-		INST_NAME(FPMUL_M)
-		INST_NAME(FPDIV_R)
-		INST_NAME(FPDIV_M)
-		INST_NAME(FPSQRT_R)
+		INST_NAME(FMUL_R)
+		INST_NAME(FMUL_M)
+		INST_NAME(FDIV_R)
+		INST_NAME(FDIV_M)
+		INST_NAME(FSQRT_R)
 
 		//Control
 		INST_NAME(COND_R)
@@ -414,21 +414,21 @@ namespace RandomX {
 		INST_HANDLE(ISWAP_R)
 
 		//Common floating point
-		INST_HANDLE(FPSWAP_R)
+		INST_HANDLE(FSWAP_R)
 
 		//Floating point group F
-		INST_HANDLE(FPADD_R)
-		INST_HANDLE(FPADD_M)
-		INST_HANDLE(FPSUB_R)
-		INST_HANDLE(FPSUB_M)
+		INST_HANDLE(FADD_R)
+		INST_HANDLE(FADD_M)
+		INST_HANDLE(FSUB_R)
+		INST_HANDLE(FSUB_M)
 		INST_HANDLE(FPNEG_R)
 
 		//Floating point group E
-		INST_HANDLE(FPMUL_R)
-		INST_HANDLE(FPMUL_M)
-		INST_HANDLE(FPDIV_R)
-		INST_HANDLE(FPDIV_M)
-		INST_HANDLE(FPSQRT_R)
+		INST_HANDLE(FMUL_R)
+		INST_HANDLE(FMUL_M)
+		INST_HANDLE(FDIV_R)
+		INST_HANDLE(FDIV_M)
+		INST_HANDLE(FSQRT_R)
 
 		//Control
 		INST_HANDLE(COND_R)

@@ -42,21 +42,21 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_ISWAP_R 4
 
 //Common floating point
-#define WT_FPSWAP_R 8
+#define WT_FSWAP_R 8
 
 //Floating point group F
-#define WT_FPADD_R 20
-#define WT_FPADD_M 5
-#define WT_FPSUB_R 20
-#define WT_FPSUB_M 5
+#define WT_FADD_R 20
+#define WT_FADD_M 5
+#define WT_FSUB_R 20
+#define WT_FSUB_M 5
 #define WT_FPNEG_R 6
 
 //Floating point group E
-#define WT_FPMUL_R 16
-#define WT_FPMUL_M 4
-#define WT_FPDIV_R 7
-#define WT_FPDIV_M 1
-#define WT_FPSQRT_R 6
+#define WT_FMUL_R 16
+#define WT_FMUL_M 4
+#define WT_FDIV_R 7
+#define WT_FDIV_M 1
+#define WT_FSQRT_R 6
 
 //Control
 #define WT_COND_R 7
@@ -73,9 +73,9 @@ constexpr int wtSum = WT_IADD_R + WT_IADD_M + WT_IADD_RC + WT_ISUB_R + \
 WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
 WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
 WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
-WT_ISWAP_R + WT_FPSWAP_R + WT_FPADD_R + WT_FPADD_M + WT_FPSUB_R + WT_FPSUB_M + \
-WT_FPNEG_R + WT_FPMUL_R + WT_FPMUL_M + WT_FPDIV_R + WT_FPDIV_M + \
-WT_FPSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
+WT_ISWAP_R + WT_FSWAP_R + WT_FADD_R + WT_FADD_M + WT_FSUB_R + WT_FSUB_M + \
+WT_FPNEG_R + WT_FMUL_R + WT_FMUL_M + WT_FDIV_R + WT_FDIV_M + \
+WT_FSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
 
 static_assert(wtSum == 256,
 	"Sum of instruction weights must be 256");

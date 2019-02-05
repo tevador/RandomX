@@ -225,7 +225,7 @@ namespace RandomX {
 				c.i64 = a.i64 / (b.i32 != 0 ? b.i32 : 1);
 		}
 
-		void FPADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+		void FADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
 #ifdef __SSE2__
 			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
 			__m128d ad = _mm_cvtepi32_pd(ai);
@@ -240,7 +240,7 @@ namespace RandomX {
 #endif
 		}
 
-		void FPSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+		void FSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
 #ifdef __SSE2__
 			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
 			__m128d ad = _mm_cvtepi32_pd(ai);
@@ -255,7 +255,7 @@ namespace RandomX {
 #endif
 		}
 
-		void FPMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+		void FMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
 #ifdef __SSE2__
 			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
 			__m128d ad = _mm_cvtepi32_pd(ai);
@@ -272,7 +272,7 @@ namespace RandomX {
 #endif
 		}
 
-		void FPDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+		void FDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
 #ifdef __SSE2__
 			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
 			__m128d ad = _mm_cvtepi32_pd(ai);
@@ -289,7 +289,7 @@ namespace RandomX {
 #endif
 		}
 
-		void FPSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
+		void FSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
 #ifdef __SSE2__
 			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
 			__m128d ad = _mm_cvtepi32_pd(ai);

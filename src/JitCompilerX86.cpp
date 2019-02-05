@@ -177,6 +177,7 @@ namespace RandomX {
 	static const uint8_t JMP = 0xe9;
 	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
 	static const uint8_t REX_XCHG[] = { 0x4d, 0x87 };
+	static const uint8_t REX_ANDPS_XMM12[] = { 0x41, 0x0f, 0x54, 0xe6 };
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize;
@@ -603,20 +604,20 @@ namespace RandomX {
 		}
 	}
 
-	void JitCompilerX86::h_FPSWAP_R(Instruction& instr) {
+	void JitCompilerX86::h_FSWAP_R(Instruction& instr) {
 		emit(SHUFPD);
 		emitByte(0xc0 + 9 * instr.dst);
 		emitByte(1);
 	}
 
-	void JitCompilerX86::h_FPADD_R(Instruction& instr) {
+	void JitCompilerX86::h_FADD_R(Instruction& instr) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		emit(REX_ADDPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPADD_M(Instruction& instr) {
+	void JitCompilerX86::h_FADD_M(Instruction& instr) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
@@ -624,14 +625,14 @@ namespace RandomX {
 		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPSUB_R(Instruction& instr) {
+	void JitCompilerX86::h_FSUB_R(Instruction& instr) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		emit(REX_SUBPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPSUB_M(Instruction& instr) {
+	void JitCompilerX86::h_FSUB_M(Instruction& instr) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
@@ -645,24 +646,25 @@ namespace RandomX {
 		emitByte(0xc7 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPMUL_R(Instruction& instr) {
+	void JitCompilerX86::h_FMUL_R(Instruction& instr) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		emit(REX_MULPD);
 		emitByte(0xe0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPMUL_M(Instruction& instr) {
+	void JitCompilerX86::h_FMUL_M(Instruction& instr) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_ANDPS_XMM12);
 		emit(REX_MULPD);
 		emitByte(0xe4 + 8 * instr.dst);
 		emit(REX_MAXPD);
 		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPDIV_R(Instruction& instr) {
+	void JitCompilerX86::h_FDIV_R(Instruction& instr) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		emit(REX_DIVPD);
@@ -671,17 +673,18 @@ namespace RandomX {
 		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPDIV_M(Instruction& instr) {
+	void JitCompilerX86::h_FDIV_M(Instruction& instr) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
+		emit(REX_ANDPS_XMM12);
 		emit(REX_DIVPD);
 		emitByte(0xe4 + 8 * instr.dst);
 		emit(REX_MAXPD);
 		emitByte(0xe5 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FPSQRT_R(Instruction& instr) {
+	void JitCompilerX86::h_FSQRT_R(Instruction& instr) {
 		instr.dst %= 4;
 		emit(SQRTPD);
 		emitByte(0xe4 + 9 * instr.dst);
@@ -786,17 +789,17 @@ namespace RandomX {
 		INST_HANDLE(IROR_R)
 		INST_HANDLE(IROL_R)
 		INST_HANDLE(ISWAP_R)
-		INST_HANDLE(FPSWAP_R)
-		INST_HANDLE(FPADD_R)
-		INST_HANDLE(FPADD_M)
-		INST_HANDLE(FPSUB_R)
-		INST_HANDLE(FPSUB_M)
+		INST_HANDLE(FSWAP_R)
+		INST_HANDLE(FADD_R)
+		INST_HANDLE(FADD_M)
+		INST_HANDLE(FSUB_R)
+		INST_HANDLE(FSUB_M)
 		INST_HANDLE(FPNEG_R)
-		INST_HANDLE(FPMUL_R)
-		INST_HANDLE(FPMUL_M)
-		INST_HANDLE(FPDIV_R)
-		INST_HANDLE(FPDIV_M)
-		INST_HANDLE(FPSQRT_R)
+		INST_HANDLE(FMUL_R)
+		INST_HANDLE(FMUL_M)
+		INST_HANDLE(FDIV_R)
+		INST_HANDLE(FDIV_M)
+		INST_HANDLE(FSQRT_R)
 		INST_HANDLE(COND_R)
 		INST_HANDLE(COND_M)
 		INST_HANDLE(CFROUND)

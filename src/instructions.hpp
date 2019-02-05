@@ -48,10 +48,10 @@ namespace RandomX {
 		bool JMP_COND(uint8_t, convertible_t&, int32_t);
 		void FPINIT();
 		void FPROUND(convertible_t, uint8_t);
-		void FPADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
-		void FPSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
-		void FPMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
-		void FPDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
-		void FPSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
+		void FSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c);
 	}
 }

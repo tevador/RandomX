@@ -356,19 +356,19 @@ namespace RandomX {
 	}
 
 	//1 uOPs
-	void AssemblyGeneratorX86::h_FPSWAP_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FSWAP_R(Instruction& instr, int i) {
 		asmCode << "\tshufpd " << regFE[instr.dst] << ", " << regFE[instr.dst] << ", 1" << std::endl;
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_FPADD_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FADD_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
 	//5 uOPs
-	void AssemblyGeneratorX86::h_FPADD_M(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FADD_M(Instruction& instr, int i) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
@@ -376,14 +376,14 @@ namespace RandomX {
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_FPSUB_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FSUB_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
 	//5 uOPs
-	void AssemblyGeneratorX86::h_FPSUB_M(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FSUB_M(Instruction& instr, int i) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
@@ -397,40 +397,42 @@ namespace RandomX {
 	}
 
 	//1 uOPs
-	void AssemblyGeneratorX86::h_FPMUL_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FMUL_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tmulpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
 	}
 
-	//6 uOPs
-	void AssemblyGeneratorX86::h_FPMUL_M(Instruction& instr, int i) {
+	//7 uOPs
+	void AssemblyGeneratorX86::h_FMUL_M(Instruction& instr, int i) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\tandps xmm12, xmm14" << std::endl;
 		asmCode << "\tmulpd " << regE[instr.dst] << ", xmm12" << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
 	//2 uOPs
-	void AssemblyGeneratorX86::h_FPDIV_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FDIV_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
-	//6 uOPs
-	void AssemblyGeneratorX86::h_FPDIV_M(Instruction& instr, int i) {
+	//7 uOPs
+	void AssemblyGeneratorX86::h_FDIV_M(Instruction& instr, int i) {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
+		asmCode << "\tandps xmm12, xmm14" << std::endl;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", xmm12" << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_FPSQRT_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FSQRT_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		asmCode << "\tsqrtpd " << regE[instr.dst] << ", " << regE[instr.dst] << std::endl;
 	}	
@@ -529,21 +531,21 @@ namespace RandomX {
 		INST_HANDLE(ISWAP_R)
 
 		//Common floating point
-		INST_HANDLE(FPSWAP_R)
+		INST_HANDLE(FSWAP_R)
 
 		//Floating point group F
-		INST_HANDLE(FPADD_R)
-		INST_HANDLE(FPADD_M)
-		INST_HANDLE(FPSUB_R)
-		INST_HANDLE(FPSUB_M)
+		INST_HANDLE(FADD_R)
+		INST_HANDLE(FADD_M)
+		INST_HANDLE(FSUB_R)
+		INST_HANDLE(FSUB_M)
 		INST_HANDLE(FPNEG_R)
 
 		//Floating point group E
-		INST_HANDLE(FPMUL_R)
-		INST_HANDLE(FPMUL_M)
-		INST_HANDLE(FPDIV_R)
-		INST_HANDLE(FPDIV_M)
-		INST_HANDLE(FPSQRT_R)
+		INST_HANDLE(FMUL_R)
+		INST_HANDLE(FMUL_M)
+		INST_HANDLE(FDIV_R)
+		INST_HANDLE(FDIV_M)
+		INST_HANDLE(FSQRT_R)
 
 		//Control
 		INST_HANDLE(COND_R)
