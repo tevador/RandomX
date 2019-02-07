@@ -12,6 +12,10 @@
 	mulpd xmm1, xmm5
 	mulpd xmm2, xmm6
 	mulpd xmm3, xmm7
+	;# xorpd xmm0, xmm15
+	;# xorpd xmm1, xmm15
+	;# xorpd xmm2, xmm15
+	;# xorpd xmm3, xmm15
 	movapd xmmword ptr [rcx+0], xmm0
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2

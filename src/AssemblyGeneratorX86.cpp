@@ -35,6 +35,8 @@ namespace RandomX {
 	static const char* regE[4] = { "xmm4", "xmm5", "xmm6", "xmm7" };
 	static const char* regA[4] = { "xmm8", "xmm9", "xmm10", "xmm11" };
 
+	static const char* fsumInstr[4] = { "paddb", "paddw", "paddd", "paddq" };
+
 	static const char* regA4 = "xmm12";
 	static const char* dblMin = "xmm13";
 	static const char* absMask = "xmm14";
@@ -365,6 +367,7 @@ namespace RandomX {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
+		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
 	}
 
 	//5 uOPs
@@ -380,6 +383,7 @@ namespace RandomX {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
+		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
 	}
 
 	//5 uOPs
@@ -391,9 +395,9 @@ namespace RandomX {
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_FPNEG_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_CFSUM_R(Instruction& instr, int i) {
 		instr.dst %= 4;
-		asmCode << "\txorps " << regF[instr.dst] << ", " << signMask << std::endl;
+		asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
 	}
 
 	//1 uOPs
@@ -538,7 +542,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(FPNEG_R)
+		INST_HANDLE(CFSUM_R)
 
 		//Floating point group E
 		INST_HANDLE(FMUL_R)

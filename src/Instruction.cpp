@@ -247,9 +247,9 @@ namespace RandomX {
 		os << std::endl;
 	}
 
-	void Instruction::h_FPNEG_R(std::ostream& os) const {
+	void Instruction::h_CFSUM_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
-		os << "f" << dstIndex << std::endl;
+		os << "f" << dstIndex << ", " << (1 << ((mod % 4) + 3)) << std::endl;
 	}
 
 	void Instruction::h_FMUL_R(std::ostream& os) const {
@@ -370,7 +370,7 @@ namespace RandomX {
 		INST_NAME(FADD_M)
 		INST_NAME(FSUB_R)
 		INST_NAME(FSUB_M)
-		INST_NAME(FPNEG_R)
+		INST_NAME(CFSUM_R)
 
 		//Floating point group E
 		INST_NAME(FMUL_R)
@@ -421,7 +421,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(FPNEG_R)
+		INST_HANDLE(CFSUM_R)
 
 		//Floating point group E
 		INST_HANDLE(FMUL_R)

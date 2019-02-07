@@ -115,7 +115,7 @@ namespace RandomX {
 		void  h_FADD_M(Instruction&);
 		void  h_FSUB_R(Instruction&);
 		void  h_FSUB_M(Instruction&);
-		void  h_FPNEG_R(Instruction&);
+		void  h_CFSUM_R(Instruction&);
 		void  h_FMUL_R(Instruction&);
 		void  h_FMUL_M(Instruction&);
 		void  h_FDIV_R(Instruction&);

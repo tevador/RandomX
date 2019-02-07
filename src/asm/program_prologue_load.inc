@@ -18,5 +18,5 @@
 	movapd xmm11, xmmword ptr [rcx+120]
 	movapd xmm13, xmmword ptr [minDbl]
 	movapd xmm14, xmmword ptr [absMask]
-	movapd xmm15, xmmword ptr [signMask]
+	;# xorpd xmm15, xmm15
 

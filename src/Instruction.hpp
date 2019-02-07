@@ -54,7 +54,7 @@ namespace RandomX {
 		constexpr int FADD_M = 22;
 		constexpr int FSUB_R = 23;
 		constexpr int FSUB_M = 24;
-		constexpr int FPNEG_R = 25;
+		constexpr int CFSUM_R = 25;
 		constexpr int FMUL_R = 26;
 		constexpr int FMUL_M = 27;
 		constexpr int FDIV_R = 28;
@@ -116,7 +116,7 @@ namespace RandomX {
 		void  h_FADD_M(std::ostream&) const;
 		void  h_FSUB_R(std::ostream&) const;
 		void  h_FSUB_M(std::ostream&) const;
-		void  h_FPNEG_R(std::ostream&) const;
+		void  h_CFSUM_R(std::ostream&) const;
 		void  h_FMUL_R(std::ostream&) const;
 		void  h_FMUL_M(std::ostream&) const;
 		void  h_FDIV_R(std::ostream&) const;

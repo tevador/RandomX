@@ -44,7 +44,7 @@ namespace RandomX {
 	}
 
 	static uint64_t getSmallPositiveFloatBits(uint64_t entropy) {
-		auto exponent = entropy >> 60; //0..15
+		auto exponent = entropy >> 59; //0..31
 		auto mantissa = entropy & mantissaMask;
 		exponent += exponentBias;
 		exponent &= exponentMask;
