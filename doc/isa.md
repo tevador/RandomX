@@ -1,6 +1,6 @@
 
 # RandomX instruction set architecture
-RandomX VM is a complex instruction set computer ([CISC](https://en.wikipedia.org/wiki/Complex_instruction_set_computer)). All data are loaded and stored in little-endian byte order. Signed integer numbers are represented using [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement). Floating point numbers are represented using the [IEEE-754 double precision format](https://en.wikipedia.org/wiki/Double-precision_floating-point_format).
+RandomX VM is a complex instruction set computer ([CISC](https://en.wikipedia.org/wiki/Complex_instruction_set_computer)). All data are loaded and stored in little-endian byte order. Signed integer numbers are represented using [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement). Floating point numbers are represented using the [IEEE 754 double precision format](https://en.wikipedia.org/wiki/Double-precision_floating-point_format).
 
 ## Registers
 
@@ -36,16 +36,16 @@ Each instruction word is 64 bits long and has the following format:
 ![Imgur](https://i.imgur.com/FtkWRwe.png)
 
 ### opcode
-There are 256 opcodes, which are distributed between 35 distinct instructions. Each instruction can be encoded using multiple opcodes (the number of opcodes specifies the frequency of the instruction in a random program).
+There are 256 opcodes, which are distributed between 32 distinct instructions. Each instruction can be encoded using multiple opcodes (the number of opcodes specifies the frequency of the instruction in a random program).
 
 *Table 2: Instruction groups*
 
 |group|# instructions|# opcodes||
 |---------|-----------------|----|-|
-|integer |20|143|55.9%|
-|floating point |11|88|34.4%|
-|other |4|25|9.7%|
-||**35**|**256**|**100%**
+|integer |19|137|53.5%|
+|floating point |9|94|36.7%|
+|other |4|25|9.8%|
+||**32**|**256**|**100%**
 
 Full description of all instructions: [isa-ops.md](isa-ops.md).
 
@@ -88,4 +88,4 @@ The address for reading/writing is calculated by applying bitwise AND operation 
 The `mod.cond` flag is used only by the `COND` instruction to select a condition to be tested.
 
 ### imm32
-A 32-bit immediate value that can be used as the source operand. The immediate value is sign-extended to 64 bits in most cases.
+A 32-bit immediate value that can be used as the source operand. The immediate value is sign-extended to 64 bits unless specified otherwise.

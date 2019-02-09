@@ -6,7 +6,7 @@ For integer instructions, the destination is always an integer register (registe
 Memory operands are loaded as 8-byte values from the address indicated by `src`.  This indirect addressing is marked with square brackets: `[src]`.
 
 |frequency|instruction|dst|src|`src == dst ?`|operation|
-|-|-|-|-|-|-|-|-|
+|-|-|-|-|-|-|
 |12/256|IADD_R|R|R|`src = imm32`|`dst = dst + src`|
 |7/256|IADD_M|R|mem|`src = imm32`|`dst = dst + [src]`|
 |16/256|IADD_RC|R|R|`src = dst`|`dst = dst + src + imm32`|
@@ -42,7 +42,7 @@ For floating point instructions, the destination can be a group F or group E reg
 Memory operands are loaded as 8-byte values from the address indicated by `src`. The 8 byte value is interpreted as two 32-bit signed integers and implicitly converted to floating point format. The lower and upper memory operands are marked as `[src][0]` and `[src][1]`.
 
 |frequency|instruction|dst|src|operation|
-|-|-|-|-|-|-|-|
+|-|-|-|-|-|
 |8/256|FSWAP_R|F+E|-|`(dst0, dst1) = (dst1, dst0)`|
 |20/256|FADD_R|F|A|`(dst0, dst1) = (dst0 + src0, dst1 + src1)`|
 |5/256|FADD_M|F|mem|`(dst0, dst1) = (dst0 + [src][0], dst1 + [src][1])`|
@@ -67,16 +67,16 @@ All floating point instructions give correctly rounded results. The rounding mod
 |2|roundTowardPositive|
 |3|roundTowardZero|
 
-The rounding modes are defined by the IEEE-754 standard.
+The rounding modes are defined by the IEEE 754 standard.
 
 ## Other instructions
 There are 4 special instructions that have more than one source operand or the destination operand is a memory value.
 
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
-|7/256|COND_R|R|R, `imm32`|`if(condition(src, imm32)) dst = dst + 1`
-|1/256|COND_M|R|mem, `imm32`|`if(condition([src], imm32)) dst = dst + 1`
-|1/256|CFROUND|`fprc`|R, `imm32`|`fprc = src >>> imm32`
+|7/256|COND_R|R|R|`if(condition(src, imm32)) dst = dst + 1`
+|1/256|COND_M|R|mem|`if(condition([src], imm32)) dst = dst + 1`
+|1/256|CFROUND|`fprc`|R|`fprc = src >>> imm32`
 |16/256|ISTORE|mem|R|`[dst] = src`
 
 #### COND

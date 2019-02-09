@@ -24,7 +24,7 @@ Notable parts of the RandomX VM are:
 
 The structure of the VM mimics the components that are found in a typical general purpose computer equipped with a CPU and a large amount of DRAM. The scratchpad is designed to fit into the CPU cache. The first 16 KiB and 256 KiB of the scratchpad are used more often take advantage of the faster L1 and L2 caches. The ratio of random reads from L1/L2/L3 is approximately 9:3:1, which matches the inverse latencies of typical CPU caches.
 
-The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. For more details see [RandomX ISA documentation](doc/isa.md). Because there are no "syntax" rules, generating a random program is as easy as filling the program buffer with random data. A RandomX program consists of 256 instructions. See [program.inc](../src/program.inc) as an example of a RandomX program translated into x86-64 assembly.
+The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. For more details see [RandomX ISA documentation](doc/isa.md). Because there are no "syntax" rules, generating a random program is as easy as filling the program buffer with random data. A RandomX program consists of 256 instructions. See [program.inc](src/program.inc) as an example of a RandomX program translated into x86-64 assembly.
 
 #### Hash calculation
 
