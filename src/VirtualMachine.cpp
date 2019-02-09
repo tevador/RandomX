@@ -28,9 +28,15 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf) {
 	for (int i = 0; i < RandomX::RegistersCount; ++i)
 		os << std::hex << "r" << i << " = " << rf.r[i] << std::endl << std::dec;
-	for (int i = 0; i < RandomX::RegistersCount; ++i)
+	for (int i = 0; i < 4; ++i)
 		os << std::hex << "f" << i << " = " << *(uint64_t*)&rf.f[i].hi << " (" << rf.f[i].hi << ")" << std::endl
 		<< "   = " << *(uint64_t*)&rf.f[i].lo << " (" << rf.f[i].lo << ")" << std::endl << std::dec;
+	for (int i = 0; i < 4; ++i)
+		os << std::hex << "e" << i << " = " << *(uint64_t*)&rf.e[i].hi << " (" << rf.e[i].hi << ")" << std::endl
+		<< "   = " << *(uint64_t*)&rf.e[i].lo << " (" << rf.e[i].lo << ")" << std::endl << std::dec;
+	for (int i = 0; i < 4; ++i)
+		os << std::hex << "a" << i << " = " << *(uint64_t*)&rf.a[i].hi << " (" << rf.a[i].hi << ")" << std::endl
+		<< "   = " << *(uint64_t*)&rf.a[i].lo << " (" << rf.a[i].lo << ")" << std::endl << std::dec;
 	return os;
 }
 

@@ -83,7 +83,7 @@ namespace RandomX {
 
 		template<size_t N>
 		void emit(const uint8_t (&src)[N]) {
-			for (int i = 0; i < N; ++i) {
+			for (unsigned i = 0; i < N; ++i) {
 				code[codePos + i] = src[i];
 			}
 			codePos += N;

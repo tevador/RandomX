@@ -19,6 +19,18 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "softAes.h"
 
+/*
+	Calculate a 512-bit hash of 'input' using 4 lanes of AES.
+	The input is treated as a set of round keys for the encryption
+	of the initial state.
+
+	'inputSize' must be a multiple of 64.
+
+	For a 2 MiB input, this has the same security as 32768-round
+	AES encryption.
+
+	Hashing throughput: >20 GiB/s per CPU core with hardware AES
+*/
 template<bool softAes>
 void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	const uint8_t* inptr = (uint8_t*)input;
@@ -72,6 +84,16 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 template void hashAes1Rx4<false>(const void *input, size_t inputSize, void *hash);
 template void hashAes1Rx4<true>(const void *input, size_t inputSize, void *hash);
 
+/*
+	Fill 'buffer' with pseudorandom data based on 512-bit 'state'.
+	The state is encrypted using a single AES round per 16 bytes of output
+	in 4 lanes.
+
+	'outputSize' must be a multiple of 64.
+
+	The modified state is written back to 'state' to allow multiple
+	calls to this function.
+*/
 template<bool softAes>
 void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 	const uint8_t* outptr = (uint8_t*)buffer;

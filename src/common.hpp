@@ -93,6 +93,7 @@ namespace RandomX {
 
 	class ILightClientAsyncWorker {
 	public:
+		virtual ~ILightClientAsyncWorker() {}
 		virtual void prepareBlock(addr_t) = 0;
 		virtual void prepareBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
 		virtual const uint64_t* getBlock(addr_t) = 0;

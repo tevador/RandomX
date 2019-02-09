@@ -1,6 +1,3 @@
-
-
-
 # RandomX
 RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose CPUs. RandomX uses random code execution (hence the name) together with several memory-hard techniques to achieve the following goals:
 
@@ -26,7 +23,7 @@ The structure of the VM mimics the components that are found in a typical genera
 
 The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. For more details see [RandomX ISA documentation](doc/isa.md). Because there are no "syntax" rules, generating a random program is as easy as filling the program buffer with random data. A RandomX program consists of 256 instructions. See [program.inc](src/program.inc) as an example of a RandomX program translated into x86-64 assembly.
 
-#### Hash calculation
+### Hash calculation
 
 Calculating a RandomX hash consists of initializing the 2 MiB scratchpad with random data, executing 8 RandomX loops and calculating a hash of the scratchpad.
 
@@ -40,15 +37,27 @@ Hash of the register state after 2048 interations is used to initialize the rand
 
 The loads from the dataset are fully prefetched, so they don't slow down the loop.
 
-RandomX uses the [Blake2b](https://en.wikipedia.org/wiki/BLAKE_%28hash_function%29#BLAKE2) cryptographic hash function. Special hashing functions based on [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encryption are used to initialize and hash the scratchpad.
+RandomX uses the [Blake2b](https://en.wikipedia.org/wiki/BLAKE_%28hash_function%29#BLAKE2) cryptographic hash function. Special hashing functions `fillAes1Rx4` and `hashAes1Rx4` based on [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encryption are used to initialize and hash the scratchpad ([hashAes1Rx4.cpp](src/hashAes1Rx4.cpp)).
 
-#### Hash verification
+### Hash verification
 
 RandomX is a symmetric PoW algorithm, so the verifying party has to repeat the same steps as when a hash is calculated.
 
 However, to allow hash verification on devices that cannot store the whole 4 GiB dataset, RandomX allows a time-memory tradeoff by using just 256 MiB of memory at the cost of 16 times more random memory accesses. See [Dataset initialization](doc/dataset.md) for more details.
 
-#### Documentation
+### Performance
+Preliminary mining performance with the x86-64 JIT compiled VM:
+
+|CPU|RAM|threads|hashrate [H/s]|comment|
+|-----|-----|----|----------|-----|
+|AMD Ryzen 1700|DDR4-2933|8|4100|
+|Intel i5-3230M|DDR3-1333|1|280|without large pages
+|Intel i7-8550U|DDR4-2400|4|1200|limited by thermals
+|Intel i5-2500K|DDR3-1333|3|1350|
+
+Hash verification is performed using the portable interpreter in "light-client mode" and takes 30-70 ms depending on RAM latency and CPU clock speed. Hash verification in "mining mode" takes 2-4 ms.
+
+### Documentation
 * [RandomX ISA](doc/isa.md)
 * [RandomX instruction listing](doc/isa-ops.md)
 * [Dataset initialization](doc/dataset.md)

@@ -705,6 +705,8 @@ namespace RandomX {
 				return 0x9c; //setl
 			case 7:
 				return 0x9d; //setge
+			default:
+				UNREACHABLE;
 		}
 	}
 

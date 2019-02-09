@@ -27,6 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
+#include <cfloat>
 #include <thread>
 #include "intrinPortable.h"
 #ifdef STATS
@@ -262,7 +263,7 @@ namespace RandomX {
 		uint32_t spAddr0 = mem.mx;
 		uint32_t spAddr1 = mem.ma;
 
-		for(int iter = 0; iter < InstructionCount; ++iter) {
+		for(unsigned iter = 0; iter < InstructionCount; ++iter) {
 			//std::cout << "Iteration " << iter << std::endl;
 			spAddr0 ^= r[readReg0];
 			spAddr0 &= ScratchpadL3Mask64;

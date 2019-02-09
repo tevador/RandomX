@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
 		}
 		if (RandomX::trace) {
 			std::cout << "Keys: " << std::endl;
-			for (int i = 0; i < dataset.cache->getKeys().size(); ++i) {
+			for (unsigned i = 0; i < dataset.cache->getKeys().size(); ++i) {
 				outputHex(std::cout, (char*)&dataset.cache->getKeys()[i], sizeof(__m128i));
 			}
 			std::cout << std::endl;
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
 						threads.push_back(std::thread(&RandomX::datasetInit<false>, cache, dataset, i * perThread, count));
 					}
 				}
-				for (int i = 0; i < threads.size(); ++i) {
+				for (unsigned i = 0; i < threads.size(); ++i) {
 					threads[i].join();
 				}
 			}
@@ -318,10 +318,10 @@ int main(int argc, char** argv) {
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
 		sw.restart();
 		if (threadCount > 1) {
-			for (int i = 0; i < vms.size(); ++i) {
+			for (unsigned i = 0; i < vms.size(); ++i) {
 				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i, scratchpadMem + RandomX::ScratchpadSize * i));
 			}
-			for (int i = 0; i < threads.size(); ++i) {
+			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
@@ -336,10 +336,10 @@ int main(int argc, char** argv) {
 		if(programCount == 1000)
 		std::cout << "Reference result:  3e1c5f9b9d0bf8ffa250f860bf5f7ab76ac823b206ddee6a592660119a3640c6" << std::endl;
 		if (lightClient) {
-			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per program" << std::endl;
+			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}
 		else {
-			std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
+			std::cout << "Performance: " << programCount / elapsed << " hashes per second" << std::endl;
 		}
 	}
 	catch (std::exception& e) {

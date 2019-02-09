@@ -296,6 +296,8 @@ namespace RandomX {
 			return "lt";
 		case 7:
 			return "ge";
+		default:
+			UNREACHABLE;
 		}
 	}
 
