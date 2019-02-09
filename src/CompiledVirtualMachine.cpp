@@ -19,7 +19,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "CompiledVirtualMachine.hpp"
 #include "common.hpp"
-#include "instructions.hpp"
 #include <stdexcept>
 
 namespace RandomX {

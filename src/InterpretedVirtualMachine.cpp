@@ -19,7 +19,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //#define TRACE
 //#define FPUCHECK
 #include "InterpretedVirtualMachine.hpp"
-#include "instructions.hpp"
 #include "dataset.hpp"
 #include "Cache.hpp"
 #include "LightClientAsyncWorker.hpp"

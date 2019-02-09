@@ -29,7 +29,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstring>
 #include "Program.hpp"
 #include <string>
-#include "instructions.hpp"
 #include <thread>
 #include <atomic>
 #include "dataset.hpp"

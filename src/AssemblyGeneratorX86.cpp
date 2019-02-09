@@ -20,7 +20,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define MAGIC_DIVISION
 #include "AssemblyGeneratorX86.hpp"
 #include "common.hpp"
-#include "instructions.hpp"
 #ifdef MAGIC_DIVISION
 #include "divideByConstantCodegen.h"
 #endif

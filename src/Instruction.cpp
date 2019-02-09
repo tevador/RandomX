@@ -45,7 +45,7 @@ namespace RandomX {
 			os << "r" << (int)dst << ", r" << (int)src << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
+			os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 		}
 	}
 
@@ -63,7 +63,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_IADD_RC(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src << ", " << imm32 << std::endl;
+		os << "r" << (int)dst << ", r" << (int)src << ", " << (int32_t)imm32 << std::endl;
 	}
 
 	//1 uOP
@@ -72,7 +72,7 @@ namespace RandomX {
 			os << "r" << (int)dst << ", r" << (int)src << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
+			os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 		}
 	}
 
@@ -90,7 +90,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_IMUL_9C(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << imm32 << std::endl;
+		os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 	}
 
 	void Instruction::h_IMUL_R(std::ostream& os) const {
@@ -98,7 +98,7 @@ namespace RandomX {
 			os << "r" << (int)dst << ", r" << (int)src << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
+			os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 		}
 	}
 
@@ -158,7 +158,7 @@ namespace RandomX {
 			os << "r" << (int)dst << ", r" << (int)src << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
+			os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 		}
 	}
 
@@ -194,11 +194,11 @@ namespace RandomX {
 	}
 
 	void Instruction::h_IDIV_C(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << (uint32_t)imm32 << std::endl;
+		os << "r" << (int)dst << ", " << imm32 << std::endl;
 	}
 
 	void Instruction::h_ISDIV_C(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << imm32 << std::endl;
+		os << "r" << (int)dst << ", " << (int32_t)imm32 << std::endl;
 	}
 
 	void Instruction::h_ISWAP_R(std::ostream& os) const {
@@ -300,13 +300,13 @@ namespace RandomX {
 	}
 
 	void Instruction::h_COND_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << imm32 << ")" << std::endl;
+		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)imm32 << ")" << std::endl;
 	}
 
 	void Instruction::h_COND_M(std::ostream& os) const {
 		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(";
 		genAddressReg(os);
-		os << ", " << imm32 << ")" << std::endl;
+		os << ", " << (int32_t)imm32 << ")" << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {
