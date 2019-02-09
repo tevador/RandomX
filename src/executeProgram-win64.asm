@@ -54,7 +54,7 @@ executeProgram PROC
 	; xmm12 -> temporary
 	; xmm13 -> DBL_MIN
 	; xmm14 -> absolute value mask
-	; xmm15 -> unused
+	; xmm15 -> sign mask
 
 	; store callee-saved registers
 	push rbx
@@ -104,7 +104,7 @@ executeProgram PROC
 	movapd xmm11, xmmword ptr [rcx+120]
 	movapd xmm13, xmmword ptr [minDbl]
 	movapd xmm14, xmmword ptr [absMask]
-	;# xorps xmm15, xmm15
+	movapd xmm15, xmmword ptr [signMask]
 
 	jmp program_begin
 

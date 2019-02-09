@@ -116,12 +116,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_IMULH_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
-		}
-		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
-		}
+		os << "r" << (int)dst << ", r" << (int)src << std::endl;
 	}
 
 	void Instruction::h_IMULH_M(std::ostream& os) const {
@@ -138,12 +133,7 @@ namespace RandomX {
 	}
 
 	void Instruction::h_ISMULH_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
-		}
-		else {
-			os << "r" << (int)dst << ", " << imm32 << std::endl;
-		}
+		os << "r" << (int)dst << ", r" << (int)src << std::endl;
 	}
 
 	void Instruction::h_ISMULH_M(std::ostream& os) const {
@@ -247,9 +237,9 @@ namespace RandomX {
 		os << std::endl;
 	}
 
-	void Instruction::h_CFSUM_R(std::ostream& os) const {
+	void Instruction::h_FNEG_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
-		os << "f" << dstIndex << ", " << (1 << ((mod % 4) + 3)) << std::endl;
+		os << "f" << dstIndex << std::endl;
 	}
 
 	void Instruction::h_FMUL_R(std::ostream& os) const {
@@ -370,7 +360,7 @@ namespace RandomX {
 		INST_NAME(FADD_M)
 		INST_NAME(FSUB_R)
 		INST_NAME(FSUB_M)
-		INST_NAME(CFSUM_R)
+		INST_NAME(FNEG_R)
 
 		//Floating point group E
 		INST_NAME(FMUL_R)
@@ -421,7 +411,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(CFSUM_R)
+		INST_HANDLE(FNEG_R)
 
 		//Floating point group E
 		INST_HANDLE(FMUL_R)

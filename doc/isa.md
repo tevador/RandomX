@@ -1,182 +1,91 @@
-# RandomX instruction encoding
-The instruction set was designed in such way that any random 16-byte word is a valid instruction and any sequence of valid instructions is a valid program. There are no syntax rules.
 
-The encoding of each 128-bit instruction word is following:
+# RandomX instruction set architecture
+RandomX VM is a complex instruction set computer ([CISC](https://en.wikipedia.org/wiki/Complex_instruction_set_computer)). All data are loaded and stored in little-endian byte order. Signed integer numbers are represented using [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement). Floating point numbers are represented using the [IEEE-754 double precision format](https://en.wikipedia.org/wiki/Double-precision_floating-point_format).
 
-![Imgur](https://i.imgur.com/xi8zuAZ.png)
+## Registers
 
-## opcode
-There are 256 opcodes, which are distributed between 3 groups of instructions. There are 31 distinct operations (each operation can be encoded using multiple opcodes - for example opcodes `0x00` to `0x0d` correspond to integer addition).
+RandomX has 8 integer registers `r0`-`r7` (group R) and a total of 12 floating point registers split into 3 groups: `a0`-`a3` (group A), `f0`-`f3` (group F) and `e0`-`e3` (group E). Integer registers are 64 bits wide, while floating point registers are 128 bits wide and contain a pair of floating point numbers. The lower and upper half of floating point registers are not separately addressable.
 
-**Table 1: Instruction groups**
+*Table 1: Addressable register groups*
 
-|group|# operations|# opcodes||
+|index|R|A|F|E|F+E|
+|--|--|--|--|--|--|
+|0|`r0`|`a0`|`f0`|`e0`|`f0`|
+|1|`r1`|`a1`|`f1`|`e1`|`f1`|
+|2|`r2`|`a2`|`f2`|`e2`|`f2`|
+|3|`r3`|`a3`|`f3`|`e3`|`f3`|
+|4|`r4`||||`e0`|
+|5|`r5`||||`e1`|
+|6|`r6`||||`e2`|
+|7|`r7`||||`e3`|
+
+Besides the directly addressable registers above, there is a 2-bit `fprc` register for rounding control, which is an implicit destination register of the `CFROUND` instruction, and two architectural 32-bit registers `ma` and `mx`, which are not accessible to any instruction. 
+
+Integer registers `r0`-`r7` can be the source or the destination operands of integer instructions or may be used as address registers for loading the source operand from the memory (scratchpad).
+
+Floating point registers `a0`-`a3` are read-only and may not be written to except at the moment a program is loaded into the VM. They can be the source operand of any floating point instruction. The value of these registers is restricted to the interval `[1, 4294967296)`.
+
+Floating point registers `f0`-`f3` are the *additive* registers, which can be the destination of floating point addition and subtraction instructions. The absolute value of these registers will not exceed `1.0e+12`.
+
+Floating point registers `e0`-`e3` are the *multiplicative* registers, which can be the destination of floating point multiplication, division and square root instructions. Their value is always positive.
+
+## Instruction encoding
+
+Each instruction word is 64 bits long and has the following format:
+
+![Imgur](https://i.imgur.com/FtkWRwe.png)
+
+### opcode
+There are 256 opcodes, which are distributed between 35 distinct instructions. Each instruction can be encoded using multiple opcodes (the number of opcodes specifies the frequency of the instruction in a random program).
+
+*Table 2: Instruction groups*
+
+|group|# instructions|# opcodes||
 |---------|-----------------|----|-|
-|integer (IA)|22|144|56.3%|
-|floating point (FP)|5|76|29.7%|
-|control (CL)|4|36|14.0%
-||**31**|**256**|**100%**
+|integer |20|143|55.9%|
+|floating point |11|88|34.4%|
+|other |4|25|9.7%|
+||**35**|**256**|**100%**
 
 Full description of all instructions: [isa-ops.md](isa-ops.md).
 
-## A.LOC
-**Table 2: `A.LOC` encoding**
+### dst
+Destination register. Only bits 0-1 (register groups A, F, E) or 0-2 (groups R, F+E) are used to encode a register according to Table 1.
 
-|bits|description|
+### src
+
+The `src` flag encodes a source operand register according to Table 1 (only bits 0-1 or 0-2 are used).
+
+Immediate value `imm32` is used as the source operand in cases when `dst` and `src` encode the same register.
+
+For register-memory instructions, the source operand determines the `address_base` value for calculating the memory address (see below).
+
+### mod
+
+The `mod` flag is encoded as:
+
+*Table 3: mod flag encoding*
+
+|`mod`|description|
 |----|--------|
-|0-1|`A.LOC.W` flag|
-|2-5|Reserved|
-|6-7|`A.LOC.X` flag|
+|0-1|`mod.mem` flag|
+|2-4|`mod.cond` flag|
+|5-7|Reserved|
 
-The `A.LOC.W` flag determines the address width when reading operand A from the scratchpad:
+The `mod.mem` flag determines the address mask when reading from or writing to memory:
 
-**Table 3: Operand A read address width**
+*Table 3: memory address mask*
 
-|`A.LOC.W`|address width (W)|
-|---------|-|
-|0|15 bits (256 KiB)|
-|1-3|11 bits (16 KiB)|
+|`mod.mem`|`address_mask`|(scratchpad level)|
+|---------|-|---|
+|0|262136|(L2)|
+|1-3|16376|(L1)|
 
-If the `A.LOC.W` flag is zero, the address space covers the whole 256 KiB scratchpad. Otherwise, just the first 16 KiB of the scratchpad are addressed.
+Table 3 applies to all memory accesses except for cases when the source operand is an immediate value. In that case, `address_mask` is equal to 2097144 (L3). 
 
-If the `A.LOC.X` flag is zero, the instruction mixes the scratchpad read address into the `mx` register using XOR. This mixing happens before the address is truncated to W bits (see pseudocode below).
+The address for reading/writing is calculated by applying bitwise AND operation to `address_base` and `address_mask`.
 
-## A.REG
-**Table 4: `A.REG` encoding**
+The `mod.cond` flag is used only by the `COND` instruction to select a condition to be tested.
 
-|bits|description|
-|----|--------|
-|0-2|`A.REG.R` flag|
-|3-7|Reserved|
-
-The `A.REG.R` flag encodes "readAddressRegister", which is an integer register  `r0`-`r7` to be used for scratchpad read address generation. Read address is generated as follows (pseudocode):
-
-```python
-readAddressRegister = IntegerRegister(A.REG.R)
-readAddressRegister = readAddressRegister XOR SignExtend(A.mask32)
-readAddress = readAddressRegister[31:0]
-# dataset is read if the ic register is divisible by 64
-IF ic mod 64 == 0:
-  DatasetRead(readAddress)
-# optional mixing into the mx register
-IF A.LOC.X == 0:
-  mx = mx XOR readAddress
-# truncate to W bits
-W = GetAddressWidth(A.LOC.W)
-readAddress = readAddress[W-1:0]
-```
-
-Note that the value of the read address register is modified during address generation.
-
-## B.LOC
-**Table 5: `B.LOC` encoding**
-
-|bits|description|
-|----|--------|
-|0-1|`B.LOC.L` flag|
-|0-2|`B.LOC.C` flag|
-|3-7|Reserved|
-
-The `B.LOC.L` flag determines the B operand. It can be either a register or immediate value.
-
-**Table 6: Operand B**
-
-|`B.LOC.L`|IA/DIV|IA/SHIFT|IA/MATH|FP|CL|
-|----|--------|----|------|----|---|
-|0|register|`imm8`|`imm32`|register|register|
-|1|`imm32`|register|register|register|register|
-|2|`imm32`|`imm8`|register|register|register|
-|3|`imm32`|register|register|register|register|
-
-Integer instructions are split into 3 classes: integer division (IA/DIV), shift and rotate (IA/SHIFT) and other (IA/MATH). Floating point (FP) and control (CL) instructions always use a register operand.
-
-Register to be used as operand B is encoded in the `B.REG.R` flag (see below).
-
-The `B.LOC.C` flag determines the condition for the JUMP and CALL instructions. The flag partially overlaps with the `B.LOC.L` flag.
-
-## B.REG
-**Table 7: `B.REG` encoding**
-
-|bits|description|
-|----|--------|
-|0-2|`B.REG.R` flag|
-|3-7|Reserved|
-
-Register encoded by the `B.REG.R` depends on the instruction group:
-
-**Table 8: Register operands by group**
-
-|group|registers|
-|----|--------|
-|IA|`r0`-`r7`|
-|FP|`f0`-`f7`|
-|CL|`r0`-`r7`|
-
-##  C.LOC
-**Table 9: `C.LOC` encoding**
-
-|bits|description|
-|----|--------|
-|0-1|`C.LOC.W` flag|
-|2|`C.LOC.R` flag|
-|3-6|Reserved|
-|7|`C.LOC.H` flag|
-
-The `C.LOC.W` flag determines the address width when writing operand C to the scratchpad:
-
-**Table 10: Operand C write address width**
-
-|`C.LOC.W`|address width (W)|
-|---------|-|
-|0|15 bits (256 KiB)|
-|1-3|11 bits (16 KiB)|
-
-If the `C.LOC.W` flag is zero, the address space covers the whole 256 KiB scratchpad. Otherwise, just the first 16 KiB of the scratchpad are addressed.
-
-The `C.LOC.R` determines the destination where operand C is written:
-
-**Table 11: Operand C destination**
-
-|`C.LOC.R`|groups IA, CL|group FP
-|---------|-|-|
-|0|scratchpad|register
-|1|register|register + scratchpad
-
-Integer and control instructions (groups IA and CL) write either to the scratchpad or to a register. Floating point instructions always write to a register and can also write to the scratchpad. In that case, flag `C.LOC.H` determines if the low or high half of the register is written:
-
-**Table 12: Floating point register write**
-
-|`C.LOC.H`|write bits|
-|---------|----------|
-|0|0-63|
-|1|64-127|
-
-## C.REG
-**Table 13: `C.REG` encoding**
-
-|bits|description|
-|----|--------|
-|0-2|`C.REG.R` flag|
-|3-7|Reserved|
-
-The destination register encoded in the `C.REG.R` flag encodes both the write address register (if writing to the scratchpad) and the destination register (if writing to a register). The destination register depends on the instruction group (see Table 8). Write address is always generated from an integer register:
-
-```python
-writeAddressRegister = IntegerRegister(C.REG.R)
-writeAddress = writeAddressRegister[31:0] XOR C.mask32
-# truncate to W bits
-W = GetAddressWidth(C.LOC.W)
-writeAddress = writeAddress [W-1:0]
-```
-
-## imm8
-`imm8` is an 8-bit immediate value that is used as the B operand by IA/SHIFT instructions (see Table 6). Additionally, it's used by some control instructions.
-
-## A.mask32
-`A.mask32` is a 32-bit address mask that is used to calculate the read address for the A operand. It's sign-extended to 64 bits before use.
-
-## imm32
-`imm32` is a 32-bit immediate value which is used for integer instructions from groups IA/DIV and IA/OTHER (see Table 6). The immediate value is sign-extended for instructions that expect 64-bit operands.
-
-## C.mask32
-`C.mask32` is a 32-bit address mask that is used to calculate the write address for the C operand. `C.mask32` is equal to `imm32`.
+### imm32
+A 32-bit immediate value that can be used as the source operand. The immediate value is sign-extended to 64 bits in most cases.

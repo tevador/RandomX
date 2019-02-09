@@ -1,130 +1,103 @@
-
 # RandomX instruction listing
-There are 31 unique instructions divided into 3 groups:
-
-|group|# operations|# opcodes||
-|---------|-----------------|----|-|
-|integer (IA)|22|144|56.3%|
-|floating point (FP)|5|76|29.7%|
-|control (CL)|4|36|14.0%
-||**31**|**256**|**100%**
-
 
 ## Integer instructions
-There are 22 integer instructions. They are divided into 3 classes (MATH, DIV, SHIFT) with different B operand selection rules.
+For integer instructions, the destination is always an integer register (register group R). Source operand (if applicable) can be either an integer register or memory value. If `dst` and `src` refer to the same register, most instructions use `imm32` as the source operand instead of the register. This is indicated in the 'src == dst' column.
 
-|# opcodes|instruction|class|signed|A width|B width|C|C width|
+Memory operands are loaded as 8-byte values from the address indicated by `src`.  This indirect addressing is marked with square brackets: `[src]`.
+
+|frequency|instruction|dst|src|`src == dst ?`|operation|
 |-|-|-|-|-|-|-|-|
-|12|ADD_64|MATH|no|64|64|`A + B`|64|
-|2|ADD_32|MATH|no|32|32|`A + B`|32|
-|12|SUB_64|MATH|no|64|64|`A - B`|64|
-|2|SUB_32|MATH|no|32|32|`A - B`|32|
-|21|MUL_64|MATH|no|64|64|`A * B`|64|
-|10|MULH_64|MATH|no|64|64|`A * B`|64|
-|15|MUL_32|MATH|no|32|32|`A * B`|64|
-|15|IMUL_32|MATH|yes|32|32|`A * B`|64|
-|10|IMULH_64|MATH|yes|64|64|`A * B`|64|
-|4|DIV_64|DIV|no|64|32|`A / B`|64|
-|4|IDIV_64|DIV|yes|64|32|`A / B`|64|
-|4|AND_64|MATH|no|64|64|`A & B`|64|
-|2|AND_32|MATH|no|32|32|`A & B`|32|
-|4|OR_64|MATH|no|64|64|`A | B`|64|
-|2|OR_32|MATH|no|32|32|`A | B`|32|
-|4|XOR_64|MATH|no|64|64|`A ^ B`|64|
-|2|XOR_32|MATH|no|32|32|`A ^ B`|32|
-|3|SHL_64|SHIFT|no|64|6|`A << B`|64|
-|3|SHR_64|SHIFT|no|64|6|`A >> B`|64|
-|3|SAR_64|SHIFT|yes|64|6|`A >> B`|64|
-|6|ROL_64|SHIFT|no|64|6|`A <<< B`|64|
-|6|ROR_64|SHIFT|no|64|6|`A >>> B`|64|
+|12/256|IADD_R|R|R|`src = imm32`|`dst = dst + src`|
+|7/256|IADD_M|R|mem|`src = imm32`|`dst = dst + [src]`|
+|16/256|IADD_RC|R|R|`src = dst`|`dst = dst + src + imm32`|
+|12/256|ISUB_R|R|R|`src = imm32`|`dst = dst - src`|
+|7/256|ISUB_M|R|mem|`src = imm32`|`dst = dst - [src]`|
+|9/256|IMUL_9C|R|-|-|`dst = 9 * dst + imm32`|
+|16/256|IMUL_R|R|R|`src = imm32`|`dst = dst * src`|
+|4/256|IMUL_M|R|mem|`src = imm32`|`dst = dst * [src]`|
+|4/256|IMULH_R|R|R|`src = dst`|`dst = (dst * src) >> 64`|
+|1/256|IMULH_M|R|mem|`src = imm32`|`dst = (dst * [src]) >> 64`|
+|4/256|ISMULH_R|R|R|`src = dst`|`dst = (dst * src) >> 64` (signed)|
+|1/256|ISMULH_M|R|mem|`src = imm32`|`dst = (dst * [src]) >> 64` (signed)|
+|4/256|IDIV_C|R|-|-|`dst = dst + dst / imm32`|
+|4/256|ISDIV_C|R|-|-|`dst = dst + dst / imm32` (signed)|
+|2/256|INEG_R|R|-|-|`dst = -dst`|
+|16/256|IXOR_R|R|R|`src = imm32`|`dst = dst ^ src`|
+|4/256|IXOR_M|R|mem|`src = imm32`|`dst = dst ^ [src]`|
+|10/256|IROR_R|R|R|`src = imm32`|`dst = dst >>> src`|
+|4/256|ISWAP_R|R|R|`src = dst`|`temp = src; src = dst; dst = temp`|
 
-#### 32-bit operations
-Instructions ADD_32, SUB_32, AND_32, OR_32, XOR_32 only use the low-order 32 bits of the input operands. The result of these operations is 32 bits long and bits 32-63 of C are set to zero.
+#### IMULH and ISMULH
+These instructions output the high 64 bits of the whole 128-bit multiplication result. The result differs for signed and unsigned multiplication (`IMULH` is unsigned, `ISMULH` is signed). The variants with a register source operand do not use `imm32` (they perform a squaring operation if `dst` equals `src`).
 
-#### Multiplication
-There are 5 different multiplication operations. MUL_64 and MULH_64 both take 64-bit unsigned operands, but MUL_64 produces the low 64 bits of the result and MULH_64 produces the high 64 bits. MUL_32 and IMUL_32 use only the low-order 32 bits of the operands and produce a 64-bit result. The signed variant interprets the arguments as signed integers. IMULH_64 takes two 64-bit signed operands and produces the high-order 64 bits of the result.
+#### IDIV_C and ISDIV_C
+The division instructions use a constant divisor, so they can be optimized into a [multiplication by fixed-point reciprocal](https://en.wikipedia.org/wiki/Division_algorithm#Division_by_a_constant). `IDIV_C` performs unsigned division (`imm32` is zero-extended to 64 bits), while `ISDIV_C` performs signed division. In the case of division by zero, the instructions become a no-op. In the very rare case of signed overflow, the destination register is set to zero.
 
-#### Division
-For the division instructions, the dividend is 64 bits long and the divisor 32 bits long. The IDIV_64 instruction interprets both operands as signed integers. In case of division by zero or signed overflow, the result is equal to the dividend `A`.
-
-75% of division instructions use a runtime-constant divisor and can be optimized using a multiplication and shifts.
-
-#### Shift and rotate
-The shift/rotate instructions use just the bottom 6 bits of the `B` operand (`imm8` is used as the immediate value). All treat `A` as unsigned except SAR_64, which performs an arithmetic right shift by copying the sign bit.
+#### ISWAP_R
+This instruction swaps the values of two registers. If source and destination refer to the same register, the result is a no-op.
 
 ## Floating point instructions
-There are 5 floating point instructions. All floating point instructions are vector instructions that operate on two packed double precision floating point values.
+For floating point instructions, the destination can be a group F or group E register. Source operand is either a group A register or a memory value.
 
-|# opcodes|instruction|C|
-|-|-|-|
-|20|FPADD|`A + B`|
-|20|FPSUB|`A - B`|
-|22|FPMUL|`A * B`|
-|8|FPDIV|`A / B`|
-|6|FPSQRT|`sqrt(abs(A))`|
+Memory operands are loaded as 8-byte values from the address indicated by `src`. The 8 byte value is interpreted as two 32-bit signed integers and implicitly converted to floating point format. The lower and upper memory operands are marked as `[src][0]` and `[src][1]`.
 
-#### Conversion of operand A
-Operand A is loaded from memory as a 64-bit value. All floating point instructions interpret A as two packed 32-bit signed integers and convert them into two packed double precision floating point values.
+|frequency|instruction|dst|src|operation|
+|-|-|-|-|-|-|-|
+|8/256|FSWAP_R|F+E|-|`(dst0, dst1) = (dst1, dst0)`|
+|20/256|FADD_R|F|A|`(dst0, dst1) = (dst0 + src0, dst1 + src1)`|
+|5/256|FADD_M|F|mem|`(dst0, dst1) = (dst0 + [src][0], dst1 + [src][1])`|
+|20/256|FSUB_R|F|A|`(dst0, dst1) = (dst0 - src0, dst1 - src1)`|
+|5/256|FSUB_M|F|mem|`(dst0, dst1) = (dst0 - [src][0], dst1 - [src][1])`|
+|6/256|FNEG_R|F|-|`(dst0, dst1) = (-dst0, -dst1)`|
+|20/256|FMUL_R|E|A|`(dst0, dst1) = (dst0 * src0, dst1 * src1)`|
+|4/256|FDIV_M|E|mem|`(dst0, dst1) = (dst0 / [src][0], dst1 / [src][1])`|
+|6/256|FSQRT_R|E|-|`(dst0, dst1) = (√dst0, √dst1)`|
+
+#### Denormal and NaN values
+Due to restrictions on the values of the floating point registers, no operation results in `NaN`.
+`FDIV_M` can produce a denormal result. In that case, the result is set to `DBL_MIN = 2.22507385850720138309e-308`, which is the smallest positive normal number.
 
 #### Rounding
-FPU instructions conform to the IEEE-754 specification, so they must give correctly rounded results. Initial rounding mode is *roundTiesToEven*. Rounding mode can be changed by the `FPROUND` control instruction. Denormal values must be always flushed to zero.
+All floating point instructions give correctly rounded results. The rounding mode depends on the value of the `fprc` register:
 
-#### NaN
-If an operation produces NaN, the result is converted into positive zero. NaN results may never be written into registers or memory. Only division and multiplication must be checked for NaN results (`0.0 / 0.0` and `0.0 * Infinity` result in NaN).
-
-## Control instructions
-There are 4 control instructions.
-
-|# opcodes|instruction|description|condition|
-|-|-|-|-|
-|2|FPROUND|change floating point rounding mode|-
-|11|JUMP|conditional jump|(see condition table below)
-|11|CALL|conditional procedure call|(see condition table below)
-|12|RET|return from procedure|stack is not empty
-
-All control instructions behave as 'arithmetic no-op' and simply copy the input operand A into the destination C.
-
-The JUMP and CALL instructions use a condition function, which takes the lower 32 bits of operand B (register) and the value `imm32` and evaluates a condition based on the `B.LOC.C` flag: 
-
-|`B.LOC.C`|signed|jump condition|probability|*x86*|*ARM*
-|---|---|----------|-----|--|----|
-|0|no|`B <= imm32`|0% - 100%|`JBE`|`BLS`
-|1|no|`B > imm32`|0% - 100%|`JA`|`BHI`
-|2|yes|`B - imm32 < 0`|50%|`JS`|`BMI`
-|3|yes|`B - imm32 >= 0`|50%|`JNS`|`BPL`
-|4|yes|`B - imm32` overflows|0% - 50%|`JO`|`BVS`
-|5|yes|`B - imm32` doesn't overflow|50% - 100%|`JNO`|`BVC`
-|6|yes|`B < imm32`|0% - 100%|`JL`|`BLT`
-|7|yes|`B >= imm32`|0% - 100%|`JGE`|`BGE`
-
-The 'signed' column specifies if the operands are interpreted as signed or unsigned 32-bit numbers. Column 'probability' lists the expected jump probability (range means that the actual value for a specific instruction depends on `imm32`). *Columns 'x86' and 'ARM' list the corresponding hardware instructions (following a `CMP` instruction).*
-
-### FPROUND
-The FPROUND instruction changes the rounding mode for all subsequent FPU operations depending on a two-bit flag. The flag is calculated by rotating A `imm8` bits to the right and taking the two least-significant bits:
-
-```
-rounding flag = (A >>> imm8)[1:0]
-```
-
-|rounding flag|rounding mode|
+|`fprc`|rounding mode|
 |-------|------------|
-|00|roundTiesToEven|
-|01|roundTowardNegative|
-|10|roundTowardPositive|
-|11|roundTowardZero|
+|0|roundTiesToEven|
+|1|roundTowardNegative|
+|2|roundTowardPositive|
+|3|roundTowardZero|
 
 The rounding modes are defined by the IEEE-754 standard.
 
-*The two-bit flag value exactly corresponds to bits 13-14 of the x86 `MXCSR` register and bits 23 and 22 (reversed) of the ARM `FPSCR` register.*
+## Other instructions
+There are 4 special instructions that have more than one source operand or the destination operand is a memory value.
 
-### JUMP
-If the jump condition is `true`, the JUMP instruction performs a forward jump relative to the value of `pc`. The forward offset is equal to `16 * (imm8[6:0] + 1)` bytes (1-128 instructions forward).
+|frequency|instruction|dst|src|operation|
+|-|-|-|-|-|
+|7/256|COND_R|R|R, `imm32`|`if(condition(src, imm32)) dst = dst + 1`
+|1/256|COND_M|R|mem, `imm32`|`if(condition([src], imm32)) dst = dst + 1`
+|1/256|CFROUND|`fprc`|R, `imm32`|`fprc = src >>> imm32`
+|16/256|ISTORE|mem|R|`[dst] = src`
 
-### CALL
-If the jump condition is `true`, the CALL instruction pushes the value of `pc` (program counter) onto the stack and then performs a forward jump relative to the value of `pc`. The forward offset is equal to `16 * (imm8[6:0] + 1)` bytes (1-128 instructions forward).
+#### COND
 
-### RET
-If the stack is not empty, the RET instruction pops the return address from the stack (it's the instruction following the previous CALL) and jumps to it.
+These instructions conditionally increment the destination register. The condition function depends on the `mod.cond` flag and takes the lower 32 bits of the source operand and the value `imm32`.
 
-## Reference implementation
-A portable C++ implementation of all integer and floating point instructions is available in [instructionsPortable.cpp](../src/instructionsPortable.cpp).
+|`mod.cond`|signed|`condition`|probability|*x86*|*ARM*
+|---|---|----------|-----|--|----|
+|0|no|`src <= imm32`|0% - 100%|`JBE`|`BLS`
+|1|no|`src > imm32`|0% - 100%|`JA`|`BHI`
+|2|yes|`src - imm32 < 0`|50%|`JS`|`BMI`
+|3|yes|`src - imm32 >= 0`|50%|`JNS`|`BPL`
+|4|yes|`src - imm32` overflows|0% - 50%|`JO`|`BVS`
+|5|yes|`src - imm32` doesn't overflow|50% - 100%|`JNO`|`BVC`
+|6|yes|`src < imm32`|0% - 100%|`JL`|`BLT`
+|7|yes|`src >= imm32`|0% - 100%|`JGE`|`BGE`
+
+The 'signed' column specifies if the operands are interpreted as signed or unsigned 32-bit numbers. Column 'probability' lists the expected probability the condition is true (range means that the actual value for a specific instruction depends on `imm32`). *Columns 'x86' and 'ARM' list the corresponding hardware instructions (following a `CMP` instruction).*
+
+#### CFROUND
+This instruction sets the value of the `fprc` register to the 2 least significant bits of the source register rotated right by `imm32`. This changes the rounding mode of all subsequent floating point instructions.
+
+#### ISTORE
+The `ISTORE` instruction stores the value of the source integer register to the memory at the address specified by the destination register. The `src` and `dst` register can be the same.

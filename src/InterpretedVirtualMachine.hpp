@@ -21,7 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //#define STATS
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
-#include <vector>
+#include "intrinPortable.h"
 
 namespace RandomX {
 
@@ -38,15 +38,23 @@ namespace RandomX {
 
 	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
 
-	struct alignas(64) InstructionByteCode {
-		convertible_t* idst;
-		convertible_t* isrc;
-		convertible_t imm;
-		fpu_reg_t* fdst;
-		fpu_reg_t* fsrc;
+	struct alignas(16) InstructionByteCode {
+		int_reg_t* idst;
+		int_reg_t* isrc;
+		int_reg_t imm;
+		__m128d* fdst;
+		__m128d* fsrc;
 		uint32_t condition;
 		uint32_t memMask;
 		uint32_t type;
+		union {
+			uint64_t unsignedMultiplier;
+			int64_t signedMultiplier;
+		};
+		unsigned shift;
+		unsigned preShift;
+		unsigned postShift;
+		bool increment;
 	};
 
 	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
@@ -56,21 +64,14 @@ namespace RandomX {
 		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
 		~InterpretedVirtualMachine();
 		void setDataset(dataset_t ds) override;
-		void initializeScratchpad(uint8_t* scratchpad, int32_t index) override;
-		void initializeProgram(const void* seed) override;
+		void initialize() override;
 		void execute() override;
-		const Program& getProgam() {
-			return p;
-		}
 	private:
 		static InstructionHandler engine[256];
-		static const ITransform* addressTransformations[TransformationCount];
+		DatasetReadFunc readDataset;
 		bool softAes, asyncWorker;
-		Program p;
 		InstructionByteCode byteCode[ProgramLength];
-		std::vector<convertible_t> stack;
-		uint64_t pc, ic;
-		const ITransform* currentTransform;
+		
 #ifdef STATS
 		int count_ADD_64 = 0;
 		int count_ADD_32 = 0;
@@ -121,66 +122,9 @@ namespace RandomX {
 		int count_FMUL_nop2 = 0;
 		int datasetAccess[256] = { 0 };
 #endif
-		void executeInstruction(Instruction&);
-		convertible_t loada(Instruction&);
-		convertible_t loadbiashift(Instruction&);
-		convertible_t loadbiadiv(Instruction&);
-		convertible_t loadbia(Instruction&);
-		convertible_t& getcr(Instruction&);
-		void writecf(Instruction&, fpu_reg_t&);
-
-		void stackPush(convertible_t& c) {
-			stack.push_back(c);
-		}
-
-		void stackPush(uint64_t x) {
-			convertible_t c;
-			c.u64 = x;
-			stack.push_back(c);
-		}
-
-		convertible_t stackPopValue() {
-			convertible_t top = stack.back();
-			stack.pop_back();
-			return top;
-		}
-
-		uint64_t stackPopAddress() {
-			convertible_t top = stack.back();
-			stack.pop_back();
-			return top.u64;
-		}
-
-		void h_ADD_64(Instruction&);
-		void h_ADD_32(Instruction&);
-		void h_SUB_64(Instruction&);
-		void h_SUB_32(Instruction&);
-		void h_MUL_64(Instruction&);
-		void h_MULH_64(Instruction&);
-		void h_MUL_32(Instruction&);
-		void h_IMUL_32(Instruction&);
-		void h_IMULH_64(Instruction&);
-		void h_DIV_64(Instruction&);
-		void h_IDIV_64(Instruction&);
-		void h_AND_64(Instruction&);
-		void h_AND_32(Instruction&);
-		void h_OR_64(Instruction&);
-		void h_OR_32(Instruction&);
-		void h_XOR_64(Instruction&);
-		void h_XOR_32(Instruction&);
-		void h_SHL_64(Instruction&);
-		void h_SHR_64(Instruction&);
-		void h_SAR_64(Instruction&);
-		void h_ROL_64(Instruction&);
-		void h_ROR_64(Instruction&);
-		void h_FADD(Instruction&);
-		void h_FSUB(Instruction&);
-		void h_FMUL(Instruction&);
-		void h_FDIV(Instruction&);
-		void h_FSQRT(Instruction&);
-		void h_FPROUND(Instruction&);
-		void h_JUMP(Instruction&);
-		void h_CALL(Instruction&);
-		void h_RET(Instruction&);
+		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		template<int N>
+		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		void executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 	};
 }

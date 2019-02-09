@@ -35,7 +35,7 @@ namespace RandomX {
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::prepareBlock(addr_t addr) {
 #ifdef TRACE
-		std::cout << sw.getElapsed() << ": prepareBlock-enter " << addr << std::endl;
+		std::cout << sw.getElapsed() << ": prepareBlock-enter " << addr / CacheLineSize << std::endl;
 #endif
 		{
 			std::lock_guard<std::mutex> lk(mutex);
@@ -47,18 +47,24 @@ namespace RandomX {
 #ifdef TRACE
 		std::cout << sw.getElapsed() << ": prepareBlock-notify " << startBlock << "/" << blockCount << std::endl;
 #endif
-		notifier.notify_all();
+		notifier.notify_one();
 	}
 
 	template<bool softAes>
 	const uint64_t* LightClientAsyncWorker<softAes>::getBlock(addr_t addr) {
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": getBlock-enter " << addr / CacheLineSize << std::endl;
+#endif
 		uint32_t currentBlock = addr / CacheLineSize;
 		if (currentBlock != startBlock || output != currentLine.data()) {
-			initBlock<softAes>(cache->getCache(), (uint8_t*)currentLine.data(), currentBlock, cache->getKeys());
+			initBlock(cache->getCache(), (uint8_t*)currentLine.data(), currentBlock, cache->getKeys());
 		}
 		else {
 			sync();
 		}
+#ifdef TRACE
+		std::cout << sw.getElapsed() << ": getBlock-return " << addr / CacheLineSize << std::endl;
+#endif
 		return currentLine.data();
 	}
 
@@ -73,14 +79,14 @@ namespace RandomX {
 			this->blockCount = blockCount;
 			output = out;
 			hasWork = true;
+			notifier.notify_one();
 		}
-		notifier.notify_all();
 	}
 
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::getBlocks(void* out, uint32_t startBlock, uint32_t blockCount) {
 		for (uint32_t i = 0; i < blockCount; ++i) {
-			initBlock<softAes>(cache->getCache(), (uint8_t*)out + CacheLineSize * i, startBlock + i, cache->getKeys());
+			initBlock(cache->getCache(), (uint8_t*)out + CacheLineSize * i, startBlock + i, cache->getKeys());
 		}
 	}
 
@@ -98,10 +104,17 @@ namespace RandomX {
 		for (;;) {
 			std::unique_lock<std::mutex> lk(mutex);
 			notifier.wait(lk, [this] { return hasWork; });
-			getBlocks(output, startBlock, blockCount);
+#ifdef TRACE
+			std::cout << sw.getElapsed() << ": runWorker-getBlocks " << startBlock << "/" << blockCount << std::endl;
+#endif
+			//getBlocks(output, startBlock, blockCount);
+			initBlock(cache->getCache(), (uint8_t*)output, startBlock, cache->getKeys());
 			hasWork = false;
+#ifdef TRACE
+			std::cout << sw.getElapsed() << ": runWorker-finished " << startBlock << "/" << blockCount << std::endl;
+#endif
 			lk.unlock();
-			notifier.notify_all();
+			notifier.notify_one();
 		}
 	}
 

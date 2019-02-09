@@ -19,7 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #define MAGIC_DIVISION
 #include "JitCompilerX86.hpp"
-#include "Pcg32.hpp"
+#include "Program.hpp"
 #include <cstring>
 #include <stdexcept>
 #ifdef MAGIC_DIVISION
@@ -43,7 +43,7 @@ namespace RandomX {
 		//throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
 
-	void JitCompilerX86::generateProgram(Pcg32& gen) {
+	void JitCompilerX86::generateProgram(Program& p) {
 
 	}
 
@@ -87,7 +87,7 @@ namespace RandomX {
 	; xmm12 -> temporary
 	; xmm13 -> DBL_MIN
 	; xmm14 -> absolute value mask 0x7fffffffffffffff7fffffffffffffff
-	; xmm15 -> unused
+	; xmm15 -> sign mask           0x80000000000000008000000000000000
 
 	*/
 
@@ -199,35 +199,32 @@ namespace RandomX {
 		memcpy(code + CodeSize - epilogueSize, codeEpilogue, epilogueSize);
 	}
 
-	void JitCompilerX86::generateProgram(Pcg32& gen) {
-		auto addressRegisters = gen();
-		int readReg1 = addressRegisters & 1;
+	void JitCompilerX86::generateProgram(Program& prog) {
+		auto addressRegisters = prog.getEntropy(12);
+		uint32_t readReg0 = 0 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		int readReg2 = 2 + (addressRegisters & 1);
+		uint32_t readReg1 = 2 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		int readReg3 = 4 + (addressRegisters & 1);
+		uint32_t readReg2 = 4 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		int readReg4 = 6 + (addressRegisters & 1);
+		uint32_t readReg3 = 6 + (addressRegisters & 1);
 		codePos = prologueSize;
 		emit(REX_XOR_RAX_R64);
-		emitByte(0xc0 + readReg1);
+		emitByte(0xc0 + readReg0);
 		emit(REX_XOR_RAX_R64);
-		emitByte(0xc0 + readReg2);
+		emitByte(0xc0 + readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		Instruction instr;
 		for (unsigned i = 0; i < ProgramLength; ++i) {
-			for (unsigned j = 0; j < sizeof(instr) / sizeof(Pcg32::result_type); ++j) {
-				*(((uint32_t*)&instr) + j) = gen();
-			}
+			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
 			generateCode(instr);
 		}
 		emit(REX_MOV_RR);
-		emitByte(0xc0 + readReg3);
+		emitByte(0xc0 + readReg2);
 		emit(REX_XOR_EAX);
-		emitByte(0xc0 + readReg4);
+		emitByte(0xc0 + readReg3);
 		memcpy(code + codePos, codeReadDataset, readDatasetSize);
 		codePos += readDatasetSize;
 		memcpy(code + codePos, codeLoopStore, loopStoreSize);
@@ -365,22 +362,12 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::h_IMULH_R(Instruction& instr) {
-		if (instr.src != instr.dst) {
-			emit(REX_MOV_RR64);
-			emitByte(0xc0 + instr.dst);
-			emit(REX_MUL_R);
-			emitByte(0xe0 + instr.src);
-			emit(REX_MOV_R64R);
-			emitByte(0xc2 + 8 * instr.dst);
-		}
-		else {
-			emitByte(MOV_EAX_I);
-			emit32(instr.imm32);
-			emit(REX_MUL_R);
-			emitByte(0xe0 + instr.dst);
-			emit(REX_ADD_RM);
-			emitByte(0xc2 + 8 * instr.dst);
-		}
+		emit(REX_MOV_RR64);
+		emitByte(0xc0 + instr.dst);
+		emit(REX_MUL_R);
+		emitByte(0xe0 + instr.src);
+		emit(REX_MOV_R64R);
+		emitByte(0xc2 + 8 * instr.dst);
 	}
 
 	void JitCompilerX86::h_IMULH_M(Instruction& instr) {
@@ -402,22 +389,12 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::h_ISMULH_R(Instruction& instr) {
-		if (instr.src != instr.dst) {
-			emit(REX_MOV_RR64);
-			emitByte(0xc0 + instr.dst);
-			emit(REX_MUL_R);
-			emitByte(0xe8 + instr.src);
-			emit(REX_MOV_R64R);
-			emitByte(0xc2 + 8 * instr.dst);
-		}
-		else {
-			emitByte(MOV_EAX_I);
-			emit32(instr.imm32);
-			emit(REX_MUL_R);
-			emitByte(0xe8 + instr.dst);
-			emit(REX_ADD_RM);
-			emitByte(0xc2 + 8 * instr.dst);
-		}
+		emit(REX_MOV_RR64);
+		emitByte(0xc0 + instr.dst);
+		emit(REX_MUL_R);
+		emitByte(0xe8 + instr.src);
+		emit(REX_MOV_R64R);
+		emitByte(0xc2 + 8 * instr.dst);
 	}
 
 	void JitCompilerX86::h_ISMULH_M(Instruction& instr) {
@@ -648,7 +625,7 @@ namespace RandomX {
 		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_CFSUM_R(Instruction& instr) {
+	void JitCompilerX86::h_FNEG_R(Instruction& instr) {
 		instr.dst %= 4;
 		emit(REX_XORPS);
 		emitByte(0xc7 + 8 * instr.dst);
@@ -802,7 +779,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(CFSUM_R)
+		INST_HANDLE(FNEG_R)
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FMUL_M)
 		INST_HANDLE(FDIV_R)

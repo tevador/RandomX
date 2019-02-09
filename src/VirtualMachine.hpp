@@ -20,28 +20,36 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 #include <cstdint>
 #include "common.hpp"
+#include "Program.hpp"
 
 namespace RandomX {
+
+
 
 	class VirtualMachine {
 	public:
 		VirtualMachine();
 		virtual ~VirtualMachine() {}
 		virtual void setDataset(dataset_t ds) = 0;
-		virtual void initializeScratchpad(uint8_t* scratchpad, int32_t index) = 0;
 		void setScratchpad(void* ptr) {
-			scratchpad = (convertible_t*)ptr;
+			scratchpad = (uint8_t*)ptr;
 		}
-		virtual void initializeProgram(const void* seed) = 0;
+		void resetRoundingMode();
+		virtual void initialize();
 		virtual void execute() = 0;
-		void getResult(void*, size_t, void*);
+		template<bool softAes>
+		void getResult(void* scratchpad, size_t scratchpadSize, void* outHash);
 		const RegisterFile& getRegisterFile() {
 			return reg;
 		}
+		Program* getProgramBuffer() {
+			return &program;
+		}
 	protected:
-		DatasetReadFunc readDataset;
+		alignas(16) Program program;
 		alignas(16) RegisterFile reg;
 		MemoryRegisters mem;
-		convertible_t* scratchpad;
+		uint8_t* scratchpad;
+		uint32_t readReg0, readReg1, readReg2, readReg3;
 	};
 }

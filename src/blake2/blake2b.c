@@ -51,29 +51,29 @@ static const unsigned int blake2b_sigma[12][16] = {
 	{14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3},
 };
 
-static BLAKE2_INLINE void blake2b_set_lastnode(blake2b_state *S) {
+static FORCE_INLINE void blake2b_set_lastnode(blake2b_state *S) {
 	S->f[1] = (uint64_t)-1;
 }
 
-static BLAKE2_INLINE void blake2b_set_lastblock(blake2b_state *S) {
+static FORCE_INLINE void blake2b_set_lastblock(blake2b_state *S) {
 	if (S->last_node) {
 		blake2b_set_lastnode(S);
 	}
 	S->f[0] = (uint64_t)-1;
 }
 
-static BLAKE2_INLINE void blake2b_increment_counter(blake2b_state *S,
+static FORCE_INLINE void blake2b_increment_counter(blake2b_state *S,
 	uint64_t inc) {
 	S->t[0] += inc;
 	S->t[1] += (S->t[0] < inc);
 }
 
-static BLAKE2_INLINE void blake2b_invalidate_state(blake2b_state *S) {
+static FORCE_INLINE void blake2b_invalidate_state(blake2b_state *S) {
 	//clear_internal_memory(S, sizeof(*S));      /* wipe */
 	blake2b_set_lastblock(S); /* invalidate for further use */
 }
 
-static BLAKE2_INLINE void blake2b_init0(blake2b_state *S) {
+static FORCE_INLINE void blake2b_init0(blake2b_state *S) {
 	memset(S, 0, sizeof(*S));
 	memcpy(S->h, blake2b_IV, sizeof(S->h));
 }

@@ -24,13 +24,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	class Program;
 	class AssemblyGeneratorX86;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
 
 	class AssemblyGeneratorX86 {
 	public:
-		void generateProgram(const void* seed);
+		void generateProgram(Program&);
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}
@@ -69,7 +70,7 @@ namespace RandomX {
 		void  h_FADD_M(Instruction&, int);
 		void  h_FSUB_R(Instruction&, int);
 		void  h_FSUB_M(Instruction&, int);
-		void  h_CFSUM_R(Instruction&, int);
+		void  h_FNEG_R(Instruction&, int);
 		void  h_FMUL_R(Instruction&, int);
 		void  h_FMUL_M(Instruction&, int);
 		void  h_FDIV_R(Instruction&, int);

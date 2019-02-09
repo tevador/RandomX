@@ -33,12 +33,21 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #else
 #include <intrin.h>
 #endif
+
+inline __m128d _mm_abs(__m128d xd) {
+	const __m128d absmask = _mm_castsi128_pd(_mm_set1_epi64x(~(1LL << 63)));
+	return _mm_and_pd(xd, absmask);
+}
+
+#define PREFETCHNTA(x) _mm_prefetch((const char *)(x), _MM_HINT_NTA)
+
 #else
 #include <cstdint>
 #include <stdexcept>
 
 #define _mm_malloc(a,b) malloc(a)
 #define _mm_free(a) free(a)
+#define PREFETCHNTA(x)
 
 typedef union {
 	uint64_t u64[2];
@@ -152,10 +161,29 @@ constexpr int RoundDown = 1;
 constexpr int RoundUp = 2;
 constexpr int RoundToZero = 3;
 
+constexpr int32_t unsigned32ToSigned2sCompl(uint32_t x) {
+	return (-1 == ~0) ? (int32_t)x : (x > INT32_MAX ? (-(int32_t)(UINT32_MAX - x) - 1) : (int32_t)x);
+}
+
+constexpr int64_t unsigned64ToSigned2sCompl(uint64_t x) {
+	return (-1 == ~0) ? (int64_t)x : (x > INT64_MAX ? (-(int64_t)(UINT64_MAX - x) - 1) : (int64_t)x);
+}
+
+constexpr uint64_t signExtend2sCompl(uint32_t x) {
+	return (-1 == ~0) ? (int64_t)(int32_t)(x) : (x > INT32_MAX ? (x | 0xffffffff00000000ULL) : (uint64_t)x);
+}
+
+inline __m128d load_cvt_i32x2(const void* addr) {
+	__m128i ix = _mm_load_si128((const __m128i*)addr);
+	return _mm_cvtepi32_pd(ix);
+}
+
+double loadDoublePortable(const void* addr);
+
 uint64_t mulh(uint64_t, uint64_t);
 int64_t smulh(int64_t, int64_t);
 uint64_t rotl(uint64_t, int);
 uint64_t rotr(uint64_t, int);
 void initFpu();
 void setRoundMode(uint32_t);
-bool condition(uint32_t, int32_t, int32_t);
+bool condition(uint32_t, uint32_t, uint32_t);

@@ -1,111 +1,78 @@
+
+
+
 # RandomX
-RandomX is an experimental proof of work (PoW) algorithm that uses random code execution.
+RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose CPUs. RandomX uses random code execution (hence the name) together with several memory-hard techniques to achieve the following goals:
 
-### Key features
+* Prevent the development of a single-chip [ASIC](https://en.wikipedia.org/wiki/Application-specific_integrated_circuit)
+* Minimize the efficiency advantage of specialized hardware compared to a general-purpose CPU
 
-* Memory-hard (requires  >4 GiB of memory)
-* CPU-friendly (especially for x86 and ARM architectures)
-* arguably ASIC-resistant
-* inefficient on GPUs
-* unusable for web-mining
+## Design
 
-## Virtual machine
+The core of RandomX is a virtual machine (VM), which can be summarized by the following schematic:
 
-RandomX is intended to be run efficiently on a general-purpose CPU. The virtual machine (VM) which runs RandomX code attempts to simulate a generic CPU using the following set of components:
+![Imgur](https://i.imgur.com/8RYNWLk.png)
 
-![Imgur](https://i.imgur.com/ZAfbX9m.png)
+Notable parts of the RandomX VM are:
 
-Full description: [vm.md](doc/vm.md).
+* a large read-only 4 GiB dataset
+* a 2 MiB scratchpad (read/write), which is structured into three levels L1, L2 and L3
+* 8 integer and 12 floating point registers
+* an arithmetic logic unit (ALU)
+* a floating point unit (FPU)
+* a 2 KiB program buffer
 
-## Dataset
+The structure of the VM mimics the components that are found in a typical general purpose computer equipped with a CPU and a large amount of DRAM. The scratchpad is designed to fit into the CPU cache. The first 16 KiB and 256 KiB of the scratchpad are used more often take advantage of the faster L1 and L2 caches. The ratio of random reads from L1/L2/L3 is approximately 9:3:1, which matches the inverse latencies of typical CPU caches.
 
-RandomX uses a 4 GiB read-only dataset. The dataset is constructed using a combination of the [Argon2d](https://en.wikipedia.org/wiki/Argon2) hashing function, [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encryption/decryption and a random permutation. The dataset is regenerated every ~34 hours.
+The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. For more details see [RandomX ISA documentation](doc/isa.md). Because there are no "syntax" rules, generating a random program is as easy as filling the program buffer with random data. A RandomX program consists of 256 instructions. See [program.inc](../src/program.inc) as an example of a RandomX program translated into x86-64 assembly.
 
-Full description: [dataset.md](doc/dataset.md).
+#### Hash calculation
 
-## Instruction set
+Calculating a RandomX hash consists of initializing the 2 MiB scratchpad with random data, executing 8 RandomX loops and calculating a hash of the scratchpad.
 
-RandomX uses a simple low-level language (instruction set), which was designed so that any random bitstring forms a valid program. Each RandomX instruction has a length of 128 bits.
+Each RandomX loop is repeated 2048 times. The loop body has 4 parts:
+1. The values of all registers are loaded randomly from the scratchpad (L3)
+2. The RandomX program is executed
+3. A random block is loaded from the dataset and mixed with integer registers
+4. All register values are stored into the scratchpad (L3)
 
-Full description: [isa.md](doc/isa.md).
+Hash of the register state after 2048 interations is used to initialize the random program for the next loop. The use of 8 different programs in the course of a single hash calculation prevents mining strategies that search for "easy" programs.
 
-## Implementation
-Proof-of-concept implementation is written in C++.
-```
-> bin/randomx --help
-Usage: bin/randomx [OPTIONS]
-Supported options:
-        --help                  shows this message
-        --compiled              use x86-64 JIT-compiled VM (default: interpreted VM)
-        --lightClient           use 'light-client' mode (default: full dataset mode)
-        --softAes               use software AES (default: x86 AES-NI)
-        --threads T             use T threads (default: 1)
-        --nonces N              run N nonces (default: 1000)
-        --genAsm                generate x86 asm code for nonce N
-```
+The loads from the dataset are fully prefetched, so they don't slow down the loop.
 
-Two RandomX virtual machines are implemented:
+RandomX uses the [Blake2b](https://en.wikipedia.org/wiki/BLAKE_%28hash_function%29#BLAKE2) cryptographic hash function. Special hashing functions based on [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encryption are used to initialize and hash the scratchpad.
 
-### Interpreted VM
-The interpreted VM is the reference implementation, which aims for maximum portability.
+#### Hash verification
 
-The VM has been tested for correctness on the following platforms:
-* Linux: x86-64, ARMv7 (32-bit), ARMv8 (64-bit)
-* Windows: x86, x86-64
-* MacOS: x86-64
+RandomX is a symmetric PoW algorithm, so the verifying party has to repeat the same steps as when a hash is calculated.
 
-The interpreted VM supports two modes: "full dataset" mode, which requires more than 4 GiB of virtual memory, and a "light-client" mode, which requires about 64 MiB of memory, but runs significantly slower because dataset blocks are created on the fly rather than simply fetched from memory.
+However, to allow hash verification on devices that cannot store the whole 4 GiB dataset, RandomX allows a time-memory tradeoff by using just 256 MiB of memory at the cost of 16 times more random memory accesses. See [Dataset initialization](doc/dataset.md) for more details.
 
-Software AES implementation is available for CPUs which don't support [AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set).
+#### Documentation
+* [RandomX ISA](doc/isa.md)
+* [RandomX instruction listing](doc/isa-ops.md)
+* [Dataset initialization](doc/dataset.md)
 
-The following table lists the performance for Intel Core i5-3230M (Ivy Bridge) CPU using a single core on Windows 64-bit, compiled with Visual Studio 2017:
+# FAQ
 
-|mode|required memory|AES|initialization time [s]|performance [programs/s]|
-|------|----|-----|-------------------------|------------------|
-|light client|64 MiB|software|1.0|9.2|
-|light client|64 MiB|AES-NI|1.0|16|
-|full dataset|4 GiB|software|54|40|
-|full dataset|4 GiB|AES-NI|26|40|
+### Can RandomX run on a GPU?
 
-### JIT-compiled VM
-A JIT compiler is available for x86-64 CPUs. This implementation shows the approximate performance that can be achieved using optimized mining software. The JIT compiler generates generic x86-64 code without any architecture-specific optimizations. Only "full dataset" mode is supported.
+We don't expect GPUs will ever be competitive in mining RandomX. The reference miner is CPU-only.
 
-For optimal performance, an x86-64 CPU needs:
-* 32 KiB of L1 instruction cache per thread
-* 16 KiB of L1 data cache per thread
-* 240 KiB of L2 cache (exclusive) per thread
+RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings too many limitations and ultimately decreases ASIC resistance. CPUs have the advantage of not needing proprietary drivers and most CPU architectures support a large common subset of primitive operations.
 
-The following table lists the performance of AMD Ryzen 7 1700 (clock fixed at 3350 MHz, 1.05 Vcore, dual channel DDR4 2400 MHz) on Linux 64-bit (compiled with GCC 5.4.0).
+Additionally, targeting CPUs allows for more decentralized mining for several reasons:
 
-Power consumption was measured for the whole system using a wall socket wattmeter (±1W). Table lists difference over idle power consumption. [Prime95](https://en.wikipedia.org/wiki/Prime95#Use_for_stress_testing)  (small/in-place FFT) and [Cryptonight V2](https://github.com/monero-project/monero/pull/4218) power consumption are listed for comparison.
+* Every computer has a CPU and even laptops will be able to mine efficiently.
+* CPU mining is easier to set up - no driver compatibility issues, BIOS flashing etc.
+* CPU mining is more difficult to centralize because computers can usually have only one CPU except for expensive server parts.
 
-||threads|initialization time [s]|performance [programs/s]|power [W]
-|-|------|----|-----|-------------------------|
-|RandomX (interpreted)|1|27|52|16|
-|RandomX (interpreted)|8|4.0|390|63|
-|RandomX (interpreted)|16|3.5|620|74|
-|RandomX (compiled)|1|27|407|17|
-|RandomX (compiled)|2|14|810|26|
-|RandomX (compiled)|4|7.3|1620|42|
-|RandomX (compiled)|6|5.1|2410|56|
-|RandomX (compiled)|8|4.0|3200|71|
-|RandomX (compiled)|12|4.0|3670|82|
-|RandomX (compiled)|16|3.5|4110|92|
-|Cryptonight v2|8|-|-|47|
-|Prime95|8|-|-|77|
-|Prime95|16|-|-|81|
+### Does RandomX facilitate botnets/malware mining or web mining?
+Quite the opposite. Efficient mining requires 4 GiB of memory, which is very difficult to hide in an infected computer and disqualifies many low-end machines. Web mining is nearly impossible due to the large memory requirement and the need for a rather lengthy initialization of the dataset.
 
-## Proof of work
+### Since RandomX uses floating point calculations, how can it give reproducible results on different platforms?
 
-RandomX VM can be used for PoW using the following steps:
-
-1. Initialize the VM using a 256-bit hash of any data.
-2. Execute the RandomX program.
-3. Calculate `blake2b(RegisterFile || t1ha2(Scratchpad))`*
-
-\* [blake2b](https://en.wikipedia.org/wiki/BLAKE_%28hash_function%29#BLAKE2) is a cryptographic hash function, [t1ha2](https://github.com/leo-yuriev/t1ha) is a fast hashing function.
-
-The above steps can be chained multiple times to prevent mining strategies that search for programs with particular properties (for example, without division).
+RandomX uses only operations that are guaranteed to give correctly rounded results by the [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754) standard: addition, subtraction, multiplication, division and square root. Special care is taken to avoid corner cases such as NaN values or denormals.
 
 ## Acknowledgements
 The following people have contributed to the design of RandomX:
@@ -114,13 +81,10 @@ The following people have contributed to the design of RandomX:
 
 RandomX uses some source code from the following 3rd party repositories:
 * Argon2d, Blake2b hashing functions: https://github.com/P-H-C/phc-winner-argon2
-* PCG32 random number generator: https://github.com/imneme/pcg-c-basic
 * Software AES implementation https://github.com/fireice-uk/xmr-stak
-* t1ha2 hashing function: https://github.com/leo-yuriev/t1ha
 
 ## Donations
-
 XMR:
 ```
-4B9nWtGhZfAWsTxWujPDGoWfVpJvADxkxJJTmMQp3zk98n8PdLkEKXA5g7FEUjB8JPPHdP959WDWMem3FPDTK2JUU1UbVHo
+845xHUh5GvfHwc2R8DVJCE7BT2sd4YEcmjG8GNSdmeNsP5DTEjXd1CNgxTcjHjiFuthRHAoVEJjM7GyKzQKLJtbd56xbh7V
 ```

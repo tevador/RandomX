@@ -18,15 +18,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include "Program.hpp"
-#include "Pcg32.hpp"
+#include "hashAes1Rx4.hpp"
 
 namespace RandomX {
-	void Program::initialize(Pcg32& gen) {
-		for (unsigned i = 0; i < sizeof(programBuffer) / sizeof(Pcg32::result_type); ++i) {
-			*(((uint32_t*)&programBuffer) + i) = gen();
-		}
-	}
-
 	void Program::print(std::ostream& os) const {
 		for (int i = 0; i < RandomX::ProgramLength; ++i) {
 			auto instr = programBuffer[i];

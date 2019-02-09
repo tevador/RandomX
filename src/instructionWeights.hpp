@@ -37,8 +37,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_INEG_R 2
 #define WT_IXOR_R 16
 #define WT_IXOR_M 4
-#define WT_IROR_R 8
-#define WT_IROL_R 8
+#define WT_IROR_R 10
+#define WT_IROL_R 0
 #define WT_ISWAP_R 4
 
 //Common floating point
@@ -49,6 +49,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_FADD_M 5
 #define WT_FSUB_R 20
 #define WT_FSUB_M 5
+#define WT_FNEG_R 6
 
 //Floating point group E
 #define WT_FMUL_R 20
@@ -61,7 +62,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_COND_R 7
 #define WT_COND_M 1
 #define WT_CFROUND 1
-#define WT_CFSUM_R 0
 
 //Store
 #define WT_ISTORE 16
@@ -74,7 +74,7 @@ WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
 WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
 WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
 WT_ISWAP_R + WT_FSWAP_R + WT_FADD_R + WT_FADD_M + WT_FSUB_R + WT_FSUB_M + \
-WT_CFSUM_R + WT_FMUL_R + WT_FMUL_M + WT_FDIV_R + WT_FDIV_M + \
+WT_FNEG_R + WT_FMUL_R + WT_FMUL_M + WT_FDIV_R + WT_FDIV_M + \
 WT_FSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
 
 static_assert(wtSum == 256,

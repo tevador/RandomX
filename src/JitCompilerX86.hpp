@@ -24,10 +24,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <vector>
 
-class Pcg32;
-
 namespace RandomX {
 
+	class Program;
 	class JitCompilerX86;
 
 	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&);
@@ -37,7 +36,7 @@ namespace RandomX {
 	class JitCompilerX86 {
 	public:
 		JitCompilerX86();
-		void generateProgram(Pcg32&);
+		void generateProgram(Program&);
 		ProgramFunc getProgramFunc() {
 			return (ProgramFunc)code;
 		}
@@ -115,7 +114,7 @@ namespace RandomX {
 		void  h_FADD_M(Instruction&);
 		void  h_FSUB_R(Instruction&);
 		void  h_FSUB_M(Instruction&);
-		void  h_CFSUM_R(Instruction&);
+		void  h_FNEG_R(Instruction&);
 		void  h_FMUL_R(Instruction&);
 		void  h_FMUL_M(Instruction&);
 		void  h_FDIV_R(Instruction&);

@@ -24,11 +24,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 #include "dataset.hpp"
-#include "Pcg32.hpp"
 #include "Cache.hpp"
 #include "virtualMemory.hpp"
 #include "softAes.h"
 #include "squareHash.h"
+#include "blake2/endian.h"
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
@@ -39,55 +39,37 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	template<typename T>
-	static inline void shuffle(T* buffer, size_t bytes, Pcg32& gen) {
-		auto count = bytes / sizeof(T);
-		for (auto i = count - 1; i >= 1; --i) {
-			int j = gen.getUniform(0, i);
-			std::swap(buffer[j], buffer[i]);
-		}
-	}
-
-	template<bool soft>
-	void initBlock(const uint8_t* intermediate, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
+	void initBlock(const uint8_t* cache, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys) {
 		uint64_t r0, r1, r2, r3, r4, r5, r6, r7;
 
 		r0 = 4ULL * blockNumber;
 		r1 = r2 = r3 = r4 = r5 = r6 = r7 = 0;
 
-		constexpr int mask = (CacheSize - 1) & -64;
+		constexpr uint32_t mask = (CacheSize - 1) & CacheLineAlignMask;
 
 		for (auto i = 0; i < DatasetIterations; ++i) {
-			uint64_t* mix = (uint64_t*)(intermediate + (r0 & mask));
-			PREFETCHNTA(mix);
+			const uint8_t* mixBlock = cache + (r0 & mask);
+			PREFETCHNTA(mixBlock);
 			r0 = squareHash(r0);
-			r0 ^= mix[0];
-			r1 ^= mix[1];
-			r2 ^= mix[2];
-			r3 ^= mix[3];
-			r4 ^= mix[4];
-			r5 ^= mix[5];
-			r6 ^= mix[6];
-			r7 ^= mix[7];
+			r0 ^= load64(mixBlock + 0);
+			r1 ^= load64(mixBlock + 8);
+			r2 ^= load64(mixBlock + 16);
+			r3 ^= load64(mixBlock + 24);
+			r4 ^= load64(mixBlock + 32);
+			r5 ^= load64(mixBlock + 40);
+			r6 ^= load64(mixBlock + 48);
+			r7 ^= load64(mixBlock + 56);
 		}
 
-		uint64_t* out64 = (uint64_t*)out;
-
-		out64[0] = r0;
-		out64[1] = r1;
-		out64[2] = r2;
-		out64[3] = r3;
-		out64[4] = r4;
-		out64[5] = r5;
-		out64[6] = r6;
-		out64[7] = r7;
+		store64(out + 0, r0);
+		store64(out + 8, r1);
+		store64(out + 16, r2);
+		store64(out + 24, r3);
+		store64(out + 32, r4);
+		store64(out + 40, r5);
+		store64(out + 48, r6);
+		store64(out + 56, r7);
 	}
-
-	template
-		void initBlock<true>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
-
-	template
-		void initBlock<false>(const uint8_t*, uint8_t*, uint32_t, const KeysContainer&);
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
 		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset + memory.ma);
@@ -96,34 +78,27 @@ namespace RandomX {
 		std::swap(memory.mx, memory.ma);
 		PREFETCHNTA(memory.ds.dataset + memory.ma);
 		for (int i = 0; i < RegistersCount; ++i)
-			reg.r[i].u64 ^= datasetLine[i];
+			reg.r[i] ^= datasetLine[i];
 	}
 
-	template<bool softAes>
-	void datasetReadLight(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
+	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t (&reg)[RegistersCount]) {
+		memory.mx ^= addr;
+		memory.mx &= CacheLineAlignMask; //align to cache line
 		Cache* cache = memory.ds.cache;
 		uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-		initBlock<softAes>(cache->getCache(), (uint8_t*)datasetLine, memory.ma / CacheLineSize, cache->getKeys());
+		initBlock(cache->getCache(), (uint8_t*)datasetLine, memory.ma / CacheLineSize, cache->getKeys());
 		for (int i = 0; i < RegistersCount; ++i)
-			reg.r[i].u64 ^= datasetLine[i];
-		memory.mx ^= addr;
-		memory.mx &= -64; //align to cache line
+			reg[i] ^= datasetLine[i];
 		std::swap(memory.mx, memory.ma);
 	}
 
-	template
-		void datasetReadLight<false>(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
-
-	template
-		void datasetReadLight<true>(addr_t addr, MemoryRegisters& memory, RegisterFile& reg);
-
-	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
+	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]) {
 		ILightClientAsyncWorker* aw = memory.ds.asyncWorker;
 		const uint64_t* datasetLine = aw->getBlock(memory.ma);
 		for (int i = 0; i < RegistersCount; ++i)
-			reg.r[i].u64 ^= datasetLine[i];
+			reg[i] ^= datasetLine[i];
 		memory.mx ^= addr;
-		memory.mx &= -64; //align to cache line
+		memory.mx &= CacheLineAlignMask; //align to cache line
 		std::swap(memory.mx, memory.ma);
 		aw->prepareBlock(memory.ma);
 	}
@@ -145,7 +120,7 @@ namespace RandomX {
 	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount) {
 		for (uint32_t i = startBlock; i < startBlock + blockCount; ++i) {
-			initBlock<softAes>(cache->getCache(), ds.dataset + i * CacheLineSize, i, cache->getKeys());
+			initBlock(cache->getCache(), ds.dataset + i * CacheLineSize, i, cache->getKeys());
 		}
 	}
 
@@ -172,7 +147,7 @@ namespace RandomX {
 		alignas(16) KeysContainer keys;
 		alignas(16) uint8_t buffer[CacheLineSize];
 		for (uint32_t block = 0; block < blockCount; ++block) {
-			initBlock<softAes>(buffer, buffer, 0, keys);
+			initBlock(buffer, buffer, 0, keys);
 		}
 	}
 

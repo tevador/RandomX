@@ -17,6 +17,11 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+/*
+	Based on the original idea by SChernykh:
+	https://github.com/SChernykh/xmr-stak-cpu/issues/1#issuecomment-414336613
+*/
+
 #include <stdint.h>
 
 #if !defined(_M_X64) && !defined(__x86_64__)

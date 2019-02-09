@@ -24,22 +24,25 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include "Instruction.hpp"
 
-class Pcg32;
-
 namespace RandomX {
 
 	class Program {
 	public:
-		Instruction& operator()(uint64_t pc) {
+		Instruction& operator()(int pc) {
 			return programBuffer[pc];
 		}
-		void initialize(Pcg32& gen);
 		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
 			p.print(os);
 			return os;
 		}
+		uint64_t getEntropy(int i) {
+			return entropyBuffer[i];
+		}
 	private:
 		void print(std::ostream&) const;
+		uint64_t entropyBuffer[16];
 		Instruction programBuffer[ProgramLength];
 	};
+
+	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
 }

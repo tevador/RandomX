@@ -23,7 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Cache.hpp"
 #include "softAes.h"
 #include "argon2.h"
-#include "Pcg32.hpp"
 #include "argon2_core.h"
 
 namespace RandomX {

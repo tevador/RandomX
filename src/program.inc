@@ -1,17 +1,14 @@
 	; FMUL_R e0, a2
 	mulpd xmm4, xmm10
-	; IADD_RC r2, r5, -1621224194
+	; IADD_RC r2, r5, 2673743102
 	lea r10, [r10+r13-1621224194]
 	; ISTORE L2[r2], r7
 	mov eax, r10d
 	and eax, 262136
 	mov qword ptr [rsi+rax], r15
-	; FSUB_M f2, L1[r2]
-	mov eax, r10d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	subpd xmm2, xmm12
-	; IMUL_9C r6, -1003503212
+	; FNEG_R f2
+	xorps xmm2, xmm15
+	; IMUL_9C r6, 3291464084
 	lea r14, [r14+r14*8-1003503212]
 	; FSUB_R f1, a0
 	subpd xmm1, xmm8
@@ -19,11 +16,8 @@
 	mov eax, r11d
 	and eax, 262136
 	xor r13, qword ptr [rsi+rax]
-	; FSUB_M f2, L1[r4]
-	mov eax, r12d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	subpd xmm2, xmm12
+	; FNEG_R f2
+	xorps xmm2, xmm15
 	; FSUB_R f3, a0
 	subpd xmm3, xmm8
 	; ISDIV_C r0, 1400272688
@@ -38,35 +32,37 @@
 	mov eax, r15d
 	and eax, 16376
 	imul r11, qword ptr [rsi+rax]
-	; IROL_R r2, r3
-	mov ecx, r11d
-	rol r10, cl
+	; ISWAP_R r2, r3
+	xchg r10, r11
 	; IMULH_R r6, r0
 	mov rax, r14
 	mul r8
 	mov r14, rdx
 	; FMUL_R e0, a2
 	mulpd xmm4, xmm10
-	; IADD_RC r3, r4, -52260428
+	; IADD_RC r3, r4, 4242706868
 	lea r11, [r11+r12-52260428]
-	; IADD_R r7, -1138617760
+	; IADD_R r7, 3156349536
 	add r15, -1138617760
 	; IXOR_M r2, L1[r6]
 	mov eax, r14d
 	and eax, 16376
 	xor r10, qword ptr [rsi+rax]
-	; FSUB_R f2, a1
-	subpd xmm2, xmm9
+	; FSUB_M f2, L1[r5]
+	mov eax, r13d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm2, xmm12
 	; IXOR_R r7, r1
 	xor r15, r9
-	; COND_R r2, lt(r7, -41618808)
+	; COND_R r2, lt(r7, 4253348488)
 	xor ecx, ecx
 	cmp r15d, -41618808
 	setl cl
 	add r10, rcx
 	; FMUL_R e3, a0
 	mulpd xmm7, xmm8
-	; COND_R r4, sg(r1, -961190365)
+	; COND_R r4, sg(r1, 3333776931)
 	xor ecx, ecx
 	cmp r9d, -961190365
 	sets cl
@@ -122,19 +118,21 @@
 	addpd xmm1, xmm8
 	; FMUL_R e3, a2
 	mulpd xmm7, xmm10
-	; FADD_R f0, a1
-	addpd xmm0, xmm9
+	; FADD_M f0, L2[r5]
+	mov eax, r13d
+	and eax, 262136
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	addpd xmm0, xmm12
 	; IMUL_R r5, r6
 	imul r13, r14
-	; IADD_RC r1, r2, -1263285243
+	; IADD_RC r1, r2, 3031682053
 	lea r9, [r9+r10-1263285243]
 	; ISUB_M r4, L1[r6]
 	mov eax, r14d
 	and eax, 16376
 	sub r12, qword ptr [rsi+rax]
-	; IROL_R r7, r2
-	mov ecx, r10d
-	rol r15, cl
+	; FSWAP_R e3
+	shufpd xmm7, xmm7, 1
 	; IMUL_R r0, r7
 	imul r8, r15
 	; IXOR_R r1, r6
@@ -156,9 +154,8 @@
 	andps xmm12, xmm14
 	divpd xmm6, xmm12
 	maxpd xmm6, xmm13
-	; IROL_R r2, r0
-	mov ecx, r8d
-	rol r10, cl
+	; ISWAP_R r2, r0
+	xchg r10, r8
 	; IADD_R r7, r5
 	add r15, r13
 	; FDIV_M e0, L1[r4]
@@ -210,8 +207,11 @@
 	mov eax, r8d
 	and eax, 16376
 	mov qword ptr [rsi+rax], r15
-	; FSUB_R f0, a1
-	subpd xmm0, xmm9
+	; FSUB_M f0, L2[r1]
+	mov eax, r9d
+	and eax, 262136
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm0, xmm12
 	; FADD_R f3, a1
 	addpd xmm3, xmm9
 	; IXOR_R r5, r4
@@ -220,8 +220,8 @@
 	mov eax, r15d
 	and eax, 262136
 	mov qword ptr [rsi+rax], r10
-	; ISWAP_R r6, r7
-	xchg r14, r15
+	; FSWAP_R e2
+	shufpd xmm6, xmm6, 1
 	; FADD_R f3, a2
 	addpd xmm3, xmm10
 	; ISMULH_R r5, r0
@@ -232,7 +232,7 @@
 	mov eax, r12d
 	and eax, 16376
 	add r8, qword ptr [rsi+rax]
-	; COND_R r7, ge(r6, -1972898485)
+	; COND_R r7, ge(r6, 2322068811)
 	xor ecx, ecx
 	cmp r14d, -1972898485
 	setge cl
@@ -242,9 +242,9 @@
 	; IROR_R r7, r6
 	mov ecx, r14d
 	ror r15, cl
-	; IADD_RC r2, r4, -117457973
+	; IADD_RC r2, r4, 4177509323
 	lea r10, [r10+r12-117457973]
-	; IMUL_R r0, -1500893068
+	; IMUL_R r0, 2794074228
 	imul r8, -1500893068
 	; IADD_R r2, r3
 	add r10, r11
@@ -265,19 +265,19 @@
 	lea r14, [r14+r14+540663146]
 	; IROR_R r5, 58
 	ror r13, 58
-	; FSWAP_R f2
-	shufpd xmm2, xmm2, 1
-	; FSWAP_R f2
-	shufpd xmm2, xmm2, 1
+	; FADD_R f2, a1
+	addpd xmm2, xmm9
+	; FADD_R f2, a2
+	addpd xmm2, xmm10
 	; FMUL_R e1, a2
 	mulpd xmm5, xmm10
-	; ISWAP_R r5, r6
-	xchg r13, r14
+	; FSWAP_R e1
+	shufpd xmm5, xmm5, 1
 	; IADD_R r5, r3
 	add r13, r11
-	; IADD_R r7, -1780268176
+	; IADD_R r7, 2514699120
 	add r15, -1780268176
-	; IADD_RC r7, r0, -1497756854
+	; IADD_RC r7, r0, 2797210442
 	lea r15, [r15+r8-1497756854]
 	; ISTORE L2[r0], r7
 	mov eax, r8d
@@ -287,8 +287,11 @@
 	mov rax, r10
 	imul r12
 	mov r10, rdx
-	; FSUB_R f0, a2
-	subpd xmm0, xmm10
+	; FSUB_M f0, L1[r2]
+	mov eax, r10d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm0, xmm12
 	; ISMULH_R r2, r3
 	mov rax, r10
 	imul r11
@@ -301,8 +304,11 @@
 	addpd xmm2, xmm8
 	; FMUL_R e0, a2
 	mulpd xmm4, xmm10
-	; FADD_R f2, a3
-	addpd xmm2, xmm11
+	; FADD_M f2, L1[r3]
+	mov eax, r11d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	addpd xmm2, xmm12
 	; IMUL_R r1, r2
 	imul r9, r10
 	; IMUL_M r7, L1[r5]
@@ -313,11 +319,8 @@
 	imul r11, r10
 	; IXOR_R r1, r0
 	xor r9, r8
-	; FSUB_M f0, L1[r5]
-	mov eax, r13d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	subpd xmm0, xmm12
+	; FNEG_R f0
+	xorps xmm0, xmm15
 	; IADD_RC r4, r4, 1456841848
 	lea r12, [r12+r12+1456841848]
 	; IXOR_R r3, r2
@@ -327,19 +330,16 @@
 	cmp r12d, 1678513610
 	seto cl
 	add r8, rcx
-	; ISMULH_R r4, -1620573087
-	mov rax, -1620573087
+	; ISMULH_R r4, r4
+	mov rax, r12
 	imul r12
-	add r12, rdx
+	mov r12, rdx
 	; IMUL_R r4, r1
 	imul r12, r9
-	; FSWAP_R e1
-	shufpd xmm5, xmm5, 1
-	; FADD_M f2, L1[r0]
-	mov eax, r8d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	addpd xmm2, xmm12
+	; FADD_R f1, a2
+	addpd xmm1, xmm10
+	; FSUB_R f2, a0
+	subpd xmm2, xmm8
 	; FMUL_R e1, a2
 	mulpd xmm5, xmm10
 	; FSUB_R f0, a3
@@ -362,29 +362,35 @@
 	sub r12, qword ptr [rsi+rax]
 	; FADD_R f2, a2
 	addpd xmm2, xmm10
-	; FSUB_R f3, a0
-	subpd xmm3, xmm8
+	; FSUB_M f3, L2[r4]
+	mov eax, r12d
+	and eax, 262136
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm3, xmm12
 	; IXOR_R r7, r2
 	xor r15, r10
 	; IXOR_R r0, r5
 	xor r8, r13
-	; FSWAP_R f1
-	shufpd xmm1, xmm1, 1
+	; FADD_R f1, a2
+	addpd xmm1, xmm10
 	; FMUL_R e3, a2
 	mulpd xmm7, xmm10
-	; ISWAP_R r7, r1
-	xchg r15, r9
-	; ISWAP_R r1, r4
-	xchg r9, r12
-	; COND_R r2, ge(r2, -226330940)
+	; FSWAP_R e3
+	shufpd xmm7, xmm7, 1
+	; FSWAP_R f1
+	shufpd xmm1, xmm1, 1
+	; COND_R r2, ge(r2, 4068636356)
 	xor ecx, ecx
 	cmp r10d, -226330940
 	setge cl
 	add r10, rcx
 	; FMUL_R e2, a3
 	mulpd xmm6, xmm11
-	; FSUB_R f2, a1
-	subpd xmm2, xmm9
+	; FSUB_M f2, L2[r1]
+	mov eax, r9d
+	and eax, 262136
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm2, xmm12
 	; FADD_R f1, a0
 	addpd xmm1, xmm8
 	; ISUB_R r7, r5
@@ -395,12 +401,11 @@
 	sub r8, qword ptr [rsi+rax]
 	; FSUB_R f3, a1
 	subpd xmm3, xmm9
-	; IROL_R r3, r5
-	mov ecx, r13d
-	rol r11, cl
+	; ISWAP_R r3, r5
+	xchg r11, r13
 	; IADD_RC r5, r2, 795784298
 	lea r13, [r13+r10+795784298]
-	; IADD_RC r0, r4, -2050178553
+	; IADD_RC r0, r4, 2244788743
 	lea r8, [r8+r12-2050178553]
 	; IMUL_9C r5, 1062534001
 	lea r13, [r13+r13*8+1062534001]
@@ -436,16 +441,15 @@
 	mov rax, r12
 	imul r10
 	mov r12, rdx
-	; IROL_R r3, r0
-	mov ecx, r8d
-	rol r11, cl
+	; ISWAP_R r3, r0
+	xchg r11, r8
 	; IXOR_R r2, r0
 	xor r10, r8
 	; IXOR_M r0, L2[r1]
 	mov eax, r9d
 	and eax, 262136
 	xor r8, qword ptr [rsi+rax]
-	; ISDIV_C r7, -935446980
+	; ISDIV_C r7, 3359520316
 	mov rax, 7859804860668271393
 	imul r15
 	xor eax, eax
@@ -458,11 +462,8 @@
 	mov eax, r10d
 	and eax, 16376
 	imul r14, qword ptr [rsi+rax]
-	; FSUB_M f3, L1[r6]
-	mov eax, r14d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	subpd xmm3, xmm12
+	; FNEG_R f3
+	xorps xmm3, xmm15
 	; IADD_RC r4, r2, 1704868083
 	lea r12, [r12+r10+1704868083]
 	; FADD_R f2, a0
@@ -471,8 +472,11 @@
 	mov eax, r8d
 	and eax, 16376
 	mov qword ptr [rsi+rax], r8
-	; FADD_R f0, a3
-	addpd xmm0, xmm11
+	; FADD_M f0, L1[r7]
+	mov eax, r15d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	addpd xmm0, xmm12
 	; FMUL_R e0, a3
 	mulpd xmm4, xmm11
 	; FSUB_R f3, a2
@@ -481,8 +485,8 @@
 	lea r15, [r15+r15+1302457878]
 	; ISUB_R r1, 1330165941
 	sub r9, 1330165941
-	; FSUB_R f1, a3
-	subpd xmm1, xmm11
+	; FNEG_R f1
+	xorps xmm1, xmm15
 	; IROR_R r0, r4
 	mov ecx, r12d
 	ror r8, cl
@@ -491,7 +495,7 @@
 	; IROR_R r5, r6
 	mov ecx, r14d
 	ror r13, cl
-	; COND_R r0, ab(r1, -310933871)
+	; COND_R r0, ab(r1, 3984033425)
 	xor ecx, ecx
 	cmp r9d, -310933871
 	seta cl
@@ -516,22 +520,22 @@
 	andps xmm12, xmm14
 	divpd xmm5, xmm12
 	maxpd xmm5, xmm13
-	; IROL_R r1, 5
-	rol r9, 5
-	; IADD_R r7, -1421188024
+	; FSWAP_R f1
+	shufpd xmm1, xmm1, 1
+	; IADD_R r7, 2873779272
 	add r15, -1421188024
-	; FSUB_R f3, a2
-	subpd xmm3, xmm10
+	; FSUB_M f3, L2[r2]
+	mov eax, r10d
+	and eax, 262136
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm3, xmm12
 	; FSUB_R f2, a3
 	subpd xmm2, xmm11
-	; FADD_M f3, L1[r1]
-	mov eax, r9d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	addpd xmm3, xmm12
+	; FSUB_R f3, a1
+	subpd xmm3, xmm9
 	; FMUL_R e1, a3
 	mulpd xmm5, xmm11
-	; IADD_RC r2, r4, -317832028
+	; IADD_RC r2, r4, 3977135268
 	lea r10, [r10+r12-317832028]
 	; IMUL_M r4, L1[r5]
 	mov eax, r13d
@@ -575,12 +579,11 @@
 	sub r12, r9
 	; ISUB_R r3, r0
 	sub r11, r8
-	; IROL_R r7, r5
-	mov ecx, r13d
-	rol r15, cl
+	; ISWAP_R r7, r5
+	xchg r15, r13
 	; IMUL_R r2, r6
 	imul r10, r14
-	; COND_R r2, ge(r2, -1892157506)
+	; COND_R r2, ge(r2, 2402809790)
 	xor ecx, ecx
 	cmp r10d, -1892157506
 	setge cl
@@ -596,7 +599,7 @@
 	add r9, rdx
 	; FADD_R f0, a1
 	addpd xmm0, xmm9
-	; IADD_RC r5, r7, -477591118
+	; IADD_RC r5, r7, 3817376178
 	lea r13, [r13+r15-477591118]
 	; FSUB_R f0, a3
 	subpd xmm0, xmm11
@@ -610,9 +613,12 @@
 	add r8, r12
 	; FSUB_R f3, a1
 	subpd xmm3, xmm9
-	; FSUB_R f2, a0
-	subpd xmm2, xmm8
-	; ISDIV_C r2, -396711688
+	; FSUB_M f2, L1[r4]
+	mov eax, r12d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	subpd xmm2, xmm12
+	; ISDIV_C r2, 3898255608
 	mov rax, 5964731804029407733
 	imul r10
 	xor eax, eax
@@ -621,16 +627,19 @@
 	sets al
 	add rdx, rax
 	add r10, rdx
-	; FSUB_R f2, a2
-	subpd xmm2, xmm10
+	; FNEG_R f2
+	xorps xmm2, xmm15
 	; FSUB_R f3, a2
 	subpd xmm3, xmm10
 	; FADD_R f1, a3
 	addpd xmm1, xmm11
 	; IMUL_R r3, r2
 	imul r11, r10
-	; FADD_R f0, a3
-	addpd xmm0, xmm11
+	; FADD_M f0, L1[r3]
+	mov eax, r11d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	addpd xmm0, xmm12
 	; ISMULH_R r5, r2
 	mov rax, r13
 	imul r10
@@ -639,28 +648,30 @@
 	mov rax, r14
 	mul r10
 	mov r14, rdx
-	; FADD_R f3, a3
-	addpd xmm3, xmm11
+	; FADD_M f3, L1[r3]
+	mov eax, r11d
+	and eax, 16376
+	cvtdq2pd xmm12, qword ptr [rsi+rax]
+	addpd xmm3, xmm12
 	; IMUL_R r6, r7
 	imul r14, r15
 	; FSUB_R f0, a0
 	subpd xmm0, xmm8
-	; FSUB_R f2, a0
-	subpd xmm2, xmm8
+	; FNEG_R f2
+	xorps xmm2, xmm15
 	; ISUB_R r6, r4
 	sub r14, r12
-	; FSWAP_R f1
-	shufpd xmm1, xmm1, 1
+	; FADD_R f1, a1
+	addpd xmm1, xmm9
 	; IXOR_R r0, r5
 	xor r8, r13
 	; FADD_R f2, a1
 	addpd xmm2, xmm9
-	; IROL_R r7, r5
-	mov ecx, r13d
-	rol r15, cl
+	; ISWAP_R r7, r5
+	xchg r15, r13
 	; FMUL_R e3, a2
 	mulpd xmm7, xmm10
-	; IADD_RC r3, r6, -1317630728
+	; IADD_RC r3, r6, 2977336568
 	lea r11, [r11+r14-1317630728]
 	; IMUL_R r2, r3
 	imul r10, r11
@@ -668,11 +679,8 @@
 	lea r9, [r9+r12+894105694]
 	; IMUL_9C r7, 504293473
 	lea r15, [r15+r15*8+504293473]
-	; FADD_M f1, L2[r0]
-	mov eax, r8d
-	and eax, 262136
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	addpd xmm1, xmm12
+	; FSUB_R f1, a0
+	subpd xmm1, xmm8
 	; IMUL_R r7, r1
 	imul r15, r9
 	; IXOR_R r2, r4
@@ -713,19 +721,16 @@
 	mov eax, r9d
 	and eax, 16376
 	mov qword ptr [rsi+rax], r13
-	; FSUB_M f0, L1[r1]
-	mov eax, r9d
-	and eax, 16376
-	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	subpd xmm0, xmm12
+	; FNEG_R f0
+	xorps xmm0, xmm15
 	; FSQRT_R e2
 	sqrtpd xmm6, xmm6
 	; FMUL_R e0, a3
 	mulpd xmm4, xmm11
 	; FMUL_R e3, a2
 	mulpd xmm7, xmm10
-	; IROL_R r5, r2
+	; IROR_R r5, r2
 	mov ecx, r10d
-	rol r13, cl
+	ror r13, cl
 	; IADD_R r0, r4
 	add r8, r12

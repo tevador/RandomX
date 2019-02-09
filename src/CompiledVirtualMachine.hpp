@@ -39,8 +39,7 @@ namespace RandomX {
 		}
 		CompiledVirtualMachine();
 		void setDataset(dataset_t ds) override;
-		void initializeScratchpad(uint8_t* scratchpad, int32_t index) override;
-		void initializeProgram(const void* seed) override;
+		void initialize() override;
 		virtual void execute() override;
 		void* getProgram() {
 			return compiler.getCode();

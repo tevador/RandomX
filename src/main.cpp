@@ -34,7 +34,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <atomic>
 #include "dataset.hpp"
 #include "Cache.hpp"
-#include "Pcg32.hpp"
 #include "hashAes1Rx4.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
@@ -117,7 +116,7 @@ void printUsage(const char* executable) {
 }
 
 void generateAsm(int nonce) {
-	uint64_t hash[4];
+	uint64_t hash[8];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
@@ -128,7 +127,9 @@ void generateAsm(int nonce) {
 	*noncePtr = nonce;
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 	RandomX::AssemblyGeneratorX86 asmX86;
-	asmX86.generateProgram(hash);
+	RandomX::Program p;
+	fillAes1Rx4<false>(hash, sizeof(p), &p);
+	asmX86.generateProgram(p);
 	asmX86.printCode(std::cout);
 }
 
@@ -143,9 +144,8 @@ void generateNative(int nonce) {
 	int* noncePtr = (int*)(blockTemplate + 39);
 	*noncePtr = nonce;
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-	RandomX::Program prog;
-	Pcg32 gen(hash);
-	prog.initialize(gen);
+	alignas(16) RandomX::Program prog;
+	fillAes1Rx4<false>((void*)hash, sizeof(prog), &prog);
 	for (int i = 0; i < RandomX::ProgramLength; ++i) {
 		prog(i).dst %= 8;
 		prog(i).src %= 8;
@@ -173,12 +173,13 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
 		for (int chain = 0; chain < 8; ++chain) {
-			vm->initializeProgram(hash);
+			fillAes1Rx4<false>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
+			vm->initialize();
 			vm->execute();
-			vm->getResult(nullptr, 0, hash);
+			vm->getResult<false>(nullptr, 0, hash);
 		}
 		//vm->initializeProgram(hash);
-		vm->getResult(scratchpad, RandomX::ScratchpadSize, hash);
+		vm->getResult<false>(scratchpad, RandomX::ScratchpadSize, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";
