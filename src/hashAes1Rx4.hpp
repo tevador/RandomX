@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -17,32 +17,10 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+#include "softAes.h"
 
-#include <cstdint>
-#include <ostream>
-#include "common.hpp"
-#include "Instruction.hpp"
+template<bool softAes>
+void hashAes1Rx4(const void *input, size_t inputSize, void *hash);
 
-namespace RandomX {
-
-	class Program {
-	public:
-		Instruction& operator()(int pc) {
-			return programBuffer[pc];
-		}
-		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
-			p.print(os);
-			return os;
-		}
-		uint64_t getEntropy(int i) {
-			return entropyBuffer[i];
-		}
-	private:
-		void print(std::ostream&) const;
-		uint64_t entropyBuffer[16];
-		Instruction programBuffer[ProgramLength];
-	};
-
-	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
-}
+template<bool softAes>
+void fillAes1Rx4(void *state, size_t outputSize, void *buffer);

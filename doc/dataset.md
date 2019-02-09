@@ -1,15 +1,14 @@
+# Dataset
 
-## Dataset
+The dataset is randomly accessed 16384 times during each hash calculation, which significantly increases memory-hardness of RandomX. The size of the dataset is fixed at 4 GiB and it's divided into 67108864 blocks of 64 bytes.
 
-The dataset serves as the source of the first operand of all instructions and provides the memory-hardness of RandomX. The size of the dataset is fixed at 4 GiB and it's divided into 65536 blocks, each 64 KiB in size.
+In order to allow PoW verification with less than 4 GiB of memory, the dataset is constructed from a 256 MiB cache, which can be used to calculate dataset blocks on the fly.
 
-In order to allow PoW verification with less than 4 GiB of memory, the dataset is constructed from a 64 MiB cache, which can be used to calculate dataset blocks on the fly. To facilitate this, all random reads from the dataset are aligned to the beginning of a block.
+Because the initialization of the dataset is computationally intensive, it is recalculated only every 1024 blocks (~34 hours). The following figure visualizes the construction of the dataset:
 
-Because the initialization of the dataset is computationally intensive, it's recalculated on average every 1024 blocks (~34 hours). The following figure visualizes the construction of the dataset:
+![Imgur](https://i.imgur.com/b9WHOwo.png)
 
-![Imgur](https://i.imgur.com/JgLCjeq.png)
-
-### Seed block
+## Seed block
 The whole dataset is constructed from a 256-bit hash of the last block whose height is divisible by 1024 **and** has at least 64 confirmations.
 
 |block|Seed block|
@@ -19,9 +18,9 @@ The whole dataset is constructed from a 256-bit hash of the last block whose hei
 |2113-3136|2048|
 |...|...
 
-### Cache construction
+## Cache construction
 
-The 32-byte seed block hash is expanded into the 64 MiB cache using the "memory fill" function of Argon2d. [Argon2](https://github.com/P-H-C/phc-winner-argon2) is a memory-hard password hashing function, which is highly customizable. The variant with "d" suffix uses a data-dependent memory access pattern and provides the highest resistance against time-memory tradeoffs.
+The 32-byte seed block hash is expanded into the 256 MiB cache using the "memory fill" function of Argon2d. [Argon2](https://github.com/P-H-C/phc-winner-argon2) is a memory-hard password hashing function, which is highly customizable. The variant with "d" suffix uses a data-dependent memory access pattern and provides the highest resistance against time-memory tradeoffs.
 
 Argon2 is used with the following parameters:
 
@@ -29,8 +28,8 @@ Argon2 is used with the following parameters:
 |------------|--|
 |parallelism|1|
 |output size|0|
-|memory|65536 (64 MiB)|
-|iterations|12|
+|memory|262144 (256 MiB)|
+|iterations|3|
 |version|`0x13`|
 |hash type|0 (Argon2d)
 |password|seed block hash (32 bytes)
@@ -40,43 +39,66 @@ Argon2 is used with the following parameters:
 
 The finalizer and output calculation steps of Argon2 are omitted. The output is the filled memory array.
 
-The use of 12 iterations makes time-memory tradeoffs infeasible and thus 64 MiB is the minimum amount of memory required by RandomX.
+The use of 3 iterations makes time-memory tradeoffs infeasible and thus 256 MiB is the minimum amount of memory required by RandomX.
 
-When the memory fill is complete, the whole memory array is cyclically shifted backwards by 512 bytes (i.e. bytes 0-511 are moved to the end of the array). This is done to misalign the array so that each 1024-byte cache block spans two subsequent Argon2 blocks.
+## Dataset block generation
+The full 4 GiB dataset can be generated from the 256 MiB cache. Each 64-byte block is generated independently by XORing 16 pseudorandom cache blocks selected by the `SquareHash` function.
 
-### Dataset block generation
-The full 4 GiB dataset can be generated from the 64 MiB cache. Each block is generated separately: a 1024 byte block of the cache is expanded into 64 KiB of the dataset. The algorithm has 3 steps: expansion, AES and shuffle.
+### SquareHash
+`SquareHash` is a custom hash function with 64-bit input and 64-bit output. It is calculated by repeatedly squaring the input, splitting the 128-bit result in to two 64-bit halves and subtracting the high half from the low half. This is repeated 42 times. It's available as a [portable C implementation](../src/squareHash.h) and [x86-64 assembly version](../src/asm/squareHash.inc).
 
-#### Expansion
-The 1024 cache bytes are split into 128 quadwords and interleaved with 504-byte chunks of null bytes. The resulting sequence is: 8 cache bytes + 504 null bytes + 8 cache bytes + 504 null bytes etc. Total length of the expanded block is 65536 bytes.
+Properties of `SquareHash`:
 
-#### AES
-The 256-bit seed block hash is expanded into 10 AES round keys `k0`-`k9`. Let `i = 0...65535` be the index of the block that is being expanded. If `i` is an even number, this step uses AES *decryption* and if `i` is an odd number, it uses AES *encryption*.  Since both encryption and decryption scramble random data, no distinction is made between them in the text below.
+* It achieves full [Avalanche effect](https://en.wikipedia.org/wiki/Avalanche_effect).
+* Since the whole calculation is a long dependency chain, which uses only multiplication and subtraction, the performance gains by using custom hardware are very limited.
+* A single `SquareHash` calculation takes 40-80 ns, which is about the same time as DRAM access latency. ASIC devices using low-latency memory will be bottlenecked by `SquareHash`, while CPUs will finish the hash calculation in about the same time it takes to fetch data from RAM.
 
-The AES encryption is performed with 10 identical rounds using round keys `k0`-`k9`. Note that this is different from the typical AES procedure, which uses a different key schedule for decryption and a modified last round.
+The output of 16 chained SquareHash calculations is used to determine cache blocks that are XORed together to produce a dataset block:
 
-Before the AES encryption is applied, each 16-byte chunk is XORed with the ciphertext of the previous chunk. This is similar to the [AES-CBC](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_Block_Chaining_%28CBC%29) mode of operation and forces the encryption to be sequential. For XORing the initial block, an initialization vector is formed by zero-extending `i` to 128 bits.
+```c++
+void initBlock(const uint8_t* cache, uint8_t* out, uint32_t blockNumber) {
+  uint64_t r0, r1, r2, r3, r4, r5, r6, r7;
 
-#### Shuffle
-When the AES step is complete, the last 16-byte chunk of the block is used to initialize a PCG32 random number generator. Bits 0-63 are used as the initial state and bits 64-127 are used as the increment. The least-significant bit of the increment is always set to 1 to form an odd number.
+  r0 = 4ULL * blockNumber;
+  r1 = r2 = r3 = r4 = r5 = r6 = r7 = 0;
 
-The whole block is then divided into 16384 doublewords (4 bytes) and the [Fisher–Yates shuffle](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle) algorithm is applied to it. The algorithm generates a random in-place permutation of the 16384 doublewords. The result of the shuffle is the `i`-th block of the dataset.
+  constexpr uint32_t mask = (CacheSize - 1) & CacheLineAlignMask;
 
-The shuffle algorithm requires a uniform distribution of random numbers. The output of the PCG32 generator is always properly filtered to avoid the [modulo bias](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#Modulo_bias).
+  for (auto i = 0; i < DatasetIterations; ++i) {
+    const uint8_t* mixBlock = cache + (r0 & mask);
+    PREFETCHNTA(mixBlock);
+    r0 = squareHash(r0);
+    r0 ^= load64(mixBlock + 0);
+    r1 ^= load64(mixBlock + 8);
+    r2 ^= load64(mixBlock + 16);
+    r3 ^= load64(mixBlock + 24);
+    r4 ^= load64(mixBlock + 32);
+    r5 ^= load64(mixBlock + 40);
+    r6 ^= load64(mixBlock + 48);
+    r7 ^= load64(mixBlock + 56);
+  }
 
-### Performance
-The initial 64-MiB cache construction using Argon2d takes around 1 second using an older laptop with an Intel i5-3230M CPU (Ivy Bridge). Cache generation is strictly serial and cannot be easily parallelized.
+  store64(out + 0, r0);
+  store64(out + 8, r1);
+  store64(out + 16, r2);
+  store64(out + 24, r3);
+  store64(out + 32, r4);
+  store64(out + 40, r5);
+  store64(out + 48, r6);
+  store64(out + 56, r7);
+}
+```
 
-Dataset generation performance depends on the support of the AES-NI instruction set. The following table lists the generation runtimes using the same Ivy Bridge laptop with a single thread:
+*Note: `SquareHash` doesn't calculate squaring modulo 2<sup>64</sup>+1 because the subtraction is performed modulo 2<sup>64</sup>. Squaring modulo 2<sup>64</sup>+1 can be calculated by adding the carry bit in every iteration (i.e. the sequence in x86-64 assembly would have to be: `mul rax; sub rax, rdx; adc rax, 0`), but this would decrease ASIC-resistance of `SquareHash`.*
 
-|AES|4 GiB dataset generation|single block generation|
-|-----|-----------------------------|----------------|
-|hardware (AES-NI)|25 s|380 µs|
-|software|53 s|810 µs|
+## Performance
+The initial 256-MiB cache construction using Argon2d takes around 1 second using an older laptop with an Intel i5-3230M CPU (Ivy Bridge). Cache generation is strictly serial and cannot be parallelized.
 
-While the generation of a single block is strictly serial, multiple blocks can be easily generated in parallel, so the dataset generation time decreases linearly with the number of threads. Using a recent 6-core CPU with AES-NI support, the whole dataset can be generated in about 4 seconds.
+On the same laptop, full dataset initialization takes around 100 seconds using a single thread (1.5 µs per block).
 
-Moreover, the seed block hash is known up to 64 blocks in advance, so miners can slowly precalculate the whole dataset by generating ~512 dataset blocks per minute (corresponds to less than 1% utilization of a single CPU core).
+While the generation of a single block is strictly serial, multiple blocks can be easily generated in parallel, so the dataset generation time decreases linearly with the number of threads. Using an 8-core AMD Ryzen CPU, the whole dataset can be generated in under 10 seconds.
 
-### Light clients
-Light clients, who cannot or do not want to generate and keep the whole dataset in memory, can generate just the cache and then generate blocks on the fly as the program is being executed. In this case, the program execution time will be increased by roughly 100 times the single block generation time. For the Intel Ivy Bridge laptop, this amounts to around 40 milliseconds per program.
+Moreover, the seed block hash is known up to 64 blocks in advance, so miners can slowly precalculate the whole dataset by generating 524288 dataset blocks per minute (corresponds to about 1% utilization of a single CPU core).
+
+## Light clients
+Light clients, who cannot or do not want to generate and keep the whole dataset in memory, can generate just the cache and then generate blocks on the fly during hash calculation. In this case, the hash calculation time will be increased by 16384 times the single block generation time. For the Intel Ivy Bridge laptop, this amounts to around 24.5 milliseconds per hash.

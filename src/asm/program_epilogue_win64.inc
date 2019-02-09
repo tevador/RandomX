@@ -1,6 +1,12 @@
 	include program_epilogue_store.inc
 
 	;# restore callee-saved registers - Microsoft x64 calling convention
+	movdqu xmm15, xmmword ptr [rsp]
+	movdqu xmm14, xmmword ptr [rsp+16]
+	movdqu xmm13, xmmword ptr [rsp+32]
+	movdqu xmm12, xmmword ptr [rsp+48]
+	movdqu xmm11, xmmword ptr [rsp+64]
+	add rsp, 80
 	movdqu xmm10, xmmword ptr [rsp]
 	movdqu xmm9, xmmword ptr [rsp+16]
 	movdqu xmm8, xmmword ptr [rsp+32]
@@ -17,4 +23,4 @@
 	pop rbx
 
 	;# program finished
-	ret	0
+	ret

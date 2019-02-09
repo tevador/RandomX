@@ -19,30 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <cstdint>
-#include <ostream>
-#include "common.hpp"
-#include "Instruction.hpp"
+#include <cstddef>
 
-namespace RandomX {
-
-	class Program {
-	public:
-		Instruction& operator()(int pc) {
-			return programBuffer[pc];
-		}
-		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
-			p.print(os);
-			return os;
-		}
-		uint64_t getEntropy(int i) {
-			return entropyBuffer[i];
-		}
-	private:
-		void print(std::ostream&) const;
-		uint64_t entropyBuffer[16];
-		Instruction programBuffer[ProgramLength];
-	};
-
-	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
-}
+void* allocExecutableMemory(std::size_t);
+void* allocLargePagesMemory(std::size_t);

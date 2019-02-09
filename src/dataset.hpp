@@ -23,7 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <array>
 #include "intrinPortable.h"
 #include "common.hpp"
-#include "softAes.h"
 
 namespace RandomX {
 
@@ -32,20 +31,23 @@ namespace RandomX {
 	template<bool soft, bool enc>
 	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys);
 
-	template<bool softAes>
 	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber, const KeysContainer& keys);
 
-	void datasetAlloc(dataset_t& ds);
+	void datasetAlloc(dataset_t& ds, bool largePages);
 
 	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);
 
-	convertible_t datasetRead(addr_t addr, MemoryRegisters& memory);
+	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
 	template<bool softAes>
-	void datasetInitCache(const void* seed, dataset_t& dataset);
+	void datasetInitCache(const void* seed, dataset_t& dataset, bool largePages);
+
+	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
+
+	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
 
 	template<bool softAes>
-	convertible_t datasetReadLight(addr_t addr, MemoryRegisters& memory);
+	void aesBench(uint32_t blockCount);
 }
 

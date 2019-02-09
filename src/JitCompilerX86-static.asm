@@ -15,13 +15,18 @@
 ;# You should have received a copy of the GNU General Public License
 ;# along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
+IFDEF RAX
+
 _RANDOMX_JITX86_STATIC SEGMENT PAGE READ EXECUTE
 
 PUBLIC randomx_program_prologue
-PUBLIC randomx_program_begin
+PUBLIC randomx_program_loop_begin
+PUBLIC randomx_program_loop_load
+PUBLIC randomx_program_start
+PUBLIC randomx_program_read_dataset
+PUBLIC randomx_program_loop_store
+PUBLIC randomx_program_loop_end
 PUBLIC randomx_program_epilogue
-PUBLIC randomx_program_read_r
-PUBLIC randomx_program_read_f
 PUBLIC randomx_program_end
 
 ALIGN 64
@@ -30,9 +35,32 @@ randomx_program_prologue PROC
 randomx_program_prologue ENDP
 
 ALIGN 64
-randomx_program_begin PROC
+	include asm/program_xmm_constants.inc
+
+ALIGN 64
+randomx_program_loop_begin PROC
 	nop
-randomx_program_begin ENDP
+randomx_program_loop_begin ENDP
+
+randomx_program_loop_load PROC
+	include asm/program_loop_load.inc
+randomx_program_loop_load ENDP
+
+randomx_program_start PROC
+	nop
+randomx_program_start ENDP
+
+randomx_program_read_dataset PROC
+	include asm/program_read_dataset.inc
+randomx_program_read_dataset ENDP
+
+randomx_program_loop_store PROC
+	include asm/program_loop_store.inc
+randomx_program_loop_store ENDP
+
+randomx_program_loop_end PROC
+	nop
+randomx_program_loop_end ENDP
 
 ALIGN 64
 randomx_program_epilogue PROC
@@ -40,20 +68,12 @@ randomx_program_epilogue PROC
 randomx_program_epilogue ENDP
 
 ALIGN 64
-randomx_program_read_r PROC
-	include asm/program_read_r.inc
-randomx_program_read_r ENDP
-
-ALIGN 64
-randomx_program_read_f PROC
-	include asm/program_read_f.inc
-randomx_program_read_f ENDP
-
-ALIGN 64
 randomx_program_end PROC
 	nop
 randomx_program_end ENDP
 
 _RANDOMX_JITX86_STATIC ENDS
+
+ENDIF
 
 END

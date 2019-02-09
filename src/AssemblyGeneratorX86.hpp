@@ -24,13 +24,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	class Program;
 	class AssemblyGeneratorX86;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
 
 	class AssemblyGeneratorX86 {
 	public:
-		void generateProgram(const void* seed);
+		void generateProgram(Program&);
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}
@@ -38,46 +39,48 @@ namespace RandomX {
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
 
-		void genar(Instruction&);
-		void genaf(Instruction&);
-		void genbr0(Instruction&, const char*);
-		void genbr1(Instruction&);
-		void genbr132(Instruction&);
-		void genbf(Instruction&, const char*);
-		void gencr(Instruction&);
-		void gencf(Instruction&, bool);
+		void genAddressReg(Instruction&, const char*);
+		void genAddressRegDst(Instruction&, int);
+		int32_t genAddressImm(Instruction&);
 
 		void generateCode(Instruction&, int);
 
-		void h_ADD_64(Instruction&, int);
-		void h_ADD_32(Instruction&, int);
-		void h_SUB_64(Instruction&, int);
-		void h_SUB_32(Instruction&, int);
-		void h_MUL_64(Instruction&, int);
-		void h_MULH_64(Instruction&, int);
-		void h_MUL_32(Instruction&, int);
-		void h_IMUL_32(Instruction&, int);
-		void h_IMULH_64(Instruction&, int);
-		void h_DIV_64(Instruction&, int);
-		void h_IDIV_64(Instruction&, int);
-		void h_AND_64(Instruction&, int);
-		void h_AND_32(Instruction&, int);
-		void h_OR_64(Instruction&, int);
-		void h_OR_32(Instruction&, int);
-		void h_XOR_64(Instruction&, int);
-		void h_XOR_32(Instruction&, int);
-		void h_SHL_64(Instruction&, int);
-		void h_SHR_64(Instruction&, int);
-		void h_SAR_64(Instruction&, int);
-		void h_ROL_64(Instruction&, int);
-		void h_ROR_64(Instruction&, int);
-		void h_FPADD(Instruction&, int);
-		void h_FPSUB(Instruction&, int);
-		void h_FPMUL(Instruction&, int);
-		void h_FPDIV(Instruction&, int);
-		void h_FPSQRT(Instruction&, int);
-		void h_FPROUND(Instruction&, int);
-		void h_CALL(Instruction&, int);
-		void h_RET(Instruction&, int);
+		void  h_IADD_R(Instruction&, int);
+		void  h_IADD_M(Instruction&, int);
+		void  h_IADD_RC(Instruction&, int);
+		void  h_ISUB_R(Instruction&, int);
+		void  h_ISUB_M(Instruction&, int);
+		void  h_IMUL_9C(Instruction&, int);
+		void  h_IMUL_R(Instruction&, int);
+		void  h_IMUL_M(Instruction&, int);
+		void  h_IMULH_R(Instruction&, int);
+		void  h_IMULH_M(Instruction&, int);
+		void  h_ISMULH_R(Instruction&, int);
+		void  h_ISMULH_M(Instruction&, int);
+		void  h_IDIV_C(Instruction&, int);
+		void  h_ISDIV_C(Instruction&, int);
+		void  h_INEG_R(Instruction&, int);
+		void  h_IXOR_R(Instruction&, int);
+		void  h_IXOR_M(Instruction&, int);
+		void  h_IROR_R(Instruction&, int);
+		void  h_IROL_R(Instruction&, int);
+		void  h_ISWAP_R(Instruction&, int);
+		void  h_FSWAP_R(Instruction&, int);
+		void  h_FADD_R(Instruction&, int);
+		void  h_FADD_M(Instruction&, int);
+		void  h_FSUB_R(Instruction&, int);
+		void  h_FSUB_M(Instruction&, int);
+		void  h_FNEG_R(Instruction&, int);
+		void  h_FMUL_R(Instruction&, int);
+		void  h_FMUL_M(Instruction&, int);
+		void  h_FDIV_R(Instruction&, int);
+		void  h_FDIV_M(Instruction&, int);
+		void  h_FSQRT_R(Instruction&, int);
+		void  h_COND_R(Instruction&, int);
+		void  h_COND_M(Instruction&, int);
+		void  h_CFROUND(Instruction&, int);
+		void  h_ISTORE(Instruction&, int);
+		void  h_FSTORE(Instruction&, int);
+		void  h_NOP(Instruction&, int);
 	};
 }

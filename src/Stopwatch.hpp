@@ -53,7 +53,7 @@ public:
 			isRunning = false;
 		}
 	}
-	double getElapsed() {
+	double getElapsed() const {
 		return getElapsedNanosec() / 1e+9;
 	}
 private:
@@ -63,7 +63,7 @@ private:
 	uint64_t elapsed;
 	bool isRunning;
 
-	uint64_t getElapsedNanosec() {
+	uint64_t getElapsedNanosec() const {
 		uint64_t elns = elapsed;
 		if (isRunning) {
 			chrono_t endMark = std::chrono::high_resolution_clock::now();

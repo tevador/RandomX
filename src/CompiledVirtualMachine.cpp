@@ -18,37 +18,28 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include "CompiledVirtualMachine.hpp"
-#include "Pcg32.hpp"
 #include "common.hpp"
-#include "instructions.hpp"
 #include <stdexcept>
 
 namespace RandomX {
 
-	CompiledVirtualMachine::CompiledVirtualMachine(bool softAes) : VirtualMachine(softAes) {
-
+	CompiledVirtualMachine::CompiledVirtualMachine() {
+		totalSize = 0;
 	}
 
-	void CompiledVirtualMachine::setDataset(dataset_t ds, bool lightClient) {
-		if (lightClient) {
-			throw std::runtime_error("Compiled VM does not support light-client mode");
-		}
-		VirtualMachine::setDataset(ds, lightClient);
+	void CompiledVirtualMachine::setDataset(dataset_t ds) {
+		mem.ds = ds;
 	}
 
-	void CompiledVirtualMachine::initializeProgram(const void* seed) {
-		Pcg32 gen(seed);
-		for (unsigned i = 0; i < sizeof(reg) / sizeof(Pcg32::result_type); ++i) {
-			*(((uint32_t*)&reg) + i) = gen();
-		}
-		compiler.generateProgram(gen);
-		mem.ma = (gen() ^ *(((uint32_t*)seed) + 4)) & ~7;
-		mem.mx = *(((uint32_t*)seed) + 5);
+	void CompiledVirtualMachine::initialize() {
+		VirtualMachine::initialize();
+		compiler.generateProgram(program);
 	}
 
 	void CompiledVirtualMachine::execute() {
-		//executeProgram(reg, mem, scratchpad, readDataset);
-		compiler.getProgramFunc()(reg, mem, scratchpad);
+		//executeProgram(reg, mem, scratchpad, InstructionCount);
+		totalSize += compiler.getCodeSize();
+		compiler.getProgramFunc()(reg, mem, scratchpad, InstructionCount);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
 			std::cout << std::hex << tracepad[i].u64 << std::endl;

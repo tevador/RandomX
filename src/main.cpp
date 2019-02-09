@@ -29,11 +29,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstring>
 #include "Program.hpp"
 #include <string>
-#include "instructions.hpp"
 #include <thread>
 #include <atomic>
 #include "dataset.hpp"
 #include "Cache.hpp"
+#include "hashAes1Rx4.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -115,7 +115,7 @@ void printUsage(const char* executable) {
 }
 
 void generateAsm(int nonce) {
-	uint64_t hash[4];
+	uint64_t hash[8];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
@@ -126,12 +126,34 @@ void generateAsm(int nonce) {
 	*noncePtr = nonce;
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 	RandomX::AssemblyGeneratorX86 asmX86;
-	asmX86.generateProgram(hash);
+	RandomX::Program p;
+	fillAes1Rx4<false>(hash, sizeof(p), &p);
+	asmX86.generateProgram(p);
 	asmX86.printCode(std::cout);
 }
 
-void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread) {
+void generateNative(int nonce) {
 	uint64_t hash[4];
+	unsigned char blockTemplate[] = {
+		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
+		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
+		0xea, 0x00, 0x00, 0x00, 0x00, 0x77, 0xb2, 0x06, 0xa0, 0x2c, 0xa5, 0xb1, 0xd4, 0xce, 0x6b, 0xbf, 0xdf, 0x0a, 0xca,
+		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
+	};
+	int* noncePtr = (int*)(blockTemplate + 39);
+	*noncePtr = nonce;
+	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
+	alignas(16) RandomX::Program prog;
+	fillAes1Rx4<false>((void*)hash, sizeof(prog), &prog);
+	for (int i = 0; i < RandomX::ProgramLength; ++i) {
+		prog(i).dst %= 8;
+		prog(i).src %= 8;
+	}
+	std::cout << prog << std::endl;
+}
+
+void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread, uint8_t* scratchpad) {
+	alignas(16) uint64_t hash[8];
 	unsigned char blockTemplate[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
@@ -145,12 +167,18 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		//std::cout << "Thread " << thread << " nonce " << nonce << std::endl;
 		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
-		int spIndex = ((uint8_t*)hash)[24] | ((((uint8_t*)hash)[25] & 63) << 8);
-		vm->initializeScratchpad(spIndex);
-		vm->initializeProgram(hash);
+		fillAes1Rx4<false>((void*)hash, RandomX::ScratchpadSize, scratchpad);
+		//vm->initializeScratchpad(scratchpad, spIndex);
+		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
-		vm->execute();
-		vm->getResult(hash);
+		for (int chain = 0; chain < 8; ++chain) {
+			fillAes1Rx4<false>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
+			vm->initialize();
+			vm->execute();
+			vm->getResult<false>(nullptr, 0, hash);
+		}
+		//vm->initializeProgram(hash);
+		vm->getResult<false>(scratchpad, RandomX::ScratchpadSize, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";
@@ -162,7 +190,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, lightClient, genAsm, compiled, help;
+	bool softAes, lightClient, genAsm, compiled, help, largePages, async, aesBench, genNative;
 	int programCount, threadCount;
 	readOption("--help", argc, argv, help);
 
@@ -177,9 +205,35 @@ int main(int argc, char** argv) {
 	readOption("--compiled", argc, argv, compiled);
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, programCount, 1000);
+	readOption("--largePages", argc, argv, largePages);
+	readOption("--async", argc, argv, async);
+	readOption("--aesBench", argc, argv, aesBench);
+	readOption("--genNative", argc, argv, genNative);
 
 	if (genAsm) {
 		generateAsm(programCount);
+		return 0;
+	}
+
+	if (genNative) {
+		generateNative(programCount);
+		return 0;
+	}
+
+	if (softAes)
+		std::cout << "Using software AES." << std::endl;
+
+	if(aesBench) {
+		programCount *= 10;
+		Stopwatch sw(true);
+		if (softAes) {
+			RandomX::aesBench<true>(programCount);
+		}
+		else {
+			RandomX::aesBench<false>(programCount);
+		}
+		sw.stop();
+		std::cout << "AES performance: " << programCount / sw.getElapsed() << " blocks/s" << std::endl;
 		return 0;
 	}
 
@@ -189,21 +243,18 @@ int main(int argc, char** argv) {
 	std::vector<std::thread> threads;
 	RandomX::dataset_t dataset;
 
-	if (softAes)
-		std::cout << "Using software AES." << std::endl;
 	std::cout << "Initializing..." << std::endl;
-
 	try {
 		Stopwatch sw(true);
 		if (softAes) {
-			RandomX::datasetInitCache<true>(seed, dataset);
+			RandomX::datasetInitCache<true>(seed, dataset, largePages);
 		}
 		else {
-			RandomX::datasetInitCache<false>(seed, dataset);
+			RandomX::datasetInitCache<false>(seed, dataset, largePages);
 		}
 		if (RandomX::trace) {
 			std::cout << "Keys: " << std::endl;
-			for (int i = 0; i < dataset.cache->getKeys().size(); ++i) {
+			for (unsigned i = 0; i < dataset.cache->getKeys().size(); ++i) {
 				outputHex(std::cout, (char*)&dataset.cache->getKeys()[i], sizeof(__m128i));
 			}
 			std::cout << std::endl;
@@ -212,11 +263,11 @@ int main(int argc, char** argv) {
 			std::cout << std::endl;
 		}
 		if (lightClient) {
-			std::cout << "Cache (64 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
+			std::cout << "Cache (256 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
 		else {
 			RandomX::Cache* cache = dataset.cache;
-			RandomX::datasetAlloc(dataset);
+			RandomX::datasetAlloc(dataset, largePages);
 			if (threadCount > 1) {
 				auto perThread = RandomX::DatasetBlockCount / threadCount;
 				auto remainder = RandomX::DatasetBlockCount % threadCount;
@@ -229,7 +280,7 @@ int main(int argc, char** argv) {
 						threads.push_back(std::thread(&RandomX::datasetInit<false>, cache, dataset, i * perThread, count));
 					}
 				}
-				for (int i = 0; i < threads.size(); ++i) {
+				for (unsigned i = 0; i < threads.size(); ++i) {
 					threads[i].join();
 				}
 			}
@@ -241,7 +292,7 @@ int main(int argc, char** argv) {
 					RandomX::datasetInit<false>(cache, dataset, 0, RandomX::DatasetBlockCount);
 				}
 			}
-			delete cache;
+			RandomX::Cache::dealloc(cache, largePages);
 			threads.clear();
 			std::cout << "Dataset (4 GiB) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
@@ -249,37 +300,47 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < threadCount; ++i) {
 			RandomX::VirtualMachine* vm;
 			if (compiled) {
-				vm = new RandomX::CompiledVirtualMachine(softAes);
+				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				vm = new RandomX::InterpretedVirtualMachine(softAes);
+				vm = new RandomX::InterpretedVirtualMachine(softAes, async);
 			}
-			vm->setDataset(dataset, lightClient);
+			vm->setDataset(dataset);
 			vms.push_back(vm);
+		}
+		uint8_t* scratchpadMem;
+		if (largePages) {
+			scratchpadMem = (uint8_t*)allocLargePagesMemory(threadCount * RandomX::ScratchpadSize);
+		}
+		else {
+			scratchpadMem = (uint8_t*)_mm_malloc(threadCount * RandomX::ScratchpadSize, RandomX::CacheLineSize);
 		}
 		std::cout << "Running benchmark (" << programCount << " programs) ..." << std::endl;
 		sw.restart();
 		if (threadCount > 1) {
-			for (int i = 0; i < vms.size(); ++i) {
-				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i));
+			for (unsigned i = 0; i < vms.size(); ++i) {
+				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), programCount, i, scratchpadMem + RandomX::ScratchpadSize * i));
 			}
-			for (int i = 0; i < threads.size(); ++i) {
+			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
 		else {
-			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0);
+			mine(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0, scratchpadMem);
+			if (compiled)
+				std::cout << "Average program size: " << ((RandomX::CompiledVirtualMachine*)vms[0])->getTotalSize() / programCount << std::endl;
 		}
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
 		std::cout << "Reference result:  3e1c5f9b9d0bf8ffa250f860bf5f7ab76ac823b206ddee6a592660119a3640c6" << std::endl;
-		std::cout << "Performance: " << programCount / elapsed << " programs per second" << std::endl;
-		/*if (threadCount == 1 && !compiled) {
-			auto ivm = (RandomX::InterpretedVirtualMachine*)vms[0];
-			std::cout << ivm->getProgam();
-		}*/
+		if (lightClient) {
+			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
+		}
+		else {
+			std::cout << "Performance: " << programCount / elapsed << " hashes per second" << std::endl;
+		}
 	}
 	catch (std::exception& e) {
 		std::cout << "ERROR: " << e.what() << std::endl;

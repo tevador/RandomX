@@ -23,12 +23,32 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <new>
 #include "common.hpp"
 #include "dataset.hpp"
+#include "virtualMemory.hpp"
 
 namespace RandomX {
 
 	class Cache {
 	public:
-		void* operator new(size_t size) {
+		static void* alloc(bool largePages) {
+			if (largePages) {
+				return allocLargePagesMemory(sizeof(Cache));
+			}
+			else {
+				void* ptr = _mm_malloc(sizeof(Cache), sizeof(__m128i));
+				if (ptr == nullptr)
+					throw std::bad_alloc();
+				return ptr;
+			}
+		}
+		static void dealloc(Cache* cache, bool largePages) {
+			if (largePages) {
+				//allocLargePagesMemory(sizeof(Cache));
+			}
+			else {
+				_mm_free(cache);
+			}
+		}
+		/*void* operator new(size_t size) {
 			void* ptr = _mm_malloc(size, sizeof(__m128i));
 			if (ptr == nullptr)
 				throw std::bad_alloc();
@@ -37,7 +57,7 @@ namespace RandomX {
 
 		void operator delete(void* ptr) {
 			_mm_free(ptr);
-		}
+		}*/
 
 		template<bool softAes>
 		void initialize(const void* seed, size_t seedSize);
@@ -46,12 +66,12 @@ namespace RandomX {
 			return keys;
 		}
 
-		const uint8_t* getCache() {
-			return memory + CacheShift;
+		const uint8_t* getCache() const {
+			return memory;
 		}
 	private:
 		alignas(16) KeysContainer keys;
-		uint8_t memory[CacheSize + CacheShift];
+		uint8_t memory[CacheSize];
 		void argonFill(const void* seed, size_t seedSize);
 	};
 }

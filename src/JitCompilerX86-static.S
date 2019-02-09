@@ -27,31 +27,46 @@
 #define DECL(x) x
 #endif
 .global DECL(randomx_program_prologue)
-.global DECL(randomx_program_begin)
+.global DECL(randomx_program_loop_begin)
+.global DECL(randomx_program_loop_load)
+.global DECL(randomx_program_start)
+.global DECL(randomx_program_read_dataset)
+.global DECL(randomx_program_loop_store)
+.global DECL(randomx_program_loop_end)
 .global DECL(randomx_program_epilogue)
-.global DECL(randomx_program_read_r)
-.global DECL(randomx_program_read_f)
 .global DECL(randomx_program_end)
+
+#define db .byte
 
 .align 64
 DECL(randomx_program_prologue):
 	#include "asm/program_prologue_linux.inc"
 
 .align 64
-DECL(randomx_program_begin):
+	#include "asm/program_xmm_constants.inc"
+
+.align 64
+DECL(randomx_program_loop_begin):
+	nop
+
+DECL(randomx_program_loop_load):
+	#include "asm/program_loop_load.inc"
+
+DECL(randomx_program_start):
+	nop
+
+DECL(randomx_program_read_dataset):
+	#include "asm/program_read_dataset.inc"
+
+DECL(randomx_program_loop_store):
+	#include "asm/program_loop_store.inc"
+
+DECL(randomx_program_loop_end):
 	nop
 
 .align 64
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_linux.inc"
-
-.align 64
-DECL(randomx_program_read_r):
-	#include "asm/program_read_r.inc"
-
-.align 64
-DECL(randomx_program_read_f):
-	#include "asm/program_read_f.inc"
 
 .align 64
 DECL(randomx_program_end):

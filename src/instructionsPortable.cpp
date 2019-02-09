@@ -17,26 +17,27 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 //#define DEBUG
-#include "instructions.hpp"
 #include "intrinPortable.h"
+#include "blake2/endian.h"
 #pragma STDC FENV_ACCESS on
 #include <cfenv>
 #include <cmath>
 #ifdef DEBUG
 #include <iostream>
 #endif
+#include "common.hpp"
 
 #if defined(__SIZEOF_INT128__)
 	typedef unsigned __int128 uint128_t;
 	typedef __int128 int128_t;
-	static inline uint64_t __umulhi64(uint64_t a, uint64_t b) {
+	uint64_t mulh(uint64_t a, uint64_t b) {
 		return ((uint128_t)a * b) >> 64;
 	}
-	static inline uint64_t __imulhi64(int64_t a, int64_t b) {
+	int64_t smulh(int64_t a, int64_t b) {
 		return ((int128_t)a * b) >> 64;
 	}
-	#define umulhi64 __umulhi64
-	#define imulhi64 __imulhi64
+	#define HAVE_MULH
+	#define HAVE_SMULH
 #endif
 
 #if defined(_MSC_VER)
@@ -44,62 +45,62 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	#define EVAL_DEFINE(X) HAS_VALUE(X)
 	#include <intrin.h>
 	#include <stdlib.h>
-	#define ror64 _rotr64
-	#define rol64 _rotl64
+
+	uint64_t rotl(uint64_t x, int c) {
+		return _rotl64(x, c);
+	}
+	uint64_t rotr(uint64_t x , int c) {
+		return _rotr64(x, c);
+	}
+	#define HAVE_ROTL
+	#define HAVE_ROTR
+
 	#if EVAL_DEFINE(__MACHINEARM64_X64(1))
-		#define umulhi64 __umulh
+		uint64_t mulh(uint64_t a, uint64_t b) {
+			return __umulh(a, b);
+		}
+		#define HAVE_MULH
 	#endif
+
 	#if EVAL_DEFINE(__MACHINEX64(1))
-		static inline uint64_t __imulhi64(int64_t a, int64_t b) {
+		int64_t smulh(int64_t a, int64_t b) {
 			int64_t hi;
 			_mul128(a, b, &hi);
 			return hi;
 		}
-		#define imulhi64 __imulhi64
+		#define HAVE_SMULH
 	#endif
-	static inline uint32_t _setRoundMode(uint32_t mode) {
-		return _controlfp(mode, _MCW_RC);
+
+	static void setRoundMode__(uint32_t mode) {
+		_controlfp(mode, _MCW_RC);
 	}
-	#define setRoundMode _setRoundMode
+	#define HAVE_SETROUNDMODE_IMPL
 #endif
 
-#ifndef setRoundMode
-	#define setRoundMode fesetround
+#ifndef HAVE_SETROUNDMODE_IMPL
+	static void setRoundMode__(uint32_t mode) {
+		fesetround(mode);
+	}
 #endif
 
-#ifndef ror64
-	static inline uint64_t __ror64(uint64_t a, int b) {
+#ifndef HAVE_ROTR
+	uint64_t rotr(uint64_t a, int b) {
 		return (a >> b) | (a << (64 - b));
 	}
-	#define ror64 __ror64
+	#define HAS_ROTR
 #endif
 
-#ifndef rol64
-	static inline uint64_t __rol64(uint64_t a, int b) {
+#ifndef HAVE_ROTL
+	uint64_t rotl(uint64_t a, int b) {
 		return (a << b) | (a >> (64 - b));
 	}
-	#define rol64 __rol64
+	#define HAS_ROTL
 #endif
 
-#ifndef sar64
-	#include <type_traits>
-	constexpr int64_t builtintShr64(int64_t value, int shift) noexcept {
-		return value >> shift;
-	}
-
-	struct UsesArithmeticShift : std::integral_constant<bool, builtintShr64(-1LL, 1) == -1LL> {
-	};
-
-	static inline int64_t __sar64(int64_t a, int b) {
-		return UsesArithmeticShift::value ? builtintShr64(a, b) : (a < 0 ? ~(~a >> b) : a >> b);
-	}
-	#define sar64 __sar64
-#endif
-
-#ifndef umulhi64
+#ifndef HAVE_MULH
 	#define LO(x) ((x)&0xffffffff)
 	#define HI(x) ((x)>>32)
-	static inline uint64_t __umulhi64(uint64_t a, uint64_t b) {
+	uint64_t mulh(uint64_t a, uint64_t b) {
 		uint64_t ah = HI(a), al = LO(a);
 		uint64_t bh = HI(b), bl = LO(b);
 		uint64_t x00 = al * bl;
@@ -112,17 +113,17 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 		return (m3 << 32) + LO(m2);
 	}
-	#define umulhi64 __umulhi64
+	#define HAVE_MULH
 #endif
 
-#ifndef imulhi64
-	static inline int64_t __imulhi64(int64_t a, int64_t b) {
-		int64_t hi = umulhi64(a, b);
+#ifndef HAVE_SMULH
+	int64_t smulh(int64_t a, int64_t b) {
+		int64_t hi = mulh(a, b);
 		if (a < 0LL) hi -= b;
 		if (b < 0LL) hi -= a;
 		return hi;
 	}
-	#define imulhi64 __imulhi64
+	#define HAVE_SMULH
 #endif
 
 // avoid undefined behavior of signed overflow
@@ -137,20 +138,20 @@ static inline int32_t safeSub(int32_t a, int32_t b) {
 
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_sub_overflow)
-	static inline bool __subOverflow(int32_t a, int32_t b) {
+	static inline bool subOverflow__(uint32_t a, uint32_t b) {
 		int32_t temp;
-		return __builtin_sub_overflow(a, b, &temp);
+		return __builtin_sub_overflow(unsigned32ToSigned2sCompl(a), unsigned32ToSigned2sCompl(b), &temp);
 	}
-	#define subOverflow __subOverflow
+	#define HAVE_SUB_OVERFLOW
 #endif
 #endif
 
-#ifndef subOverflow
-	static inline bool __subOverflow(int32_t a, int32_t b) {
-		auto c = safeSub(a, b);
-		return (c < a) != (b > 0);
+#ifndef HAVE_SUB_OVERFLOW
+	static inline bool subOverflow__(uint32_t a, uint32_t b) {
+		auto c = unsigned32ToSigned2sCompl(a - b);
+		return (c < unsigned32ToSigned2sCompl(a)) != (unsigned32ToSigned2sCompl(b) > 0);
 	}
-	#define subOverflow __subOverflow
+	#define HAVE_SUB_OVERFLOW
 #endif
 
 static inline double FlushDenormalNaN(double x) {
@@ -165,251 +166,64 @@ static inline double FlushNaN(double x) {
 	return x != x ? 0.0 : x;
 }
 
-namespace RandomX {
-
-	extern "C" {
-
-		void ADD_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 + b.u64;
-		}
-
-		void ADD_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u32 + b.u32;
-		}
-
-		void SUB_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 - b.u64;
-		}
-
-		void SUB_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u32 - b.u32;
-		}
-
-		void MUL_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 * b.u64;
-		}
-
-		void MULH_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = umulhi64(a.u64, b.u64);
-		}
-
-		void MUL_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = (uint64_t)a.u32 * b.u32;
-		}
-
-		void IMUL_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.i64 = (int64_t)a.i32 * b.i32;
-		}
-
-		void IMULH_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.i64 = imulhi64(a.i64, b.i64);
-		}
-
-		void DIV_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 / (b.u32 != 0 ? b.u32 : 1U);
-		}
-
-		void IDIV_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			if (a.i64 == INT64_MIN && b.i32 == -1)
-				c.i64 = INT64_MIN;
-			else
-				c.i64 = a.i64 / (b.i32 != 0 ? b.i32 : 1);
-		}
-
-		void AND_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 & b.u64;
-		}
-
-		void AND_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u32 & b.u32;
-		}
-
-		void OR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 | b.u64;
-		}
-
-		void OR_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u32 | b.u32;
-		}
-
-		void XOR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 ^ b.u64;
-		}
-
-		void XOR_32(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u32 ^ b.u32;
-		}
-
-		void SHL_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 << (b.u64 & 63);
-		}
-
-		void SHR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = a.u64 >> (b.u64 & 63);
-		}
-
-		void SAR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = sar64(a.i64, b.u64 & 63);
-		}
-
-		void ROL_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = rol64(a.u64, (b.u64 & 63));
-		}
-
-		void ROR_64(convertible_t& a, convertible_t& b, convertible_t& c) {
-			c.u64 = ror64(a.u64, (b.u64 & 63));
-		}
-
-		bool JMP_COND(uint8_t type, convertible_t& regb, int32_t imm32) {
-			switch (type & 7)
-			{
-				case 0:
-					return regb.u32 <= (uint32_t)imm32;
-				case 1:
-					return regb.u32 > (uint32_t)imm32;
-				case 2:
-					return safeSub(regb.i32, imm32) < 0;
-				case 3:
-					return safeSub(regb.i32, imm32) >= 0;
-				case 4:
-					return subOverflow(regb.i32, imm32);
-				case 5:
-					return !subOverflow(regb.i32, imm32);
-				case 6:
-					return regb.i32 < imm32;
-				case 7:
-					return regb.i32 >= imm32;
-			}
-		}
-
-		void FPINIT() {
-#ifdef __SSE2__
-			_mm_setcsr(0x9FC0); //Flush to zero, denormals are zero, default rounding mode, all exceptions disabled
-#else
-			setRoundMode(FE_TONEAREST);
-#endif
-		}
-
-		void FPADD(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-#ifdef __SSE2__
-			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
-			__m128d ad = _mm_cvtepi32_pd(ai);
-			__m128d bd = _mm_load_pd(&b.lo.f64);
-			__m128d cd = _mm_add_pd(ad, bd);
-			_mm_store_pd(&c.lo.f64, cd);
-#else
-			double alo = (double)a.i32lo;
-			double ahi = (double)a.i32hi;
-			c.lo.f64 = alo + b.lo.f64;
-			c.hi.f64 = ahi + b.hi.f64;
-#endif
-		}
-
-		void FPSUB(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-#ifdef __SSE2__
-			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
-			__m128d ad = _mm_cvtepi32_pd(ai);
-			__m128d bd = _mm_load_pd(&b.lo.f64);
-			__m128d cd = _mm_sub_pd(ad, bd);
-			_mm_store_pd(&c.lo.f64, cd);
-#else
-			double alo = (double)a.i32lo;
-			double ahi = (double)a.i32hi;
-			c.lo.f64 = alo - b.lo.f64;
-			c.hi.f64 = ahi - b.hi.f64;
-#endif
-		}
-
-		void FPMUL(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-#ifdef __SSE2__
-			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
-			__m128d ad = _mm_cvtepi32_pd(ai);
-			__m128d bd = _mm_load_pd(&b.lo.f64);
-			__m128d cd = _mm_mul_pd(ad, bd);
-			__m128d mask = _mm_cmpeq_pd(cd, cd);
-			cd = _mm_and_pd(cd, mask);
-			_mm_store_pd(&c.lo.f64, cd);
-#else
-			double alo = (double)a.i32lo;
-			double ahi = (double)a.i32hi;
-			c.lo.f64 = FlushNaN(alo * b.lo.f64);
-			c.hi.f64 = FlushNaN(ahi * b.hi.f64);
-#endif
-		}
-
-		void FPDIV(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-#ifdef __SSE2__
-			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
-			__m128d ad = _mm_cvtepi32_pd(ai);
-			__m128d bd = _mm_load_pd(&b.lo.f64);
-			__m128d cd = _mm_div_pd(ad, bd);
-			__m128d mask = _mm_cmpeq_pd(cd, cd);
-			cd = _mm_and_pd(cd, mask);
-			_mm_store_pd(&c.lo.f64, cd);
-#else
-			double alo = (double)a.i32lo;
-			double ahi = (double)a.i32hi;
-			c.lo.f64 = FlushDenormalNaN(alo / b.lo.f64);
-			c.hi.f64 = FlushDenormalNaN(ahi / b.hi.f64);
-#endif
-		}
-
-		void FPSQRT(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-#ifdef __SSE2__
-			__m128i ai = _mm_loadl_epi64((const __m128i*)&a);
-			__m128d ad = _mm_cvtepi32_pd(ai);
-			const __m128d absmask = _mm_castsi128_pd(_mm_set1_epi64x(~(1LL << 63)));
-			ad = _mm_and_pd(ad, absmask);
-			__m128d cd = _mm_sqrt_pd(ad);
-			_mm_store_pd(&c.lo.f64, cd);
-#else
-			double alo = (double)a.i32lo;
-			double ahi = (double)a.i32hi;
-			c.lo.f64 = sqrt(std::abs(alo));
-			c.hi.f64 = sqrt(std::abs(ahi));
-#endif
-		}
-
-		void FPROUND(convertible_t& a, fpu_reg_t& b, fpu_reg_t& c) {
-			c.lo.f64 = convertSigned52(a.i64);
-			switch (a.u64 & 3) {
-				case RoundDown:
-#ifdef DEBUG
-					std::cout << "Round FE_DOWNWARD (" << FE_DOWNWARD << ") = " <<
-#endif
-					setRoundMode(FE_DOWNWARD);
-#ifdef DEBUG
-					std::cout << std::endl;
-#endif
-					break;
-				case RoundUp:
-#ifdef DEBUG
-					std::cout << "Round FE_UPWARD (" << FE_UPWARD << ") = " <<
-#endif
-					setRoundMode(FE_UPWARD);
-#ifdef DEBUG
-					std::cout << std::endl;
-#endif
-					break;
-				case RoundToZero:
-#ifdef DEBUG
-					std::cout << "Round FE_TOWARDZERO (" << FE_TOWARDZERO << ") = " <<
-#endif
-					setRoundMode(FE_TOWARDZERO);
-#ifdef DEBUG
-					std::cout << std::endl;
-#endif
-					break;
-				default:
-#ifdef DEBUG
-					std::cout << "Round FE_TONEAREST (" << FE_TONEAREST << ") = " <<
-#endif
-					setRoundMode(FE_TONEAREST);
-#ifdef DEBUG
-					std::cout << std::endl;
-#endif
-					break;
-			}
-		}
+void setRoundMode(uint32_t rcflag) {
+	switch (rcflag & 3) {
+		case RoundDown:
+			setRoundMode__(FE_DOWNWARD);
+			break;
+		case RoundUp:
+			setRoundMode__(FE_UPWARD);
+			break;
+		case RoundToZero:
+			setRoundMode__(FE_TOWARDZERO);
+			break;
+		case RoundToNearest:
+			setRoundMode__(FE_TONEAREST);
+			break;
+		default:
+			UNREACHABLE;
 	}
+}
+
+bool condition(uint32_t type, uint32_t value, uint32_t imm32) {
+	switch (type & 7)
+	{
+		case 0:
+			return value <= imm32;
+		case 1:
+			return value > imm32;
+		case 2:
+			return unsigned32ToSigned2sCompl(value - imm32) < 0;
+		case 3:
+			return unsigned32ToSigned2sCompl(value - imm32) >= 0;
+		case 4:
+			return subOverflow__(value, imm32);
+		case 5:
+			return !subOverflow__(value, imm32);
+		case 6:
+			return unsigned32ToSigned2sCompl(value) < unsigned32ToSigned2sCompl(imm32);
+		case 7:
+			return unsigned32ToSigned2sCompl(value) >= unsigned32ToSigned2sCompl(imm32);
+		default:
+			UNREACHABLE;
+	}
+}
+
+void initFpu() {
+#ifdef __SSE2__
+	_mm_setcsr(0x9FC0); //Flush to zero, denormals are zero, default rounding mode, all exceptions disabled
+#else
+	setRoundMode(FE_TONEAREST);
+#endif
+}
+
+union double_ser_t {
+	double f;
+	uint64_t i;
+};
+
+double loadDoublePortable(const void* addr) {
+	double_ser_t ds;
+	ds.i = load64(addr);
+	return ds.f;
 }

@@ -23,7 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Cache.hpp"
 #include "softAes.h"
 #include "argon2.h"
-#include "Pcg32.hpp"
 #include "argon2_core.h"
 
 namespace RandomX {
@@ -133,11 +132,6 @@ namespace RandomX {
 	void Cache::initialize(const void* seed, size_t seedSize) {
 		//Argon2d memory fill
 		argonFill(seed, seedSize);
-
-		//Circular shift of the cache buffer by 512 bytes
-		//realized by copying the first 512 bytes to the back 
-		//of the buffer and shifting the start by 512 bytes
-		memcpy(memory + CacheSize, memory, CacheShift);
 
 		//AES keys
 		expandAesKeys<softAes>((__m128i*)seed, keys.data());

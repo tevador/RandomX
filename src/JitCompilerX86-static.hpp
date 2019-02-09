@@ -18,10 +18,13 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 extern "C" {
-  void randomx_program_prologue();
-  void randomx_program_begin();
-  void randomx_program_epilogue();
-  void randomx_program_read_r();
-  void randomx_program_read_f();
-  void randomx_program_end();
+	void randomx_program_prologue();
+	void randomx_program_loop_begin();
+	void randomx_program_loop_load();
+	void randomx_program_start();
+	void randomx_program_read_dataset();
+	void randomx_program_loop_store();
+	void randomx_program_loop_end();
+	void randomx_program_epilogue();
+	void randomx_program_end();
 }
