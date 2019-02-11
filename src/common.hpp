@@ -71,6 +71,7 @@ namespace RandomX {
 
 	constexpr int ProgramLength = 256;
 	constexpr uint32_t InstructionCount = 2048;
+	constexpr int ChainLength = 8;
 	constexpr uint32_t ScratchpadSize = 2 * 1024 * 1024;
 	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(int_reg_t);
 	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 128 / sizeof(int_reg_t);
