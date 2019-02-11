@@ -1,8 +1,11 @@
 #CXX=g++-8
 #CC=gcc-8
-PLATFORM=$(shell uname -i)
+PLATFORM=$(shell uname -m)
 CXXFLAGS=-std=c++11
 CCFLAGS=
+ifeq ($(PLATFORM),amd64)
+    CXXFLAGS += -maes
+endif
 ifeq ($(PLATFORM),x86_64)
     CXXFLAGS += -maes
 endif
@@ -12,6 +15,9 @@ OBJDIR=obj
 LDFLAGS=-lpthread
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
 ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o Cache.o virtualMemory.o divideByConstantCodegen.o LightClientAsyncWorker.o hashAes1Rx4.o)
+ifeq ($(PLATFORM),amd64)
+    ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
+endif
 ifeq ($(PLATFORM),x86_64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
 endif
