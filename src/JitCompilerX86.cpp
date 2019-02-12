@@ -17,30 +17,18 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#define MAGIC_DIVISION
-#include "JitCompilerX86.hpp"
-#include "Program.hpp"
 #include <cstring>
 #include <stdexcept>
-#ifdef MAGIC_DIVISION
+#include "JitCompilerX86.hpp"
+#include "Program.hpp"
 #include "divideByConstantCodegen.h"
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/types.h>
-#include <sys/mman.h>
-#ifndef MAP_ANONYMOUS
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-#endif
+#include "virtualMemory.hpp"
 
 namespace RandomX {
 
 #if !defined(_M_X64) && !defined(__x86_64__)
 	JitCompilerX86::JitCompilerX86() {
-		//throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
+		throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
 
 	void JitCompilerX86::generateProgram(Program& p) {
@@ -186,15 +174,7 @@ namespace RandomX {
 	}
 
 	JitCompilerX86::JitCompilerX86() {
-#ifdef _WIN32
-		code = (uint8_t*)VirtualAlloc(nullptr, CodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-		if (code == nullptr)
-			throw std::runtime_error("VirtualAlloc failed");
-#else
-		code = (uint8_t*)mmap(nullptr, CodeSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-		if (code == (uint8_t*)-1)
-			throw std::runtime_error("mmap failed");
-#endif
+		code = (uint8_t*)allocExecutableMemory(CodeSize);
 		memcpy(code, codePrologue, prologueSize);
 		memcpy(code + CodeSize - epilogueSize, codeEpilogue, epilogueSize);
 	}
