@@ -165,7 +165,7 @@ namespace RandomX {
 	static const uint8_t JMP = 0xe9;
 	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
 	static const uint8_t REX_XCHG[] = { 0x4d, 0x87 };
-	static const uint8_t REX_ANDPS_XMM12[] = { 0x41, 0x0f, 0x54, 0xe6 };
+	static const uint8_t REX_ANDPS_XMM12[] = { 0x45, 0x0f, 0x54, 0xe6 };
 	static const uint8_t REX_PADD[] = { 0x66, 0x44, 0x0f };
 	static const uint8_t PADD_OPCODES[] = { 0xfc, 0xfd, 0xfe, 0xd4 };
 
