@@ -237,7 +237,7 @@ namespace RandomX {
 		os << std::endl;
 	}
 
-	void Instruction::h_FNEG_R(std::ostream& os) const {
+	void Instruction::h_FSCAL_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		os << "f" << dstIndex << std::endl;
 	}
@@ -362,7 +362,7 @@ namespace RandomX {
 		INST_NAME(FADD_M)
 		INST_NAME(FSUB_R)
 		INST_NAME(FSUB_M)
-		INST_NAME(FNEG_R)
+		INST_NAME(FSCAL_R)
 
 		//Floating point group E
 		INST_NAME(FMUL_R)
@@ -413,7 +413,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(FNEG_R)
+		INST_HANDLE(FSCAL_R)
 
 		//Floating point group E
 		INST_HANDLE(FMUL_R)

@@ -48,10 +48,15 @@ Memory operands are loaded as 8-byte values from the address indicated by `src`.
 |5/256|FADD_M|F|mem|`(dst0, dst1) = (dst0 + [src][0], dst1 + [src][1])`|
 |20/256|FSUB_R|F|A|`(dst0, dst1) = (dst0 - src0, dst1 - src1)`|
 |5/256|FSUB_M|F|mem|`(dst0, dst1) = (dst0 - [src][0], dst1 - [src][1])`|
-|6/256|FNEG_R|F|-|`(dst0, dst1) = (-dst0, -dst1)`|
+|6/256|FSCAL_R|F|-|<code>(dst0, dst1) = (-2<sup>x0</sup> * dst0, -2<sup>x1</sup> * dst1)</code>|
 |20/256|FMUL_R|E|A|`(dst0, dst1) = (dst0 * src0, dst1 * src1)`|
 |4/256|FDIV_M|E|mem|`(dst0, dst1) = (dst0 / [src][0], dst1 / [src][1])`|
 |6/256|FSQRT_R|E|-|`(dst0, dst1) = (√dst0, √dst1)`|
+
+#### FSCAL_R
+This instruction negates the number and multiplies it by <code>2<sup>x</sup></code>. `x` is calculated by taking the 5 least significant digits of the biased exponent and interpreting them as a binary number using the digit set `{-1, +1}` as opposed to the traditional `{0, 1}`. The possible values of `x` are all odd numbers from -31 to +31.
+
+The mathematical operation described above is equivalent to a bitwise XOR of the binary representation with the value of `0x81F0000000000000`.
 
 #### Denormal and NaN values
 Due to restrictions on the values of the floating point registers, no operation results in `NaN`.

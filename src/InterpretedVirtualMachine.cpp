@@ -203,8 +203,8 @@ namespace RandomX {
 				*ibc.fdst = _mm_sub_pd(*ibc.fdst, fsrc);
 			} break;
 
-			case InstructionType::FNEG_R: {
-				const __m128d signMask = _mm_castsi128_pd(_mm_set1_epi64x(1ULL << 63));
+			case InstructionType::FSCAL_R: {
+				const __m128d signMask = _mm_castsi128_pd(_mm_set1_epi64x(0x81F0000000000000));
 				*ibc.fdst = _mm_xor_pd(*ibc.fdst, signMask);
 			} break;
 
@@ -657,10 +657,10 @@ namespace RandomX {
 					ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 				} break;
 
-				CASE_REP(FNEG_R) {
+				CASE_REP(FSCAL_R) {
 					auto dst = instr.dst % 4;
 					ibc.fdst = &f[dst];
-					ibc.type = InstructionType::FNEG_R;
+					ibc.type = InstructionType::FSCAL_R;
 				} break;
 
 				CASE_REP(FMUL_R) {

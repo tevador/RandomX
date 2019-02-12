@@ -229,7 +229,7 @@
 	mov eax, r13d
 	and eax, 16376
 	xor r8, qword ptr [rsi+rax]
-	; FNEG_R f2
+	; FSCAL_R f2
 	xorps xmm2, xmm15
 	; IDIV_C r5, 2577129788
 	mov rax, 15371395512010654233
@@ -429,7 +429,7 @@
 	ror r10, cl
 	; ISUB_R r4, -1079131550
 	sub r12, -1079131550
-	; FNEG_R f3
+	; FSCAL_R f3
 	xorps xmm3, xmm15
 	; COND_R r4, ns(r5, -362284631)
 	xor ecx, ecx
@@ -440,7 +440,7 @@
 	subpd xmm2, xmm8
 	; IXOR_R r4, r5
 	xor r12, r13
-	; FNEG_R f1
+	; FSCAL_R f1
 	xorps xmm1, xmm15
 	; FADD_R f0, a0
 	addpd xmm0, xmm8
@@ -605,7 +605,7 @@
 	mov eax, r9d
 	and eax, 262136
 	mov qword ptr [rsi+rax], r8
-	; FNEG_R f0
+	; FSCAL_R f0
 	xorps xmm0, xmm15
 	; FMUL_R e0, a3
 	mulpd xmm4, xmm11
@@ -620,7 +620,7 @@
 	addpd xmm0, xmm8
 	; FMUL_R e1, a2
 	mulpd xmm5, xmm10
-	; FNEG_R f3
+	; FSCAL_R f3
 	xorps xmm3, xmm15
 	; FADD_R f1, a1
 	addpd xmm1, xmm9

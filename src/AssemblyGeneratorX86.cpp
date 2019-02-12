@@ -373,7 +373,7 @@ namespace RandomX {
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_FNEG_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_FSCAL_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		asmCode << "\txorps " << regF[instr.dst] << ", " << signMask << std::endl;
 	}
@@ -522,7 +522,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(FNEG_R)
+		INST_HANDLE(FSCAL_R)
 
 		//Floating point group E
 		INST_HANDLE(FMUL_R)

@@ -605,7 +605,7 @@ namespace RandomX {
 		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FNEG_R(Instruction& instr) {
+	void JitCompilerX86::h_FSCAL_R(Instruction& instr) {
 		instr.dst %= 4;
 		emit(REX_XORPS);
 		emitByte(0xc7 + 8 * instr.dst);
@@ -761,7 +761,7 @@ namespace RandomX {
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
-		INST_HANDLE(FNEG_R)
+		INST_HANDLE(FSCAL_R)
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FMUL_M)
 		INST_HANDLE(FDIV_R)
