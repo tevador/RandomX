@@ -35,7 +35,6 @@ namespace RandomX {
 
 	void datasetAlloc(dataset_t& ds, bool largePages);
 
-	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);

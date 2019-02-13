@@ -117,18 +117,11 @@ namespace RandomX {
 		}
 	}
 
-	template<bool softAes>
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount) {
 		for (uint32_t i = startBlock; i < startBlock + blockCount; ++i) {
 			initBlock(cache->getCache(), ds.dataset + i * CacheLineSize, i, cache->getKeys());
 		}
 	}
-
-	template
-		void datasetInit<false>(Cache*, dataset_t, uint32_t, uint32_t);
-
-	template
-		void datasetInit<true>(Cache*, dataset_t, uint32_t, uint32_t);
 
 	template<bool softAes>
 	void datasetInitCache(const void* seed, dataset_t& ds, bool largePages) {
