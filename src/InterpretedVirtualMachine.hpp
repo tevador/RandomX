@@ -39,14 +39,18 @@ namespace RandomX {
 	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
 
 	struct alignas(8) InstructionByteCode {
-		int_reg_t* idst;
-		int_reg_t* isrc;
+		union {
+			int_reg_t* idst;
+			__m128d* fdst;
+		};
+		union {
+			int_reg_t* isrc;
+			__m128d* fsrc;
+		};
 		union {
 			uint64_t imm;
 			int64_t simm;
 		};
-		__m128d* fdst;
-		__m128d* fsrc;
 		uint32_t condition;
 		uint32_t memMask;
 		uint32_t type;
