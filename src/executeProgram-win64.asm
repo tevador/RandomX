@@ -78,13 +78,14 @@ executeProgram PROC
 	movdqu xmmword ptr [rsp+16], xmm14
 	movdqu xmmword ptr [rsp+0], xmm15
 
-	; function arguments
-	push rcx                    ; RegisterFile& registerFile
-	mov rbp, qword ptr [rdx]    ; "mx", "ma"
-	mov eax, ebp                ; "mx"
-	mov rdi, qword ptr [rdx+8]  ; uint8_t* dataset
-	mov rsi, r8                 ; convertible_t* scratchpad
-	mov rbx, r9                 ; loop counter
+	;# function arguments
+	push rcx                    ;# RegisterFile& registerFile
+	mov rbp, qword ptr [rdx]    ;# "mx", "ma"
+	mov rdi, qword ptr [rdx+8]  ;# uint8_t* dataset
+	mov rsi, r8                 ;# uint8_t* scratchpad
+	mov rbx, r9                 ;# loop counter
+
+	mov rax, rbp
 	
 	;# zero integer registers
 	xor r8, r8
@@ -114,16 +115,16 @@ minDbl:
 absMask:
 	db 255, 255, 255, 255, 255, 255, 255, 127, 255, 255, 255, 255, 255, 255, 255, 127
 signMask:
-	db 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 128
+	db 0, 0, 0, 0, 0, 0, 240, 129, 0, 0, 0, 0, 0, 0, 240, 129
 
 ALIGN 64
 program_begin:
 	xor rax, r8                      ;# read address register 1
-	xor rax, r9
+	xor rax, r10
 	mov rdx, rax
-	and eax, 1048512
-	push rax
+	and eax, 2097088
 	lea rcx, [rsi+rax]
+	push rcx
 	xor r8,  qword ptr [rcx+0]
 	xor r9,  qword ptr [rcx+8]
 	xor r10, qword ptr [rcx+16]
@@ -133,9 +134,9 @@ program_begin:
 	xor r14, qword ptr [rcx+48]
 	xor r15, qword ptr [rcx+56]
 	ror rdx, 32
-	and edx, 1048512
-	push rdx
+	and edx, 2097088
 	lea rcx, [rsi+rdx]
+	push rcx
 	cvtdq2pd xmm0, qword ptr [rcx+0]
 	cvtdq2pd xmm1, qword ptr [rcx+8]
 	cvtdq2pd xmm2, qword ptr [rcx+16]
@@ -152,9 +153,10 @@ program_begin:
 	;# 256 instructions
 	include program.inc
 
-	mov eax, r8d                       ;# read address register 1
-	xor eax, r9d                       ;# read address register 2
+	mov eax, r12d                      ;# read address register 1
+	xor eax, r15d                      ;# read address register 2
 	xor rbp, rax                       ;# modify "mx"
+	xor eax, eax
 	and rbp, -64                       ;# align "mx" to the start of a cache line
 	mov edx, ebp                       ;# edx = mx
 	prefetchnta byte ptr [rdi+rdx]
@@ -169,8 +171,7 @@ program_begin:
 	xor r13, qword ptr [rcx+40]
 	xor r14, qword ptr [rcx+48]
 	xor r15, qword ptr [rcx+56]
-	pop rax
-	lea rcx, [rsi+rax]
+	pop rcx
 	mov qword ptr [rcx+0], r8
 	mov qword ptr [rcx+8], r9
 	mov qword ptr [rcx+16], r10
@@ -179,8 +180,7 @@ program_begin:
 	mov qword ptr [rcx+40], r13
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
-	pop rax
-	lea rcx, [rsi+rax]
+	pop rcx
 	mulpd xmm0, xmm4
 	mulpd xmm1, xmm5
 	mulpd xmm2, xmm6
@@ -189,8 +189,7 @@ program_begin:
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2
 	movapd xmmword ptr [rcx+48], xmm3
-	xor eax, eax
-	dec ebx
+	sub ebx, 1
 	jnz program_begin
 	
 rx_finish:

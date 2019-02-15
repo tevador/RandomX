@@ -123,29 +123,35 @@ void printUsage(const char* executable) {
 	std::cout << "  --genNative   generate RandomX code for nonce N" << std::endl;
 }
 
+template<bool softAes>
 void generateAsm(int nonce) {
-	uint64_t hash[8];
+	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate__)];
 	memcpy(blockTemplate, blockTemplate__, sizeof(blockTemplate));
 	int* noncePtr = (int*)(blockTemplate + 39);
 	*noncePtr = nonce;
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
+	uint8_t scratchpad[RandomX::ScratchpadSize];
+	fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
 	RandomX::AssemblyGeneratorX86 asmX86;
 	RandomX::Program p;
-	fillAes1Rx4<false>(hash, sizeof(p), &p);
+	fillAes1Rx4<softAes>(hash, sizeof(p), &p);
 	asmX86.generateProgram(p);
 	asmX86.printCode(std::cout);
 }
 
+template<bool softAes>
 void generateNative(int nonce) {
-	uint64_t hash[4];
+	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate__)];
 	memcpy(blockTemplate, blockTemplate__, sizeof(blockTemplate));
 	int* noncePtr = (int*)(blockTemplate + 39);
 	*noncePtr = nonce;
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
+	uint8_t scratchpad[RandomX::ScratchpadSize];
+	fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
 	alignas(16) RandomX::Program prog;
-	fillAes1Rx4<false>((void*)hash, sizeof(prog), &prog);
+	fillAes1Rx4<softAes>((void*)hash, sizeof(prog), &prog);
 	for (int i = 0; i < RandomX::ProgramLength; ++i) {
 		prog(i).dst %= 8;
 		prog(i).src %= 8;
@@ -181,7 +187,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";
-			outputHex(std::cout, (char*)hash, sizeof(hash));
+			outputHex(std::cout, (char*)hash, 16);
 			std::cout << std::endl;
 		}
 		nonce = atomicNonce.fetch_add(1);
@@ -208,12 +214,18 @@ int main(int argc, char** argv) {
 	readOption("--genNative", argc, argv, genNative);
 
 	if (genAsm) {
-		generateAsm(programCount);
+		if (softAes)
+			generateAsm<true>(programCount);
+		else
+			generateAsm<false>(programCount);
 		return 0;
 	}
 
 	if (genNative) {
-		generateNative(programCount);
+		if (softAes)
+			generateNative<true>(programCount);
+		else
+			generateNative<false>(programCount);
 		return 0;
 	}
 

@@ -130,13 +130,13 @@ namespace RandomX {
 	static const uint8_t ADD_RAX_RCX[] = { 0x48, 0x01, 0xC8 };
 	static const uint8_t SAR_RAX_I8[] = { 0x48, 0xC1, 0xF8 };
 	static const uint8_t NEG_RAX[] = { 0x48, 0xF7, 0xD8 };
-	static const uint8_t ADD_R_RAX[] = { 0x49, 0x01 };
-	static const uint8_t XOR_EAX_EAX[] = { 0x31, 0xC0 };
+	static const uint8_t ADD_R_RAX[] = { 0x4C, 0x03 };
+	static const uint8_t XOR_EAX_EAX[] = { 0x33, 0xC0 };
 	static const uint8_t ADD_RDX_R[] = { 0x4c, 0x01 };
 	static const uint8_t SUB_RDX_R[] = { 0x4c, 0x29 };
 	static const uint8_t SAR_RDX_I8[] = { 0x48, 0xC1, 0xFA };
 	static const uint8_t TEST_RDX_RDX[] = { 0x48, 0x85, 0xD2 };
-	static const uint8_t SETS_AL_ADD_RDX_RAX[] = { 0x0F, 0x98, 0xC0, 0x48, 0x01, 0xC2 };
+	static const uint8_t SETS_AL_ADD_RDX_RAX[] = { 0x0F, 0x98, 0xC0, 0x48, 0x03, 0xD0 };
 	static const uint8_t REX_NEG[] = { 0x49, 0xF7 };
 	static const uint8_t REX_XOR_RR[] = { 0x4D, 0x33 };
 	static const uint8_t REX_XOR_RI[] = { 0x49, 0x81 };
@@ -272,7 +272,7 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::genSIB(int scale, int index, int base) {
-		emitByte((scale << 5) | (index << 3) | base);
+		emitByte((scale << 6) | (index << 3) | base);
 	}
 
 	void JitCompilerX86::h_IADD_RC(Instruction& instr) {
@@ -290,7 +290,7 @@ namespace RandomX {
 		else {
 			emit(REX_81);
 			emitByte(0xe8 + instr.dst);
-			genAddressImm(instr);
+			emit32(instr.imm32);
 		}
 	}
 
@@ -311,7 +311,7 @@ namespace RandomX {
 	void JitCompilerX86::h_IMUL_9C(Instruction& instr) {
 		emit(REX_LEA);
 		emitByte(0x84 + 8 * instr.dst);
-		genSIB(3, instr.src, instr.dst);
+		genSIB(3, instr.dst, instr.dst);
 		emit32(instr.imm32);
 	}
 
@@ -323,7 +323,7 @@ namespace RandomX {
 		else {
 			emit(REX_IMUL_RRI);
 			emitByte(0xc0 + 9 * instr.dst);
-			genAddressImm(instr);
+			emit32(instr.imm32);
 		}
 	}
 
@@ -424,7 +424,7 @@ namespace RandomX {
 					emit(REX_SHR_RDX);
 					emitByte(mi.post_shift);
 				}
-				emit(REX_ADD_RR);
+				emit(REX_ADD_RM);
 				emitByte(0xc2 + 8 * instr.dst);
 			}
 			else { //divisor is a power of two
@@ -440,7 +440,7 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::h_ISDIV_C(Instruction& instr) {
-		int64_t divisor = instr.imm32;
+		int64_t divisor = (int32_t)instr.imm32;
 		if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
 			emit(REX_MOV_RR64);
 			emitByte(0xc0 + instr.dst);
@@ -493,7 +493,7 @@ namespace RandomX {
 				emit(TEST_RDX_RDX);
 			emit(SETS_AL_ADD_RDX_RAX);
 			emit(ADD_R_RAX);
-			emitByte(0xd0 + instr.dst);
+			emitByte(0xc2 + 8 * instr.dst);
 		}
 	}
 
@@ -559,7 +559,7 @@ namespace RandomX {
 	void JitCompilerX86::h_ISWAP_R(Instruction& instr) {
 		if (instr.src != instr.dst) {
 			emit(REX_XCHG);
-			emitByte(0xc0 + instr.dst + 8 * instr.src);
+			emitByte(0xc0 + instr.src + 8 * instr.dst);
 		}
 	}
 
