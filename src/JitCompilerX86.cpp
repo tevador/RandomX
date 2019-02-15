@@ -666,8 +666,8 @@ namespace RandomX {
 		emit(AND_OR_MOV_LDMXCSR);
 	}
 
-	static inline uint8_t condition(Instruction& instr, bool invert = false) {
-		switch ((instr.mod & 7) ^ invert)
+	static inline uint8_t condition(Instruction& instr) {
+		switch ((instr.mod >> 2) & 7)
 		{
 			case 0:
 				return 0x96; //setbe

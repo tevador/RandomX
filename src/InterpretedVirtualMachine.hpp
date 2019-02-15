@@ -38,23 +38,18 @@ namespace RandomX {
 
 	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
 
-	struct alignas(16) InstructionByteCode {
+	struct alignas(8) InstructionByteCode {
 		int_reg_t* idst;
 		int_reg_t* isrc;
-		int_reg_t imm;
+		union {
+			uint64_t imm;
+			int64_t simm;
+		};
 		__m128d* fdst;
 		__m128d* fsrc;
 		uint32_t condition;
 		uint32_t memMask;
 		uint32_t type;
-		union {
-			uint64_t unsignedMultiplier;
-			int64_t signedMultiplier;
-		};
-		unsigned shift;
-		unsigned preShift;
-		unsigned postShift;
-		bool increment;
 	};
 
 	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);

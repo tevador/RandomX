@@ -33,7 +33,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #ifdef STATS
 #include <algorithm>
 #endif
-#include "divideByConstantCodegen.h"
 
 #ifdef FPUCHECK
 constexpr bool fpuCheck = true;
@@ -136,23 +135,21 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::IDIV_C: {
-				if (ibc.signedMultiplier != 0) {
-					int_reg_t dividend = *ibc.idst;
-					int_reg_t quotient = dividend >> ibc.preShift;
-					if (ibc.increment) {
-						quotient = quotient == UINT64_MAX ? UINT64_MAX : quotient + 1;
-					}
-					quotient = mulh(quotient, ibc.signedMultiplier);
-					quotient >>= ibc.postShift;
-					*ibc.idst += quotient;
-				}
-				else {
-					*ibc.idst += *ibc.idst >> ibc.shift;
-				}
+				uint64_t dividend = *ibc.idst;
+				uint64_t quotient = dividend / ibc.imm;
+				*ibc.idst += quotient;
 			} break;
 
 			case InstructionType::ISDIV_C: {
-
+				if (ibc.simm != -1) {
+					int64_t dividend = unsigned64ToSigned2sCompl(*ibc.idst);
+					int64_t quotient = dividend / ibc.simm;
+					*ibc.idst += quotient;
+				}
+				else {
+					uint64_t quotient = ~(*ibc.idst) + 1;
+					*ibc.idst += quotient;
+				}
 			} break;
 
 			case InstructionType::INEG_R: {
@@ -204,8 +201,8 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::FSCAL_R: {
-				const __m128d signMask = _mm_castsi128_pd(_mm_set1_epi64x(0x81F0000000000000));
-				*ibc.fdst = _mm_xor_pd(*ibc.fdst, signMask);
+				const __m128d mask = _mm_castsi128_pd(_mm_set1_epi64x(0x81F0000000000000));
+				*ibc.fdst = _mm_xor_pd(*ibc.fdst, mask);
 			} break;
 
 			case InstructionType::FMUL_R: {
@@ -516,20 +513,7 @@ namespace RandomX {
 						auto dst = instr.dst % RegistersCount;
 						ibc.type = InstructionType::IDIV_C;
 						ibc.idst = &r[dst];
-						if (divisor & (divisor - 1)) {
-							magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
-							ibc.signedMultiplier = mi.multiplier;
-							ibc.preShift = mi.pre_shift;
-							ibc.postShift = mi.post_shift;
-							ibc.increment = mi.increment;
-						}
-						else {
-							ibc.signedMultiplier = 0;
-							int shift = 0;
-							while (divisor >>= 1)
-								++shift;
-							ibc.shift = shift;
-						}
+						ibc.imm = divisor;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -537,7 +521,16 @@ namespace RandomX {
 				} break;
 
 				CASE_REP(ISDIV_C) {
-					ibc.type = InstructionType::NOP;
+					int32_t divisor = unsigned32ToSigned2sCompl(instr.imm32);
+					if (divisor != 0) {
+						auto dst = instr.dst % RegistersCount;
+						ibc.type = InstructionType::ISDIV_C;
+						ibc.idst = &r[dst];
+						ibc.simm = divisor;
+					}
+					else {
+						ibc.type = InstructionType::NOP;
+					}
 				} break;
 
 				CASE_REP(INEG_R) {

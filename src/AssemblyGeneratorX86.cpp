@@ -431,8 +431,8 @@ namespace RandomX {
 		asmCode << "\tldmxcsr dword ptr [rsp-8]" << std::endl;
 	}
 
-	static inline const char* condition(Instruction& instr, bool invert = false) {
-		switch (((instr.mod >> 2) & 7) ^ invert)
+	static inline const char* condition(Instruction& instr) {
+		switch ((instr.mod >> 2) & 7)
 		{
 			case 0:
 				return "be";

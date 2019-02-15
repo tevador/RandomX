@@ -102,7 +102,7 @@ public:
 		os << std::endl;
 	}
 private:
-	void print(std::atomic<uint64_t>& hash, std::ostream& os) {
+	static void print(std::atomic<uint64_t>& hash, std::ostream& os) {
 		auto h = hash.load();
 		outputHex(std::cout, (char*)&h, sizeof(h));
 	}
