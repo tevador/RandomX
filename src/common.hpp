@@ -37,13 +37,14 @@ namespace RandomX {
 	constexpr int ArgonSaltSize = sizeof(ArgonSalt) - 1;
 
 	constexpr int CacheLineSize = 64;
-	constexpr uint32_t CacheLineAlignMask = 0xFFFFFFFF & ~(CacheLineSize - 1);
+
 	constexpr uint64_t DatasetSize = 4ULL * 1024 * 1024 * 1024; //4 GiB
+	constexpr uint32_t CacheLineAlignMask = (DatasetSize - 1) & ~(CacheLineSize - 1);
 	constexpr uint32_t CacheSize = ArgonMemorySize * 1024;
 	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
-	constexpr int BlockExpansionRatio = DatasetSize / CacheSize;
-	constexpr int DatasetBlockCount = BlockExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = 16;
+	constexpr int DatasetExpansionRatio = DatasetSize / CacheSize;
+	constexpr int DatasetBlockCount = DatasetExpansionRatio * CacheBlockCount;
+	constexpr int DatasetIterations = DatasetExpansionRatio;
 
 
 #ifdef TRACE
