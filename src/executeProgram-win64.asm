@@ -152,7 +152,7 @@ program_begin:
 
 	;# 256 instructions
 	include program.inc
-
+IF 1
 	mov eax, r12d                      ;# read address register 1
 	xor eax, r15d                      ;# read address register 2
 	xor rbp, rax                       ;# modify "mx"
@@ -189,6 +189,26 @@ program_begin:
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2
 	movapd xmmword ptr [rcx+48], xmm3
+else
+	; memcpy trace from stack to scratchpad
+	mov rax, rsi
+	mov rdx, rdi
+
+	cld
+	mov rsi, rsp
+	mov rdi, rax
+	mov rcx, 1024
+
+	rep movsq
+
+	add rsp, 8192
+
+	pop rcx
+	pop rcx
+
+	mov rsi, rax
+	mov rdi, rdx
+endif
 	sub ebx, 1
 	jnz program_begin
 	

@@ -45,6 +45,10 @@ namespace RandomX {
 
 		void generateCode(Instruction&, int);
 
+		void traceint(Instruction&);
+		void traceflt(Instruction&);
+		void tracenop(Instruction&);
+
 		void  h_IADD_R(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);

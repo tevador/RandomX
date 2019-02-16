@@ -82,6 +82,31 @@ namespace RandomX {
 	void InterpretedVirtualMachine::executeBytecode<ProgramLength>(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 	}
 
+	static void print(int_reg_t r) {
+		std::cout << std::hex << std::setw(16) << std::setfill('0') << r << std::endl;
+	}
+
+	static void print(__m128d f) {
+		uint64_t lo = *(((uint64_t*)&f) + 0);
+		uint64_t hi = *(((uint64_t*)&f) + 1);
+		std::cout << std::hex << std::setw(16) << std::setfill('0') << hi << '-' << std::hex << std::setw(16) << std::setfill('0') << lo << std::endl;
+	}
+
+	static void printState(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+		for (int i = 0; i < 8; ++i) {
+			std::cout << "r" << i << " = "; print(r[i]);
+		}
+		for (int i = 0; i < 4; ++i) {
+			std::cout << "f" << i << " = "; print(f[i]);
+		}
+		for (int i = 0; i < 4; ++i) {
+			std::cout << "e" << i << " = "; print(e[i]);
+		}
+		for (int i = 0; i < 4; ++i) {
+			std::cout << "a" << i << " = "; print(a[i]);
+		}
+	}
+
 	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[i];
 		switch (ibc.type)
@@ -107,7 +132,7 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::IMUL_9C: {
-				*ibc.idst += 9 * *ibc.idst + ibc.imm;
+				*ibc.idst += 8 * *ibc.idst + ibc.imm;
 			} break;
 
 			case InstructionType::IMUL_R: {
@@ -210,7 +235,7 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::FDIV_M: {
-				__m128d fsrc = load_cvt_i32x2(scratchpad + (*ibc.isrc & ibc.memMask));
+				__m128d fsrc = _mm_abs(load_cvt_i32x2(scratchpad + (*ibc.isrc & ibc.memMask)));
 				__m128d fdst = _mm_div_pd(*ibc.fdst, fsrc);
 				*ibc.fdst = _mm_max_pd(fdst, _mm_set_pd(DBL_MIN, DBL_MIN));
 			} break;
@@ -220,11 +245,11 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::COND_R: {
-				*ibc.idst += condition(*ibc.isrc, ibc.imm, ibc.condition) ? 1 : 0;
+				*ibc.idst += condition(ibc.condition, *ibc.isrc, ibc.imm) ? 1 : 0;
 			} break;
 
 			case InstructionType::COND_M: {
-				*ibc.idst += condition(load64(scratchpad + (*ibc.isrc & ibc.memMask)), ibc.imm, ibc.condition) ? 1 : 0;
+				*ibc.idst += condition(ibc.condition, load64(scratchpad + (*ibc.isrc & ibc.memMask)), ibc.imm) ? 1 : 0;
 			} break;
 
 			case InstructionType::CFROUND: {
@@ -241,6 +266,13 @@ namespace RandomX {
 
 			default:
 				UNREACHABLE;
+		}
+		if (trace) {
+			//std::cout << program(i);
+			if(ibc.type < 20 || ibc.type == 31 || ibc.type == 32)
+				print(*ibc.idst);
+			else //if(ibc.type >= 20 && ibc.type <= 30)
+				print(0);
 		}
 	}
 
@@ -260,10 +292,20 @@ namespace RandomX {
 		uint32_t spAddr0 = mem.mx;
 		uint32_t spAddr1 = mem.ma;
 
+		if (trace) {
+			std::cout << "execute (reg: r" << readReg0 << ", r" << readReg1 << ", r" << readReg2 << ", r" << readReg3 << ")" << std::endl;
+			std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
+			std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
+			printState(r, f, e, a);
+		}
+
 		for(unsigned iter = 0; iter < InstructionCount; ++iter) {
 			//std::cout << "Iteration " << iter << std::endl;
-			spAddr0 ^= r[readReg0];
+			uint64_t spMix = r[readReg0] ^ r[readReg1];
+			spAddr0 ^= spMix;
 			spAddr0 &= ScratchpadL3Mask64;
+			spAddr1 ^= spMix >> 32;
+			spAddr1 &= ScratchpadL3Mask64;
 			
 			r[0] ^= load64(scratchpad + spAddr0 + 0);
 			r[1] ^= load64(scratchpad + spAddr0 + 8);
@@ -274,9 +316,6 @@ namespace RandomX {
 			r[6] ^= load64(scratchpad + spAddr0 + 48);
 			r[7] ^= load64(scratchpad + spAddr0 + 56);
 
-			spAddr1 ^= r[readReg1];
-			spAddr1 &= ScratchpadL3Mask64;
-
 			f[0] = load_cvt_i32x2(scratchpad + spAddr1 + 0);
 			f[1] = load_cvt_i32x2(scratchpad + spAddr1 + 8);
 			f[2] = load_cvt_i32x2(scratchpad + spAddr1 + 16);
@@ -285,6 +324,14 @@ namespace RandomX {
 			e[1] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 40));
 			e[2] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 48));
 			e[3] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 56));
+
+			if (trace) {
+				std::cout << "iteration " << std::dec << iter << std::endl;
+				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
+				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
+				printState(r, f, e, a);
+				std::cout << "-----------------------------------" << std::endl;
+			}
 
 			executeBytecode<0>(r, f, e, a);
 
@@ -309,6 +356,14 @@ namespace RandomX {
 				std::swap(mem.mx, mem.ma);
 			}
 
+			if (trace) {
+				std::cout << "iteration " << std::dec << iter << std::endl;
+				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
+				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
+				printState(r, f, e, a);
+				std::cout << "===================================" << std::endl;
+			}
+
 			store64(scratchpad + spAddr1 + 0, r[0]);
 			store64(scratchpad + spAddr1 + 8, r[1]);
 			store64(scratchpad + spAddr1 + 16, r[2]);
@@ -318,10 +373,15 @@ namespace RandomX {
 			store64(scratchpad + spAddr1 + 48, r[6]);
 			store64(scratchpad + spAddr1 + 56, r[7]);
 
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 0), _mm_mul_pd(f[0], e[0]));
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 16), _mm_mul_pd(f[1], e[1]));
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 32), _mm_mul_pd(f[2], e[2]));
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 48), _mm_mul_pd(f[3], e[3]));
+			f[0] = _mm_mul_pd(f[0], e[0]);
+			f[1] = _mm_mul_pd(f[1], e[1]);
+			f[2] = _mm_mul_pd(f[2], e[2]);
+			f[3] = _mm_mul_pd(f[3], e[3]);
+
+			_mm_store_pd((double*)(scratchpad + spAddr0 + 0), f[0]);
+			_mm_store_pd((double*)(scratchpad + spAddr0 + 16), f[1]);
+			_mm_store_pd((double*)(scratchpad + spAddr0 + 32), f[2]);
+			_mm_store_pd((double*)(scratchpad + spAddr0 + 48), f[3]);
 
 			spAddr0 = 0;
 			spAddr1 = 0;
@@ -719,6 +779,7 @@ namespace RandomX {
 					ibc.type = InstructionType::ISTORE;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
+					ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 				} break;
 
 				CASE_REP(FSTORE) {

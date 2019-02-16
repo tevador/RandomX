@@ -183,6 +183,12 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
 		vm->initialize();
 		vm->execute();
+		/*if (RandomX::trace) {
+			for (int j = 0; j < RandomX::ProgramLength; ++j) {
+				uint64_t res = *(uint64_t*)(scratchpad + 8 * (RandomX::ProgramLength - 1 - j));
+				std::cout << std::hex << std::setw(16) << std::setfill('0') << res << std::endl;
+			}
+		}*/
 		vm->getResult<softAes>(scratchpad, RandomX::ScratchpadSize, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {

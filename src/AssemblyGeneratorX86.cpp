@@ -58,6 +58,24 @@ namespace RandomX {
 		}
 	}
 
+	void AssemblyGeneratorX86::traceint(Instruction& instr) {
+		if (trace) {
+			asmCode << "\tpush " << regR[instr.dst] << std::endl;
+		}
+	}
+
+	void AssemblyGeneratorX86::traceflt(Instruction& instr) {
+		if (trace) {
+			asmCode << "\tpush 0" << std::endl;
+		}
+	}
+
+	void AssemblyGeneratorX86::tracenop(Instruction& instr) {
+		if (trace) {
+			asmCode << "\tpush 0" << std::endl;
+		}
+	}
+
 	void AssemblyGeneratorX86::generateCode(Instruction& instr, int i) {
 		asmCode << "\t; " << instr;
 		auto generator = engine[instr.opcode];
@@ -86,6 +104,7 @@ namespace RandomX {
 		else {
 			asmCode << "\tadd " << regR[instr.dst] << ", " << (int32_t)instr.imm32 << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//2.75 uOP
@@ -97,11 +116,13 @@ namespace RandomX {
 		else {
 			asmCode << "\tadd " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//1 uOP
 	void AssemblyGeneratorX86::h_IADD_RC(Instruction& instr, int i) {
 		asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << std::showpos << (int32_t)instr.imm32 << std::noshowpos << "]" << std::endl;
+		traceint(instr);
 	}
 
 	//1 uOP
@@ -112,6 +133,7 @@ namespace RandomX {
 		else {
 			asmCode << "\tsub " << regR[instr.dst] << ", " << (int32_t)instr.imm32 << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//2.75 uOP
@@ -123,11 +145,13 @@ namespace RandomX {
 		else {
 			asmCode << "\tsub " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//1 uOP
 	void AssemblyGeneratorX86::h_IMUL_9C(Instruction& instr, int i) {
 		asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.dst] << "*8" << std::showpos << (int32_t)instr.imm32 << std::noshowpos << "]" << std::endl;
+		traceint(instr);
 	}
 
 	//1 uOP
@@ -138,6 +162,7 @@ namespace RandomX {
 		else {
 			asmCode << "\timul " << regR[instr.dst] << ", " << (int32_t)instr.imm32 << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//2.75 uOP
@@ -149,6 +174,7 @@ namespace RandomX {
 		else {
 			asmCode << "\timul " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//4 uOPs
@@ -156,6 +182,7 @@ namespace RandomX {
 		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
 		asmCode << "\tmul " << regR[instr.src] << std::endl;
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		traceint(instr);
 	}
 
 	//5.75 uOPs
@@ -170,6 +197,7 @@ namespace RandomX {
 			asmCode << "\tmul qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		traceint(instr);
 	}
 
 	//4 uOPs
@@ -177,6 +205,7 @@ namespace RandomX {
 		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
 		asmCode << "\timul " << regR[instr.src] << std::endl;
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		traceint(instr);
 	}
 
 	//5.75 uOPs
@@ -191,11 +220,13 @@ namespace RandomX {
 			asmCode << "\timul qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
+		traceint(instr);
 	}
 
 	//1 uOP
 	void AssemblyGeneratorX86::h_INEG_R(Instruction& instr, int i) {
 		asmCode << "\tneg " << regR[instr.dst] << std::endl;
+		traceint(instr);
 	}
 
 	//1 uOP
@@ -206,6 +237,7 @@ namespace RandomX {
 		else {
 			asmCode << "\txor " << regR[instr.dst] << ", " << (int32_t)instr.imm32 << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//2.75 uOP
@@ -217,6 +249,7 @@ namespace RandomX {
 		else {
 			asmCode << "\txor " << regR[instr.dst] << ", qword ptr [rsi+" << genAddressImm(instr) << "]" << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//1.75 uOPs
@@ -228,6 +261,7 @@ namespace RandomX {
 		else {
 			asmCode << "\tror " << regR[instr.dst] << ", " << (instr.imm32 & 63) << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//1.75 uOPs
@@ -239,6 +273,7 @@ namespace RandomX {
 		else {
 			asmCode << "\trol " << regR[instr.dst] << ", " << (instr.imm32 & 63) << std::endl;
 		}
+		traceint(instr);
 	}
 
 	//~6 uOPs
@@ -273,7 +308,11 @@ namespace RandomX {
 				if(shift > 0)
 					asmCode << "\tshr " << regR[instr.dst] << ", " << shift << std::endl;
 			}
-		}	
+			traceint(instr);
+		}
+		else {
+			tracenop(instr);
+		}
 	}
 
 	//~8.5 uOPs
@@ -300,6 +339,7 @@ namespace RandomX {
 			if (negative)
 				asmCode << "\tneg rax" << std::endl;
 			asmCode << "\tadd " << regR[instr.dst] << ", rax" << std::endl;
+			traceint(instr);
 		}
 		else if (divisor != 0) {
 			magics_info mi = compute_signed_magic_info(divisor);
@@ -325,6 +365,10 @@ namespace RandomX {
 			asmCode << "\tsets al" << std::endl;
 			asmCode << "\tadd rdx, rax" << std::endl;
 			asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
+			traceint(instr);
+		}
+		else {
+			tracenop(instr);
 		}
 	}
 
@@ -332,12 +376,17 @@ namespace RandomX {
 	void AssemblyGeneratorX86::h_ISWAP_R(Instruction& instr, int i) {
 		if (instr.src != instr.dst) {
 			asmCode << "\txchg " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+			traceint(instr);
+		}
+		else {
+			tracenop(instr);
 		}
 	}
 
 	//1 uOPs
 	void AssemblyGeneratorX86::h_FSWAP_R(Instruction& instr, int i) {
 		asmCode << "\tshufpd " << regFE[instr.dst] << ", " << regFE[instr.dst] << ", 1" << std::endl;
+		traceflt(instr);
 	}
 
 	//1 uOP
@@ -346,6 +395,7 @@ namespace RandomX {
 		instr.src %= 4;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
+		traceflt(instr);
 	}
 
 	//5 uOPs
@@ -354,6 +404,7 @@ namespace RandomX {
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
 		asmCode << "\taddpd " << regF[instr.dst] << ", xmm12" << std::endl;
+		traceflt(instr);
 	}
 
 	//1 uOP
@@ -362,6 +413,7 @@ namespace RandomX {
 		instr.src %= 4;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
+		traceflt(instr);
 	}
 
 	//5 uOPs
@@ -370,12 +422,14 @@ namespace RandomX {
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", xmm12" << std::endl;
+		traceflt(instr);
 	}
 
 	//1 uOP
 	void AssemblyGeneratorX86::h_FSCAL_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		asmCode << "\txorps " << regF[instr.dst] << ", " << signMask << std::endl;
+		traceflt(instr);
 	}
 
 	//1 uOPs
@@ -383,6 +437,7 @@ namespace RandomX {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tmulpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
+		traceflt(instr);
 	}
 
 	//7 uOPs
@@ -393,6 +448,7 @@ namespace RandomX {
 		asmCode << "\tandps xmm12, xmm14" << std::endl;
 		asmCode << "\tmulpd " << regE[instr.dst] << ", xmm12" << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
+		traceflt(instr);
 	}
 
 	//2 uOPs
@@ -401,6 +457,7 @@ namespace RandomX {
 		instr.src %= 4;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
+		traceflt(instr);
 	}
 
 	//7 uOPs
@@ -411,12 +468,14 @@ namespace RandomX {
 		asmCode << "\tandps xmm12, xmm14" << std::endl;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", xmm12" << std::endl;
 		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
+		traceflt(instr);
 	}
 
 	//1 uOP
 	void AssemblyGeneratorX86::h_FSQRT_R(Instruction& instr, int i) {
 		instr.dst %= 4;
 		asmCode << "\tsqrtpd " << regE[instr.dst] << ", " << regE[instr.dst] << std::endl;
+		traceflt(instr);
 	}	
 
 	//6 uOPs
@@ -429,6 +488,7 @@ namespace RandomX {
 		asmCode << "\tor eax, 40896" << std::endl;
 		asmCode << "\tmov dword ptr [rsp-8], eax" << std::endl;
 		asmCode << "\tldmxcsr dword ptr [rsp-8]" << std::endl;
+		tracenop(instr);
 	}
 
 	static inline const char* condition(Instruction& instr) {
@@ -461,6 +521,7 @@ namespace RandomX {
 		asmCode << "\tcmp " << regR32[instr.src] << ", " << (int32_t)instr.imm32 << std::endl;
 		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
 		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
+		traceint(instr);
 	}
 
 	//6 uOPs
@@ -470,22 +531,26 @@ namespace RandomX {
 		asmCode << "\tcmp dword ptr [rsi+rax], " << (int32_t)instr.imm32 << std::endl;
 		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
 		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
+		traceint(instr);
 	}
 
 	//3 uOPs
 	void AssemblyGeneratorX86::h_ISTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr);
 		asmCode << "\tmov qword ptr [rsi+rax], " << regR[instr.src] << std::endl;
+		tracenop(instr);
 	}
 
 	//3 uOPs
 	void AssemblyGeneratorX86::h_FSTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr, 16);
 		asmCode << "\tmovapd xmmword ptr [rsi+rax], " << regFE[instr.src] << std::endl;
+		tracenop(instr);
 	}
 
 	void AssemblyGeneratorX86::h_NOP(Instruction& instr, int i) {
 		asmCode << "\tnop" << std::endl;
+		tracenop(instr);
 	}
 
 #include "instructionWeights.hpp"
