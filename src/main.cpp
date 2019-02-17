@@ -172,6 +172,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		*noncePtr = nonce;
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
+		vm->resetRoundingMode();
 		vm->setScratchpad(scratchpad);
 		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
 		for (int chain = 0; chain < RandomX::ChainLength - 1; ++chain) {
@@ -332,8 +333,8 @@ int main(int argc, char** argv) {
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
-		/*if(programCount == 1000)
-		std::cout << "Reference result:  3e1c5f9b9d0bf8ffa250f860bf5f7ab76ac823b206ddee6a592660119a3640c6" << std::endl;*/
+		if(programCount == 1000)
+		std::cout << "Reference result:  fe31e8fd7ed1cec773e87c0684b66b38e58b23ab255e8f9c6b62745e43a26851" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}
