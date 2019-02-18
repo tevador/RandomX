@@ -109,6 +109,7 @@ namespace RandomX {
 
 	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[i];
+		if(trace) printState(r, f, e, a);
 		switch (ibc.type)
 		{
 			case InstructionType::IADD_R: {
@@ -268,7 +269,7 @@ namespace RandomX {
 				UNREACHABLE;
 		}
 		if (trace) {
-			//std::cout << program(i);
+			std::cout << program(i);
 			if(ibc.type < 20 || ibc.type == 31 || ibc.type == 32)
 				print(*ibc.idst);
 			else //if(ibc.type >= 20 && ibc.type <= 30)
@@ -673,7 +674,10 @@ namespace RandomX {
 				CASE_REP(FSWAP_R) {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::FSWAP_R;
-					ibc.fdst = &f[dst];
+					if (dst < 4)
+						ibc.fdst = &f[dst];
+					else
+						ibc.fdst = &e[dst - 4];
 				} break;
 
 				CASE_REP(FADD_R) {

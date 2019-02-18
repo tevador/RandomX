@@ -21,6 +21,18 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 
+constexpr int32_t unsigned32ToSigned2sCompl(uint32_t x) {
+	return (-1 == ~0) ? (int32_t)x : (x > INT32_MAX ? (-(int32_t)(UINT32_MAX - x) - 1) : (int32_t)x);
+}
+
+constexpr int64_t unsigned64ToSigned2sCompl(uint64_t x) {
+	return (-1 == ~0) ? (int64_t)x : (x > INT64_MAX ? (-(int64_t)(UINT64_MAX - x) - 1) : (int64_t)x);
+}
+
+constexpr uint64_t signExtend2sCompl(uint32_t x) {
+	return (-1 == ~0) ? (int64_t)(int32_t)(x) : (x > INT32_MAX ? (x | 0xffffffff00000000ULL) : (uint64_t)x);
+}
+
 #if defined(_MSC_VER)
 #if defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)
 #define __SSE2__ 1
@@ -44,6 +56,9 @@ inline __m128d _mm_abs(__m128d xd) {
 #else
 #include <cstdint>
 #include <stdexcept>
+#include <cstdlib>
+#include <cmath>
+#include "blake2/endian.h"
 
 #define _mm_malloc(a,b) malloc(a)
 #define _mm_free(a) free(a)
@@ -56,15 +71,112 @@ typedef union {
 	uint8_t u8[16];
 } __m128i;
 
-typedef struct {
-	double lo;
-	double hi;
+typedef union {
+	struct {
+		double lo;
+		double hi;
+	};
+	__m128i i;
 } __m128d;
 
 inline __m128d _mm_load_pd(const double* pd) {
 	__m128d x;
-	x.lo = *(pd + 0);
-	x.hi = *(pd + 1);
+	x.i.u64[0] = load64(pd + 0);
+	x.i.u64[1] = load64(pd + 1);
+	return x;
+}
+
+inline void _mm_store_pd(double* mem_addr, __m128d a) {
+	store64(mem_addr + 0, a.i.u64[0]);
+	store64(mem_addr + 1, a.i.u64[1]);
+}
+
+inline __m128d _mm_shuffle_pd(__m128d a, __m128d b, int imm8) {
+	__m128d x;
+	x.lo = (imm8 & 1) ? a.hi : a.lo;
+	x.hi = (imm8 & 2) ? b.hi : b.lo;
+	return x;
+}
+
+inline __m128d _mm_add_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.lo = a.lo + b.lo;
+	x.hi = a.hi + b.hi;
+	return x;
+}
+
+inline __m128d _mm_sub_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.lo = a.lo - b.lo;
+	x.hi = a.hi - b.hi;
+	return x;
+}
+
+inline __m128d _mm_mul_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.lo = a.lo * b.lo;
+	x.hi = a.hi * b.hi;
+	return x;
+}
+
+inline __m128d _mm_div_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.lo = a.lo / b.lo;
+	x.hi = a.hi / b.hi;
+	return x;
+}
+
+inline __m128d _mm_sqrt_pd(__m128d a) {
+	__m128d x;
+	x.lo = sqrt(a.lo);
+	x.hi = sqrt(a.hi);
+	return x;
+}
+
+inline __m128i _mm_set1_epi64x(uint64_t a) {
+	__m128i x;
+	x.u64[0] = a;
+	x.u64[1] = a;
+	return x;
+}
+
+inline __m128d _mm_castsi128_pd(__m128i a) {
+	__m128d x;
+	x.i = a;
+	return x;
+}
+
+inline __m128d _mm_abs(__m128d xd) {
+	xd.lo = std::fabs(xd.lo);
+	xd.hi = std::fabs(xd.hi);
+	return xd;
+}
+
+inline __m128d _mm_xor_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.i.u64[0] = a.i.u64[0] ^ b.i.u64[0];
+	x.i.u64[1] = a.i.u64[1] ^ b.i.u64[1];
+	return x;
+}
+
+inline __m128d _mm_set_pd(double e1, double e0) {
+	__m128d x;
+	x.lo = e0;
+	x.hi = e1;
+	return x;
+}
+
+inline __m128d _mm_max_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.lo = a.lo > b.lo ? a.lo : b.lo;
+	x.hi = a.hi > b.hi ? a.hi : b.hi;
+	return x;
+}
+
+inline __m128d _mm_cvtepi32_pd(__m128i a) {
+	__m128d x;
+	x.lo = (double)unsigned32ToSigned2sCompl(a.u32[0]);
+	x.hi = (double)unsigned32ToSigned2sCompl(a.u32[1]);
 	return x;
 }
 
@@ -154,24 +266,18 @@ inline __m128i _mm_slli_si128(__m128i _A, int _Imm) {
 	return _A;
 }
 
+inline __m128i _mm_loadl_epi64(__m128i const* mem_addr) {
+	__m128i x;
+	x.u64[0] = load64(mem_addr);
+	return x;
+}
+
 #endif
 
 constexpr int RoundToNearest = 0;
 constexpr int RoundDown = 1;
 constexpr int RoundUp = 2;
 constexpr int RoundToZero = 3;
-
-constexpr int32_t unsigned32ToSigned2sCompl(uint32_t x) {
-	return (-1 == ~0) ? (int32_t)x : (x > INT32_MAX ? (-(int32_t)(UINT32_MAX - x) - 1) : (int32_t)x);
-}
-
-constexpr int64_t unsigned64ToSigned2sCompl(uint64_t x) {
-	return (-1 == ~0) ? (int64_t)x : (x > INT64_MAX ? (-(int64_t)(UINT64_MAX - x) - 1) : (int64_t)x);
-}
-
-constexpr uint64_t signExtend2sCompl(uint32_t x) {
-	return (-1 == ~0) ? (int64_t)(int32_t)(x) : (x > INT32_MAX ? (x | 0xffffffff00000000ULL) : (uint64_t)x);
-}
 
 inline __m128d load_cvt_i32x2(const void* addr) {
 	__m128i ix = _mm_loadl_epi64((const __m128i*)addr);
