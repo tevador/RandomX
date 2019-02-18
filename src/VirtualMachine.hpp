@@ -46,8 +46,8 @@ namespace RandomX {
 			return &program;
 		}
 	protected:
-		alignas(16) Program program;
-		alignas(16) RegisterFile reg;
+		alignas(64) Program program;
+		alignas(64) RegisterFile reg;
 		MemoryRegisters mem;
 		uint8_t* scratchpad;
 		uint32_t readReg0, readReg1, readReg2, readReg3;

@@ -19,6 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 //#define STATS
+#include <new>
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include "intrinPortable.h"
@@ -60,6 +61,15 @@ namespace RandomX {
 
 	class InterpretedVirtualMachine : public VirtualMachine {
 	public:
+		void* operator new(size_t size) {
+			void* ptr = _mm_malloc(size, 64);
+			if (ptr == nullptr)
+				throw std::bad_alloc();
+			return ptr;
+		}
+		void operator delete(void* ptr) {
+			_mm_free(ptr);
+		}
 		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
 		~InterpretedVirtualMachine();
 		void setDataset(dataset_t ds) override;
