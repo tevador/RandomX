@@ -174,7 +174,7 @@ constexpr uint64_t signExtend2sCompl(uint32_t x) {
 }
 
 inline __m128d load_cvt_i32x2(const void* addr) {
-	__m128i ix = _mm_load_si128((const __m128i*)addr);
+	__m128i ix = _mm_loadl_epi64((const __m128i*)addr);
 	return _mm_cvtepi32_pd(ix);
 }
 
