@@ -57,6 +57,8 @@ inline __m128d _mm_abs(__m128d xd) {
 #include <cstdint>
 #include <stdexcept>
 #include <cstdlib>
+#include <cmath>
+#include "blake2/endian.h"
 
 #define _mm_malloc(a,b) malloc(a)
 #define _mm_free(a) free(a)
@@ -145,8 +147,8 @@ inline __m128d _mm_castsi128_pd(__m128i a) {
 }
 
 inline __m128d _mm_abs(__m128d xd) {
-	xd.lo = std::abs(xd.lo);
-	xd.hi = std::abs(xd.hi);
+	xd.lo = std::fabs(xd.lo);
+	xd.hi = std::fabs(xd.hi);
 	return xd;
 }
 
