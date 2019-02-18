@@ -13,5 +13,5 @@
 .global DECL(squareHash)
 
 DECL(squareHash):
-	mov rcx, rsi
+	mov rcx, rdi
 	#include "asm/squareHash.inc"
