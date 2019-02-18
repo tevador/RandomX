@@ -89,7 +89,7 @@ namespace RandomX {
 	template<bool softAes>
 	void VirtualMachine::getResult(void* scratchpad, size_t scratchpadSize, void* outHash) {
 		if (scratchpadSize > 0) {
-			hashAes1Rx4<false>(scratchpad, scratchpadSize, &reg.a);
+			hashAes1Rx4<softAes>(scratchpad, scratchpadSize, &reg.a);
 		}
 		blake2b(outHash, ResultSize, &reg, sizeof(RegisterFile), nullptr, 0);
 	}
