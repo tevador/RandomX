@@ -1,3 +1,5 @@
+IFDEF RAX
+
 PUBLIC squareHash
 
 .code
@@ -5,5 +7,7 @@ PUBLIC squareHash
 squareHash PROC
 	include asm/squareHash.inc
 squareHash ENDP
+
+ENDIF
 
 END
