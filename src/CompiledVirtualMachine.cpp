@@ -38,7 +38,7 @@ namespace RandomX {
 
 	void CompiledVirtualMachine::execute() {
 		//executeProgram(reg, mem, scratchpad, InstructionCount);
-		totalSize += compiler.getCodeSize();
+		//totalSize += compiler.getCodeSize();
 		compiler.getProgramFunc()(reg, mem, scratchpad, InstructionCount);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {

@@ -113,11 +113,12 @@ void printUsage(const char* executable) {
 	std::cout << "Usage: " << executable << " [OPTIONS]" << std::endl;
 	std::cout << "Supported options:" << std::endl;
 	std::cout << "  --help        shows this message" << std::endl;
-	std::cout << "  --mine        mining mode: 4 GiB dataset, x86-64 compiled VM" << std::endl;
-	std::cout << "                (default: portable verification mode)" << std::endl;
+	std::cout << "  --mine        mining mode: 4 GiB, x86-64 compiled VM" << std::endl;
+	std::cout << "  --verify      verification mode: 256 MiB, portable VM" << std::endl;
 	std::cout << "  --largePages  use large pages" << std::endl;
 	std::cout << "  --softAes     use software AES (default: x86 AES-NI)" << std::endl;
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
+	std::cout << "  --init Q      initialize dataset with Q threads (default: 1)" << std::endl;
 	std::cout << "  --nonces N    run N nonces (default: 1000)" << std::endl;
 	std::cout << "  --genAsm      generate x86-64 asm code for nonce N" << std::endl;
 	std::cout << "  --genNative   generate RandomX code for nonce N" << std::endl;
@@ -174,7 +175,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 		fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
 		vm->resetRoundingMode();
 		vm->setScratchpad(scratchpad);
-		//dump((char*)((RandomX::CompiledVirtualMachine*)vm)->getProgram(), RandomX::CodeSize, "code-1337-jmp.txt");
+		//dump((char*)scratchpad, RandomX::ScratchpadSize, "spad-before.txt");
 		for (int chain = 0; chain < RandomX::ChainLength - 1; ++chain) {
 			fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
 			vm->initialize();
@@ -202,23 +203,20 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, help, largePages, async, genNative;
-	int programCount, threadCount;
-	readOption("--help", argc, argv, help);
-
-	if (help) {
-		printUsage(argv[0]);
-		return 0;
-	}
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative;
+	int programCount, threadCount, initThreadCount;
 
 	readOption("--softAes", argc, argv, softAes);
 	readOption("--genAsm", argc, argv, genAsm);
 	readOption("--mine", argc, argv, miningMode);
+	readOption("--verify", argc, argv, verificationMode);
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, programCount, 1000);
+	readIntOption("--init", argc, argv, initThreadCount, 1);
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--async", argc, argv, async);
 	readOption("--genNative", argc, argv, genNative);
+	readOption("--help", argc, argv, help);
 
 	if (genAsm) {
 		if (softAes)
@@ -236,6 +234,11 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
+	if (help || (!miningMode && !verificationMode)) {
+		printUsage(argv[0]);
+		return 0;
+	}
+
 	if (softAes)
 		std::cout << "Using software AES." << std::endl;
 
@@ -247,7 +250,11 @@ int main(int argc, char** argv) {
 
 	std::cout << "RandomX - " << (miningMode ? "mining" : "verification") << " mode" << std::endl;
 
-	std::cout << "Initializing..." << std::endl;
+	std::cout << "Initializing";
+	if(miningMode)
+		std::cout << " (" << initThreadCount << " thread" << (initThreadCount > 1 ? "s)" : ")");
+	std::cout << " ..." << std::endl;
+
 	try {
 		Stopwatch sw(true);
 		if (softAes) {
@@ -272,11 +279,11 @@ int main(int argc, char** argv) {
 		else {
 			RandomX::Cache* cache = dataset.cache;
 			RandomX::datasetAlloc(dataset, largePages);
-			if (threadCount > 1) {
-				auto perThread = RandomX::DatasetBlockCount / threadCount;
-				auto remainder = RandomX::DatasetBlockCount % threadCount;
-				for (int i = 0; i < threadCount; ++i) {
-					auto count = perThread + (i == threadCount - 1 ? remainder : 0);
+			if (initThreadCount > 1) {
+				auto perThread = RandomX::DatasetBlockCount / initThreadCount;
+				auto remainder = RandomX::DatasetBlockCount % initThreadCount;
+				for (int i = 0; i < initThreadCount; ++i) {
+					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
 					threads.push_back(std::thread(&RandomX::datasetInit, cache, dataset, i * perThread, count));
 				}
 				for (unsigned i = 0; i < threads.size(); ++i) {
@@ -290,7 +297,7 @@ int main(int argc, char** argv) {
 			threads.clear();
 			std::cout << "Dataset (4 GiB) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
-		std::cout << "Initializing " << threadCount << " virtual machine(s)..." << std::endl;
+		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
 			RandomX::VirtualMachine* vm;
 			if (miningMode) {
@@ -327,8 +334,8 @@ int main(int argc, char** argv) {
 				mine<true>(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0, scratchpadMem);
 			else
 				mine<false>(vms[0], std::ref(atomicNonce), std::ref(result), programCount, 0, scratchpadMem);
-			if (miningMode)
-				std::cout << "Average program size: " << ((RandomX::CompiledVirtualMachine*)vms[0])->getTotalSize() / programCount / RandomX::ChainLength << std::endl;
+			/*if (miningMode)
+				std::cout << "Average program size: " << ((RandomX::CompiledVirtualMachine*)vms[0])->getTotalSize() / programCount / RandomX::ChainLength << std::endl;*/
 		}
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";

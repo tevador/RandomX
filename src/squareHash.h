@@ -49,8 +49,8 @@ static inline uint128_t square128(uint64_t x) {
 
 	return x2;
 }
-#undef LO(x)
-#undef HI(x)
+#undef LO
+#undef HI
 
 inline uint64_t squareHash(uint64_t x) {
 	x += 1613783669344650115;
