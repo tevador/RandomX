@@ -242,11 +242,29 @@ inline __m128i _mm_shuffle_epi32(__m128i _A, int _Imm) {
 }
 
 inline __m128i _mm_load_si128(__m128i const*_P) {
+#if defined(NATIVE_LITTLE_ENDIAN)
 	return *_P;
+#else
+	uint32_t* ptr = (uint32_t*)_P;
+	__m128i c;
+	c.u32[0] = load32(ptr + 0);
+	c.u32[1] = load32(ptr + 1);
+	c.u32[2] = load32(ptr + 2);
+	c.u32[3] = load32(ptr + 3);
+	return c;
+#endif
 }
 
 inline void _mm_store_si128(__m128i *_P, __m128i _B) {
+#if defined(NATIVE_LITTLE_ENDIAN)
 	*_P = _B;
+#else
+	uint32_t* ptr = (uint32_t*)_P;
+	store32(ptr + 0, _B.u32[0]);
+	store32(ptr + 1, _B.u32[1]);
+	store32(ptr + 2, _B.u32[2]);
+	store32(ptr + 3, _B.u32[3]);
+#endif
 }
 
 inline __m128i _mm_slli_si128(__m128i _A, int _Imm) {
