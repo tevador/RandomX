@@ -50,10 +50,10 @@ Preliminary mining performance with the x86-64 JIT compiled VM:
 
 |CPU|RAM|threads|hashrate [H/s]|comment|
 |-----|-----|----|----------|-----|
-|AMD Ryzen 1700|DDR4-2933|8|4100|
-|Intel i5-3230M|DDR3-1333|1|280|without large pages
-|Intel i7-8550U|DDR4-2400|4|1650|limited by thermals
-|Intel i5-2500K|DDR3-1333|3|1350|
+|AMD Ryzen 1700 (desktop)|DDR4-2933|8|4100|
+|Intel i5-3230M (laptop)|DDR3-1333|1|280|without large pages
+|Intel i7-8550U (laptop)|DDR4-2400|4|1650|limited by thermals
+|Intel i5-2500K (desktop)|DDR3-1333|3|1350|
 
 Hash verification is performed using the portable interpreter in "light-client mode" and takes 30-70 ms depending on RAM latency and CPU clock speed. Hash verification in "mining mode" takes 2-4 ms.
 
@@ -68,7 +68,9 @@ Hash verification is performed using the portable interpreter in "light-client m
 
 We don't expect GPUs will ever be competitive in mining RandomX. The reference miner is CPU-only.
 
-RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings too many limitations and ultimately decreases ASIC resistance. CPUs have the advantage of not needing proprietary drivers and most CPU architectures support a large common subset of primitive operations.
+A rough estimate for AMD Vega 56 GPU gave an upper limit of 1200 H/s, or slightly less than a quad core CPU (details in issue [#24](https://github.com/tevador/RandomX/issues/24)).
+
+RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings too many limitations and ultimately decreases ASIC resistance. CPUs have the advantage of not needing proprietary drivers and most CPU architectures support a large common subset of native operations.
 
 Additionally, targeting CPUs allows for more decentralized mining for several reasons:
 
