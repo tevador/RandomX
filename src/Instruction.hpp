@@ -41,8 +41,8 @@ namespace RandomX {
 		constexpr int IMULH_M = 9;
 		constexpr int ISMULH_R = 10;
 		constexpr int ISMULH_M = 11;
-		constexpr int IDIV_C = 12;
-		constexpr int ISDIV_C = 13;
+		constexpr int IMUL_RCP = 12;
+		//constexpr int ISDIV_C = 13;
 		constexpr int INEG_R = 14;
 		constexpr int IXOR_R = 15;
 		constexpr int IXOR_M = 16;
@@ -103,7 +103,7 @@ namespace RandomX {
 		void  h_IMULH_M(std::ostream&) const;
 		void  h_ISMULH_R(std::ostream&) const;
 		void  h_ISMULH_M(std::ostream&) const;
-		void  h_IDIV_C(std::ostream&) const;
+		void  h_IMUL_RCP(std::ostream&) const;
 		void  h_ISDIV_C(std::ostream&) const;
 		void  h_INEG_R(std::ostream&) const;
 		void  h_IXOR_R(std::ostream&) const;

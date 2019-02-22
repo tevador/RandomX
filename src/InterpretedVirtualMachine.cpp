@@ -30,6 +30,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cfloat>
 #include <thread>
 #include "intrinPortable.h"
+#include "reciprocal.h"
 #ifdef STATS
 #include <algorithm>
 #endif
@@ -136,7 +137,7 @@ namespace RandomX {
 				*ibc.idst += 8 * *ibc.idst + ibc.imm;
 			} break;
 
-			case InstructionType::IMUL_R: {
+			case InstructionType::IMUL_R: { //also handles IMUL_RCP
 				*ibc.idst *= *ibc.isrc;
 			} break;
 
@@ -158,24 +159,6 @@ namespace RandomX {
 
 			case InstructionType::ISMULH_M: {
 				*ibc.idst = smulh(unsigned64ToSigned2sCompl(*ibc.idst), unsigned64ToSigned2sCompl(load64(scratchpad + (*ibc.isrc & ibc.memMask))));
-			} break;
-
-			case InstructionType::IDIV_C: {
-				uint64_t dividend = *ibc.idst;
-				uint64_t quotient = dividend / ibc.imm;
-				*ibc.idst += quotient;
-			} break;
-
-			case InstructionType::ISDIV_C: {
-				if (ibc.simm != -1) {
-					int64_t dividend = unsigned64ToSigned2sCompl(*ibc.idst);
-					int64_t quotient = dividend / ibc.simm;
-					*ibc.idst += quotient;
-				}
-				else {
-					uint64_t quotient = ~(*ibc.idst) + 1;
-					*ibc.idst += quotient;
-				}
 			} break;
 
 			case InstructionType::INEG_R: {
@@ -568,13 +551,14 @@ namespace RandomX {
 					}
 				} break;
 
-				CASE_REP(IDIV_C) {
+				CASE_REP(IMUL_RCP) {
 					uint32_t divisor = instr.imm32;
 					if (divisor != 0) {
 						auto dst = instr.dst % RegistersCount;
-						ibc.type = InstructionType::IDIV_C;
+						ibc.type = InstructionType::IMUL_R;
 						ibc.idst = &r[dst];
-						ibc.imm = divisor;
+						ibc.imm = reciprocal(divisor);
+						ibc.isrc = &ibc.imm;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -582,16 +566,7 @@ namespace RandomX {
 				} break;
 
 				CASE_REP(ISDIV_C) {
-					int32_t divisor = unsigned32ToSigned2sCompl(instr.imm32);
-					if (divisor != 0) {
-						auto dst = instr.dst % RegistersCount;
-						ibc.type = InstructionType::ISDIV_C;
-						ibc.idst = &r[dst];
-						ibc.simm = divisor;
-					}
-					else {
-						ibc.type = InstructionType::NOP;
-					}
+					ibc.type = InstructionType::NOP;
 				} break;
 
 				CASE_REP(INEG_R) {

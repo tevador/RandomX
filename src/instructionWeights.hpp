@@ -32,8 +32,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define WT_IMULH_M 1
 #define WT_ISMULH_R 4
 #define WT_ISMULH_M 1
-#define WT_IDIV_C 4
-#define WT_ISDIV_C 4
+#define WT_IMUL_RCP 8
+#define WT_ISDIV_C 0
 #define WT_INEG_R 2
 #define WT_IXOR_R 16
 #define WT_IXOR_M 4
@@ -71,7 +71,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 constexpr int wtSum = WT_IADD_R + WT_IADD_M + WT_IADD_RC + WT_ISUB_R + \
 WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
-WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IDIV_C + WT_ISDIV_C + \
+WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IMUL_RCP + WT_ISDIV_C + \
 WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
 WT_ISWAP_R + WT_FSWAP_R + WT_FADD_R + WT_FADD_M + WT_FSUB_R + WT_FSUB_M + \
 WT_FSCAL_R + WT_FMUL_R + WT_FMUL_M + WT_FDIV_R + WT_FDIV_M + \

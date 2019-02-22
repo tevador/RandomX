@@ -17,12 +17,10 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 //#define TRACE
-#define MAGIC_DIVISION
+
 #include "AssemblyGeneratorX86.hpp"
 #include "common.hpp"
-#ifdef MAGIC_DIVISION
-#include "divideByConstantCodegen.h"
-#endif
+#include "reciprocal.h"
 #include "Program.hpp"
 
 namespace RandomX {
@@ -276,38 +274,12 @@ namespace RandomX {
 		traceint(instr);
 	}
 
-	//~6 uOPs
-	void AssemblyGeneratorX86::h_IDIV_C(Instruction& instr, int i) {
+	//2 uOPs
+	void AssemblyGeneratorX86::h_IMUL_RCP(Instruction& instr, int i) {
 		if (instr.imm32 != 0) {
 			uint32_t divisor = instr.imm32;
-			if (divisor & (divisor - 1)) {
-				magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
-				if (mi.pre_shift == 0 && !mi.increment) {
-					asmCode << "\tmov rax, " << mi.multiplier << std::endl;
-					asmCode << "\tmul " << regR[instr.dst] << std::endl;
-				}
-				else {
-					asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
-					if (mi.pre_shift > 0)
-						asmCode << "\tshr rax, " << mi.pre_shift << std::endl;
-					if (mi.increment) {
-						asmCode << "\tadd rax, 1" << std::endl;
-						asmCode << "\tsbb rax, 0" << std::endl;
-					}
-					asmCode << "\tmov rcx, " << mi.multiplier << std::endl;
-					asmCode << "\tmul rcx" << std::endl;
-				}
-				if (mi.post_shift > 0)
-					asmCode << "\tshr rdx, " << mi.post_shift << std::endl;
-				asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
-			}
-			else { //divisor is a power of two
-				int shift = 0;
-				while (divisor >>= 1)
-					++shift;
-				if(shift > 0)
-					asmCode << "\tshr " << regR[instr.dst] << ", " << shift << std::endl;
-			}
+			asmCode << "\tmov rax, " << reciprocal(instr.imm32) << std::endl;
+			asmCode << "\timul " << regR[instr.dst] << ", rax" << std::endl;
 			traceint(instr);
 		}
 		else {
@@ -317,59 +289,7 @@ namespace RandomX {
 
 	//~8.5 uOPs
 	void AssemblyGeneratorX86::h_ISDIV_C(Instruction& instr, int i) {
-		int64_t divisor = (int32_t)instr.imm32;
-		if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
-			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
-			// +/- power of two
-			bool negative = divisor < 0;
-			if (negative)
-				divisor = -divisor;
-			int shift = 0;
-			uint64_t unsignedDivisor = divisor;
-			while (unsignedDivisor >>= 1)
-				++shift;
-			if (shift > 0) {
-				asmCode << "\tmov rcx, rax" << std::endl;
-				asmCode << "\tsar rcx, 63" << std::endl;
-				uint32_t mask = (1ULL << shift) + 0xFFFFFFFF;
-				asmCode << "\tand ecx, 0" << std::hex << mask << std::dec << "h" << std::endl;
-				asmCode << "\tadd rax, rcx" << std::endl;
-				asmCode << "\tsar rax, " << shift << std::endl;
-			}
-			if (negative)
-				asmCode << "\tneg rax" << std::endl;
-			asmCode << "\tadd " << regR[instr.dst] << ", rax" << std::endl;
-			traceint(instr);
-		}
-		else if (divisor != 0) {
-			magics_info mi = compute_signed_magic_info(divisor);
-			asmCode << "\tmov rax, " << mi.multiplier << std::endl;
-			asmCode << "\timul " << regR[instr.dst] << std::endl;
-			//asmCode << "\tmov rax, rdx" << std::endl;
-			asmCode << "\txor eax, eax" << std::endl;
-			bool haveSF = false;
-			if (divisor > 0 && mi.multiplier < 0) {
-				asmCode << "\tadd rdx, " << regR[instr.dst] << std::endl;
-				haveSF = true;
-			}
-			if (divisor < 0 && mi.multiplier > 0) {
-				asmCode << "\tsub rdx, " << regR[instr.dst] << std::endl;
-				haveSF = true;
-			}
-			if (mi.shift > 0) {
-				asmCode << "\tsar rdx, " << mi.shift << std::endl;
-				haveSF = true;
-			}
-			if (!haveSF)
-				asmCode << "\ttest rdx, rdx" << std::endl;
-			asmCode << "\tsets al" << std::endl;
-			asmCode << "\tadd rdx, rax" << std::endl;
-			asmCode << "\tadd " << regR[instr.dst] << ", rdx" << std::endl;
-			traceint(instr);
-		}
-		else {
-			tracenop(instr);
-		}
+		tracenop(instr);
 	}
 
 	//2 uOPs
@@ -570,7 +490,7 @@ namespace RandomX {
 		INST_HANDLE(IMULH_M)
 		INST_HANDLE(ISMULH_R)
 		INST_HANDLE(ISMULH_M)
-		INST_HANDLE(IDIV_C)
+		INST_HANDLE(IMUL_RCP)
 		INST_HANDLE(ISDIV_C)
 		INST_HANDLE(INEG_R)
 		INST_HANDLE(IXOR_R)

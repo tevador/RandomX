@@ -193,7 +193,7 @@ namespace RandomX {
 		}
 	}
 
-	void Instruction::h_IDIV_C(std::ostream& os) const {
+	void Instruction::h_IMUL_RCP(std::ostream& os) const {
 		os << "r" << (int)dst << ", " << imm32 << std::endl;
 	}
 
@@ -345,7 +345,7 @@ namespace RandomX {
 		INST_NAME(IMULH_M)
 		INST_NAME(ISMULH_R)
 		INST_NAME(ISMULH_M)
-		INST_NAME(IDIV_C)
+		INST_NAME(IMUL_RCP)
 		INST_NAME(ISDIV_C)
 		INST_NAME(INEG_R)
 		INST_NAME(IXOR_R)
@@ -396,7 +396,7 @@ namespace RandomX {
 		INST_HANDLE(IMULH_M)
 		INST_HANDLE(ISMULH_R)
 		INST_HANDLE(ISMULH_M)
-		INST_HANDLE(IDIV_C)
+		INST_HANDLE(IMUL_RCP)
 		INST_HANDLE(ISDIV_C)
 		INST_HANDLE(INEG_R)
 		INST_HANDLE(IXOR_R)

@@ -21,7 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include "JitCompilerX86.hpp"
 #include "Program.hpp"
-#include "divideByConstantCodegen.h"
+#include "reciprocal.h"
 #include "virtualMemory.hpp"
 
 namespace RandomX {
@@ -395,106 +395,17 @@ namespace RandomX {
 		emitByte(0xc2 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_IDIV_C(Instruction& instr) {
+	void JitCompilerX86::h_IMUL_RCP(Instruction& instr) {
 		if (instr.imm32 != 0) {
-			uint32_t divisor = instr.imm32;
-			if (divisor & (divisor - 1)) {
-				magicu_info mi = compute_unsigned_magic_info(divisor, sizeof(uint64_t) * 8);
-				if (mi.pre_shift == 0 && !mi.increment) {
-					emit(MOV_RAX_I);
-					emit64(mi.multiplier);
-					emit(REX_MUL_R);
-					emitByte(0xe0 + instr.dst);
-				}
-				else {
-					emit(REX_MOV_RR64);
-					emitByte(0xc0 + instr.dst);
-					if (mi.pre_shift > 0) {
-						emit(REX_SHR_RAX);
-						emitByte(mi.pre_shift);
-					}
-					if (mi.increment) {
-						emit(RAX_ADD_SBB_1);
-					}
-					emit(MOV_RCX_I);
-					emit64(mi.multiplier);
-					emit(MUL_RCX);
-				}
-				if (mi.post_shift > 0) {
-					emit(REX_SHR_RDX);
-					emitByte(mi.post_shift);
-				}
-				emit(REX_ADD_RM);
-				emitByte(0xc2 + 8 * instr.dst);
-			}
-			else { //divisor is a power of two
-				int shift = 0;
-				while (divisor >>= 1)
-					++shift;
-				if (shift > 0) {
-					emit(REX_SH);
-					emitByte(0xe8 + instr.dst);
-				}
-			}
+			emit(MOV_RAX_I);
+			emit64(reciprocal(instr.imm32));
+			emit(REX_IMUL_RM);
+			emitByte(0xc0 + 8 * instr.dst);
 		}
 	}
 
 	void JitCompilerX86::h_ISDIV_C(Instruction& instr) {
-		int64_t divisor = (int32_t)instr.imm32;
-		if ((divisor & -divisor) == divisor || (divisor & -divisor) == -divisor) {
-			emit(REX_MOV_RR64);
-			emitByte(0xc0 + instr.dst);
-			// +/- power of two
-			bool negative = divisor < 0;
-			if (negative)
-				divisor = -divisor;
-			int shift = 0;
-			uint64_t unsignedDivisor = divisor;
-			while (unsignedDivisor >>= 1)
-				++shift;
-			if (shift > 0) {
-				emit(MOV_RCX_RAX_SAR_RCX_63);
-				uint32_t mask = (1ULL << shift) - 1;
-				emit(AND_ECX_I);
-				emit32(mask);
-				emit(ADD_RAX_RCX);
-				emit(SAR_RAX_I8);
-				emitByte(shift);
-			}
-			if (negative)
-				emit(NEG_RAX);
-			emit(ADD_R_RAX);
-			emitByte(0xc0 + instr.dst);
-		}
-		else if (divisor != 0) {
-			magics_info mi = compute_signed_magic_info(divisor);
-			emit(MOV_RAX_I);
-			emit64(mi.multiplier);
-			emit(REX_MUL_R);
-			emitByte(0xe8 + instr.dst);
-			emit(XOR_EAX_EAX);
-			bool haveSF = false;
-			if (divisor > 0 && mi.multiplier < 0) {
-				emit(ADD_RDX_R);
-				emitByte(0xc2 + 8 * instr.dst);
-				haveSF = true;
-			}
-			if (divisor < 0 && mi.multiplier > 0) {
-				emit(SUB_RDX_R);
-				emitByte(0xc2 + 8 * instr.dst);
-				haveSF = true;
-			}
-			if (mi.shift > 0) {
-				emit(SAR_RDX_I8);
-				emitByte(mi.shift);
-				haveSF = true;
-			}
-			if (!haveSF)
-				emit(TEST_RDX_RDX);
-			emit(SETS_AL_ADD_RDX_RAX);
-			emit(ADD_R_RAX);
-			emitByte(0xc2 + 8 * instr.dst);
-		}
+
 	}
 
 	void JitCompilerX86::h_INEG_R(Instruction& instr) {
@@ -748,7 +659,7 @@ namespace RandomX {
 		INST_HANDLE(IMULH_M)
 		INST_HANDLE(ISMULH_R)
 		INST_HANDLE(ISMULH_M)
-		INST_HANDLE(IDIV_C)
+		INST_HANDLE(IMUL_RCP)
 		INST_HANDLE(ISDIV_C)
 		INST_HANDLE(INEG_R)
 		INST_HANDLE(IXOR_R)

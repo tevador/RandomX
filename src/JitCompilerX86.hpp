@@ -101,7 +101,7 @@ namespace RandomX {
 		void  h_IMULH_M(Instruction&);
 		void  h_ISMULH_R(Instruction&);
 		void  h_ISMULH_M(Instruction&);
-		void  h_IDIV_C(Instruction&);
+		void  h_IMUL_RCP(Instruction&);
 		void  h_ISDIV_C(Instruction&);
 		void  h_INEG_R(Instruction&);
 		void  h_IXOR_R(Instruction&);

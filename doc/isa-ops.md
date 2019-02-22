@@ -19,8 +19,7 @@ Memory operands are loaded as 8-byte values from the address indicated by `src`.
 |1/256|IMULH_M|R|mem|`src = imm32`|`dst = (dst * [src]) >> 64`|
 |4/256|ISMULH_R|R|R|`src = dst`|`dst = (dst * src) >> 64` (signed)|
 |1/256|ISMULH_M|R|mem|`src = imm32`|`dst = (dst * [src]) >> 64` (signed)|
-|4/256|IDIV_C|R|-|-|`dst = dst + dst / imm32`|
-|4/256|ISDIV_C|R|-|-|`dst = dst + dst / imm32` (signed)|
+|8/256|IMUL_RCP|R|-|-|<code>dst = 2<sup>x</sup> / imm32 * dst</code>|
 |2/256|INEG_R|R|-|-|`dst = -dst`|
 |16/256|IXOR_R|R|R|`src = imm32`|`dst = dst ^ src`|
 |4/256|IXOR_M|R|mem|`src = imm32`|`dst = dst ^ [src]`|
@@ -30,8 +29,8 @@ Memory operands are loaded as 8-byte values from the address indicated by `src`.
 #### IMULH and ISMULH
 These instructions output the high 64 bits of the whole 128-bit multiplication result. The result differs for signed and unsigned multiplication (`IMULH` is unsigned, `ISMULH` is signed). The variants with a register source operand do not use `imm32` (they perform a squaring operation if `dst` equals `src`).
 
-#### IDIV_C and ISDIV_C
-The division instructions use a constant divisor, so they can be optimized into a [multiplication by fixed-point reciprocal](https://en.wikipedia.org/wiki/Division_algorithm#Division_by_a_constant). `IDIV_C` performs unsigned division (`imm32` is zero-extended to 64 bits), while `ISDIV_C` performs signed division. In the case of division by zero, the instructions become a no-op. In the very rare case of signed overflow, the destination register is set to zero.
+#### IMUL_RCP
+This instruction multiplies the destination register by a reciprocal of `imm32`. The reciprocal is calculated as <code>rcp = 2<sup>x</sup> / imm32</code> by choosing the largest integer `x` such that <code>rcp < 2<sup>64</sup></code>. If `imm32` equals 0, this instruction is a no-op.
 
 #### ISWAP_R
 This instruction swaps the values of two registers. If source and destination refer to the same register, the result is a no-op.
@@ -54,7 +53,7 @@ Memory operands are loaded as 8-byte values from the address indicated by `src`.
 |6/256|FSQRT_R|E|-|`(dst0, dst1) = (√dst0, √dst1)`|
 
 #### FSCAL_R
-This instruction negates the number and multiplies it by <code>2<sup>x</sup></code>. `x` is calculated by taking the 5 least significant digits of the biased exponent and interpreting them as a binary number using the digit set `{-1, +1}` as opposed to the traditional `{0, 1}`. The possible values of `x` are all odd numbers from -31 to +31.
+This instruction negates the number and multiplies it by <code>2<sup>x</sup></code>. `x` is calculated by taking the 5 least significant digits of the biased exponent and interpreting them as a binary number using the digit set `{+1, -1}` as opposed to the traditional `{0, 1}`. The possible values of `x` are all odd numbers from -31 to +31.
 
 The mathematical operation described above is equivalent to a bitwise XOR of the binary representation with the value of `0x81F0000000000000`.
 
