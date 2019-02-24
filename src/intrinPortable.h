@@ -46,11 +46,6 @@ constexpr uint64_t signExtend2sCompl(uint32_t x) {
 #include <intrin.h>
 #endif
 
-inline __m128d _mm_abs(__m128d xd) {
-	const __m128d absmask = _mm_castsi128_pd(_mm_set1_epi64x(~(1LL << 63)));
-	return _mm_and_pd(xd, absmask);
-}
-
 #define PREFETCHNTA(x) _mm_prefetch((const char *)(x), _MM_HINT_NTA)
 
 #else
@@ -156,6 +151,20 @@ inline __m128d _mm_xor_pd(__m128d a, __m128d b) {
 	__m128d x;
 	x.i.u64[0] = a.i.u64[0] ^ b.i.u64[0];
 	x.i.u64[1] = a.i.u64[1] ^ b.i.u64[1];
+	return x;
+}
+
+inline __m128d _mm_and_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.i.u64[0] = a.i.u64[0] & b.i.u64[0];
+	x.i.u64[1] = a.i.u64[1] & b.i.u64[1];
+	return x;
+}
+
+inline __m128d _mm_or_pd(__m128d a, __m128d b) {
+	__m128d x;
+	x.i.u64[0] = a.i.u64[0] | b.i.u64[0];
+	x.i.u64[1] = a.i.u64[1] | b.i.u64[1];
 	return x;
 }
 
@@ -300,6 +309,18 @@ constexpr int RoundToZero = 3;
 inline __m128d load_cvt_i32x2(const void* addr) {
 	__m128i ix = _mm_loadl_epi64((const __m128i*)addr);
 	return _mm_cvtepi32_pd(ix);
+}
+
+template<int E>
+__m128d ieee_set_exponent(__m128d x) {
+	static_assert(E > -1023, "Invalid exponent value");
+	constexpr uint64_t mantissaMask64 = (1ULL << 52) - 1;
+	const __m128d mantissaMask = _mm_castsi128_pd(_mm_set_epi64x(mantissaMask64, mantissaMask64));
+	constexpr uint64_t exponent64 = (uint64_t)(E + 1023U) << 52;
+	const __m128d exponentMask = _mm_castsi128_pd(_mm_set_epi64x(exponent64, exponent64));
+	x = _mm_and_pd(x, mantissaMask);
+	x = _mm_or_pd(x, exponentMask);
+	return x;
 }
 
 double loadDoublePortable(const void* addr);

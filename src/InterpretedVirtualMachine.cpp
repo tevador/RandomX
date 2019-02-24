@@ -29,6 +29,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cmath>
 #include <cfloat>
 #include <thread>
+#include <climits>
 #include "intrinPortable.h"
 #include "reciprocal.h"
 #ifdef STATS
@@ -108,9 +109,13 @@ namespace RandomX {
 		}
 	}
 
+	static bool isDenormal(double x) {
+		return std::fpclassify(x) == FP_SUBNORMAL;
+	}
+
 	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[i];
-		if(trace) printState(r, f, e, a);
+		//if(trace) printState(r, f, e, a);
 		switch (ibc.type)
 		{
 			case InstructionType::IADD_R: {
@@ -219,9 +224,8 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::FDIV_M: {
-				__m128d fsrc = _mm_abs(load_cvt_i32x2(scratchpad + (*ibc.isrc & ibc.memMask)));
-				__m128d fdst = _mm_div_pd(*ibc.fdst, fsrc);
-				*ibc.fdst = _mm_max_pd(fdst, _mm_set_pd(DBL_MIN, DBL_MIN));
+				__m128d fsrc = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + (*ibc.isrc & ibc.memMask)));
+				*ibc.fdst = _mm_div_pd(*ibc.fdst, fsrc);
 			} break;
 
 			case InstructionType::FSQRT_R: {
@@ -258,6 +262,18 @@ namespace RandomX {
 			else //if(ibc.type >= 20 && ibc.type <= 30)
 				print(0);
 		}
+#ifdef FPUCHECK
+		if (ibc.type >= 26 && ibc.type <= 30) {
+			double lo = *(((double*)ibc.fdst) + 0);
+			double hi = *(((double*)ibc.fdst) + 1);
+			if (lo <= 0 || hi <= 0) {
+				std::stringstream ss;
+				ss << "Underflow in operation " << ibc.type;
+				printState(r, f, e, a);
+				throw std::runtime_error(ss.str());
+			}
+		}
+#endif
 	}
 
 	void InterpretedVirtualMachine::execute() {
@@ -304,10 +320,10 @@ namespace RandomX {
 			f[1] = load_cvt_i32x2(scratchpad + spAddr1 + 8);
 			f[2] = load_cvt_i32x2(scratchpad + spAddr1 + 16);
 			f[3] = load_cvt_i32x2(scratchpad + spAddr1 + 24);
-			e[0] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 32));
-			e[1] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 40));
-			e[2] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 48));
-			e[3] = _mm_abs(load_cvt_i32x2(scratchpad + spAddr1 + 56));
+			e[0] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 32));
+			e[1] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 40));
+			e[2] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 48));
+			e[3] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 56));
 
 			if (trace) {
 				std::cout << "iteration " << std::dec << iter << std::endl;
@@ -357,10 +373,22 @@ namespace RandomX {
 			store64(scratchpad + spAddr1 + 48, r[6]);
 			store64(scratchpad + spAddr1 + 56, r[7]);
 
-			f[0] = _mm_mul_pd(f[0], e[0]);
-			f[1] = _mm_mul_pd(f[1], e[1]);
-			f[2] = _mm_mul_pd(f[2], e[2]);
-			f[3] = _mm_mul_pd(f[3], e[3]);
+			f[0] = _mm_xor_pd(f[0], e[0]);
+			f[1] = _mm_xor_pd(f[1], e[1]);
+			f[2] = _mm_xor_pd(f[2], e[2]);
+			f[3] = _mm_xor_pd(f[3], e[3]);
+
+#ifdef FPUCHECK
+			for(int i = 0; i < 4; ++i) {
+				double lo = *(((double*)&f[i]) + 0);
+				double hi = *(((double*)&f[i]) + 1);
+				if (isDenormal(lo) || isDenormal(hi)) {
+					std::stringstream ss;
+					ss << "Denormal f" << i;
+					throw std::runtime_error(ss.str());
+				}
+			}
+#endif
 
 			_mm_store_pd((double*)(scratchpad + spAddr0 + 0), f[0]);
 			_mm_store_pd((double*)(scratchpad + spAddr0 + 16), f[1]);
