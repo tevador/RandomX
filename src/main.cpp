@@ -341,7 +341,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
-		std::cout << "Reference result:  d3ae5a9365196ed48bb98ebfc3316498e29443ea7f056ecbd272f749c6af7730" << std::endl;
+		std::cout << "Reference result:  e1b4144293ff9ab5aa4c98f2389bb18950d8c3fd874891ac64628e028a286006" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}

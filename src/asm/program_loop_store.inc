@@ -8,10 +8,10 @@
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
 	pop rcx
-	mulpd xmm0, xmm4
-	mulpd xmm1, xmm5
-	mulpd xmm2, xmm6
-	mulpd xmm3, xmm7
+	xorpd xmm0, xmm4
+	xorpd xmm1, xmm5
+	xorpd xmm2, xmm6
+	xorpd xmm3, xmm7
 	movapd xmmword ptr [rcx+0], xmm0
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2

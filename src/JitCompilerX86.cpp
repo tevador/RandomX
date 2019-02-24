@@ -73,9 +73,9 @@ namespace RandomX {
 	; xmm10 -> "a2"
 	; xmm11 -> "a3"
 	; xmm12 -> temporary
-	; xmm13 -> DBL_MIN
-	; xmm14 -> absolute value mask 0x7fffffffffffffff7fffffffffffffff
-	; xmm15 -> sign mask           0x80000000000000008000000000000000
+	; xmm13 -> mantissa mask    = 0x000fffffffffffff000fffffffffffff
+	; xmm14 -> exponent 2**-240 = 0x30f000000000000030f0000000000000
+	; xmm15 -> scale mask       = 0x81f000000000000081f0000000000000
 
 	*/
 
@@ -165,7 +165,7 @@ namespace RandomX {
 	static const uint8_t JMP = 0xe9;
 	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
 	static const uint8_t REX_XCHG[] = { 0x4d, 0x87 };
-	static const uint8_t REX_ANDPS_XMM12[] = { 0x45, 0x0f, 0x54, 0xe6 };
+	static const uint8_t REX_ANDPS_XMM12[] = { 0x45, 0x0F, 0x54, 0xE5, 0x45, 0x0F, 0x56, 0xE6 };
 	static const uint8_t REX_PADD[] = { 0x66, 0x44, 0x0f };
 	static const uint8_t PADD_OPCODES[] = { 0xfc, 0xfd, 0xfe, 0xd4 };
 
@@ -556,8 +556,6 @@ namespace RandomX {
 		emit(REX_ANDPS_XMM12);
 		emit(REX_DIVPD);
 		emitByte(0xe4 + 8 * instr.dst);
-		emit(REX_MAXPD);
-		emitByte(0xe5 + 8 * instr.dst);
 	}
 
 	void JitCompilerX86::h_FSQRT_R(Instruction& instr) {

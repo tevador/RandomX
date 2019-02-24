@@ -385,9 +385,9 @@ namespace RandomX {
 		instr.dst %= 4;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd xmm12, qword ptr [rsi+rax]" << std::endl;
-		asmCode << "\tandps xmm12, xmm14" << std::endl;
+		asmCode << "\tandps xmm12, xmm13" << std::endl;
+		asmCode << "\torps xmm12, xmm14" << std::endl;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", xmm12" << std::endl;
-		asmCode << "\tmaxpd " << regE[instr.dst] << ", " << dblMin << std::endl;
 		traceflt(instr);
 	}
 

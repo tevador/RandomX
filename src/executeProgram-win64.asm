@@ -52,9 +52,9 @@ executeProgram PROC
 	; xmm10 -> "a2"
 	; xmm11 -> "a3"
 	; xmm12 -> temporary
-	; xmm13 -> DBL_MIN
-	; xmm14 -> absolute value mask
-	; xmm15 -> sign mask
+	; xmm13 -> mantissa mask    = 0x000fffffffffffff000fffffffffffff
+	; xmm14 -> exponent 2**-240 = 0x30f000000000000030f0000000000000
+	; xmm15 -> scale mask       = 0x81f000000000000081f0000000000000
 
 	; store callee-saved registers
 	push rbx
@@ -103,18 +103,18 @@ executeProgram PROC
 	movapd xmm9, xmmword ptr [rcx+88]
 	movapd xmm10, xmmword ptr [rcx+104]
 	movapd xmm11, xmmword ptr [rcx+120]
-	movapd xmm13, xmmword ptr [minDbl]
-	movapd xmm14, xmmword ptr [absMask]
-	movapd xmm15, xmmword ptr [signMask]
+	movapd xmm13, xmmword ptr [mantissaMask]
+	movapd xmm14, xmmword ptr [exp240]
+	movapd xmm15, xmmword ptr [scaleMask]
 
 	jmp program_begin
 
 ALIGN 64
-minDbl:
-	db 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 16, 0
-absMask:
-	db 255, 255, 255, 255, 255, 255, 255, 127, 255, 255, 255, 255, 255, 255, 255, 127
-signMask:
+mantissaMask:
+	db 255, 255, 255, 255, 255, 255, 15, 0, 255, 255, 255, 255, 255, 255, 15, 0
+exp240:
+	db 0, 0, 0, 0, 0, 0, 240, 48, 0, 0, 0, 0, 0, 0, 240, 48
+scaleMask:
 	db 0, 0, 0, 0, 0, 0, 240, 129, 0, 0, 0, 0, 0, 0, 240, 129
 
 ALIGN 64
@@ -145,10 +145,14 @@ program_begin:
 	cvtdq2pd xmm5, qword ptr [rcx+40]
 	cvtdq2pd xmm6, qword ptr [rcx+48]
 	cvtdq2pd xmm7, qword ptr [rcx+56]
-	andps xmm4, xmm14
-	andps xmm5, xmm14
-	andps xmm6, xmm14
-	andps xmm7, xmm14
+	andps xmm4, xmm13
+	andps xmm5, xmm13
+	andps xmm6, xmm13
+	andps xmm7, xmm13
+	orps xmm4, xmm14
+	orps xmm5, xmm14
+	orps xmm6, xmm14
+	orps xmm7, xmm14
 
 	;# 256 instructions
 	include program.inc
@@ -181,10 +185,10 @@ IF 1
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
 	pop rcx
-	mulpd xmm0, xmm4
-	mulpd xmm1, xmm5
-	mulpd xmm2, xmm6
-	mulpd xmm3, xmm7
+	xorpd xmm0, xmm4
+	xorpd xmm1, xmm5
+	xorpd xmm2, xmm6
+	xorpd xmm3, xmm7
 	movapd xmmword ptr [rcx+0], xmm0
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2

@@ -40,6 +40,8 @@ For floating point instructions, the destination can be a group F or group E reg
 
 Memory operands are loaded as 8-byte values from the address indicated by `src`. The 8 byte value is interpreted as two 32-bit signed integers and implicitly converted to floating point format. The lower and upper memory operands are marked as `[src][0]` and `[src][1]`.
 
+Memory operands for group E registers are loaded as described above, then their sign bit is cleared and their exponent value is set to `0x30F` (corresponds to 2<sup>-240</sup>).
+
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
 |8/256|FSWAP_R|F+E|-|`(dst0, dst1) = (dst1, dst0)`|
@@ -58,8 +60,7 @@ This instruction negates the number and multiplies it by <code>2<sup>x</sup></co
 The mathematical operation described above is equivalent to a bitwise XOR of the binary representation with the value of `0x81F0000000000000`.
 
 #### Denormal and NaN values
-Due to restrictions on the values of the floating point registers, no operation results in `NaN`.
-`FDIV_M` can produce a denormal result. In that case, the result is set to `DBL_MIN = 2.22507385850720138309e-308`, which is the smallest positive normal number.
+Due to restrictions on the values of the floating point registers, no operation results in `NaN` or a denormal number.
 
 #### Rounding
 All floating point instructions give correctly rounded results. The rounding mode depends on the value of the `fprc` register:
