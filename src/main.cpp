@@ -22,6 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "AssemblyGeneratorX86.hpp"
 #include "Stopwatch.hpp"
 #include "blake2/blake2.h"
+#include "blake2/endian.h"
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -125,12 +126,11 @@ void printUsage(const char* executable) {
 }
 
 template<bool softAes>
-void generateAsm(int nonce) {
+void generateAsm(uint32_t nonce) {
 	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate__)];
 	memcpy(blockTemplate, blockTemplate__, sizeof(blockTemplate));
-	int* noncePtr = (int*)(blockTemplate + 39);
-	*noncePtr = nonce;
+	store32(blockTemplate + 39, nonce);
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 	uint8_t scratchpad[RandomX::ScratchpadSize];
 	fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
@@ -142,12 +142,11 @@ void generateAsm(int nonce) {
 }
 
 template<bool softAes>
-void generateNative(int nonce) {
+void generateNative(uint32_t nonce) {
 	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate__)];
 	memcpy(blockTemplate, blockTemplate__, sizeof(blockTemplate));
-	int* noncePtr = (int*)(blockTemplate + 39);
-	*noncePtr = nonce;
+	store32(blockTemplate + 39, nonce);
 	blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 	uint8_t scratchpad[RandomX::ScratchpadSize];
 	fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
@@ -161,16 +160,16 @@ void generateNative(int nonce) {
 }
 
 template<bool softAes>
-void mine(RandomX::VirtualMachine* vm, std::atomic<int>& atomicNonce, AtomicHash& result, int noncesCount, int thread, uint8_t* scratchpad) {
+void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, uint8_t* scratchpad) {
 	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate__)];
 	memcpy(blockTemplate, blockTemplate__, sizeof(blockTemplate));
-	int* noncePtr = (int*)(blockTemplate + 39);
-	int nonce = atomicNonce.fetch_add(1);
+	void* noncePtr = blockTemplate + 39;
+	auto nonce = atomicNonce.fetch_add(1);
 
 	while (nonce < noncesCount) {
 		//std::cout << "Thread " << thread << " nonce " << nonce << std::endl;
-		*noncePtr = nonce;
+		store32(noncePtr, nonce);
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		fillAes1Rx4<softAes>((void*)hash, RandomX::ScratchpadSize, scratchpad);
 		vm->resetRoundingMode();
@@ -242,7 +241,7 @@ int main(int argc, char** argv) {
 	if (softAes)
 		std::cout << "Using software AES." << std::endl;
 
-	std::atomic<int> atomicNonce(0);
+	std::atomic<uint32_t> atomicNonce(0);
 	AtomicHash result;
 	std::vector<RandomX::VirtualMachine*> vms;
 	std::vector<std::thread> threads;

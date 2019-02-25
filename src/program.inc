@@ -471,9 +471,9 @@
 	mov eax, r13d
 	and eax, 16376
 	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	andps xmm12, xmm14
+	andps xmm12, xmm13
+	orps xmm12, xmm14
 	divpd xmm5, xmm12
-	maxpd xmm5, xmm13
 	; IXOR_M r2, L1[r5]
 	mov eax, r13d
 	and eax, 16376
@@ -685,9 +685,9 @@
 	mov eax, r10d
 	and eax, 262136
 	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	andps xmm12, xmm14
+	andps xmm12, xmm13
+	orps xmm12, xmm14
 	divpd xmm4, xmm12
-	maxpd xmm4, xmm13
 	; IMUL_9C r4, -1849458799
 	lea r12, [r12+r12*8-1849458799]
 	; IADD_RC r1, r4, -651820510
@@ -707,9 +707,9 @@
 	mov eax, r8d
 	and eax, 16376
 	cvtdq2pd xmm12, qword ptr [rsi+rax]
-	andps xmm12, xmm14
+	andps xmm12, xmm13
+	orps xmm12, xmm14
 	divpd xmm7, xmm12
-	maxpd xmm7, xmm13
 	; IADD_M r3, L1[r7]
 	mov eax, r15d
 	and eax, 16376
