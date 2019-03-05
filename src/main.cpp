@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
-//#define TRACE
+#define TRACE
 #include "InterpretedVirtualMachine.hpp"
 #include "CompiledVirtualMachine.hpp"
 #include "CompiledLightVirtualMachine.hpp"
@@ -179,11 +179,21 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
 			vm->initialize();
+			if (RandomX::trace) {
+				std::cout << "Program " << chain << std::endl;
+				std::cout << *vm->getProgramBuffer();
+				std::cout << "=================================================" << std::endl;
+			}
 			vm->execute();
 			vm->getResult<false>(nullptr, 0, hash);
 		}
 		fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
 		vm->initialize();
+		if (RandomX::trace) {
+			std::cout << "Program 7" << std::endl;
+			std::cout << *vm->getProgramBuffer();
+			std::cout << "=================================================" << std::endl;
+		}
 		vm->execute();
 		/*if (RandomX::trace) {
 			for (int j = 0; j < RandomX::ProgramLength; ++j) {
@@ -191,6 +201,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 				std::cout << std::hex << std::setw(16) << std::setfill('0') << res << std::endl;
 			}
 		}*/
+		dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "scratchpad");
 		vm->getResult<softAes>(scratchpad, RANDOMX_SCRATCHPAD_L3, hash);
 		result.xorWith(hash);
 		if (RandomX::trace) {
@@ -211,7 +222,7 @@ int main(int argc, char** argv) {
 	readOption("--mine", argc, argv, miningMode);
 	readOption("--verify", argc, argv, verificationMode);
 	readIntOption("--threads", argc, argv, threadCount, 1);
-	readIntOption("--nonces", argc, argv, programCount, 1000);
+	readIntOption("--nonces", argc, argv, programCount, 1);
 	readIntOption("--init", argc, argv, initThreadCount, 1);
 	readIntOption("--epoch", argc, argv, epoch, 0);
 	readOption("--largePages", argc, argv, largePages);

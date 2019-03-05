@@ -74,8 +74,9 @@ namespace RandomX {
 	}
 
 	static void print(__m128d f) {
-		uint64_t lo = *(((uint64_t*)&f) + 0);
-		uint64_t hi = *(((uint64_t*)&f) + 1);
+		uint64_t hi, lo;
+		memcpy(&lo, &f, 8);
+		memcpy(&hi, (uint8_t*)&f + 8, 8);
 		std::cout << std::hex << std::setw(16) << std::setfill('0') << hi << '-' << std::hex << std::setw(16) << std::setfill('0') << lo << std::endl;
 	}
 
@@ -417,6 +418,9 @@ namespace RandomX {
 		_mm_store_pd(&reg.e[1].lo, e[1]);
 		_mm_store_pd(&reg.e[2].lo, e[2]);
 		_mm_store_pd(&reg.e[3].lo, e[3]);
+
+		printState(r, f, e, a);
+		std::cout << "=================================================" << std::endl;
 	}
 
 	static int getConditionRegister(int(&registerUsage)[8]) {
