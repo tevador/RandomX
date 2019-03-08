@@ -110,3 +110,11 @@ void* allocLargePagesMemory(std::size_t bytes) {
 #endif
 	return mem;
 }
+
+void freePagedMemory(void* ptr, std::size_t bytes) {
+#ifdef _WIN32
+	VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+	munmap(ptr, bytes);
+#endif
+}

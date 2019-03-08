@@ -23,3 +23,4 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 void* allocExecutableMemory(std::size_t);
 void* allocLargePagesMemory(std::size_t);
+void freePagedMemory(void*, std::size_t);

@@ -256,18 +256,8 @@ int main(int argc, char** argv) {
 
 	try {
 		Stopwatch sw(true);
-		if (softAes) {
-			RandomX::datasetInitCache<true>(seed, dataset, largePages);
-		}
-		else {
-			RandomX::datasetInitCache<false>(seed, dataset, largePages);
-		}
+		RandomX::datasetInitCache(seed, dataset, largePages);
 		if (RandomX::trace) {
-			std::cout << "Keys: " << std::endl;
-			for (unsigned i = 0; i < dataset.cache->getKeys().size(); ++i) {
-				outputHex(std::cout, (char*)&dataset.cache->getKeys()[i], sizeof(__m128i));
-			}
-			std::cout << std::endl;
 			std::cout << "Cache: " << std::endl;
 			outputHex(std::cout, (char*)dataset.cache->getCache(), sizeof(__m128i));
 			std::cout << std::endl;

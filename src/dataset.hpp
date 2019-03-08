@@ -20,18 +20,15 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
-#include <array>
 #include "intrinPortable.h"
 #include "common.hpp"
 
 namespace RandomX {
 
-	using KeysContainer = std::array<__m128i, 10>;
-
 	template<bool soft, bool enc>
-	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber, const KeysContainer& keys);
+	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber);
 
-	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber, const KeysContainer& keys);
+	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber);
 
 	void datasetAlloc(dataset_t& ds, bool largePages);
 
@@ -39,14 +36,10 @@ namespace RandomX {
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
-	template<bool softAes>
 	void datasetInitCache(const void* seed, dataset_t& dataset, bool largePages);
 
 	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
 
 	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
-
-	template<bool softAes>
-	void aesBench(uint32_t blockCount);
 }
 

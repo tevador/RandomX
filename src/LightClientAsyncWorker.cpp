@@ -57,7 +57,7 @@ namespace RandomX {
 #endif
 		uint32_t currentBlock = addr / CacheLineSize;
 		if (currentBlock != startBlock || output != currentLine.data()) {
-			initBlock(cache->getCache(), (uint8_t*)currentLine.data(), currentBlock, cache->getKeys());
+			initBlock(cache->getCache(), (uint8_t*)currentLine.data(), currentBlock);
 		}
 		else {
 			sync();
@@ -86,7 +86,7 @@ namespace RandomX {
 	template<bool softAes>
 	void LightClientAsyncWorker<softAes>::getBlocks(void* out, uint32_t startBlock, uint32_t blockCount) {
 		for (uint32_t i = 0; i < blockCount; ++i) {
-			initBlock(cache->getCache(), (uint8_t*)out + CacheLineSize * i, startBlock + i, cache->getKeys());
+			initBlock(cache->getCache(), (uint8_t*)out + CacheLineSize * i, startBlock + i);
 		}
 	}
 
@@ -108,7 +108,7 @@ namespace RandomX {
 			std::cout << sw.getElapsed() << ": runWorker-getBlocks " << startBlock << "/" << blockCount << std::endl;
 #endif
 			//getBlocks(output, startBlock, blockCount);
-			initBlock(cache->getCache(), (uint8_t*)output, startBlock, cache->getKeys());
+			initBlock(cache->getCache(), (uint8_t*)output, startBlock);
 			hasWork = false;
 #ifdef TRACE
 			std::cout << sw.getElapsed() << ": runWorker-finished " << startBlock << "/" << blockCount << std::endl;

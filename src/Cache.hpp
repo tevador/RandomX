@@ -42,7 +42,7 @@ namespace RandomX {
 		}
 		static void dealloc(Cache* cache, bool largePages) {
 			if (largePages) {
-				//allocLargePagesMemory(sizeof(Cache));
+				freePagedMemory(cache, sizeof(Cache));
 			}
 			else {
 				_mm_free(cache);
@@ -59,18 +59,12 @@ namespace RandomX {
 			_mm_free(ptr);
 		}*/
 
-		template<bool softAes>
 		void initialize(const void* seed, size_t seedSize);
-
-		const KeysContainer& getKeys() const {
-			return keys;
-		}
 
 		const uint8_t* getCache() const {
 			return memory;
 		}
 	private:
-		alignas(16) KeysContainer keys;
 		uint8_t memory[CacheSize];
 		void argonFill(const void* seed, size_t seedSize);
 	};
