@@ -26,6 +26,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	extern "C" {
+		void executeProgram(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
+	}
+
 	class CompiledVirtualMachine : public VirtualMachine {
 	public:
 		void* operator new(size_t size) {

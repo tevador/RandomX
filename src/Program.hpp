@@ -41,7 +41,7 @@ namespace RandomX {
 	private:
 		void print(std::ostream&) const;
 		uint64_t entropyBuffer[16];
-		Instruction programBuffer[ProgramLength];
+		Instruction programBuffer[RANDOMX_PROGRAM_SIZE];
 	};
 
 	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");

@@ -30,7 +30,7 @@ namespace RandomX {
 
 	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber);
 
-	void datasetAlloc(dataset_t& ds, bool largePages);
+	void datasetAlloc(dataset_t& ds, uint64_t size, bool largePages);
 
 	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);
 

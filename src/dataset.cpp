@@ -47,7 +47,7 @@ namespace RandomX {
 
 		constexpr uint32_t mask = (CacheSize - 1) & CacheLineAlignMask;
 
-		for (auto i = 0; i < DatasetIterations; ++i) {
+		for (auto i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			const uint8_t* mixBlock = cache + (c0 & mask);
 			PREFETCHNTA(mixBlock);
 			c0 = squareHash(c0);
@@ -103,14 +103,14 @@ namespace RandomX {
 		aw->prepareBlock(memory.ma);
 	}
 
-	void datasetAlloc(dataset_t& ds, bool largePages) {
+	void datasetAlloc(dataset_t& ds, uint64_t size, bool largePages) {
 		if (sizeof(size_t) <= 4)
 			throw std::runtime_error("Platform doesn't support enough memory for the dataset");
 		if (largePages) {
-			ds.dataset = (uint8_t*)allocLargePagesMemory(DatasetSize);
+			ds.dataset = (uint8_t*)allocLargePagesMemory(size);
 		}
 		else {
-			ds.dataset = (uint8_t*)_mm_malloc(DatasetSize, 64);
+			ds.dataset = (uint8_t*)_mm_malloc(size, 64);
 			if (ds.dataset == nullptr) {
 				throw std::runtime_error("Dataset memory allocation failed. >4 GiB of free virtual memory is needed.");
 			}

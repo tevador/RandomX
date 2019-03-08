@@ -24,7 +24,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	static_assert(ArgonMemorySize % (ArgonLanes * ARGON2_SYNC_POINTS) == 0, "ArgonMemorySize - invalid value");
+	static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
 
 	void Cache::argonFill(const void* seed, size_t seedSize) {
 		uint32_t memory_blocks, segment_length;
@@ -35,15 +35,15 @@ namespace RandomX {
 		context.outlen = 0;
 		context.pwd = CONST_CAST(uint8_t *)seed;
 		context.pwdlen = (uint32_t)seedSize;
-		context.salt = CONST_CAST(uint8_t *)ArgonSalt;
+		context.salt = CONST_CAST(uint8_t *)RANDOMX_ARGON_SALT;
 		context.saltlen = (uint32_t)ArgonSaltSize;
 		context.secret = NULL;
 		context.secretlen = 0;
 		context.ad = NULL;
 		context.adlen = 0;
-		context.t_cost = ArgonIterations;
-		context.m_cost = ArgonMemorySize;
-		context.lanes = ArgonLanes;
+		context.t_cost = RANDOMX_ARGON_ITERATIONS;
+		context.m_cost = RANDOMX_ARGON_MEMORY;
+		context.lanes = RANDOMX_ARGON_LANES;
 		context.threads = 1;
 		context.allocate_cbk = NULL;
 		context.free_cbk = NULL;

@@ -68,7 +68,7 @@ namespace RandomX {
 
 	void InterpretedVirtualMachine::initialize() {
 		VirtualMachine::initialize();
-		for (unsigned i = 0; i < ProgramLength; ++i) {
+		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			program(i).src %= RegistersCount;
 			program(i).dst %= RegistersCount;
 		}
@@ -81,7 +81,7 @@ namespace RandomX {
 	}
 
 	template<>
-	void InterpretedVirtualMachine::executeBytecode<ProgramLength>(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+	void InterpretedVirtualMachine::executeBytecode<RANDOMX_PROGRAM_SIZE>(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 	}
 
 	static void print(int_reg_t r) {
@@ -299,7 +299,7 @@ namespace RandomX {
 			printState(r, f, e, a);
 		}
 
-		for(unsigned iter = 0; iter < InstructionCount; ++iter) {
+		for(unsigned ic = 0; ic < RANDOMX_PROGRAM_ITERATIONS; ++ic) {
 			//std::cout << "Iteration " << iter << std::endl;
 			uint64_t spMix = r[readReg0] ^ r[readReg1];
 			spAddr0 ^= spMix;
@@ -326,7 +326,7 @@ namespace RandomX {
 			e[3] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 56));
 
 			if (trace) {
-				std::cout << "iteration " << std::dec << iter << std::endl;
+				std::cout << "iteration " << std::dec << ic << std::endl;
 				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
 				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
 				printState(r, f, e, a);
@@ -357,7 +357,7 @@ namespace RandomX {
 			}
 
 			if (trace) {
-				std::cout << "iteration " << std::dec << iter << std::endl;
+				std::cout << "iteration " << std::dec << ic << std::endl;
 				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
 				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
 				printState(r, f, e, a);
@@ -421,7 +421,7 @@ namespace RandomX {
 #include "instructionWeights.hpp"
 
 	void InterpretedVirtualMachine::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		for (unsigned i = 0; i < ProgramLength; ++i) {
+		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			auto& instr = program(i);
 			auto& ibc = byteCode[i];
 			switch (instr.opcode) {
@@ -593,10 +593,6 @@ namespace RandomX {
 					}
 				} break;
 
-				CASE_REP(ISDIV_C) {
-					ibc.type = InstructionType::NOP;
-				} break;
-
 				CASE_REP(INEG_R) {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::INEG_R;
@@ -731,12 +727,6 @@ namespace RandomX {
 					ibc.fsrc = &a[src];
 				} break;
 
-				CASE_REP(FMUL_M) {
-				} break;
-
-				CASE_REP(FDIV_R) {
-				} break;
-
 				CASE_REP(FDIV_M) {
 					auto dst = instr.dst % 4;
 					auto src = instr.src % 8;
@@ -787,9 +777,6 @@ namespace RandomX {
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
 					ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
-				} break;
-
-				CASE_REP(FSTORE) {
 				} break;
 
 				CASE_REP(NOP) {

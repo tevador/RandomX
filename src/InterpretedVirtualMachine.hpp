@@ -79,7 +79,7 @@ namespace RandomX {
 		static InstructionHandler engine[256];
 		DatasetReadFunc readDataset;
 		bool softAes, asyncWorker;
-		InstructionByteCode byteCode[ProgramLength];
+		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
 		
 #ifdef STATS
 		int count_ADD_64 = 0;

@@ -22,30 +22,43 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <iostream>
 #include "blake2/endian.h"
+#include "configuration.h"
 
 namespace RandomX {
+
+	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
+	static_assert((RANDOMX_DATASET_SIZE & (RANDOMX_DATASET_SIZE - 1)) == 0, "RANDOMX_DATASET_SIZE must be a power of 2.");
+	static_assert(RANDOMX_DATASET_SIZE <= 4294967296ULL, "RANDOMX_DATASET_SIZE must not exceed 4294967296.");
+	static_assert(RANDOMX_DS_GROWTH_RATE % 64 == 0, "RANDOMX_DS_GROWTH_RATE must be divisible by 64.");
+	static_assert(RANDOMX_PROGRAM_SIZE > 0, "RANDOMX_PROGRAM_SIZE must be greater than 0");
+	static_assert(RANDOMX_PROGRAM_ITERATIONS > 0, "RANDOMX_PROGRAM_ITERATIONS must be greater than 0");
+	static_assert(RANDOMX_PROGRAM_COUNT > 0, "RANDOMX_PROGRAM_COUNT must be greater than 0");
+	static_assert((RANDOMX_SCRATCHPAD_L3 & (RANDOMX_SCRATCHPAD_L3 - 1)) == 0, "RANDOMX_SCRATCHPAD_L3 must be a power of 2.");
+	static_assert(RANDOMX_SCRATCHPAD_L3 >= RANDOMX_SCRATCHPAD_L2, "RANDOMX_SCRATCHPAD_L3 must be greater than or equal to RANDOMX_SCRATCHPAD_L2.");
+	static_assert((RANDOMX_SCRATCHPAD_L2 & (RANDOMX_SCRATCHPAD_L2 - 1)) == 0, "RANDOMX_SCRATCHPAD_L2 must be a power of 2.");
+	static_assert(RANDOMX_SCRATCHPAD_L2 >= RANDOMX_SCRATCHPAD_L1, "RANDOMX_SCRATCHPAD_L2 must be greater than or equal to RANDOMX_SCRATCHPAD_L1.");
+	static_assert((RANDOMX_SCRATCHPAD_L1 & (RANDOMX_SCRATCHPAD_L1 - 1)) == 0, "RANDOMX_SCRATCHPAD_L1 must be a power of 2.");
+	static_assert(RANDOMX_CACHE_ACCESSES > 1, "RANDOMX_CACHE_ACCESSES must be greater than 1");
+
+	constexpr int wtSum = RANDOMX_FREQ_IADD_R + RANDOMX_FREQ_IADD_M + RANDOMX_FREQ_IADD_RC + RANDOMX_FREQ_ISUB_R + \
+		RANDOMX_FREQ_ISUB_M + RANDOMX_FREQ_IMUL_9C + RANDOMX_FREQ_IMUL_R + RANDOMX_FREQ_IMUL_M + RANDOMX_FREQ_IMULH_R + \
+		RANDOMX_FREQ_IMULH_M + RANDOMX_FREQ_ISMULH_R + RANDOMX_FREQ_ISMULH_M + RANDOMX_FREQ_IMUL_RCP + \
+		RANDOMX_FREQ_INEG_R + RANDOMX_FREQ_IXOR_R + RANDOMX_FREQ_IXOR_M + RANDOMX_FREQ_IROR_R + RANDOMX_FREQ_ISWAP_R + \
+		RANDOMX_FREQ_FSWAP_R + RANDOMX_FREQ_FADD_R + RANDOMX_FREQ_FADD_M + RANDOMX_FREQ_FSUB_R + RANDOMX_FREQ_FSUB_M + \
+		RANDOMX_FREQ_FSCAL_R + RANDOMX_FREQ_FMUL_R + RANDOMX_FREQ_FDIV_M + RANDOMX_FREQ_FSQRT_R + RANDOMX_FREQ_COND_R + \
+		RANDOMX_FREQ_COND_M + RANDOMX_FREQ_CFROUND + RANDOMX_FREQ_ISTORE + RANDOMX_FREQ_NOP;
+
+	static_assert(wtSum == 256,	"Sum of instruction frequencies must be 256.");
 
 	using addr_t = uint32_t;
 
 	constexpr int SeedSize = 32;
 	constexpr int ResultSize = 64;
-
-	constexpr int ArgonIterations = 3;
-	constexpr uint32_t ArgonMemorySize = 262144; //KiB
-	constexpr int ArgonLanes = 1;
-	const char ArgonSalt[] = "Monero\x1A$";
-	constexpr int ArgonSaltSize = sizeof(ArgonSalt) - 1;
-
+	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = 64;
-
-	constexpr uint64_t DatasetSize = 4ULL * 1024 * 1024 * 1024; //4 GiB
-	constexpr uint32_t CacheLineAlignMask = (DatasetSize - 1) & ~(CacheLineSize - 1);
-	constexpr uint32_t CacheSize = ArgonMemorySize * 1024;
+	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
+	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
 	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
-	constexpr int DatasetExpansionRatio = DatasetSize / CacheSize;
-	constexpr int DatasetBlockCount = DatasetExpansionRatio * CacheBlockCount;
-	constexpr int DatasetIterations = DatasetExpansionRatio;
-
 
 #ifdef TRACE
 	constexpr bool trace = true;
@@ -70,28 +83,18 @@ namespace RandomX {
 		double hi;
 	};
 
-	constexpr int ProgramLength = 256;
-	constexpr uint32_t InstructionCount = 2048;
-	constexpr int ChainLength = 8;
-	constexpr uint32_t ScratchpadSize = 2 * 1024 * 1024;
-	constexpr uint32_t ScratchpadLength = ScratchpadSize / sizeof(int_reg_t);
-	constexpr uint32_t ScratchpadL1 = ScratchpadSize / 128 / sizeof(int_reg_t);
-	constexpr uint32_t ScratchpadL2 = ScratchpadSize / 8 / sizeof(int_reg_t);
-	constexpr uint32_t ScratchpadL3 = ScratchpadSize / sizeof(int_reg_t);
+	constexpr uint32_t ScratchpadL1 = RANDOMX_SCRATCHPAD_L1 / sizeof(int_reg_t);
+	constexpr uint32_t ScratchpadL2 = RANDOMX_SCRATCHPAD_L2 / sizeof(int_reg_t);
+	constexpr uint32_t ScratchpadL3 = RANDOMX_SCRATCHPAD_L3 / sizeof(int_reg_t);
 	constexpr int ScratchpadL1Mask = (ScratchpadL1 - 1) * 8;
 	constexpr int ScratchpadL2Mask = (ScratchpadL2 - 1) * 8;
 	constexpr int ScratchpadL1Mask16 = (ScratchpadL1 / 2 - 1) * 16;
 	constexpr int ScratchpadL2Mask16 = (ScratchpadL2 / 2 - 1) * 16;
-	constexpr int ScratchpadL3Mask = (ScratchpadLength - 1) * 8;
-	constexpr int ScratchpadL3Mask64 = (ScratchpadLength / 8 - 1) * 64;
-	constexpr uint32_t TransformationCount = 90;
+	constexpr int ScratchpadL3Mask = (ScratchpadL3 - 1) * 8;
+	constexpr int ScratchpadL3Mask64 = (ScratchpadL3 / 8 - 1) * 64;
 	constexpr int RegistersCount = 8;
 
 	class Cache;
-
-	inline int wrapInstr(int i) {
-		return i % RandomX::ProgramLength;
-	}
 
 	class ILightClientAsyncWorker {
 	public:
@@ -120,8 +123,6 @@ namespace RandomX {
 		dataset_t ds;
 	};
 
-	static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct RandomX::MemoryRegisters");
-
 	struct RegisterFile {
 		int_reg_t r[RegistersCount];
 		fpu_reg_t f[RegistersCount / 2];
@@ -129,15 +130,9 @@ namespace RandomX {
 		fpu_reg_t a[RegistersCount / 2];
 	};
 
-	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct RandomX::RegisterFile");
-
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
 
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
-
-	extern "C" {
-		void executeProgram(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
-	}
 }
 
 std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf);

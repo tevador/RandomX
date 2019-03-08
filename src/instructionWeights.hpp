@@ -19,67 +19,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-//Integer
-#define WT_IADD_R 12
-#define WT_IADD_M 7
-#define WT_IADD_RC 16
-#define WT_ISUB_R 12
-#define WT_ISUB_M 7
-#define WT_IMUL_9C 9
-#define WT_IMUL_R 16
-#define WT_IMUL_M 4
-#define WT_IMULH_R 4
-#define WT_IMULH_M 1
-#define WT_ISMULH_R 4
-#define WT_ISMULH_M 1
-#define WT_IMUL_RCP 8
-#define WT_ISDIV_C 0
-#define WT_INEG_R 2
-#define WT_IXOR_R 16
-#define WT_IXOR_M 4
-#define WT_IROR_R 10
-#define WT_IROL_R 0
-#define WT_ISWAP_R 4
-
-//Common floating point
-#define WT_FSWAP_R 8
-
-//Floating point group F
-#define WT_FADD_R 20
-#define WT_FADD_M 5
-#define WT_FSUB_R 20
-#define WT_FSUB_M 5
-#define WT_FSCAL_R 6
-
-//Floating point group E
-#define WT_FMUL_R 20
-#define WT_FMUL_M 0
-#define WT_FDIV_R 0
-#define WT_FDIV_M 4
-#define WT_FSQRT_R 6
-
-//Control
-#define WT_COND_R 7
-#define WT_COND_M 1
-#define WT_CFROUND 1
-
-//Store
-#define WT_ISTORE 16
-#define WT_FSTORE 0
-
-#define WT_NOP 0
-
-constexpr int wtSum = WT_IADD_R + WT_IADD_M + WT_IADD_RC + WT_ISUB_R + \
-WT_ISUB_M + WT_IMUL_9C + WT_IMUL_R + WT_IMUL_M + WT_IMULH_R + \
-WT_IMULH_M + WT_ISMULH_R + WT_ISMULH_M + WT_IMUL_RCP + WT_ISDIV_C + \
-WT_INEG_R + WT_IXOR_R + WT_IXOR_M + WT_IROR_R + WT_IROL_R + \
-WT_ISWAP_R + WT_FSWAP_R + WT_FADD_R + WT_FADD_M + WT_FSUB_R + WT_FSUB_M + \
-WT_FSCAL_R + WT_FMUL_R + WT_FMUL_M + WT_FDIV_R + WT_FDIV_M + \
-WT_FSQRT_R + WT_COND_R + WT_COND_M + WT_CFROUND + WT_ISTORE + WT_FSTORE + WT_NOP;
-
-static_assert(wtSum == 256,
-	"Sum of instruction weights must be 256");
-
 #define REP0(x)
 #define REP1(x) x,
 #define REP2(x) REP1(x) x,
@@ -121,7 +60,7 @@ static_assert(wtSum == 256,
 #define REPNX(x,N) REP##N(x)
 #define REPN(x,N) REPNX(x,N)
 #define NUM(x) x
-#define WT(x) NUM(WT_##x)
+#define WT(x) NUM(RANDOMX_FREQ_##x)
 
 #define REPCASE0(x)
 #define REPCASE1(x) case __COUNTER__:

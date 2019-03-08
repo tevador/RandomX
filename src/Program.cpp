@@ -22,7 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 	void Program::print(std::ostream& os) const {
-		for (int i = 0; i < RandomX::ProgramLength; ++i) {
+		for (int i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			auto instr = programBuffer[i];
 			os << instr;
 		}

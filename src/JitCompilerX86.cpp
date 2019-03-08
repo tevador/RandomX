@@ -195,7 +195,7 @@ namespace RandomX {
 		emitByte(0xc0 + readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		for (unsigned i = 0; i < ProgramLength; ++i) {
+		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
@@ -658,7 +658,6 @@ namespace RandomX {
 		INST_HANDLE(ISMULH_R)
 		INST_HANDLE(ISMULH_M)
 		INST_HANDLE(IMUL_RCP)
-		INST_HANDLE(ISDIV_C)
 		INST_HANDLE(INEG_R)
 		INST_HANDLE(IXOR_R)
 		INST_HANDLE(IXOR_M)
@@ -672,15 +671,12 @@ namespace RandomX {
 		INST_HANDLE(FSUB_M)
 		INST_HANDLE(FSCAL_R)
 		INST_HANDLE(FMUL_R)
-		INST_HANDLE(FMUL_M)
-		INST_HANDLE(FDIV_R)
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
 		INST_HANDLE(COND_R)
 		INST_HANDLE(COND_M)
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
-		INST_HANDLE(FSTORE)
 		INST_HANDLE(NOP)
 	};
 
