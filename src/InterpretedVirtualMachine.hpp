@@ -72,7 +72,7 @@ namespace RandomX {
 		}
 		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
 		~InterpretedVirtualMachine();
-		void setDataset(dataset_t ds) override;
+		void setDataset(dataset_t ds, uint64_t size) override;
 		void initialize() override;
 		void execute() override;
 	private:

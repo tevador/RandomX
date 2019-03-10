@@ -22,50 +22,31 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <new>
 #include "common.hpp"
-#include "dataset.hpp"
+#include "intrinPortable.h"
 #include "virtualMemory.hpp"
 
 namespace RandomX {
 
-	class Cache {
-	public:
-		static void* alloc(bool largePages) {
-			if (largePages) {
-				return allocLargePagesMemory(sizeof(Cache));
-			}
-			else {
-				void* ptr = _mm_malloc(sizeof(Cache), sizeof(__m128i));
-				if (ptr == nullptr)
-					throw std::bad_alloc();
-				return ptr;
-			}
+	void argonFill(Cache& cache, const void* seed, size_t seedSize);
+
+	inline uint8_t* allocCache(size_t size, bool largePages) {
+		if (largePages) {
+			return (uint8_t*)allocLargePagesMemory(size);
 		}
-		static void dealloc(Cache* cache, bool largePages) {
-			if (largePages) {
-				freePagedMemory(cache, sizeof(Cache));
-			}
-			else {
-				_mm_free(cache);
-			}
-		}
-		/*void* operator new(size_t size) {
+		else {
 			void* ptr = _mm_malloc(size, sizeof(__m128i));
 			if (ptr == nullptr)
 				throw std::bad_alloc();
-			return ptr;
+			return (uint8_t*)ptr;
 		}
+	}
 
-		void operator delete(void* ptr) {
-			_mm_free(ptr);
-		}*/
-
-		void initialize(const void* seed, size_t seedSize);
-
-		const uint8_t* getCache() const {
-			return memory;
+	inline void deallocCache(Cache cache, bool largePages) {
+		if (largePages) {
+			freePagedMemory(cache.memory, cache.size);
 		}
-	private:
-		uint8_t memory[CacheSize];
-		void argonFill(const void* seed, size_t seedSize);
-	};
+		else {
+			_mm_free(cache.memory);
+		}
+	}
 }

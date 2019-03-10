@@ -30,7 +30,7 @@ namespace RandomX {
 	public:
 		VirtualMachine();
 		virtual ~VirtualMachine() {}
-		virtual void setDataset(dataset_t ds) = 0;
+		virtual void setDataset(dataset_t ds, uint64_t size) = 0;
 		void setScratchpad(void* ptr) {
 			scratchpad = (uint8_t*)ptr;
 		}
@@ -51,5 +51,7 @@ namespace RandomX {
 		MemoryRegisters mem;
 		uint8_t* scratchpad;
 		uint32_t readReg0, readReg1, readReg2, readReg3;
+		uint32_t datasetRange;
+		uint32_t datasetBase;
 	};
 }

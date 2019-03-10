@@ -203,7 +203,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 
 int main(int argc, char** argv) {
 	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative;
-	int programCount, threadCount, initThreadCount;
+	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
 	readOption("--genAsm", argc, argv, genAsm);
@@ -212,6 +212,7 @@ int main(int argc, char** argv) {
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, programCount, 1000);
 	readIntOption("--init", argc, argv, initThreadCount, 1);
+	readIntOption("--epoch", argc, argv, epoch, 0);
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--async", argc, argv, async);
 	readOption("--genNative", argc, argv, genNative);
@@ -246,6 +247,9 @@ int main(int argc, char** argv) {
 	std::vector<RandomX::VirtualMachine*> vms;
 	std::vector<std::thread> threads;
 	RandomX::dataset_t dataset;
+	const uint64_t cacheSize = (RANDOMX_ARGON_MEMORY + RANDOMX_ARGON_GROWTH * epoch) * RandomX::ArgonBlockSize;
+	const uint64_t datasetSize = (RANDOMX_DATASET_SIZE + RANDOMX_DS_GROWTH * epoch);
+	dataset.cache.size = cacheSize;
 
 	std::cout << "RandomX - " << (miningMode ? "mining" : "verification") << " mode" << std::endl;
 
@@ -259,33 +263,34 @@ int main(int argc, char** argv) {
 		RandomX::datasetInitCache(seed, dataset, largePages);
 		if (RandomX::trace) {
 			std::cout << "Cache: " << std::endl;
-			outputHex(std::cout, (char*)dataset.cache->getCache(), sizeof(__m128i));
+			outputHex(std::cout, (char*)dataset.cache.memory, sizeof(__m128i));
 			std::cout << std::endl;
 		}
 		if (!miningMode) {
-			std::cout << "Cache (256 MiB) initialized in " << sw.getElapsed() << " s" << std::endl;
+			std::cout << "Cache (" << cacheSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
 		else {
-			RandomX::Cache* cache = dataset.cache;
-			RandomX::datasetAlloc(dataset, RANDOMX_DATASET_SIZE, largePages);
-			const uint64_t datasetBlockCount = RANDOMX_DATASET_SIZE / RandomX::CacheLineSize;
+			auto cache = dataset.cache;
+			dataset.dataset.size = datasetSize;
+			RandomX::datasetAlloc(dataset, largePages);
+			const uint64_t datasetBlockCount = datasetSize / RandomX::CacheLineSize;
 			if (initThreadCount > 1) {
 				auto perThread = datasetBlockCount / initThreadCount;
 				auto remainder = datasetBlockCount % initThreadCount;
 				for (int i = 0; i < initThreadCount; ++i) {
 					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-					threads.push_back(std::thread(&RandomX::datasetInit, cache, dataset, i * perThread, count));
+					threads.push_back(std::thread(&RandomX::datasetInit, std::ref(cache), std::ref(dataset.dataset), i * perThread, count));
 				}
 				for (unsigned i = 0; i < threads.size(); ++i) {
 					threads[i].join();
 				}
 			}
 			else {
-				RandomX::datasetInit(cache, dataset, 0, datasetBlockCount);
+				RandomX::datasetInit(cache, dataset.dataset, 0, datasetBlockCount);
 			}
-			RandomX::Cache::dealloc(cache, largePages);
+			RandomX::deallocCache(cache, largePages);
 			threads.clear();
-			std::cout << "Dataset (4 GiB) initialized in " << sw.getElapsed() << " s" << std::endl;
+			std::cout << "Dataset (" << datasetSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
 		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
@@ -296,7 +301,7 @@ int main(int argc, char** argv) {
 			else {
 				vm = new RandomX::InterpretedVirtualMachine(softAes, async);
 			}
-			vm->setDataset(dataset);
+			vm->setDataset(dataset, datasetSize);
 			vms.push_back(vm);
 		}
 		uint8_t* scratchpadMem;
@@ -331,7 +336,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
-		std::cout << "Reference result:  128599cc10f9f6251e7917fa1d09ab2116ab4081bf1357149bd4054275dd8ee9" << std::endl;
+		std::cout << "Reference result:  9c28aa1b38c55233dfa8676838db77f2ed02415ea8f7052474ce8fcdee62dcc4" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}

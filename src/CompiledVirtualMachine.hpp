@@ -42,20 +42,17 @@ namespace RandomX {
 			_mm_free(ptr);
 		}
 		CompiledVirtualMachine();
-		void setDataset(dataset_t ds) override;
+		void setDataset(dataset_t ds, uint64_t size) override;
 		void initialize() override;
 		virtual void execute() override;
 		void* getProgram() {
 			return compiler.getCode();
-		}
-		uint64_t getTotalSize() {
-			return totalSize;
 		}
 	private:
 #ifdef TRACEVM
 		convertible_t tracepad[InstructionCount];
 #endif
 		JitCompilerX86 compiler;
-		uint64_t totalSize;
+		uint8_t* datasetBasePtr;
 	};
 }

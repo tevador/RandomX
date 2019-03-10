@@ -25,8 +25,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
+	static_assert(RANDOMX_ARGON_GROWTH % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_GROWTH - invalid value");
 
-	void Cache::argonFill(const void* seed, size_t seedSize) {
+	void argonFill(Cache& cache, const void* seed, size_t seedSize) {
 		uint32_t memory_blocks, segment_length;
 		argon2_instance_t instance;
 		argon2_context context;
@@ -42,7 +43,7 @@ namespace RandomX {
 		context.ad = NULL;
 		context.adlen = 0;
 		context.t_cost = RANDOMX_ARGON_ITERATIONS;
-		context.m_cost = RANDOMX_ARGON_MEMORY;
+		context.m_cost = cache.size / ArgonBlockSize;
 		context.lanes = RANDOMX_ARGON_LANES;
 		context.threads = 1;
 		context.allocate_cbk = NULL;
@@ -65,7 +66,7 @@ namespace RandomX {
 		instance.lanes = context.lanes;
 		instance.threads = context.threads;
 		instance.type = Argon2_d;
-		instance.memory = (block*)memory;
+		instance.memory = (block*)cache.memory;
 
 		if (instance.threads > instance.lanes) {
 			instance.threads = instance.lanes;
@@ -77,10 +78,5 @@ namespace RandomX {
 		argon_initialize(&instance, &context);
 
 		fill_memory_blocks(&instance);
-	}
-
-	void Cache::initialize(const void* seed, size_t seedSize) {
-		//Argon2d memory fill
-		argonFill(seed, seedSize);
 	}
 }

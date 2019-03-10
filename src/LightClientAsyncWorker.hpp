@@ -31,14 +31,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	class Cache;
-
 	using DatasetLine = std::array<uint64_t, CacheLineSize / sizeof(uint64_t)>;
 
-	template<bool softAes>
 	class LightClientAsyncWorker : public ILightClientAsyncWorker {
 	public:
-		LightClientAsyncWorker(const Cache*);
+		LightClientAsyncWorker(const Cache&);
 		void prepareBlock(addr_t) final;
 		void prepareBlocks(void* out, uint32_t startBlock, uint32_t blockCount) final;
 		const uint64_t* getBlock(addr_t) final;

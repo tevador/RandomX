@@ -50,13 +50,13 @@ namespace RandomX {
 		}
 	}
 
-	void InterpretedVirtualMachine::setDataset(dataset_t ds) {
+	void InterpretedVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
 		if (asyncWorker) {
 			if (softAes) {
-				mem.ds.asyncWorker = new LightClientAsyncWorker<true>(ds.cache);
+				mem.ds.asyncWorker = new LightClientAsyncWorker(ds.cache);
 			}
 			else {
-				mem.ds.asyncWorker = new LightClientAsyncWorker<false>(ds.cache);
+				mem.ds.asyncWorker = new LightClientAsyncWorker(ds.cache);
 			}
 			readDataset = &datasetReadLightAsync;
 		}
@@ -64,6 +64,7 @@ namespace RandomX {
 			mem.ds = ds;
 			readDataset = &datasetReadLight;
 		}
+		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
 	}
 
 	void InterpretedVirtualMachine::initialize() {
@@ -337,20 +338,20 @@ namespace RandomX {
 
 			if (asyncWorker) {
 				ILightClientAsyncWorker* aw = mem.ds.asyncWorker;
-				const uint64_t* datasetLine = aw->getBlock(mem.ma);
+				const uint64_t* datasetLine = aw->getBlock(datasetBase + mem.ma);
 				for (int i = 0; i < RegistersCount; ++i)
 					r[i] ^= datasetLine[i];
 				mem.mx ^= r[readReg2] ^ r[readReg3];
 				mem.mx &= CacheLineAlignMask; //align to cache line
 				std::swap(mem.mx, mem.ma);
-				aw->prepareBlock(mem.ma);
+				aw->prepareBlock(datasetBase + mem.ma);
 			}
 			else {
 				mem.mx ^= r[readReg2] ^ r[readReg3];
-				mem.mx &= CacheLineAlignMask;
-				Cache* cache = mem.ds.cache;
+				//mem.mx &= CacheLineAlignMask;
+				Cache& cache = mem.ds.cache;
 				uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-				initBlock(cache->getCache(), (uint8_t*)datasetLine, mem.ma / CacheLineSize);
+				initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize);
 				for (int i = 0; i < RegistersCount; ++i)
 					r[i] ^= datasetLine[i];
 				std::swap(mem.mx, mem.ma);

@@ -29,7 +29,8 @@ namespace RandomX {
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
 	static_assert((RANDOMX_DATASET_SIZE & (RANDOMX_DATASET_SIZE - 1)) == 0, "RANDOMX_DATASET_SIZE must be a power of 2.");
 	static_assert(RANDOMX_DATASET_SIZE <= 4294967296ULL, "RANDOMX_DATASET_SIZE must not exceed 4294967296.");
-	static_assert(RANDOMX_DS_GROWTH_RATE % 64 == 0, "RANDOMX_DS_GROWTH_RATE must be divisible by 64.");
+	static_assert(RANDOMX_DS_GROWTH % 64 == 0, "RANDOMX_DS_GROWTH must be divisible by 64.");
+	static_assert(RANDOMX_ARGON_GROWTH >= 0, "RANDOMX_ARGON_GROWTH must be greater than or equal to 0.");
 	static_assert(RANDOMX_PROGRAM_SIZE > 0, "RANDOMX_PROGRAM_SIZE must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_ITERATIONS > 0, "RANDOMX_PROGRAM_ITERATIONS must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_COUNT > 0, "RANDOMX_PROGRAM_COUNT must be greater than 0");
@@ -54,6 +55,7 @@ namespace RandomX {
 
 	constexpr int SeedSize = 32;
 	constexpr int ResultSize = 64;
+	constexpr int ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = 64;
 	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
@@ -94,7 +96,13 @@ namespace RandomX {
 	constexpr int ScratchpadL3Mask64 = (ScratchpadL3 / 8 - 1) * 64;
 	constexpr int RegistersCount = 8;
 
-	class Cache;
+	struct Cache {
+		uint8_t* memory;
+		uint64_t size;
+	};
+
+	struct Dataset : public Cache {
+	};
 
 	class ILightClientAsyncWorker {
 	public:
@@ -104,17 +112,17 @@ namespace RandomX {
 		virtual const uint64_t* getBlock(addr_t) = 0;
 		virtual void getBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
 		virtual void sync() = 0;
-		const Cache* getCache() {
+		const Cache& getCache() {
 			return cache;
 		}
 	protected:
-		ILightClientAsyncWorker(const Cache* c) : cache(c) {}
-		const Cache* cache;
+		ILightClientAsyncWorker(const Cache& c) : cache(c) {}
+		const Cache& cache;
 	};
 
 	union dataset_t {
-		uint8_t* dataset;
-		Cache* cache;
+		Dataset dataset;
+		Cache cache;
 		ILightClientAsyncWorker* asyncWorker;
 	};
 

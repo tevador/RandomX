@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <stdexcept>
 #include <cstring>
+#include <limits>
 
 #include "common.hpp"
 #include "dataset.hpp"
@@ -39,7 +40,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	void initBlock(const uint8_t* cache, uint8_t* out, uint32_t blockNumber) {
+	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber) {
 		uint64_t c0, c1, c2, c3, c4, c5, c6, c7;
 
 		c0 = 4ULL * blockNumber;
@@ -48,7 +49,15 @@ namespace RandomX {
 		constexpr uint32_t mask = (CacheSize - 1) & CacheLineAlignMask;
 
 		for (auto i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-			const uint8_t* mixBlock = cache + (c0 & mask);
+			const uint8_t* mixBlock;
+			if (RANDOMX_ARGON_GROWTH == 0) {
+				constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
+				mixBlock = cache.memory + (c0 & mask) * CacheLineSize;
+			}
+			else {
+				const uint32_t modulus = cache.size / CacheLineSize;
+				mixBlock = cache.memory + (c0 % modulus) * CacheLineSize;
+			}
 			PREFETCHNTA(mixBlock);
 			c0 = squareHash(c0);
 			c0 ^= load64(mixBlock + 0);
@@ -72,11 +81,11 @@ namespace RandomX {
 	}
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
-		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset + memory.ma);
+		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset.memory + memory.ma);
 		memory.mx ^= addr;
 		memory.mx &= -64; //align to cache line
 		std::swap(memory.mx, memory.ma);
-		PREFETCHNTA(memory.ds.dataset + memory.ma);
+		PREFETCHNTA(memory.ds.dataset.memory + memory.ma);
 		for (int i = 0; i < RegistersCount; ++i)
 			reg.r[i] ^= datasetLine[i];
 	}
@@ -84,9 +93,9 @@ namespace RandomX {
 	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t (&reg)[RegistersCount]) {
 		memory.mx ^= addr;
 		memory.mx &= CacheLineAlignMask; //align to cache line
-		Cache* cache = memory.ds.cache;
+		Cache& cache = memory.ds.cache;
 		uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-		initBlock(cache->getCache(), (uint8_t*)datasetLine, memory.ma / CacheLineSize);
+		initBlock(cache, (uint8_t*)datasetLine, memory.ma / CacheLineSize);
 		for (int i = 0; i < RegistersCount; ++i)
 			reg[i] ^= datasetLine[i];
 		std::swap(memory.mx, memory.ma);
@@ -103,28 +112,28 @@ namespace RandomX {
 		aw->prepareBlock(memory.ma);
 	}
 
-	void datasetAlloc(dataset_t& ds, uint64_t size, bool largePages) {
-		if (sizeof(size_t) <= 4)
+	void datasetAlloc(dataset_t& ds, bool largePages) {
+		if (std::numeric_limits<size_t>::max() < RANDOMX_DATASET_SIZE)
 			throw std::runtime_error("Platform doesn't support enough memory for the dataset");
 		if (largePages) {
-			ds.dataset = (uint8_t*)allocLargePagesMemory(size);
+			ds.dataset.memory = (uint8_t*)allocLargePagesMemory(ds.dataset.size);
 		}
 		else {
-			ds.dataset = (uint8_t*)_mm_malloc(size, 64);
-			if (ds.dataset == nullptr) {
+			ds.dataset.memory = (uint8_t*)_mm_malloc(ds.dataset.size, 64);
+			if (ds.dataset.memory == nullptr) {
 				throw std::runtime_error("Dataset memory allocation failed. >4 GiB of free virtual memory is needed.");
 			}
 		}
 	}
 
-	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount) {
-		for (uint32_t i = startBlock; i < startBlock + blockCount; ++i) {
-			initBlock(cache->getCache(), ds.dataset + i * CacheLineSize, i);
+	void datasetInit(Cache& cache, Dataset& ds, uint32_t startBlock, uint32_t blockCount) {
+		for (uint64_t i = startBlock; i < startBlock + blockCount; ++i) {
+			initBlock(cache, ds.memory + i * CacheLineSize, i);
 		}
 	}
 
 	void datasetInitCache(const void* seed, dataset_t& ds, bool largePages) {
-		ds.cache = new(Cache::alloc(largePages)) Cache();
-		ds.cache->initialize(seed, SeedSize);
+		ds.cache.memory = allocCache(ds.cache.size, largePages);
+		argonFill(ds.cache, seed, SeedSize);
 	}
 }

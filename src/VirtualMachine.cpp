@@ -58,7 +58,7 @@ namespace RandomX {
 	}
 
 	VirtualMachine::VirtualMachine() {
-		mem.ds.dataset = nullptr;
+		mem.ds.dataset.memory = nullptr;
 	}
 
 	void VirtualMachine::resetRoundingMode() {
@@ -84,6 +84,7 @@ namespace RandomX {
 		readReg2 = 4 + (addressRegisters & 1);
 		addressRegisters >>= 1;
 		readReg3 = 6 + (addressRegisters & 1);
+		datasetBase = program.getEntropy(14) % datasetRange;
 	}
 
 	template<bool softAes>

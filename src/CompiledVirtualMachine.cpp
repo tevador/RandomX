@@ -23,25 +23,26 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct RandomX::MemoryRegisters");
+	//static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct RandomX::MemoryRegisters");
 	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct RandomX::RegisterFile");
 
 	CompiledVirtualMachine::CompiledVirtualMachine() {
-		totalSize = 0;
 	}
 
-	void CompiledVirtualMachine::setDataset(dataset_t ds) {
+	void CompiledVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
 		mem.ds = ds;
+		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		datasetBasePtr = ds.dataset.memory;
 	}
 
 	void CompiledVirtualMachine::initialize() {
 		VirtualMachine::initialize();
 		compiler.generateProgram(program);
+		mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
 
 	void CompiledVirtualMachine::execute() {
 		//executeProgram(reg, mem, scratchpad, InstructionCount);
-		//totalSize += compiler.getCodeSize();
 		compiler.getProgramFunc()(reg, mem, scratchpad, RANDOMX_PROGRAM_ITERATIONS);
 #ifdef TRACEVM
 		for (int32_t i = InstructionCount - 1; i >= 0; --i) {

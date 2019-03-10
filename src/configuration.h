@@ -22,6 +22,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Cache size in KiB. Must be a power of 2.
 #define RANDOMX_ARGON_MEMORY       (256 * 1024)
 
+//Cache growth per epoch in KiB.
+#define RANDOMX_ARGON_GROWTH       0
+
 //Number of Argon2d iterations for Cache initialization
 #define RANDOMX_ARGON_ITERATIONS   3
 
@@ -38,7 +41,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_DATASET_SIZE       (4ULL * 1024 * 1024 * 1024)
 
 //Dataset growth per epoch in bytes. Must be divisible by 64.
-#define RANDOMX_DS_GROWTH_RATE     (2 * 1024 * 1024)
+#define RANDOMX_DS_GROWTH          (2 * 1024 * 1024)
+
+//Number of blocks per epoch
+#define RANDOMX_EPOCH_BLOCKS       1024
 
 //Number of instructions in a RandomX program
 #define RANDOMX_PROGRAM_SIZE       256
@@ -47,7 +53,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_PROGRAM_ITERATIONS 2048
 
 //Number of chained VM executions per hash
-#define RANDOMX_PROGRAM_COUNT     8
+#define RANDOMX_PROGRAM_COUNT      8
 
 //Scratchpad L3 size in bytes. Must be a power of 2.
 #define RANDOMX_SCRATCHPAD_L3      (2 * 1024 * 1024)
@@ -63,39 +69,42 @@ Instruction frequencies (per 256 opcodes)
 Total sum of frequencies must be 256
 */
 
-#define RANDOMX_FREQ_IADD_R 12
-#define RANDOMX_FREQ_IADD_M 7
-#define RANDOMX_FREQ_IADD_RC 16
-#define RANDOMX_FREQ_ISUB_R 12
-#define RANDOMX_FREQ_ISUB_M 7
-#define RANDOMX_FREQ_IMUL_9C 9
-#define RANDOMX_FREQ_IMUL_R 16
-#define RANDOMX_FREQ_IMUL_M 4
-#define RANDOMX_FREQ_IMULH_R 4
-#define RANDOMX_FREQ_IMULH_M 1
-#define RANDOMX_FREQ_ISMULH_R 4
-#define RANDOMX_FREQ_ISMULH_M 1
-#define RANDOMX_FREQ_IMUL_RCP 8
-#define RANDOMX_FREQ_INEG_R 2
-#define RANDOMX_FREQ_IXOR_R 16
-#define RANDOMX_FREQ_IXOR_M 4
-#define RANDOMX_FREQ_IROR_R 10
-#define RANDOMX_FREQ_IROL_R 0
-#define RANDOMX_FREQ_ISWAP_R 4
+#define RANDOMX_FREQ_IADD_R        12
+#define RANDOMX_FREQ_IADD_M         7
+#define RANDOMX_FREQ_IADD_RC       16
+#define RANDOMX_FREQ_ISUB_R        12
+#define RANDOMX_FREQ_ISUB_M         7
+#define RANDOMX_FREQ_IMUL_9C        9
+#define RANDOMX_FREQ_IMUL_R        16
+#define RANDOMX_FREQ_IMUL_M         4
+#define RANDOMX_FREQ_IMULH_R        4
+#define RANDOMX_FREQ_IMULH_M        1
+#define RANDOMX_FREQ_ISMULH_R       4
+#define RANDOMX_FREQ_ISMULH_M       1
+#define RANDOMX_FREQ_IMUL_RCP       8
+#define RANDOMX_FREQ_INEG_R         2
+#define RANDOMX_FREQ_IXOR_R        16
+#define RANDOMX_FREQ_IXOR_M         4
+#define RANDOMX_FREQ_IROR_R        10
+#define RANDOMX_FREQ_IROL_R         0
+#define RANDOMX_FREQ_ISWAP_R        4
 
-#define RANDOMX_FREQ_FSWAP_R 8
-#define RANDOMX_FREQ_FADD_R 20
-#define RANDOMX_FREQ_FADD_M 5
-#define RANDOMX_FREQ_FSUB_R 20
-#define RANDOMX_FREQ_FSUB_M 5
-#define RANDOMX_FREQ_FSCAL_R 6
-#define RANDOMX_FREQ_FMUL_R 20
-#define RANDOMX_FREQ_FDIV_M 4
-#define RANDOMX_FREQ_FSQRT_R 6
+#define RANDOMX_FREQ_FSWAP_R        8
+#define RANDOMX_FREQ_FADD_R        20
+#define RANDOMX_FREQ_FADD_M         5
+#define RANDOMX_FREQ_FSUB_R        20
+#define RANDOMX_FREQ_FSUB_M         5
+#define RANDOMX_FREQ_FSCAL_R        6
+#define RANDOMX_FREQ_FMUL_R        20
+#define RANDOMX_FREQ_FDIV_M         4
+#define RANDOMX_FREQ_FSQRT_R        6
 
-#define RANDOMX_FREQ_COND_R 7
-#define RANDOMX_FREQ_COND_M 1
-#define RANDOMX_FREQ_CFROUND 1
-#define RANDOMX_FREQ_ISTORE 16
+#define RANDOMX_FREQ_COND_R         7
+#define RANDOMX_FREQ_COND_M         1
+#define RANDOMX_FREQ_CFROUND        1
+#define RANDOMX_FREQ_ISTORE        16
 
-#define RANDOMX_FREQ_NOP 0
+#define RANDOMX_FREQ_NOP            0
+/*                               ------
+                                  256
+*/

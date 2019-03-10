@@ -25,14 +25,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	template<bool soft, bool enc>
-	void initBlock(const uint8_t* in, uint8_t* out, uint32_t blockNumber);
+	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber);
 
-	void initBlock(const uint8_t* cache, uint8_t* block, uint32_t blockNumber);
+	void datasetAlloc(dataset_t& ds, bool largePages);
 
-	void datasetAlloc(dataset_t& ds, uint64_t size, bool largePages);
-
-	void datasetInit(Cache* cache, dataset_t ds, uint32_t startBlock, uint32_t blockCount);
+	void datasetInit(Cache& cache, Dataset& ds, uint32_t startBlock, uint32_t blockCount);
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
 
