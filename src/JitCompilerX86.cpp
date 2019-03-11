@@ -242,7 +242,7 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::genAddressImm(Instruction& instr) {
-		emit32(instr.imm32 & ScratchpadL3Mask);
+		emit32(instr.getImm32() & ScratchpadL3Mask);
 	}
 
 	void JitCompilerX86::h_IADD_R(Instruction& instr) {
@@ -253,7 +253,7 @@ namespace RandomX {
 		else {
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
-			emit32(instr.imm32);
+			emit32(instr.getImm32());
 		}
 	}
 
@@ -279,7 +279,7 @@ namespace RandomX {
 		emit(REX_LEA);
 		emitByte(0x84 + 8 * instr.dst);
 		genSIB(0, instr.src, instr.dst);
-		emit32(instr.imm32);
+		emit32(instr.getImm32());
 	}
 
 	void JitCompilerX86::h_ISUB_R(Instruction& instr) {
@@ -290,7 +290,7 @@ namespace RandomX {
 		else {
 			emit(REX_81);
 			emitByte(0xe8 + instr.dst);
-			emit32(instr.imm32);
+			emit32(instr.getImm32());
 		}
 	}
 
@@ -312,7 +312,7 @@ namespace RandomX {
 		emit(REX_LEA);
 		emitByte(0x84 + 8 * instr.dst);
 		genSIB(3, instr.dst, instr.dst);
-		emit32(instr.imm32);
+		emit32(instr.getImm32());
 	}
 
 	void JitCompilerX86::h_IMUL_R(Instruction& instr) {
@@ -323,7 +323,7 @@ namespace RandomX {
 		else {
 			emit(REX_IMUL_RRI);
 			emitByte(0xc0 + 9 * instr.dst);
-			emit32(instr.imm32);
+			emit32(instr.getImm32());
 		}
 	}
 
@@ -396,9 +396,9 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr) {
-		if (instr.imm32 != 0) {
+		if (instr.getImm32() != 0) {
 			emit(MOV_RAX_I);
-			emit64(reciprocal(instr.imm32));
+			emit64(reciprocal(instr.getImm32()));
 			emit(REX_IMUL_RM);
 			emitByte(0xc0 + 8 * instr.dst);
 		}
@@ -421,7 +421,7 @@ namespace RandomX {
 		else {
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
-			emit32(instr.imm32);
+			emit32(instr.getImm32());
 		}
 	}
 
@@ -449,7 +449,7 @@ namespace RandomX {
 		else {
 			emit(REX_ROT_I8);
 			emitByte(0xc8 + instr.dst);
-			emitByte(instr.imm32 & 63);
+			emitByte(instr.getImm32() & 63);
 		}
 	}
 
@@ -463,7 +463,7 @@ namespace RandomX {
 		else {
 			emit(REX_ROT_I8);
 			emitByte(0xc0 + instr.dst);
-			emitByte(instr.imm32 & 63);
+			emitByte(instr.getImm32() & 63);
 		}
 	}
 
@@ -567,7 +567,7 @@ namespace RandomX {
 	void JitCompilerX86::h_CFROUND(Instruction& instr) {
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.src);	
-		int rotate = (13 - (instr.imm32 & 63)) & 63;
+		int rotate = (13 - (instr.getImm32() & 63)) & 63;
 		if (rotate != 0) {
 			emit(ROL_RAX);
 			emitByte(rotate);
@@ -603,7 +603,7 @@ namespace RandomX {
 		emit(XOR_ECX_ECX);
 		emit(REX_CMP_R32I);
 		emitByte(0xf8 + instr.src);
-		emit32(instr.imm32);
+		emit32(instr.getImm32());
 		emitByte(0x0f);
 		emitByte(condition(instr));
 		emitByte(0xc1);
@@ -615,7 +615,7 @@ namespace RandomX {
 		emit(XOR_ECX_ECX);
 		genAddressReg(instr);
 		emit(REX_CMP_M32I);
-		emit32(instr.imm32);
+		emit32(instr.getImm32());
 		emitByte(0x0f);
 		emitByte(condition(instr));
 		emitByte(0xc1);

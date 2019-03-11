@@ -23,6 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <ostream>
 #include "common.hpp"
 #include "Instruction.hpp"
+#include "blake2/endian.h"
 
 namespace RandomX {
 
@@ -36,7 +37,7 @@ namespace RandomX {
 			return os;
 		}
 		uint64_t getEntropy(int i) {
-			return entropyBuffer[i];
+			return load64(&entropyBuffer[i]);
 		}
 	private:
 		void print(std::ostream&) const;

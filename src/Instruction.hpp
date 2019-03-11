@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include <iostream>
+#include "blake2/endian.h"
 
 namespace RandomX {
 
@@ -74,7 +75,9 @@ namespace RandomX {
 		uint8_t dst;
 		uint8_t src;
 		uint8_t mod;
-		uint32_t imm32;
+		uint32_t getImm32() const {
+			return load32(&imm32);
+		}
 		const char* getName() const {
 			return names[opcode];
 		}
@@ -83,6 +86,7 @@ namespace RandomX {
 			return os;
 		}
 	private:
+		uint32_t imm32;
 		void print(std::ostream&) const;
 		static const char* names[256];
 		static InstructionVisualizer engine[256];

@@ -435,7 +435,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = signExtend2sCompl(instr.imm32);
+						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -450,7 +450,7 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
@@ -462,7 +462,7 @@ namespace RandomX {
 					ibc.type = InstructionType::IADD_RC;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
-					ibc.imm = signExtend2sCompl(instr.imm32);
+					ibc.imm = signExtend2sCompl(instr.getImm32());
 				} break;
 
 				CASE_REP(ISUB_R) {
@@ -474,7 +474,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = signExtend2sCompl(instr.imm32);
+						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -489,7 +489,7 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
@@ -499,7 +499,7 @@ namespace RandomX {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::IMUL_9C;
 					ibc.idst = &r[dst];
-					ibc.imm = signExtend2sCompl(instr.imm32);
+					ibc.imm = signExtend2sCompl(instr.getImm32());
 				} break;
 
 				CASE_REP(IMUL_R) {
@@ -511,7 +511,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = signExtend2sCompl(instr.imm32);
+						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -526,7 +526,7 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
@@ -550,7 +550,7 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
@@ -574,14 +574,14 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
 				} break;
 
 				CASE_REP(IMUL_RCP) {
-					uint32_t divisor = instr.imm32;
+					uint32_t divisor = instr.getImm32();
 					if (divisor != 0) {
 						auto dst = instr.dst % RegistersCount;
 						ibc.type = InstructionType::IMUL_R;
@@ -609,7 +609,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = signExtend2sCompl(instr.imm32);
+						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -624,7 +624,7 @@ namespace RandomX {
 						ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
@@ -639,7 +639,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -653,7 +653,7 @@ namespace RandomX {
 						ibc.isrc = &r[src];
 					}
 					else {
-						ibc.imm = instr.imm32;
+						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
 				} break;
@@ -750,7 +750,7 @@ namespace RandomX {
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
 					ibc.condition = (instr.mod >> 2) & 7;
-					ibc.imm = instr.imm32;
+					ibc.imm = instr.getImm32();
 				} break;
 
 				CASE_REP(COND_M) {
@@ -760,7 +760,7 @@ namespace RandomX {
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
 					ibc.condition = (instr.mod >> 2) & 7;
-					ibc.imm = instr.imm32;
+					ibc.imm = instr.getImm32();
 					ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
 				} break;
 
@@ -768,7 +768,7 @@ namespace RandomX {
 					auto src = instr.src % 8;
 					ibc.isrc = &r[src];
 					ibc.type = InstructionType::CFROUND;
-					ibc.imm = instr.imm32 & 63;
+					ibc.imm = instr.getImm32() & 63;
 				} break;
 
 				CASE_REP(ISTORE) {
