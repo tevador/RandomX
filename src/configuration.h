@@ -46,6 +46,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Number of blocks per epoch
 #define RANDOMX_EPOCH_BLOCKS       1024
 
+//Number of blocks between the seed block and the start of new epoch
+#define RANDOMX_EPOCH_LAG          64
+
 //Number of instructions in a RandomX program
 #define RANDOMX_PROGRAM_SIZE       256
 
