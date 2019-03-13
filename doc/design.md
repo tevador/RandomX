@@ -32,7 +32,7 @@ Algorithms with a fixed or slowly changing sequence of operations can be impleme
 
 Modern CPUs include a sophisticated [branch predictor](https://en.wikipedia.org/wiki/Branch_predictor) unit to ensure uninterrupted flow of instructions. If a branch prediction fails, the speculatively executed instructions are thrown away, which results in a certain amount of wasted energy with each misprediction. 
 
-To maximize the amount of useful work per unit of energy, mispredictions must be avoided. The best way to maximize CPU efficiency is therefore to not have any branches at all. Therefore, RandomX programs are branchless.
+To maximize the amount of useful work per unit of energy, mispredictions must be avoided. The best way to maximize CPU efficiency is not to have any branches at all. Therefore, RandomX programs are branchless.
 
 ### CPU Caches
 
@@ -89,7 +89,7 @@ All Dataset accesses read whole CPU cache line (64 bytes) and are fully prefetch
 
 #### Cache
 
-The Cache, which is used for light verification and Dataset construction, is 16 times smaller than the Dataset. To keep a constant area * time product, each Dataset item is construction from 16 Cache accesses (16 * 256 MiB = 1 * 4 GiB).
+The Cache, which is used for light verification and Dataset construction, is 16 times smaller than the Dataset. To keep a constant area-time product, each Dataset item is constructed by 16 Cache accesses (16 * 256 MiB = 1 * 4 GiB).
 
 Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency mixing function (SquareHash) which defeats the benefits of using low-latency memory for mining in tradeoff mode.
 
