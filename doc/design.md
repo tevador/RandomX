@@ -106,9 +106,9 @@ SquareHash was chosen for its relative simplicity (uses only two operations - mu
 
 From a cryptographic standpoint, SquareHash achieves full [Avalanche effect](https://en.wikipedia.org/wiki/Avalanche_effect). SquareHash was originally based on [exponentiation by squaring](https://en.wikipedia.org/wiki/Exponentiation_by_squaring). In the [x86 assembly implementation](https://github.com/tevador/RandomX/blob/master/src/asm/squareHash.inc), if `adc rax, 0` is added after each subtraction, SquareHash becomes the following operation:
 <code>
-(x+1613783669344650115)<sup>4398046511104</sup> mod 2<sup>64</sup>+1
+(x+9507361525245169745)<sup>4398046511104</sup> mod 2<sup>64</sup>+1
 </code>,
-where <code>4398046511104 = 2<sup>42</sup></code>. The addition of the carry was removed to improve CPU performance. The constant `1613783669344650115` is added to make SquareHash sensitive to zero.
+where <code>4398046511104 = 2<sup>42</sup></code>. The addition of the carry was removed to improve CPU performance. The constant `9507361525245169745` is added to make SquareHash sensitive to zero.
 
 #### Generator
 
