@@ -83,7 +83,7 @@ The COND instructions use the common condition flags that are supported by most 
 
 ### Memory access
 
-RandomX randomly accesses a large buffer of data (Dataset) 16384 times for each hash calculation. Since the Dataset must be stored in DRAM, it provides a natural parallelization limit, because DRAM cannot do more than about 25 million random accesses per second per channel. Each separately addressable DRAM channel allows a throughput of around 1500 H/s.
+RandomX randomly reads from large buffer of data (Dataset) 16384 times for each hash calculation. Since the Dataset must be stored in DRAM, it provides a natural parallelization limit, because DRAM cannot do more than about 25 million random accesses per second per bank group. Each separately addressable bank group allows a throughput of around 1500 H/s.
 
 All Dataset accesses read whole CPU cache line (64 bytes) and are fully prefetched. The time to execute one program iteration described in chapter 4.6.2 of the Specification is about the same as typical DRAM access latency.
 
@@ -94,6 +94,10 @@ The Cache, which is used for light verification and Dataset construction, is 16 
 Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency mixing function (SquareHash) which defeats the benefits of using low-latency memory for mining in tradeoff mode.
 
 Using less than 256 MiB of memory is not possible due to the use of tradeoff-resistant Argon2d with 3 iterations. When using 3 iterations (passes), halving the memory usage increases computational cost 3423 times for the best tradeoff attack ([Reference](https://eprint.iacr.org/2015/430.pdf) in Table 2 on page 8).
+
+#### Scratchpad
+
+The Scratchpad is used as read-write memory. Its size was selected to fit entirely into CPU cache. Programs make, on average, 39 reads (instructions IADD_M, ISUB_M, IMUL_M, IMULH_M, ISMULH_M, IXOR_M, FADD_M, FSUB_M, FDIV_M, COND_M) and 16 writes (instruction ISTORE) to the Scratchpad per program iteration. This is close to a 2:1 read/write ratio, which CPUs are optimized for.
 
 ### Choice of hashing function
 RandomX uses Blake2b as its main cryptographically secure hashing function. Blake2b was specifically designed to be fast in software, especially on modern 64-bit processors, where it's around three times faster than SHA-3 and can run at a speed of around 3 clock cycles per byte of input.
@@ -108,7 +112,7 @@ From a cryptographic standpoint, SquareHash achieves full [Avalanche effect](htt
 <code>
 (x+9507361525245169745)<sup>4398046511104</sup> mod 2<sup>64</sup>+1
 </code>,
-where <code>4398046511104 = 2<sup>42</sup></code>. The addition of the carry was removed to improve CPU performance. The constant `9507361525245169745` is added to make SquareHash sensitive to zero.
+where <code>4398046511104 = 2<sup>42</sup></code>. The addition of the carry was removed to improve CPU performance. The constant `9507361525245169745` is added to make SquareHash sensitive to zero (see chapter 3.4 of Specification).
 
 #### Generator
 
