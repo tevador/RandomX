@@ -626,12 +626,15 @@ Dataset blocks are numbered sequentially with `blockNumber` starting from 0. Eac
 
 The block data is arranged into 8 columns of 64-bit unsigned integers: `c0`-`c7`.
 
-1. Set `c0`to `4 * blockNumber`, 
-1. Set `c1`-`c7` to zero.
-1. Load a 64-byte block from the Cache. the block index is given by `c0` modulo the total number of blocks in Cache.
-1. Set `c0 = SquareHash(c0)`
-1. XOR all columns with the 64 bytes loaded in step 3 (8 bytes per column).
-1. Repeat steps 3-5 total of `RANDOMX_CACHE_ACCESSES` times.
+1. Set column `c0` to `blockNumber`.
+1. Set columns `c1`-`c7` to zero.
+1. Let `i = 0`
+1. Let `currentColumn` be column with index `i` (wraps around if `i > 7`).
+1. Let `nextColumn` be column with index `i + 1` (wraps around if `i > 6`).
+1. Load a 64-byte block from the Cache. The block index is given by `currentColumn` modulo the total number of blocks in Cache.
+1. Set `nextColumn = SquareHash(currentColumn + nextColumn)`
+1. XOR all columns with the 64 bytes loaded in step 6 (8 bytes per column in order `c0`-`c7`).
+1. Set `i = i + 1` and go back to step 4 if `i < RANDOMX_CACHE_ACCESSES`.
 1. Concatenate columns `c0`-`c7` in little endian format to get the final block data.
 
 ### 6.5 Dataset size
