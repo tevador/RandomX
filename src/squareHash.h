@@ -53,7 +53,7 @@ static inline uint128_t square128(uint64_t x) {
 #undef HI
 
 inline uint64_t squareHash(uint64_t x) {
-	x += 1613783669344650115;
+	x += 9507361525245169745;
 	for (int i = 0; i < 42; ++i) {
 		uint128_t x2 = square128(x);
 		x = x2.lo - x2.hi;

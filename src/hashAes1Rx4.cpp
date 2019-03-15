@@ -40,10 +40,10 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	__m128i in0, in1, in2, in3;
 
 	//intial state
-	state0 = _mm_set_epi32(0x9d04b0ae, 0x59943385, 0x30ac8d93, 0x3fe49f5d);
-	state1 = _mm_set_epi32(0x8a39ebf1, 0xddc10935, 0xa724ecd3, 0x7b0c6064);
-	state2 = _mm_set_epi32(0x7ec70420, 0xdf01edda, 0x7c12ecf7, 0xfb5382e3);
-	state3 = _mm_set_epi32(0x94a9d201, 0x5082d1c8, 0xb2e74109, 0x7728b705);
+	state0 = _mm_set_epi32(0x8d3126fd, 0x1146d167, 0x887af5ab, 0xc4778e00);
+	state1 = _mm_set_epi32(0x19fe9fa1, 0x58da632b, 0x1b95af89, 0xb834ef4b);
+	state2 = _mm_set_epi32(0x1bb2cd74, 0xc35ad744, 0xab283a00, 0x7742dd3a);
+	state3 = _mm_set_epi32(0xbb30a58a, 0x49593c57, 0xdc5d97cc, 0xe18b449a);
 
 	//process 64 bytes at a time in 4 lanes
 	while (inptr < inputEnd) {
@@ -61,8 +61,8 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	}
 
 	//two extra rounds to achieve full diffusion
-	__m128i xkey0 = _mm_set_epi32(0x4ff637c5, 0x053bd705, 0x8231a744, 0xc3767b17);
-	__m128i xkey1 = _mm_set_epi32(0x6594a1a6, 0xa8879d58, 0xb01da200, 0x8a8fae2e);
+	__m128i xkey0 = _mm_set_epi32(0x83951283, 0xe4c5593d, 0x2a5a929c, 0x11cbf247);
+	__m128i xkey1 = _mm_set_epi32(0xff215bb2, 0xabbc2523, 0x477bef0b, 0xce816c95);
 
 	state0 = aesenc<softAes>(state0, xkey0);
 	state1 = aesdec<softAes>(state1, xkey0);
@@ -102,10 +102,10 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 	__m128i state0, state1, state2, state3;
 	__m128i key0, key1, key2, key3;
 
-	key0 = _mm_set_epi32(0x9274f206, 0x79498d2f, 0x7d2de6ab, 0x67a04d26);
-	key1 = _mm_set_epi32(0xe1f7af05, 0x2a3a6f1d, 0x86658a15, 0x4f719812);
-	key2 = _mm_set_epi32(0xd1b1f791, 0x9e2ec914, 0x14c77bce, 0xba90750e);
-	key3 = _mm_set_epi32(0x179d0fd9, 0x6e57883c, 0xa53bbe4f, 0xaa07621f);
+	key0 = _mm_set_epi32(0xdf20a2e3, 0xca329132, 0x454ff6d5, 0x84eeec2d);
+	key1 = _mm_set_epi32(0x1deb5971, 0xfed0387f, 0xf10fc578, 0x017b63d0);
+	key2 = _mm_set_epi32(0xdfc926b3, 0xa517ceb4, 0x2f2c70a1, 0x327d7a52);
+	key3 = _mm_set_epi32(0x341cf31c, 0xa0ece0a9, 0x3d17da5e, 0x5c8d77d3);
 
 	state0 = _mm_load_si128((__m128i*)state + 0);
 	state1 = _mm_load_si128((__m128i*)state + 1);

@@ -1,4 +1,4 @@
-	mov rax, 1613783669344650115
+	mov rax, 9507361525245169745
 	add rax, rcx
 	mul rax
 	sub rax, rdx ;# 1
