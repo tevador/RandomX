@@ -4,8 +4,8 @@ To minimize the performance advantage of specialized hardware, a proof of work (
 
 There are two distinct classes of general processing devices: CPUs and GPUs. RandomX targets CPUs for the following reasons:
 
-* CPUs, being less specialized devices, are more prevalent and widely accessible. A CPU-bound algorithm is more egalitarian and allows more participants to join the network. This is one of the goals stated in the original [CryptoNote whitepaper](https://cryptonote.org/whitepaper.pdf). 
-* A large common subset of native hardware instructions exists among different CPU architectures. The same cannot be said about GPUs. For example, there is no common integer multiplication instruction for nVidia and AMD GPUs ([reference](https://github.com/ifdefelse/ProgPOW/issues/16)).
+* CPUs, being less specialized devices, are more prevalent and widely accessible. A CPU-bound algorithm is more egalitarian and allows more participants to join the network. This is one of the goals stated in the original CryptoNote whitepaper [[1](https://cryptonote.org/whitepaper.pdf)]. 
+* A large common subset of native hardware instructions exists among different CPU architectures. The same cannot be said about GPUs. For example, there is no common integer multiplication instruction for nVidia and AMD GPUs [[2](https://github.com/ifdefelse/ProgPOW/issues/16)].
 * All major CPU instruction sets are well documented with multiple open source compilers available. In comparison, GPU instruction sets are usually proprietary and may require vendor specific closed-source drivers for maximum performance.
 
 ## Design considerations
@@ -30,15 +30,17 @@ Algorithms with a fixed or slowly changing sequence of operations can be impleme
 
 ### Branches
 
-Modern CPUs include a sophisticated [branch predictor](https://en.wikipedia.org/wiki/Branch_predictor) unit to ensure uninterrupted flow of instructions. If a branch prediction fails, the speculatively executed instructions are thrown away, which results in a certain amount of wasted energy with each misprediction. 
+Modern CPUs include a sophisticated branch predictor unit [[3](https://en.wikipedia.org/wiki/Branch_predictor)] to ensure uninterrupted flow of instructions. If a branch prediction fails, the speculatively executed instructions are thrown away, which results in a certain amount of wasted energy with each misprediction. To maximize the amount of useful work per unit of energy, mispredictions must be avoided.
 
-To maximize the amount of useful work per unit of energy, mispredictions must be avoided. The best way to maximize CPU efficiency is not to have any branches at all. Therefore, RandomX programs are branchless.
+For a consensus protocol, we could use either random branches or predefined branching patterns. With random branches, CPU misprediction rate is slightly higher than it would be without pattern recognition because the processor keeps trying to find repeated patterns in a sequence that has no regularities [[4](https://www.agner.org/optimize/microarchitecture.pdf)]. With predefined branching patterns, the general-purpose CPU predictor would be always less efficient than a specialized predictor that exactly matches the pattern.
+
+Therefore, the best way to maximize CPU efficiency is not to have any branches at all. RandomX programs are branchless.
 
 ### CPU Caches
 
 #### L1 and L2 cache
 
-L1 and L2 caches are located close to the CPU execution units and provide the best random access latency of around 3-15 cycles. This latency can be efficiently hidden by [out of order execution](https://en.wikipedia.org/wiki/Out-of-order_execution). RandomX programs access almost exclusively "L1" and "L2" parts of the Scratchpad with a 3:1 access ratio to take advantage of the low latency caches.
+L1 and L2 caches are located close to the CPU execution units and provide the best random access latency of around 3-15 cycles. This latency can be efficiently hidden by out of order execution [[5](https://en.wikipedia.org/wiki/Out-of-order_execution)]. RandomX programs access almost exclusively "L1" and "L2" parts of the Scratchpad with a 3:1 access ratio to take advantage of the low latency caches.
 
 #### L3 cache
 The L3 cache is much larger and located further from the CPU core. As a result, its access latencies are usually around 30-50 cycles. While this is much faster than reading data from DRAM, it can cause stalls in program execution.
@@ -49,7 +51,7 @@ Additionally, integer instructions that read from a fixed address also use the w
 
 #### μop cache
 
-Modern x86 CPUs decode complex instructions into simpler micro operations (μops). Repeatedly executed instructions are not decoded from memory, but are executed directly from the [μop cache](https://en.wikipedia.org/wiki/CPU_cache#Micro-operation_(%CE%BCop_or_uop)_cache). RandomX programs are relatively short loops (typical program compiles into 600-700 μops on Intel Skylake or AMD Ryzen), so they fit entirely into the μop cache, which allows the CPU to power down the relatively power-hungry x86 instruction decoders. This should help to equalize the power efficiency between x86 and simpler architectures like ARM.
+Modern x86 CPUs decode complex instructions into simpler micro operations (μops). Repeatedly executed instructions are not decoded from memory, but are executed directly from the μop cache [[6](https://en.wikipedia.org/wiki/CPU_cache#Micro-operation_(%CE%BCop_or_uop)_cache)]. RandomX programs are relatively short loops (typical program compiles into 600-700 μops on Intel Skylake or AMD Ryzen), so they fit entirely into the μop cache, which allows the CPU to power down the relatively power-hungry x86 instruction decoders. This should help to equalize the power efficiency between x86 and simpler architectures like ARM.
 
 ### Registers
 
@@ -93,11 +95,13 @@ The Cache, which is used for light verification and Dataset construction, is 16 
 
 Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency mixing function (SquareHash) which defeats the benefits of using low-latency memory for mining in tradeoff mode.
 
-Using less than 256 MiB of memory is not possible due to the use of tradeoff-resistant Argon2d with 3 iterations. When using 3 iterations (passes), halving the memory usage increases computational cost 3423 times for the best tradeoff attack ([Reference](https://eprint.iacr.org/2015/430.pdf) in Table 2 on page 8).
+Using less than 256 MiB of memory is not possible due to the use of tradeoff-resistant Argon2d with 3 iterations. When using 3 iterations (passes), halving the memory usage increases computational cost 3423 times for the best tradeoff attack [[7](https://eprint.iacr.org/2015/430.pdf)].
 
 #### Scratchpad
 
 The Scratchpad is used as read-write memory. Its size was selected to fit entirely into CPU cache. Programs make, on average, 39 reads (instructions IADD_M, ISUB_M, IMUL_M, IMULH_M, ISMULH_M, IXOR_M, FADD_M, FSUB_M, FDIV_M, COND_M) and 16 writes (instruction ISTORE) to the Scratchpad per program iteration. This is close to a 2:1 read/write ratio, which CPUs are optimized for.
+
+Additionally, Scratchpad operations require write-read coherency, because when a write to L1 Scratchpad is in progress, a read has a 1/2048 chance of being from the same address. This is handled by the load-store unit (LSU) inside the CPU and requires every read to be checked against the addresses of all pending writes. Hardware without these coherency checks will produce >99% of invalid results.
 
 ### Choice of hashing function
 RandomX uses Blake2b as its main cryptographically secure hashing function. Blake2b was specifically designed to be fast in software, especially on modern 64-bit processors, where it's around three times faster than SHA-3 and can run at a speed of around 3 clock cycles per byte of input.
@@ -108,7 +112,7 @@ RandomX uses Blake2b as its main cryptographically secure hashing function. Blak
 
 SquareHash was chosen for its relative simplicity (uses only two operations - multiplication and subtraction) and high latency. A single SquareHash calculation takes 40-80 ns on a CPU, which is about the same time as DRAM access latency. ASIC devices using low-latency memory will be bottlenecked by SquareHash when calculating Dataset items, while CPUs will finish the hash calculation in about the same time it takes to fetch data from RAM.
 
-From a cryptographic standpoint, SquareHash achieves full [Avalanche effect](https://en.wikipedia.org/wiki/Avalanche_effect). SquareHash was originally based on [exponentiation by squaring](https://en.wikipedia.org/wiki/Exponentiation_by_squaring). In the [x86 assembly implementation](https://github.com/tevador/RandomX/blob/master/src/asm/squareHash.inc), if `adc rax, 0` is added after each subtraction, SquareHash becomes the following operation:
+From a cryptographic standpoint, SquareHash achieves full Avalanche effect [[8](https://en.wikipedia.org/wiki/Avalanche_effect)]. SquareHash was originally based on exponentiation by squaring [[9](https://en.wikipedia.org/wiki/Exponentiation_by_squaring)]. In the [x86 assembly implementation](https://github.com/tevador/RandomX/blob/master/src/asm/squareHash.inc), if `adc rax, 0` is added after each subtraction, SquareHash becomes the following operation:
 <code>
 (x+9507361525245169745)<sup>4398046511104</sup> mod 2<sup>64</sup>+1
 </code>,
@@ -125,3 +129,24 @@ The Finalizer was designed for fastest possible calculation of the Scratchpad fi
 ### Chaining of VM executions
 
 RandomX chains 8 VM initializations and executions to prevent mining strategies that search for 'easy' programs.
+
+## References
+
+[1] CryptoNote whitepaper - https://cryptonote.org/whitepaper.pdf
+
+[2] ProgPoW: Inefficient integer multiplications - https://github.com/ifdefelse/ProgPOW/issues/16
+
+[3] Branch predictor - https://en.wikipedia.org/wiki/Branch_predictor
+
+[4] Agner Fog: The microarchitecture of Intel, AMD and VIA CPUs - https://www.agner.org/optimize/microarchitecture.pdf page 15
+
+[5] Out of order execution - https://en.wikipedia.org/wiki/Out-of-order_execution
+
+[6] μop cache - https://en.wikipedia.org/wiki/CPU_cache#Micro-operation_(%CE%BCop_or_uop)_cache
+
+[7] Biryukov et al.: Fast and Tradeoff-Resilient Memory-Hard Functions for
+Cryptocurrencies and Password Hashing - https://eprint.iacr.org/2015/430.pdf Table 2, page 8
+
+[8] Avalanche effect - https://en.wikipedia.org/wiki/Avalanche_effect
+
+[9] Exponentiation by squaring - https://en.wikipedia.org/wiki/Exponentiation_by_squaring
