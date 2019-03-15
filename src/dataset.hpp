@@ -25,7 +25,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber);
+#if defined(_M_X64)
+	extern "C"
+#endif
+	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations);
 
 	void datasetAlloc(dataset_t& ds, bool largePages);
 

@@ -40,34 +40,65 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber) {
+#if !defined(_M_X64)
+	static FORCE_INLINE uint8_t* selectMixBlock(const Cache& cache, uint64_t& currentIndex, uint64_t& nextIndex) {
+		uint8_t* mixBlock;
+		if (RANDOMX_ARGON_GROWTH == 0) {
+			constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
+			mixBlock = cache.memory + (currentIndex & mask) * CacheLineSize;
+		}
+		else {
+			const uint32_t modulus = cache.size / CacheLineSize;
+			mixBlock = cache.memory + (currentIndex % modulus) * CacheLineSize;
+		}
+		PREFETCHNTA(mixBlock);
+		nextIndex = squareHash(currentIndex + nextIndex);
+		return mixBlock;
+	}
+
+	static FORCE_INLINE void mixCache(uint8_t* mixBlock, uint64_t& c0, uint64_t& c1, uint64_t& c2, uint64_t& c3, uint64_t& c4, uint64_t& c5, uint64_t& c6, uint64_t& c7) {
+		c0 ^= load64(mixBlock + 0);
+		c1 ^= load64(mixBlock + 8);
+		c2 ^= load64(mixBlock + 16);
+		c3 ^= load64(mixBlock + 24);
+		c4 ^= load64(mixBlock + 32);
+		c5 ^= load64(mixBlock + 40);
+		c6 ^= load64(mixBlock + 48);
+		c7 ^= load64(mixBlock + 56);
+	}
+
+	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations) {
 		uint64_t c0, c1, c2, c3, c4, c5, c6, c7;
 
-		c0 = 4ULL * blockNumber;
+		c0 = blockNumber;
 		c1 = c2 = c3 = c4 = c5 = c6 = c7 = 0;
 
-		constexpr uint32_t mask = (CacheSize - 1) & CacheLineAlignMask;
+		uint8_t* mixBlock;
 
-		for (auto i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-			const uint8_t* mixBlock;
-			if (RANDOMX_ARGON_GROWTH == 0) {
-				constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
-				mixBlock = cache.memory + (c0 & mask) * CacheLineSize;
-			}
-			else {
-				const uint32_t modulus = cache.size / CacheLineSize;
-				mixBlock = cache.memory + (c0 % modulus) * CacheLineSize;
-			}
-			PREFETCHNTA(mixBlock);
-			c0 = squareHash(c0);
-			c0 ^= load64(mixBlock + 0);
-			c1 ^= load64(mixBlock + 8);
-			c2 ^= load64(mixBlock + 16);
-			c3 ^= load64(mixBlock + 24);
-			c4 ^= load64(mixBlock + 32);
-			c5 ^= load64(mixBlock + 40);
-			c6 ^= load64(mixBlock + 48);
-			c7 ^= load64(mixBlock + 56);
+		for (auto i = 0; i < RANDOMX_CACHE_ACCESSES / 8; ++i) {
+			mixBlock = selectMixBlock(cache, c0, c1);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c1, c2);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c2, c3);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c3, c4);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c4, c5);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c5, c6);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c6, c7);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+
+			mixBlock = selectMixBlock(cache, c7, c0);
+			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
 		}
 
 		store64(out + 0, c0);
@@ -79,6 +110,7 @@ namespace RandomX {
 		store64(out + 48, c6);
 		store64(out + 56, c7);
 	}
+#endif
 
 	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
 		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset.memory + memory.ma);
@@ -95,7 +127,7 @@ namespace RandomX {
 		memory.mx &= CacheLineAlignMask; //align to cache line
 		Cache& cache = memory.ds.cache;
 		uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-		initBlock(cache, (uint8_t*)datasetLine, memory.ma / CacheLineSize);
+		initBlock(cache, (uint8_t*)datasetLine, memory.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
 		for (int i = 0; i < RegistersCount; ++i)
 			reg[i] ^= datasetLine[i];
 		std::swap(memory.mx, memory.ma);
@@ -128,7 +160,7 @@ namespace RandomX {
 
 	void datasetInit(Cache& cache, Dataset& ds, uint32_t startBlock, uint32_t blockCount) {
 		for (uint64_t i = startBlock; i < startBlock + blockCount; ++i) {
-			initBlock(cache, ds.memory + i * CacheLineSize, i);
+			initBlock(cache, ds.memory + i * CacheLineSize, i, RANDOMX_CACHE_ACCESSES / 8);
 		}
 	}
 

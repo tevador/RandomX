@@ -351,7 +351,7 @@ namespace RandomX {
 				//mem.mx &= CacheLineAlignMask;
 				Cache& cache = mem.ds.cache;
 				uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-				initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize);
+				initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
 				for (int i = 0; i < RegistersCount; ++i)
 					r[i] ^= datasetLine[i];
 				std::swap(mem.mx, mem.ma);
