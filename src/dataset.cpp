@@ -40,7 +40,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-#if !defined(_M_X64)
+#if true //RANDOMX_ARGON_GROWTH != 0 || (!defined(_M_X64) && !defined(__x86_64__))
 	static FORCE_INLINE uint8_t* selectMixBlock(const Cache& cache, uint64_t& currentIndex, uint64_t& nextIndex) {
 		uint8_t* mixBlock;
 		if (RANDOMX_ARGON_GROWTH == 0) {
@@ -75,7 +75,7 @@ namespace RandomX {
 
 		uint8_t* mixBlock;
 
-		for (auto i = 0; i < RANDOMX_CACHE_ACCESSES / 8; ++i) {
+		for (auto i = 0; i < iterations; ++i) {
 			mixBlock = selectMixBlock(cache, c0, c1);
 			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
 

@@ -25,7 +25,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-#if defined(_M_X64)
+#if false //RANDOMX_ARGON_GROWTH == 0 && (defined(_M_X64) || defined(__x86_64__))
 	extern "C"
 #endif
 	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations);
