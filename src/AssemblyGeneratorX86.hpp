@@ -38,10 +38,13 @@ namespace RandomX {
 	private:
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
+		int registerUsage[8];
 
 		void genAddressReg(Instruction&, const char*);
 		void genAddressRegDst(Instruction&, int);
 		int32_t genAddressImm(Instruction&);
+		int getConditionRegister();
+		void handleCondition(Instruction&, int);
 
 		void generateCode(Instruction&, int);
 
