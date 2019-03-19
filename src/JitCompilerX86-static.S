@@ -38,14 +38,14 @@
 
 #define db .byte
 
-.align 64
+.balign 64
 DECL(randomx_program_prologue):
 	#include "asm/program_prologue_linux.inc"
 
-.align 64
+.balign 64
 	#include "asm/program_xmm_constants.inc"
 
-.align 64
+.balign 64
 DECL(randomx_program_loop_begin):
 	nop
 
@@ -64,10 +64,10 @@ DECL(randomx_program_loop_store):
 DECL(randomx_program_loop_end):
 	nop
 
-.align 64
+.balign 64
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_linux.inc"
 
-.align 64
+.balign 64
 DECL(randomx_program_end):
 	nop
