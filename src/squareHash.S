@@ -30,6 +30,7 @@ DECL(initBlock):
 	mov rbp, rsi
 	mov r8, rdx
 	mov rsi, rcx
+	#define squareHash DECL(squareHash)
 	#include "asm/initBlock.inc"
 	pop r15
 	pop r14
