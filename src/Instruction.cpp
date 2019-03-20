@@ -302,13 +302,13 @@ namespace RandomX {
 	}
 
 	void Instruction::h_COND_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)getImm32() << ")" << std::endl;
+		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)getImm32() << "), " << (int)(mod >> 5) << std::endl;
 	}
 
 	void Instruction::h_COND_M(std::ostream& os) const {
 		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(";
 		genAddressReg(os);
-		os << ", " << (int32_t)getImm32() << ")" << std::endl;
+		os << ", " << (int32_t)getImm32() << "), " << (int)(mod >> 5) << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {

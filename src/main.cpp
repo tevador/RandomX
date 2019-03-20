@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
 				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				vm = new RandomX::InterpretedVirtualMachine(softAes, async);
+				vm = new RandomX::InterpretedVirtualMachine(softAes);
 			}
 			vm->setDataset(dataset, datasetSize);
 			vms.push_back(vm);
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if(programCount == 1000)
-		std::cout << "Reference result:  84f37cc43cb21eabf1d5b9def462060cd24218290678dd80a8ea2f663892629e" << std::endl;
+		std::cout << "Reference result:  9e636a04a2517f37d8ed40b67a7051e02a7577e878fbba5c4352996b2c653f90" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}

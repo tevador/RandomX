@@ -76,9 +76,9 @@ randomx_isn_19:
 	; FMUL_R e1, a2
 	mulpd xmm5, xmm10
 randomx_isn_20:
-	; COND_R r6, of(r3, 1593588996)
+	; COND_R r6, of(r3, 1593588996), 1
 	add r8, 2
-	test r8, 2
+	test r8, 254
 	jz randomx_isn_0
 	xor ecx, ecx
 	cmp r11d, 1593588996
@@ -98,9 +98,9 @@ randomx_isn_23:
 	; FMUL_R e2, a0
 	mulpd xmm6, xmm8
 randomx_isn_24:
-	; COND_R r6, no(r0, 149087159)
+	; COND_R r6, no(r0, 149087159), 6
 	add r8, 64
-	test r8, 64
+	test r8, 8128
 	jz randomx_isn_21
 	xor ecx, ecx
 	cmp r8d, 149087159
@@ -197,9 +197,9 @@ randomx_isn_50:
 	; FSUB_R f3, a0
 	subpd xmm3, xmm8
 randomx_isn_51:
-	; COND_R r2, be(r3, -1975981803)
+	; COND_R r2, be(r3, -1975981803), 7
 	add r12, 128
-	test r12, 128
+	test r12, 16256
 	jz randomx_isn_25
 	xor ecx, ecx
 	cmp r11d, -1975981803
@@ -212,9 +212,9 @@ randomx_isn_53:
 	; FSUB_R f2, a0
 	subpd xmm2, xmm8
 randomx_isn_54:
-	; COND_R r5, ns(r1, 1917049931)
+	; COND_R r5, ns(r1, 1917049931), 6
 	add r8, 64
-	test r8, 64
+	test r8, 8128
 	jz randomx_isn_52
 	xor ecx, ecx
 	cmp r9d, 1917049931
@@ -288,9 +288,9 @@ randomx_isn_73:
 	; FMUL_R e0, a0
 	mulpd xmm4, xmm8
 randomx_isn_74:
-	; COND_R r6, ns(r3, -1200328848)
+	; COND_R r6, ns(r3, -1200328848), 2
 	add r9, 4
-	test r9, 4
+	test r9, 508
 	jz randomx_isn_55
 	xor ecx, ecx
 	cmp r11d, -1200328848
@@ -350,9 +350,9 @@ randomx_isn_88:
 	; IMUL_R r1, r3
 	imul r9, r11
 randomx_isn_89:
-	; COND_M r2, no(L1[r0], -122257389)
+	; COND_M r2, no(L1[r0], -122257389), 6
 	add r8, 64
-	test r8, 64
+	test r8, 8128
 	jz randomx_isn_75
 	xor ecx, ecx
 	mov eax, r8d
@@ -562,9 +562,9 @@ randomx_isn_142:
 	; FADD_R f1, a0
 	addpd xmm1, xmm8
 randomx_isn_143:
-	; COND_R r5, ge(r1, 880467599)
+	; COND_R r5, ge(r1, 880467599), 2
 	add r14, 4
-	test r14, 4
+	test r14, 508
 	jz randomx_isn_110
 	xor ecx, ecx
 	cmp r9d, 880467599
@@ -962,9 +962,9 @@ randomx_isn_246:
 	; IMUL_9C r7, 1938400676
 	lea r15, [r15+r15*8+1938400676]
 randomx_isn_247:
-	; COND_M r2, be(L1[r5], -8545330)
+	; COND_M r2, be(L1[r5], -8545330), 2
 	add r9, 4
-	test r9, 4
+	test r9, 508
 	jz randomx_isn_223
 	xor ecx, ecx
 	mov eax, r13d

@@ -171,7 +171,7 @@ namespace RandomX {
 	static const uint8_t REX_ANDPS_XMM12[] = { 0x45, 0x0F, 0x54, 0xE5, 0x45, 0x0F, 0x56, 0xE6 };
 	static const uint8_t REX_PADD[] = { 0x66, 0x44, 0x0f };
 	static const uint8_t PADD_OPCODES[] = { 0xfc, 0xfd, 0xfe, 0xd4 };
-	static const uint8_t REX_ADD_I[] = { 0x49, 0x83 };
+	static const uint8_t REX_ADD_I[] = { 0x49, 0x81 };
 	static const uint8_t REX_TEST[] = { 0x49, 0xF7 };
 	static const uint8_t JZ[] = { 0x0f, 0x84 };
 
@@ -673,10 +673,9 @@ namespace RandomX {
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
-		registerUsage[reg] = i;
 		emit(REX_ADD_I);
 		emitByte(0xc0 + reg);
-		emitByte(1 << shift);
+		emit32(1 << shift);
 		emit(REX_TEST);
 		emitByte(0xc0 + reg);
 		emit32(conditionMask);
