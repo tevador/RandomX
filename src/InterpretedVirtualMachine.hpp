@@ -121,7 +121,7 @@ namespace RandomX {
 		int count_retdepth = 0;
 		int count_retdepth_max = 0;
 		int count_endstack = 0;
-		int count_instructions[ProgramLength] = { 0 };
+		int count_instructions[RANDOMX_PROGRAM_SIZE] = { 0 };
 		int count_FADD_nop = 0;
 		int count_FADD_nop2 = 0;
 		int count_FSUB_nop = 0;
