@@ -86,8 +86,10 @@ namespace RandomX {
 	const uint8_t* codeLoopLoad = (uint8_t*)&randomx_program_loop_load;
 	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
 	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
+	const uint8_t* codeReadDatasetLight = (uint8_t*)&randomx_program_read_dataset_light;
 	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
 	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
+	const uint8_t* codeReadDatasetLightSub = (uint8_t*)&randomx_program_read_dataset_light_sub;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
 
@@ -95,10 +97,13 @@ namespace RandomX {
 	const int32_t epilogueSize = codeProgramEnd - codeEpilogue;
 
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
-	const int32_t readDatasetSize = codeLoopStore - codeReadDataset;
+	const int32_t readDatasetSize = codeReadDatasetLight - codeReadDataset;
+	const int32_t readDatasetLightSize = codeLoopStore - codeReadDatasetLight;
 	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
+	const int32_t readDatasetLightSubSize = codeEpilogue - codeReadDatasetLightSub;
 
 	const int32_t epilogueOffset = CodeSize - epilogueSize;
+	const int32_t readDatasetLightSubOffset = epilogueOffset - readDatasetLightSubSize;
 
 	static const uint8_t REX_ADD_RR[] = { 0x4d, 0x03 };
 	static const uint8_t REX_ADD_RM[] = { 0x4c, 0x03 };
@@ -168,6 +173,7 @@ namespace RandomX {
 	static const uint8_t REX_ANDPS_XMM12[] = { 0x45, 0x0F, 0x54, 0xE5, 0x45, 0x0F, 0x56, 0xE6 };
 	static const uint8_t REX_PADD[] = { 0x66, 0x44, 0x0f };
 	static const uint8_t PADD_OPCODES[] = { 0xfc, 0xfd, 0xfe, 0xd4 };
+	static const uint8_t CALL = 0xe8;
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize;
@@ -176,10 +182,27 @@ namespace RandomX {
 	JitCompilerX86::JitCompilerX86() {
 		code = (uint8_t*)allocExecutableMemory(CodeSize);
 		memcpy(code, codePrologue, prologueSize);
-		memcpy(code + CodeSize - epilogueSize, codeEpilogue, epilogueSize);
+		memcpy(code + epilogueOffset, codeEpilogue, epilogueSize);
+		memcpy(code + readDatasetLightSubOffset, codeReadDatasetLightSub, readDatasetLightSubSize);
 	}
 
 	void JitCompilerX86::generateProgram(Program& prog) {
+		generateProgramPrologue(prog);
+		memcpy(code + codePos, codeReadDataset, readDatasetSize);
+		codePos += readDatasetSize;
+		generateProgramEpilogue(prog);
+	}
+
+	void JitCompilerX86::generateProgramLight(Program& prog) {
+		generateProgramPrologue(prog);
+		memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
+		codePos += readDatasetLightSize;
+		emitByte(CALL);
+		emit32(readDatasetLightSubOffset - (codePos + 4));
+		generateProgramEpilogue(prog);
+	}
+
+	void JitCompilerX86::generateProgramPrologue(Program& prog) {
 		auto addressRegisters = prog.getEntropy(12);
 		uint32_t readReg0 = 0 + (addressRegisters & 1);
 		addressRegisters >>= 1;
@@ -205,8 +228,9 @@ namespace RandomX {
 		emitByte(0xc0 + readReg2);
 		emit(REX_XOR_EAX);
 		emitByte(0xc0 + readReg3);
-		memcpy(code + codePos, codeReadDataset, readDatasetSize);
-		codePos += readDatasetSize;
+	}
+
+	void JitCompilerX86::generateProgramEpilogue(Program& prog) {
 		memcpy(code + codePos, codeLoopStore, loopStoreSize);
 		codePos += loopStoreSize;
 		emit(SUB_EBX);

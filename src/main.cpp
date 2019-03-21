@@ -19,6 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //#define TRACE
 #include "InterpretedVirtualMachine.hpp"
 #include "CompiledVirtualMachine.hpp"
+#include "CompiledLightVirtualMachine.hpp"
 #include "AssemblyGeneratorX86.hpp"
 #include "Stopwatch.hpp"
 #include "blake2/blake2.h"
@@ -202,7 +203,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative;
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit;
 	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -214,7 +215,7 @@ int main(int argc, char** argv) {
 	readIntOption("--init", argc, argv, initThreadCount, 1);
 	readIntOption("--epoch", argc, argv, epoch, 0);
 	readOption("--largePages", argc, argv, largePages);
-	readOption("--async", argc, argv, async);
+	readOption("--jit", argc, argv, jit);
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--help", argc, argv, help);
 
@@ -299,7 +300,10 @@ int main(int argc, char** argv) {
 				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				vm = new RandomX::InterpretedVirtualMachine(softAes, async);
+				if (jit)
+					vm = new RandomX::CompiledLightVirtualMachine();
+				else
+					vm = new RandomX::InterpretedVirtualMachine(softAes, async);
 			}
 			vm->setDataset(dataset, datasetSize);
 			vms.push_back(vm);

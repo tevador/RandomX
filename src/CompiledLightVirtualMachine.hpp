@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -17,16 +17,28 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-extern "C" {
-	void randomx_program_prologue();
-	void randomx_program_loop_begin();
-	void randomx_program_loop_load();
-	void randomx_program_start();
-	void randomx_program_read_dataset();
-	void randomx_program_read_dataset_light();
-	void randomx_program_loop_store();
-	void randomx_program_loop_end();
-	void randomx_program_read_dataset_light_sub();
-	void randomx_program_epilogue();
-	void randomx_program_end();
+#pragma once
+//#define TRACEVM
+#include <new>
+#include "CompiledVirtualMachine.hpp"
+#include "JitCompilerX86.hpp"
+#include "intrinPortable.h"
+
+namespace RandomX {
+
+	class CompiledLightVirtualMachine : public CompiledVirtualMachine {
+	public:
+		void* operator new(size_t size) {
+			void* ptr = _mm_malloc(size, 64);
+			if (ptr == nullptr)
+				throw std::bad_alloc();
+			return ptr;
+		}
+		void operator delete(void* ptr) {
+			_mm_free(ptr);
+		}
+		CompiledLightVirtualMachine();
+		void setDataset(dataset_t ds, uint64_t size) override;
+		void initialize() override;
+	};
 }

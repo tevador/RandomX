@@ -37,6 +37,7 @@ namespace RandomX {
 	public:
 		JitCompilerX86();
 		void generateProgram(Program&);
+		void generateProgramLight(Program&);
 		ProgramFunc getProgramFunc() {
 			return (ProgramFunc)code;
 		}
@@ -49,6 +50,8 @@ namespace RandomX {
 		uint8_t* code;
 		int32_t codePos;
 
+		void generateProgramPrologue(Program&);
+		void generateProgramEpilogue(Program&);
 		void genAddressReg(Instruction&, bool);
 		void genAddressRegDst(Instruction&, bool);
 		void genAddressImm(Instruction&);

@@ -24,6 +24,8 @@ PUBLIC randomx_program_loop_begin
 PUBLIC randomx_program_loop_load
 PUBLIC randomx_program_start
 PUBLIC randomx_program_read_dataset
+PUBLIC randomx_program_read_dataset_light
+PUBLIC randomx_program_read_dataset_light_sub
 PUBLIC randomx_program_loop_store
 PUBLIC randomx_program_loop_end
 PUBLIC randomx_program_epilogue
@@ -54,6 +56,10 @@ randomx_program_read_dataset PROC
 	include asm/program_read_dataset.inc
 randomx_program_read_dataset ENDP
 
+randomx_program_read_dataset_light PROC
+	include asm/program_read_dataset_light.inc
+randomx_program_read_dataset_light ENDP
+
 randomx_program_loop_store PROC
 	include asm/program_loop_store.inc
 randomx_program_loop_store ENDP
@@ -61,6 +67,13 @@ randomx_program_loop_store ENDP
 randomx_program_loop_end PROC
 	nop
 randomx_program_loop_end ENDP
+
+ALIGN 64
+randomx_program_read_dataset_light_sub PROC
+	include asm/program_read_dataset_light_sub.inc
+	squareHashSub:
+		include asm/squareHash.inc
+randomx_program_read_dataset_light_sub ENDP
 
 ALIGN 64
 randomx_program_epilogue PROC

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -17,16 +17,24 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-extern "C" {
-	void randomx_program_prologue();
-	void randomx_program_loop_begin();
-	void randomx_program_loop_load();
-	void randomx_program_start();
-	void randomx_program_read_dataset();
-	void randomx_program_read_dataset_light();
-	void randomx_program_loop_store();
-	void randomx_program_loop_end();
-	void randomx_program_read_dataset_light_sub();
-	void randomx_program_epilogue();
-	void randomx_program_end();
+#include "CompiledLightVirtualMachine.hpp"
+#include "common.hpp"
+#include <stdexcept>
+
+namespace RandomX {
+
+	CompiledLightVirtualMachine::CompiledLightVirtualMachine() {
+	}
+
+	void CompiledLightVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
+		mem.ds = ds;
+		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		//datasetBasePtr = ds.dataset.memory;
+	}
+
+	void CompiledLightVirtualMachine::initialize() {
+		VirtualMachine::initialize();
+		compiler.generateProgramLight(program);
+		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
+	}
 }

@@ -48,10 +48,7 @@ namespace RandomX {
 		void* getProgram() {
 			return compiler.getCode();
 		}
-	private:
-#ifdef TRACEVM
-		convertible_t tracepad[InstructionCount];
-#endif
+	protected:
 		JitCompilerX86 compiler;
 		uint8_t* datasetBasePtr;
 	};
