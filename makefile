@@ -70,7 +70,7 @@ $(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachin
 $(OBJDIR)/CompiledLightVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledLightVirtualMachine.cpp CompiledLightVirtualMachine.hpp common.hpp configuration.h JitCompilerX86.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/CompiledLightVirtualMachine.cpp -o $@
   
-$(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp blake2/endian.h dataset.hpp intrinPortable.h Cache.hpp virtualMemory.hpp configuration.h) | $(OBJDIR)
+$(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp blake2/endian.h dataset.hpp intrinPortable.h Cache.hpp virtualMemory.hpp configuration.h squareHash.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/dataset.cpp -o $@
 
 $(OBJDIR)/reciprocal.o: $(addprefix $(SRCDIR)/,reciprocal.c reciprocal.h) | $(OBJDIR)

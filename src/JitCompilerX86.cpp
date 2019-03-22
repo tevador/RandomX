@@ -38,6 +38,10 @@ namespace RandomX {
 
 	}
 
+	void JitCompilerX86::generateProgramLight(Program& p) {
+
+	}
+
 	size_t JitCompilerX86::getCodeSize() {
 		return 0;
 	}
