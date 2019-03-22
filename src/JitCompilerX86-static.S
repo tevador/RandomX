@@ -31,8 +31,10 @@
 .global DECL(randomx_program_loop_load)
 .global DECL(randomx_program_start)
 .global DECL(randomx_program_read_dataset)
+.global DECL(randomx_program_read_dataset_light)
 .global DECL(randomx_program_loop_store)
 .global DECL(randomx_program_loop_end)
+.global DECL(randomx_program_read_dataset_light_sub)
 .global DECL(randomx_program_epilogue)
 .global DECL(randomx_program_end)
 
@@ -58,11 +60,20 @@ DECL(randomx_program_start):
 DECL(randomx_program_read_dataset):
 	#include "asm/program_read_dataset.inc"
 
+DECL(randomx_program_read_dataset_light):
+	#include "asm/program_read_dataset_light.inc"
+
 DECL(randomx_program_loop_store):
 	#include "asm/program_loop_store.inc"
 
 DECL(randomx_program_loop_end):
 	nop
+
+.balign 64
+DECL(randomx_program_read_dataset_light_sub):
+	#include "asm/program_read_dataset_light_sub.inc"
+squareHashSub:
+	#include "asm/squareHash.inc"
 
 .balign 64
 DECL(randomx_program_epilogue):

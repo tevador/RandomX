@@ -9,7 +9,7 @@ OBJDIR=obj
 LDFLAGS=-lpthread
 CPPSRC=src/argon2_core.c src/Cache.cpp src/divideByConstantCodegen.c src/Instruction.cpp src/JitCompilerX86.cpp src/Program.cpp src/VirtualMachine.cpp src/argon2_ref.c src/CompiledVirtualMachine.cpp src/executeProgram-linux.cpp src/instructionsPortable.cpp src/LightClientAsyncWorker.cpp src/softAes.cpp src/virtualMemory.cpp src/AssemblyGeneratorX86.cpp  src/dataset.cpp src/hashAes1Rx4.cpp src/InterpretedVirtualMachine.cpp src/main.cpp src/TestAluFpu.cpp src/blake2/blake2b.c
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o LightClientAsyncWorker.o hashAes1Rx4.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o CompiledLightVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o LightClientAsyncWorker.o hashAes1Rx4.o)
 ifeq ($(PLATFORM),amd64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
     CXXFLAGS += -maes
@@ -23,7 +23,12 @@ all: release
 
 release: CXXFLAGS += -march=native -O3 -flto
 release: CCFLAGS += -march=native -O3 -flto
+release: LDFLAGS += -flto
 release: $(BINDIR)/randomx
+
+nolto: CXXFLAGS += -march=native -O3
+nolto: CCFLAGS += -march=native -O3
+nolto: $(BINDIR)/randomx
 
 debug: CXXFLAGS += -g
 debug: CCFLAGS += -g
@@ -59,8 +64,11 @@ $(OBJDIR)/AssemblyGeneratorX86.o: $(addprefix $(SRCDIR)/,AssemblyGeneratorX86.cp
 $(OBJDIR)/blake2b.o: $(addprefix $(SRCDIR)/blake2/,blake2b.c blake2.h blake2-impl.h endian.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/blake2/blake2b.c -o $@
 
-$(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachine.cpp CompiledVirtualMachine.hpp common.hpp configuration.h) | $(OBJDIR)
+$(OBJDIR)/CompiledVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledVirtualMachine.cpp CompiledVirtualMachine.hpp common.hpp configuration.h JitCompilerX86.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/CompiledVirtualMachine.cpp -o $@
+
+$(OBJDIR)/CompiledLightVirtualMachine.o: $(addprefix $(SRCDIR)/,CompiledLightVirtualMachine.cpp CompiledLightVirtualMachine.hpp common.hpp configuration.h JitCompilerX86.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/CompiledLightVirtualMachine.cpp -o $@
   
 $(OBJDIR)/dataset.o: $(addprefix $(SRCDIR)/,dataset.cpp common.hpp blake2/endian.h dataset.hpp intrinPortable.h Cache.hpp virtualMemory.hpp configuration.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/dataset.cpp -o $@
@@ -74,10 +82,10 @@ $(OBJDIR)/hashAes1Rx4.o: $(addprefix $(SRCDIR)/,hashAes1Rx4.cpp softAes.h intrin
 $(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp instructionWeights.hpp common.hpp blake2/endian.h Program.hpp reciprocal.h virtualMemory.hpp configuration.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/JitCompilerX86.cpp -o $@
 
-$(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read_dataset.inc loop_load.inc loop_store.inc xmm_constants.inc)) | $(OBJDIR)
+$(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read_dataset.inc loop_load.inc loop_store.inc xmm_constants.inc read_dataset_light.inc read_dataset_light_sub.inc)) | $(OBJDIR)
 	$(CXX) -x assembler-with-cpp -c $(SRCDIR)/JitCompilerX86-static.S -o $@
 
-$(OBJDIR)/squareHash.o: $(addprefix $(SRCDIR)/,squareHash.S $(addprefix asm/, squareHash.inc) configuration.h)  | $(OBJDIR)
+$(OBJDIR)/squareHash.o: $(addprefix $(SRCDIR)/,squareHash.S $(addprefix asm/, squareHash.inc initBlock.inc) configuration.h)  | $(OBJDIR)
 	$(CXX) -x assembler-with-cpp -c $(SRCDIR)/squareHash.S -o $@
 
 $(OBJDIR)/instructionsPortable.o: $(addprefix $(SRCDIR)/,instructionsPortable.cpp intrinPortable.h blake2/endian.h common.hpp) | $(OBJDIR)
