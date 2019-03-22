@@ -44,7 +44,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_DS_GROWTH          0
 
 //Number of blocks per epoch
-#define RANDOMX_EPOCH_BLOCKS       1024
+#define RANDOMX_EPOCH_BLOCKS       2048
 
 //Number of blocks between the seed block and the start of new epoch
 #define RANDOMX_EPOCH_LAG          64
