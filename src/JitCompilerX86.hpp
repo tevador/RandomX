@@ -29,7 +29,7 @@ namespace RandomX {
 	class Program;
 	class JitCompilerX86;
 
-	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&);
+	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
 
 	constexpr uint32_t CodeSize = 64 * 1024;
 
@@ -47,17 +47,21 @@ namespace RandomX {
 		size_t getCodeSize();
 	private:
 		static InstructionGeneratorX86 engine[256];
+		std::vector<int32_t> instructionOffsets;
+		int registerUsage[8];
 		uint8_t* code;
 		int32_t codePos;
 
 		void generateProgramPrologue(Program&);
 		void generateProgramEpilogue(Program&);
+		int getConditionRegister();
 		void genAddressReg(Instruction&, bool);
 		void genAddressRegDst(Instruction&, bool);
 		void genAddressImm(Instruction&);
 		void genSIB(int scale, int index, int base);
 
-		void generateCode(Instruction&);
+		void handleCondition(Instruction&, int);
+		void generateCode(Instruction&, int);
 
 		void emitByte(uint8_t val) {
 			code[codePos] = val;
@@ -92,43 +96,43 @@ namespace RandomX {
 			codePos += N;
 		}
 
-		void  h_IADD_R(Instruction&);
-		void  h_IADD_M(Instruction&);
-		void  h_IADD_RC(Instruction&);
-		void  h_ISUB_R(Instruction&);
-		void  h_ISUB_M(Instruction&);
-		void  h_IMUL_9C(Instruction&);
-		void  h_IMUL_R(Instruction&);
-		void  h_IMUL_M(Instruction&);
-		void  h_IMULH_R(Instruction&);
-		void  h_IMULH_M(Instruction&);
-		void  h_ISMULH_R(Instruction&);
-		void  h_ISMULH_M(Instruction&);
-		void  h_IMUL_RCP(Instruction&);
-		void  h_ISDIV_C(Instruction&);
-		void  h_INEG_R(Instruction&);
-		void  h_IXOR_R(Instruction&);
-		void  h_IXOR_M(Instruction&);
-		void  h_IROR_R(Instruction&);
-		void  h_IROL_R(Instruction&);
-		void  h_ISWAP_R(Instruction&);
-		void  h_FSWAP_R(Instruction&);
-		void  h_FADD_R(Instruction&);
-		void  h_FADD_M(Instruction&);
-		void  h_FSUB_R(Instruction&);
-		void  h_FSUB_M(Instruction&);
-		void  h_FSCAL_R(Instruction&);
-		void  h_FMUL_R(Instruction&);
-		void  h_FMUL_M(Instruction&);
-		void  h_FDIV_R(Instruction&);
-		void  h_FDIV_M(Instruction&);
-		void  h_FSQRT_R(Instruction&);
-		void  h_COND_R(Instruction&);
-		void  h_COND_M(Instruction&);
-		void  h_CFROUND(Instruction&);
-		void  h_ISTORE(Instruction&);
-		void  h_FSTORE(Instruction&);
-		void  h_NOP(Instruction&);
+		void  h_IADD_R(Instruction&, int);
+		void  h_IADD_M(Instruction&, int);
+		void  h_IADD_RC(Instruction&, int);
+		void  h_ISUB_R(Instruction&, int);
+		void  h_ISUB_M(Instruction&, int);
+		void  h_IMUL_9C(Instruction&, int);
+		void  h_IMUL_R(Instruction&, int);
+		void  h_IMUL_M(Instruction&, int);
+		void  h_IMULH_R(Instruction&, int);
+		void  h_IMULH_M(Instruction&, int);
+		void  h_ISMULH_R(Instruction&, int);
+		void  h_ISMULH_M(Instruction&, int);
+		void  h_IMUL_RCP(Instruction&, int);
+		void  h_ISDIV_C(Instruction&, int);
+		void  h_INEG_R(Instruction&, int);
+		void  h_IXOR_R(Instruction&, int);
+		void  h_IXOR_M(Instruction&, int);
+		void  h_IROR_R(Instruction&, int);
+		void  h_IROL_R(Instruction&, int);
+		void  h_ISWAP_R(Instruction&, int);
+		void  h_FSWAP_R(Instruction&, int);
+		void  h_FADD_R(Instruction&, int);
+		void  h_FADD_M(Instruction&, int);
+		void  h_FSUB_R(Instruction&, int);
+		void  h_FSUB_M(Instruction&, int);
+		void  h_FSCAL_R(Instruction&, int);
+		void  h_FMUL_R(Instruction&, int);
+		void  h_FMUL_M(Instruction&, int);
+		void  h_FDIV_R(Instruction&, int);
+		void  h_FDIV_M(Instruction&, int);
+		void  h_FSQRT_R(Instruction&, int);
+		void  h_COND_R(Instruction&, int);
+		void  h_COND_M(Instruction&, int);
+		void  h_CFROUND(Instruction&, int);
+		void  h_ISTORE(Instruction&, int);
+		void  h_FSTORE(Instruction&, int);
+		void  h_NOP(Instruction&, int);
 	};
 
 }

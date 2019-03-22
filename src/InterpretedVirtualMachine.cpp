@@ -18,6 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 //#define TRACE
 //#define FPUCHECK
+#define RANDOMX_JUMP
 #include "InterpretedVirtualMachine.hpp"
 #include "dataset.hpp"
 #include "Cache.hpp"
@@ -45,25 +46,12 @@ constexpr bool fpuCheck = false;
 namespace RandomX {
 
 	InterpretedVirtualMachine::~InterpretedVirtualMachine() {
-		if (asyncWorker) {
-			delete mem.ds.asyncWorker;
-		}
+
 	}
 
 	void InterpretedVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
-		if (asyncWorker) {
-			if (softAes) {
-				mem.ds.asyncWorker = new LightClientAsyncWorker(ds.cache);
-			}
-			else {
-				mem.ds.asyncWorker = new LightClientAsyncWorker(ds.cache);
-			}
-			readDataset = &datasetReadLightAsync;
-		}
-		else {
-			mem.ds = ds;
-			readDataset = &datasetReadLight;
-		}
+		mem.ds = ds;
+		readDataset = &datasetReadLight;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
 	}
 
@@ -75,14 +63,10 @@ namespace RandomX {
 		}
 	}
 
-	template<int N>
 	void InterpretedVirtualMachine::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		executeBytecode(N, r, f, e, a);
-		executeBytecode<N + 1>(r, f, e, a);
-	}
-
-	template<>
-	void InterpretedVirtualMachine::executeBytecode<RANDOMX_PROGRAM_SIZE>(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+		for (int ic = 0; ic < RANDOMX_PROGRAM_SIZE; ++ic) {
+			executeBytecode(ic, r, f, e, a);
+		}
 	}
 
 	static void print(int_reg_t r) {
@@ -114,8 +98,9 @@ namespace RandomX {
 		return std::fpclassify(x) == FP_SUBNORMAL;
 	}
 
-	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		auto& ibc = byteCode[i];
+	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+		auto& ibc = byteCode[ic];
+		if (trace) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
 		//if(trace) printState(r, f, e, a);
 		switch (ibc.type)
 		{
@@ -234,10 +219,38 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::COND_R: {
+#ifdef RANDOMX_JUMP
+				*ibc.creg += (1 << ibc.shift);
+				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
+				if ((*ibc.creg & conditionMask) == 0) {
+#ifdef STATS
+					count_JUMP_taken++;
+#endif
+					ic = ibc.target;
+					break;
+				}
+#ifdef STATS
+				count_JUMP_not_taken++;
+#endif
+#endif
 				*ibc.idst += condition(ibc.condition, *ibc.isrc, ibc.imm) ? 1 : 0;
 			} break;
 
 			case InstructionType::COND_M: {
+#ifdef RANDOMX_JUMP
+				*ibc.creg += (1uLL << ibc.shift);
+				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
+				if ((*ibc.creg & conditionMask) == 0) {
+#ifdef STATS
+					count_JUMP_taken++;
+#endif
+					ic = ibc.target;
+					break;
+				}
+#ifdef STATS
+				count_JUMP_not_taken++;
+#endif
+#endif
 				*ibc.idst += condition(ibc.condition, load64(scratchpad + (*ibc.isrc & ibc.memMask)), ibc.imm) ? 1 : 0;
 			} break;
 
@@ -257,7 +270,6 @@ namespace RandomX {
 				UNREACHABLE;
 		}
 		if (trace) {
-			std::cout << program(i);
 			if(ibc.type < 20 || ibc.type == 31 || ibc.type == 32)
 				print(*ibc.idst);
 			else //if(ibc.type >= 20 && ibc.type <= 30)
@@ -334,28 +346,15 @@ namespace RandomX {
 				std::cout << "-----------------------------------" << std::endl;
 			}
 
-			executeBytecode<0>(r, f, e, a);
+			executeBytecode(r, f, e, a);
 
-			if (asyncWorker) {
-				ILightClientAsyncWorker* aw = mem.ds.asyncWorker;
-				const uint64_t* datasetLine = aw->getBlock(datasetBase + mem.ma);
-				for (int i = 0; i < RegistersCount; ++i)
-					r[i] ^= datasetLine[i];
-				mem.mx ^= r[readReg2] ^ r[readReg3];
-				mem.mx &= CacheLineAlignMask; //align to cache line
-				std::swap(mem.mx, mem.ma);
-				aw->prepareBlock(datasetBase + mem.ma);
-			}
-			else {
-				mem.mx ^= r[readReg2] ^ r[readReg3];
-				//mem.mx &= CacheLineAlignMask;
-				Cache& cache = mem.ds.cache;
-				uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-				initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
-				for (int i = 0; i < RegistersCount; ++i)
-					r[i] ^= datasetLine[i];
-				std::swap(mem.mx, mem.ma);
-			}
+			mem.mx ^= r[readReg2] ^ r[readReg3];
+			Cache& cache = mem.ds.cache;
+			uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
+			initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
+			for (int i = 0; i < RegistersCount; ++i)
+				r[i] ^= datasetLine[i];
+			std::swap(mem.mx, mem.ma);
 
 			if (trace) {
 				std::cout << "iteration " << std::dec << ic << std::endl;
@@ -419,9 +418,25 @@ namespace RandomX {
 		_mm_store_pd(&reg.e[3].lo, e[3]);
 	}
 
+	static int getConditionRegister(int(&registerUsage)[8]) {
+		int min = INT_MAX;
+		int minIndex;
+		for (unsigned i = 0; i < 8; ++i) {
+			if (registerUsage[i] < min) {
+				min = registerUsage[i];
+				minIndex = i;
+			}
+		}
+		return minIndex;
+	}
+
 #include "instructionWeights.hpp"
 
 	void InterpretedVirtualMachine::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+		int registerUsage[8];
+		for (unsigned i = 0; i < 8; ++i) {
+			registerUsage[i] = -1;
+		}
 		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			auto& instr = program(i);
 			auto& ibc = byteCode[i];
@@ -438,6 +453,7 @@ namespace RandomX {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IADD_M) {
@@ -454,6 +470,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IADD_RC) {
@@ -463,6 +480,7 @@ namespace RandomX {
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(ISUB_R) {
@@ -477,6 +495,7 @@ namespace RandomX {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(ISUB_M) {
@@ -493,6 +512,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMUL_9C) {
@@ -500,6 +520,7 @@ namespace RandomX {
 					ibc.type = InstructionType::IMUL_9C;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMUL_R) {
@@ -514,6 +535,7 @@ namespace RandomX {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMUL_M) {
@@ -530,6 +552,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMULH_R) {
@@ -538,6 +561,7 @@ namespace RandomX {
 					ibc.type = InstructionType::IMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMULH_M) {
@@ -554,6 +578,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(ISMULH_R) {
@@ -562,6 +587,7 @@ namespace RandomX {
 					ibc.type = InstructionType::ISMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(ISMULH_M) {
@@ -578,6 +604,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IMUL_RCP) {
@@ -588,6 +615,7 @@ namespace RandomX {
 						ibc.idst = &r[dst];
 						ibc.imm = reciprocal(divisor);
 						ibc.isrc = &ibc.imm;
+						registerUsage[instr.dst] = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -598,6 +626,7 @@ namespace RandomX {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::INEG_R;
 					ibc.idst = &r[dst];
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IXOR_R) {
@@ -612,6 +641,7 @@ namespace RandomX {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IXOR_M) {
@@ -628,6 +658,7 @@ namespace RandomX {
 						ibc.isrc = &ibc.imm;
 						ibc.memMask = ScratchpadL3Mask;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IROR_R) {
@@ -642,6 +673,7 @@ namespace RandomX {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(IROL_R) {
@@ -656,6 +688,7 @@ namespace RandomX {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
+					registerUsage[instr.dst] = i;
 				} break;
 
 				CASE_REP(ISWAP_R) {
@@ -665,6 +698,8 @@ namespace RandomX {
 						ibc.idst = &r[dst];
 						ibc.isrc = &r[src];
 						ibc.type = InstructionType::ISWAP_R;
+						registerUsage[instr.dst] = i;
+						registerUsage[instr.src] = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -751,6 +786,14 @@ namespace RandomX {
 					ibc.isrc = &r[src];
 					ibc.condition = (instr.mod >> 2) & 7;
 					ibc.imm = instr.getImm32();
+					//jump condition
+					int reg = getConditionRegister(registerUsage);
+					ibc.target = registerUsage[reg];
+					ibc.shift = (instr.mod >> 5);
+					ibc.creg = &r[reg];
+					for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
+						registerUsage[j] = i;
+					}
 				} break;
 
 				CASE_REP(COND_M) {
@@ -762,6 +805,14 @@ namespace RandomX {
 					ibc.condition = (instr.mod >> 2) & 7;
 					ibc.imm = instr.getImm32();
 					ibc.memMask = ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+					//jump condition
+					int reg = getConditionRegister(registerUsage);
+					ibc.target = registerUsage[reg];
+					ibc.shift = (instr.mod >> 5);
+					ibc.creg = &r[reg];
+					for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
+						registerUsage[j] = i;
+					}
 				} break;
 
 				CASE_REP(CFROUND) {

@@ -52,9 +52,12 @@ namespace RandomX {
 			uint64_t imm;
 			int64_t simm;
 		};
-		uint32_t condition;
+		int_reg_t* creg;
+		uint16_t condition;
+		int16_t target;
 		uint32_t memMask;
-		uint32_t type;
+		uint16_t type;
+		uint16_t shift;
 	};
 
 	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
@@ -70,7 +73,7 @@ namespace RandomX {
 		void operator delete(void* ptr) {
 			_mm_free(ptr);
 		}
-		InterpretedVirtualMachine(bool soft, bool async) : softAes(soft), asyncWorker(async) {}
+		InterpretedVirtualMachine(bool soft) : softAes(soft) {}
 		~InterpretedVirtualMachine();
 		void setDataset(dataset_t ds, uint64_t size) override;
 		void initialize() override;
@@ -78,7 +81,7 @@ namespace RandomX {
 	private:
 		static InstructionHandler engine[256];
 		DatasetReadFunc readDataset;
-		bool softAes, asyncWorker;
+		bool softAes;
 		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
 		
 #ifdef STATS
@@ -112,17 +115,13 @@ namespace RandomX {
 		int count_FPROUND = 0;
 		int count_JUMP_taken = 0;
 		int count_JUMP_not_taken = 0;
-		int count_CALL_taken = 0;
-		int count_CALL_not_taken = 0;
-		int count_RET_stack_empty = 0;
-		int count_RET_taken = 0;
 		int count_jump_taken[8] = { 0 };
 		int count_jump_not_taken[8] = { 0 };
 		int count_max_stack = 0;
 		int count_retdepth = 0;
 		int count_retdepth_max = 0;
 		int count_endstack = 0;
-		int count_instructions[ProgramLength] = { 0 };
+		int count_instructions[RANDOMX_PROGRAM_SIZE] = { 0 };
 		int count_FADD_nop = 0;
 		int count_FADD_nop2 = 0;
 		int count_FSUB_nop = 0;
@@ -132,8 +131,7 @@ namespace RandomX {
 		int datasetAccess[256] = { 0 };
 #endif
 		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		template<int N>
 		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void executeBytecode(int i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 	};
 }
