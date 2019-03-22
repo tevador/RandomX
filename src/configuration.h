@@ -35,13 +35,13 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_ARGON_SALT         "RandomX\x03"
 
 //Number of random Cache accesses per Dataset block. Minimum is 2.
-#define RANDOMX_CACHE_ACCESSES     16
+#define RANDOMX_CACHE_ACCESSES     8
 
 //Dataset size in bytes. Must be a power of 2.
-#define RANDOMX_DATASET_SIZE       (4ULL * 1024 * 1024 * 1024)
+#define RANDOMX_DATASET_SIZE       (2ULL * 1024 * 1024 * 1024)
 
 //Dataset growth per epoch in bytes. Must be divisible by 64.
-#define RANDOMX_DS_GROWTH          (2 * 1024 * 1024)
+#define RANDOMX_DS_GROWTH          0
 
 //Number of blocks per epoch
 #define RANDOMX_EPOCH_BLOCKS       1024

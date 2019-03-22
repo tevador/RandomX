@@ -204,6 +204,10 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::generateProgramLight(Program& prog) {
+		if (RANDOMX_CACHE_ACCESSES != 8)
+			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
+		if (RANDOMX_ARGON_GROWTH != 0)
+			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
 		generateProgramPrologue(prog);
 		memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
 		codePos += readDatasetLightSize;
