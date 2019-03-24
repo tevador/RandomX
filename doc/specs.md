@@ -16,19 +16,20 @@ RandomX has several configurable parameters that are listed in Table 1.1.1 with 
 |`RANDOMX_ARGON_ITERATIONS`|`3`|
 |`RANDOMX_ARGON_LANES`|`1`|
 |`RANDOMX_ARGON_SALT`|`52 61 6e 64 6f 6d 58 03` (`"RandomX\x03"`)|
-|`RANDOMX_CACHE_ACCESSES`|`16`|
-|`RANDOMX_DATASET_SIZE`|`(4ULL * 1024 * 1024 * 1024)` (4 GiB)|
-|`RANDOMX_DS_GROWTH`|`(2 * 1024 * 1024)`|
-|`RANDOMX_EPOCH_BLOCKS`|`1024`|
+|`RANDOMX_CACHE_ACCESSES`|`8`|
+|`RANDOMX_DATASET_SIZE`|`(2ULL * 1024 * 1024 * 1024)` (2 GiB)|
+|`RANDOMX_DS_GROWTH`|`0`|
+|`RANDOMX_EPOCH_BLOCKS`|`2048`|
 |`RANDOMX_EPOCH_LAG`|`64`|
 |`RANDOMX_PROGRAM_SIZE`|`256`|
 |`RANDOMX_PROGRAM_ITERATIONS`|`2048`|
 |`RANDOMX_PROGRAM_COUNT`|`8`|
+|`RANDOMX_CONDITION_BITS`|`7`|
 |`RANDOMX_SCRATCHPAD_L3`|`(2 * 1024 * 1024)` (2 MiB)|
 |`RANDOMX_SCRATCHPAD_L2`|`(256 * 1024)` (256 KiB)|
 |`RANDOMX_SCRATCHPAD_L1`|`(16 * 1024)` (16 KiB)|
 
-Instruction frequencies listed in Tables 5.2.1, 5.3.1 and 5.4.1 are also configurable.
+Instruction frequencies listed in Tables 5.2.1, 5.3.1, 5.4.1 and 5.5.1 are also configurable.
 
 ### 1.2 Definitions
 
@@ -373,10 +374,11 @@ There are 256 opcodes, which are distributed between 32 distinct instructions. E
 |---------|-----------------|----|-|
 |integer |19|137|53.5%|
 |floating point |9|94|36.7%|
-|other |4|25|9.8%|
+|store |2|17|6.6%|
+|conditional |2|8|3.2%|
 ||**32**|**256**|**100%**
 
-All instructions are described below in chapters 5.2 - 5.4.
+All instructions are described below in chapters 5.2 - 5.5.
 
 #### 5.1.2 dst
 Destination register. Only bits 0-1 (register groups A, F, E) or 0-2 (groups R, F+E) are used to encode a register according to Table 5.1.2.
@@ -412,7 +414,7 @@ The `mod` flag is encoded as:
 |----|--------|
 |0-1|`mod.mem` flag|
 |2-4|`mod.cond` flag|
-|5-7|Reserved|
+|5-7|`mod.shift` flag|
 
 The `mod.mem` flag determines the Scratchpad level when reading from or writing to memory except for cases when `address_base` is an immediate value.
 
@@ -426,7 +428,7 @@ The `mod.mem` flag determines the Scratchpad level when reading from or writing 
 
 The address for reading/writing is calculated by applying bitwise AND operation to `address_base` and the 8-byte aligned address mask listed in Table 4.2.1.
 
-The `mod.cond` flag is used only by the COND instruction to select a condition to be tested (see 5.4.1).
+The `mod.cond` and `mod.shift` flags is used only by the conditional instructions (see 5.5).
 
 #### 5.1.5 imm32
 A 32-bit immediate value that can be used as the source operand. The immediate value is sign-extended to 64 bits unless specified otherwise.
@@ -541,23 +543,58 @@ Double precision floating point division. This instruction uses only a memory so
 
 Double precision floating point square root of the destination register.
 
-### 5.4 Other instructions
-There are 4 special instructions that have more than one source operand or the destination operand is a memory value.
+### 5.4 Store instructions
+There are 2 explicit store instructions.
 
-**Table 5.4.1 - Other instructions**
+**Table 5.4.1 - Store instructions**
+
+|frequency|instruction|dst|src|operation|
+|-|-|-|-|-|
+|1/256|CFROUND|`fprc`|R|`fprc = src >>> imm32`
+|16/256|ISTORE|mem|R|`[dst] = src`
+
+#### 5.4.2 CFROUND
+This instruction calculates a 2-bit value by rotating the source register right by `imm32` bits and taking the 2 least significant bits (the value of the source register is unaffected). The result is stored in the `fprc` register. This changes the rounding mode of all subsequent floating point instructions.
+
+#### 5.4.3 ISTORE
+This instruction stores the value of the source integer register to the memory at the address specified by the destination register. The `src` and `dst` register can be the same.
+
+### 5.5 Conditional instructions
+
+There are 2 conditional instructions. They both behave exactly the same way except COND_R takes an explicit register source operand and COND_M takes an explicit memory operand. Additionally, both instructions have an implicit register operand.
+
+**Table 5.5.1 - Conditional instructions**
 
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
 |7/256|COND_R|R|R|`if(condition(src, imm32)) dst = dst + 1`
 |1/256|COND_M|R|mem|`if(condition([src], imm32)) dst = dst + 1`
-|1/256|CFROUND|`fprc`|R|`fprc = src >>> imm32`
-|16/256|ISTORE|mem|R|`[dst] = src`
 
-#### 5.4.1 COND
+The conditional instructions consist of two actions:
 
-These instructions conditionally increment the destination register. The condition function depends on the `mod.cond` flag and takes the lower 32 bits of the source operand and the value `imm32` (see Table 5.4.2). COND_R uses a register source operand, COND_M uses a memory source operand. Source and destination can be the same register.
+1. Conditionally jump back in the instruction stream.
+2. Conditionally increment the destination register.
 
-**Table 5.4.2 - Conditions**
+The conditional jump is evaluated first and if it's taken, the second action doesn't take place.
+
+#### 5.5.1 Conditional jump
+
+The conditional jump action uses an implicit register operand `creg`. It is the integer register which was least recently modified by a previous instruction. All registers are considered unmodified at the start of each program iteration. A register is considered as modified by an instruction in the following cases:
+
+* It is the destination register of an integer instruction except IMUL_RCP and ISWAP_R.
+* It is the destination register of IMUL_RCP and `imm32` is not zero.
+* It is the source or the destination register of ISWAP_R and the destination and source registers are distinct.
+* The COND_R and COND_M instructions are considered to modify all integer registers.
+
+Unmodified registers have priority over modified registers. In case of a tie, the register with lower index is selected (`r0` before `r1` etc.). 
+
+Before the jump condition is evaluated, `creg` is incremented by `1 << mod.shift`. Then, a bitwise AND operation is performed between `creg` and the condition mask. The condition mask is constructed as `RANDOMX_CONDITION_BITS` one-bits shifted right by `mod.shift`. If the result of the AND operation is zero, execution jumps to the instruction following the instruction when `creg` was last modified. If `creg` has not been modified during this program iteration, execution jumps back to the first instruction.
+
+#### 5.5.2 Conditional increment
+
+The destination register is conditionally incremented. The condition function depends on the `mod.cond` flag and takes the lower 32 bits of the source operand and the value `imm32` (see Table 5.4.2). COND_R uses a register source operand, COND_M uses a memory source operand. Source and destination can be the same register.
+
+**Table 5.5.2 - Conditions**
 
 |`mod.cond`|signed|`condition`|probability|*x86*|*ARM*
 |---|---|----------|-----|--|----|
@@ -571,12 +608,6 @@ These instructions conditionally increment the destination register. The conditi
 |7|yes|`src >= imm32`|0% - 100%|`JGE`|`BGE`
 
 The 'signed' column specifies if the operands are interpreted as signed or unsigned 32-bit numbers. Column 'probability' lists the expected probability the condition is true (range means that the actual value for a specific instruction depends on `imm32`). 
-
-#### 5.4.2 CFROUND
-This instruction sets the value of the `fprc` register to the 2 least significant bits of the source register rotated right by `imm32`. This changes the rounding mode of all subsequent floating point instructions.
-
-#### 5.4.3 ISTORE
-This instruction stores the value of the source integer register to the memory at the address specified by the destination register. The `src` and `dst` register can be the same.
 
 ## 6. Dataset
 
@@ -595,9 +626,9 @@ The whole dataset is constructed from a 256-bit hash of the last block whose hei
 
 |block|Seed block|
 |------|---------------------------------|
-|1-1088|Genesis block|
-|1088-2112|1024|
-|2113-3136|2048|
+|1-2112|Genesis block|
+|2113-4160|2048|
+|4161-6208|4096|
 |...|...
 
 ### 6.2 Cache construction
@@ -631,7 +662,7 @@ The block data is arranged into 8 columns of 64-bit unsigned integers: `c0`-`c7`
 1. Let `i = 0`
 1. Let `currentColumn` be column with index `i` (wraps around if `i > 7`).
 1. Let `nextColumn` be column with index `i + 1` (wraps around if `i > 6`).
-1. Load a 64-byte block from the Cache. The block index is given by `currentColumn` modulo the total number of blocks in Cache.
+1. Load a 64-byte block from the Cache. The block index is given by `currentColumn` modulo the total number of 64-byte blocks in Cache.
 1. Set `nextColumn = SquareHash(currentColumn + nextColumn)`
 1. XOR all columns with the 64 bytes loaded in step 6 (8 bytes per column in order `c0`-`c7`).
 1. Set `i = i + 1` and go back to step 4 if `i < RANDOMX_CACHE_ACCESSES`.

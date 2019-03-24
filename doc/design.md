@@ -30,11 +30,11 @@ Algorithms with a fixed or slowly changing sequence of operations can be impleme
 
 ### Branches
 
-Modern CPUs include a sophisticated branch predictor unit [[3](https://en.wikipedia.org/wiki/Branch_predictor)] to ensure uninterrupted flow of instructions. If a branch prediction fails, the speculatively executed instructions are thrown away, which results in a certain amount of wasted energy with each misprediction. To maximize the amount of useful work per unit of energy, mispredictions must be avoided.
+Modern CPUs include a sophisticated branch predictor unit [[3](https://en.wikipedia.org/wiki/Branch_predictor)] to ensure uninterrupted flow of instructions. If a branch prediction fails, the speculatively executed instructions are thrown away, which results in a certain amount of wasted energy with each misprediction. To maximize the amount of useful work per unit of energy, mispredictions must be minimized.
 
-For a consensus protocol, we could use either random branches or predefined branching patterns. With random branches, CPU misprediction rate is slightly higher than it would be without pattern recognition because the processor keeps trying to find repeated patterns in a sequence that has no regularities [[4](https://www.agner.org/optimize/microarchitecture.pdf)]. With predefined branching patterns, the general-purpose CPU predictor would be always less efficient than a specialized predictor that exactly matches the pattern.
+The best way to maximize CPU efficiency is not to have any branches at all. However, CPUs invest a lot of die area and energy to handle branches. Without branches, CPU design can be significantly simplified because there is no need for commit/retire stages, which must be part of all speculative-execution designs to be able to recover from branch mispredictions.
 
-Therefore, the best way to maximize CPU efficiency is not to have any branches at all. RandomX programs are branchless.
+RandomX therefore uses random branches with a jump probability of 1/128. These branches will be predicted as "not taken" by the CPU. Such branches are "free" in most CPU designs unless they are taken. The branching conditions and jump targets are chosen in such way that infinite loops in RandomX code are impossible because the register controlling the branch will never be modified in the repeated code block. The additional instructions executed due to branches represent less than 1% of all instructions.
 
 ### CPU Caches
 
