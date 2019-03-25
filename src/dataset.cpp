@@ -57,14 +57,14 @@ namespace RandomX {
 	}
 
 	static FORCE_INLINE void mixCache(uint8_t* mixBlock, uint64_t& c0, uint64_t& c1, uint64_t& c2, uint64_t& c3, uint64_t& c4, uint64_t& c5, uint64_t& c6, uint64_t& c7) {
-		c0 ^= load64(mixBlock + 0);
-		c1 ^= load64(mixBlock + 8);
-		c2 ^= load64(mixBlock + 16);
-		c3 ^= load64(mixBlock + 24);
-		c4 ^= load64(mixBlock + 32);
-		c5 ^= load64(mixBlock + 40);
-		c6 ^= load64(mixBlock + 48);
-		c7 ^= load64(mixBlock + 56);
+		c0 ^= load64np(mixBlock + 0);
+		c1 ^= load64np(mixBlock + 8);
+		c2 ^= load64np(mixBlock + 16);
+		c3 ^= load64np(mixBlock + 24);
+		c4 ^= load64np(mixBlock + 32);
+		c5 ^= load64np(mixBlock + 40);
+		c6 ^= load64np(mixBlock + 48);
+		c7 ^= load64np(mixBlock + 56);
 	}
 
 	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations) {

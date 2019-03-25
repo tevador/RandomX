@@ -60,6 +60,12 @@ static FORCE_INLINE uint64_t load64(const void *src) {
 #endif
 }
 
+static FORCE_INLINE uint64_t load64np(const void *src) {
+	uint64_t w;
+	memcpy(&w, src, sizeof w);
+	return w;
+}
+
 static FORCE_INLINE void store32(void *dst, uint32_t w) {
 #if defined(NATIVE_LITTLE_ENDIAN)
 	memcpy(dst, &w, sizeof w);
