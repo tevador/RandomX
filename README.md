@@ -4,82 +4,73 @@ RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose
 * Prevent the development of a single-chip [ASIC](https://en.wikipedia.org/wiki/Application-specific_integrated_circuit)
 * Minimize the efficiency advantage of specialized hardware compared to a general-purpose CPU
 
+## Specification
+
+Full specification available in [specs.md](doc/specs.md).
+
 ## Design
 
-The core of RandomX is a virtual machine (VM), which can be summarized by the following schematic:
+Design notes available in [design.md](doc/design.md).
 
-![Imgur](https://i.imgur.com/8RYNWLk.png)
+## Build
 
-Notable parts of the RandomX VM are:
+Build using `make`. Requires a C++11 compliant compiler. There are no dependencies.
 
-* a large read-only 4 GiB dataset
-* a 2 MiB scratchpad (read/write), which is structured into three levels L1, L2 and L3
-* 8 integer and 12 floating point registers
-* an arithmetic logic unit (ALU)
-* a floating point unit (FPU)
-* a 2 KiB program buffer
+Precompiled test binaries are available on the [Releases page](https://github.com/tevador/RandomX/releases).
 
-The structure of the VM mimics the components that are found in a typical general purpose computer equipped with a CPU and a large amount of DRAM. The scratchpad is designed to fit into the CPU cache. The first 16 KiB and 256 KiB of the scratchpad are used more often take advantage of the faster L1 and L2 caches. The ratio of random reads from L1/L2/L3 is approximately 9:3:1, which matches the inverse latencies of typical CPU caches.
+## Usage
 
-The VM executes programs in a special instruction set, which was designed in such way that any random 8-byte word is a valid instruction and any sequence of valid instructions is a valid program. For more details see [RandomX ISA documentation](doc/isa.md). Because there are no "syntax" rules, generating a random program is as easy as filling the program buffer with random data. A RandomX program consists of 256 instructions. See [program.inc](src/program.inc) as an example of a RandomX program translated into x86-64 assembly.
+```
+Usage: randomx [OPTIONS]
+Supported options:
+  --help        shows this message
+  --mine        mining mode: 2 GiB, x86-64 JIT compiled VM
+  --verify      verification mode: 256 MiB
+  --jit         x86-64 JIT compiled verification mode (default: interpreter)
+  --largePages  use large pages
+  --softAes     use software AES (default: x86 AES-NI)
+  --threads T   use T threads (default: 1)
+  --init Q      initialize dataset with Q threads (default: 1)
+  --nonces N    run N nonces (default: 1000)
+  --genAsm      generate x86-64 asm code for nonce N
+  --genNative   generate RandomX code for nonce N
+```
 
-### Hash calculation
+### Mining mode
+Mining mode requires >2 GiB of RAM and optimal performance should be obtained with at least 16 KiB of L1 cache, 256 KiB of L2 cache and 2 MiB of L3 cache per mining thread.
 
-Calculating a RandomX hash consists of initializing the 2 MiB scratchpad with random data, executing 8 RandomX loops and calculating a hash of the scratchpad.
+The reference miner supports only x86 64-bit CPUs at the moment. [AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set) support is not required, but using the `--softAes` option reduces mining performance by about 40%.
 
-Each RandomX loop is repeated 2048 times. The loop body has 4 parts:
-1. The values of all registers are loaded randomly from the scratchpad (L3)
-2. The RandomX program is executed
-3. A random block is loaded from the dataset and mixed with integer registers
-4. All register values are stored into the scratchpad (L3)
+It is recommended to use [large pages](https://en.wikipedia.org/wiki/Page_(computer_memory)#Multiple_page_sizes) with the `--largePages` option. Using the default page size can reduce performance by up to 50% due to [TLB thrashing](https://en.wikipedia.org/wiki/Thrashing_(computer_science)#TLB_thrashing).
 
-Hash of the register state after 2048 interations is used to initialize the random program for the next loop. The use of 8 different programs in the course of a single hash calculation prevents mining strategies that search for "easy" programs.
+[NUMA](https://en.wikipedia.org/wiki/Non-uniform_memory_access) systems should run one instance of RandomX per NUMA node.
 
-The loads from the dataset are fully prefetched, so they don't slow down the loop.
+### Light mode
 
-RandomX uses the [Blake2b](https://en.wikipedia.org/wiki/BLAKE_%28hash_function%29#BLAKE2) cryptographic hash function. Special hashing functions `fillAes1Rx4` and `hashAes1Rx4` based on [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) encryption are used to initialize and hash the scratchpad ([hashAes1Rx4.cpp](src/hashAes1Rx4.cpp)).
-
-### Hash verification
-
-RandomX is a symmetric PoW algorithm, so the verifying party has to repeat the same steps as when a hash is calculated.
-
-However, to allow hash verification on devices that cannot store the whole 4 GiB dataset, RandomX allows a time-memory tradeoff by using just 256 MiB of memory at the cost of 16 times more random memory accesses. See [Dataset initialization](doc/dataset.md) for more details.
+Verification is done in the 'light' mode, which requires only 256 MiB of memory, but runs much slower than the mining mode. Use the `--jit` option on x86-64 CPUs for maximum verification performance. 
 
 ### Performance
-Preliminary mining performance with the x86-64 JIT compiled VM:
+Preliminary performance using the optimal number of threads and large pages (if possible):
 
-|CPU|RAM|threads|hashrate [H/s]|comment|
-|-----|-----|----|----------|-----|
-|AMD Ryzen 1700 (desktop)|DDR4-2933|8|4100|
-|Intel i5-3230M (laptop)|DDR3-1333|1|280|without large pages
-|Intel i7-8550U (laptop)|DDR4-2400|4|1650|limited by thermals
-|Intel i5-2500K (desktop)|DDR3-1333|3|1350|
-
-Hash verification is performed using the portable interpreter in "light-client mode" and takes 30-70 ms depending on RAM latency and CPU clock speed. Hash verification in "mining mode" takes 2-4 ms.
-
-### Documentation
-* [RandomX ISA](doc/isa.md)
-* [RandomX instruction listing](doc/isa-ops.md)
-* [Dataset initialization](doc/dataset.md)
+|CPU|RAM|OS|AES|RandomX (mining)|RandomX (light)|
+|---|---|--|---|---------|--------------|
+AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|HW|4250 H/s (8T)|640 H/s (16T)|
+Intel Core i7-8550U|16 GB DDR4|Windows 10|HW|1660 H/s (4T)|128 H/s (4T)|
+Intel Core i3-3220|2 GB DDR3|Ubuntu 16.04|software|-|187 H/s (4T)|
+Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|12.3 H/s (4T)|
 
 # FAQ
 
 ### Can RandomX run on a GPU?
 
-We don't expect GPUs will ever be competitive in mining RandomX. The reference miner is CPU-only.
+RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings too many limitations and ultimately decreases ASIC resistance.
 
-A rough estimate for AMD Vega 56 GPU gave an upper limit of 1200 H/s, or slightly less than a quad core CPU (details in issue [#24](https://github.com/tevador/RandomX/issues/24)).
+GPUs are expected to be at a disadvantage when running RandomX, but the exact performance has not been determined yet due to lack of a working GPU implementation.
 
-RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings too many limitations and ultimately decreases ASIC resistance. CPUs have the advantage of not needing proprietary drivers and most CPU architectures support a large common subset of native operations.
-
-Additionally, targeting CPUs allows for more decentralized mining for several reasons:
-
-* Every computer has a CPU and even laptops will be able to mine efficiently.
-* CPU mining is easier to set up - no driver compatibility issues, BIOS flashing etc.
-* CPU mining is more difficult to centralize because computers can usually have only one CPU except for expensive server parts.
+A rough estimate for AMD Vega 56 GPU gave an upper limit of 1200 H/s, comparable to a quad core CPU (details in issue [#24](https://github.com/tevador/RandomX/issues/24)).
 
 ### Does RandomX facilitate botnets/malware mining or web mining?
-Quite the opposite. Efficient mining requires 4 GiB of memory, which is very difficult to hide in an infected computer and disqualifies many low-end machines. Web mining is nearly impossible due to the large memory requirement and the need for a rather lengthy initialization of the dataset.
+Quite the opposite. Efficient mining requires 2 GiB of memory, which is difficult to hide in an infected computer and disqualifies many low-end machines such as IoT devices. Web mining is nearly impossible due to the large memory requirements and low performance in interpreted mode.
 
 ### Since RandomX uses floating point calculations, how can it give reproducible results on different platforms?
 

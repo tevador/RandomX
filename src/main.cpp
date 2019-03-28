@@ -115,8 +115,9 @@ void printUsage(const char* executable) {
 	std::cout << "Usage: " << executable << " [OPTIONS]" << std::endl;
 	std::cout << "Supported options:" << std::endl;
 	std::cout << "  --help        shows this message" << std::endl;
-	std::cout << "  --mine        mining mode: 4 GiB, x86-64 compiled VM" << std::endl;
-	std::cout << "  --verify      verification mode: 256 MiB, portable VM" << std::endl;
+	std::cout << "  --mine        mining mode: 2 GiB, x86-64 JIT compiled VM" << std::endl;
+	std::cout << "  --verify      verification mode: 256 MiB" << std::endl;
+	std::cout << "  --jit         x86-64 JIT compiled verification mode (default: interpreter)" << std::endl;
 	std::cout << "  --largePages  use large pages" << std::endl;
 	std::cout << "  --softAes     use software AES (default: x86 AES-NI)" << std::endl;
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
