@@ -36,6 +36,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "Cache.hpp"
 #include "hashAes1Rx4.hpp"
+#include "LightProgramGenerator.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -203,7 +204,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit;
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genLight;
 	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -218,6 +219,14 @@ int main(int argc, char** argv) {
 	readOption("--jit", argc, argv, jit);
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--help", argc, argv, help);
+	readOption("--genLight", argc, argv, genLight);
+
+	if (genLight) {
+		RandomX::LightProgram p;
+		RandomX::generateLightProgram(p, seed, 0);
+		std::cout << p << std::endl;
+		return 0;
+	}
 
 	if (genAsm) {
 		if (softAes)

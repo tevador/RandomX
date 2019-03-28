@@ -52,6 +52,16 @@ namespace RandomX {
 		uint8_t* code;
 		int32_t codePos;
 
+		template<class P>
+		void generateCode(P& prog) {
+			for (unsigned i = 0; i < prog.getSize(); ++i) {
+				Instruction& instr = prog(i);
+				instr.src %= RegistersCount;
+				instr.dst %= RegistersCount;
+				generateCode(instr, i);
+			}
+		}
+
 		void generateProgramPrologue(Program&);
 		void generateProgramEpilogue(Program&);
 		int getConditionRegister();

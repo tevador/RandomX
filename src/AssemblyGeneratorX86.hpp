@@ -20,6 +20,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "Instruction.hpp"
+#include "configuration.h"
 #include <sstream>
 
 namespace RandomX {

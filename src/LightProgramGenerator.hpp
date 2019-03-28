@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -18,14 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include "Program.hpp"
-#include "hashAes1Rx4.hpp"
 
 namespace RandomX {
-	template<size_t PROGRAM_SIZE>
-	void ProgramBase::print(std::ostream& os) const {
-		for (int i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			auto instr = programBuffer[i];
-			os << instr;
-		}
-	}
+	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister);
 }

@@ -78,6 +78,9 @@ namespace RandomX {
 		uint32_t getImm32() const {
 			return load32(&imm32);
 		}
+		void setImm32(uint32_t val) {
+			return store32(&imm32, val);
+		}
 		const char* getName() const {
 			return names[opcode];
 		}

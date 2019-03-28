@@ -39,10 +39,44 @@ namespace RandomX {
 		uint64_t getEntropy(int i) {
 			return load64(&entropyBuffer[i]);
 		}
+		uint32_t getSize() {
+			return RANDOMX_PROGRAM_SIZE;
+		}
 	private:
-		void print(std::ostream&) const;
+		void print(std::ostream& os) const {
+			for (int i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
+				auto instr = programBuffer[i];
+				os << instr;
+			}
+		}
 		uint64_t entropyBuffer[16];
 		Instruction programBuffer[RANDOMX_PROGRAM_SIZE];
+	};
+
+	class LightProgram {
+	public:
+		Instruction& operator()(int pc) {
+			return programBuffer[pc];
+		}
+		friend std::ostream& operator<<(std::ostream& os, const LightProgram& p) {
+			p.print(os);
+			return os;
+		}
+		uint32_t getSize() {
+			return size;
+		}
+		void setSize(uint32_t val) {
+			size = val;
+		}
+	private:
+		void print(std::ostream& os) const {
+			for (unsigned i = 0; i < size; ++i) {
+				auto instr = programBuffer[i];
+				os << instr;
+			}
+		}
+		Instruction programBuffer[RANDOMX_LPROG_MAX_SIZE];
+		uint32_t size;
 	};
 
 	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");

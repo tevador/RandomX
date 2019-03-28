@@ -238,12 +238,7 @@ namespace RandomX {
 		emitByte(0xc0 + readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			Instruction& instr = prog(i);
-			instr.src %= RegistersCount;
-			instr.dst %= RegistersCount;
-			generateCode(instr, i);
-		}
+		generateCode(prog);
 		emit(REX_MOV_RR);
 		emitByte(0xc0 + readReg2);
 		emit(REX_XOR_EAX);
