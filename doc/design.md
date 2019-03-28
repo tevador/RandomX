@@ -73,7 +73,7 @@ To maximize entropy and also to fit into one 64-byte cache line, floating point 
 
 ### Integer operations
 
-RandomX uses all primitive integer operations that preserve entropy: addition, subtraction, multiplication, XOR and shift.
+RandomX uses all primitive integer operations that preserve entropy: addition, subtraction, multiplication, XOR and rotation.
 
 The IADD_RC and IMUL_9C instructions utilize the address calculation logic of CPUs and can be performed in a single instruction by most CPUs.
 
@@ -81,7 +81,7 @@ Because integer division is not fully pipelined in CPUs and can be made faster i
 
 The ISWAP_R instruction can be performed efficiently by CPUs that utilize register renaming.
 
-The COND instructions use the common condition flags that are supported by most CPU architectures. Conditional execution is used to avoid branches.
+The COND instructions add branches to RandomX programs and also use the common condition flags that are supported by most CPU architectures.
 
 ### Memory access
 
@@ -91,7 +91,7 @@ All Dataset accesses read whole CPU cache line (64 bytes) and are fully prefetch
 
 #### Cache
 
-The Cache, which is used for light verification and Dataset construction, is 16 times smaller than the Dataset. To keep a constant area-time product, each Dataset item is constructed by 16 Cache accesses (16 * 256 MiB = 1 * 4 GiB).
+The Cache, which is used for light verification and Dataset construction, is 8 times smaller than the Dataset. To keep a constant area-time product, each Dataset item is constructed by 8 Cache accesses (8 * 256 MiB = 1 * 2 GiB).
 
 Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency mixing function (SquareHash) which defeats the benefits of using low-latency memory for mining in tradeoff mode.
 
