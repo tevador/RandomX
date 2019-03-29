@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-// Parts of this file are originally copyright (c) xmr-stak
-// Parts of this file are originally copyright (c) 2014-2017, The Monero Project
-
 #include "softAes.h"
 
 alignas(16) const uint8_t sbox[256] = {
@@ -320,25 +317,6 @@ alignas(16) const uint32_t lutDec3[256] = {
 	0xca81f3af, 0xb93ec468, 0x382c3424, 0xc25f40a3, 0x1672c31d, 0xbc0c25e2, 0x288b493c, 0xff41950d,
 	0x397101a8, 0x08deb30c, 0xd89ce4b4, 0x6490c156, 0x7b6184cb, 0xd570b632, 0x48745c6c, 0xd04257b8,
 };
-
-static inline uint32_t subw(uint32_t w) {
-	return (sbox[w >> 24] << 24) |
-		(sbox[(w >> 16) & 0xff] << 16) |
-		(sbox[(w >> 8) & 0xff] << 8) |
-		sbox[w & 0xff];
-}
-
-#if defined(__clang__) || defined(__arm__) || defined(__aarch64__) || defined(__powerpc__)
-static inline uint32_t _rotr(uint32_t value, uint32_t amount) {
-	return (value >> amount) | (value << (-amount & 31));
-}
-#endif
-
-__m128i soft_aeskeygenassist(__m128i key, uint8_t rcon) {
-	uint32_t X1 = subw(_mm_cvtsi128_si32(_mm_shuffle_epi32(key, 0x55)));
-	uint32_t X3 = subw(_mm_cvtsi128_si32(_mm_shuffle_epi32(key, 0xFF)));
-	return _mm_set_epi32(_rotr(X3, 8) ^ rcon, X3, _rotr(X1, 8) ^ rcon, X1);
-}
 
 __m128i soft_aesenc(__m128i in, __m128i key) {
 	uint32_t s0, s1, s2, s3;

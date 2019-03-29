@@ -21,8 +21,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdint.h>
 #include "intrinPortable.h"
 
-__m128i soft_aeskeygenassist(__m128i key, uint8_t rcon);
-
 __m128i soft_aesenc(__m128i in, __m128i key);
 
 __m128i soft_aesdec(__m128i in, __m128i key);
