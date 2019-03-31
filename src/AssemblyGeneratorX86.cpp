@@ -58,21 +58,6 @@ namespace RandomX {
 		return minIndex;
 	}
 
-	void AssemblyGeneratorX86::generateProgram(Program& prog) {
-		for (unsigned i = 0; i < 8; ++i) {
-			registerUsage[i] = -1;
-		}
-		asmCode.str(std::string()); //clear
-		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			asmCode << "randomx_isn_" << i << ":" << std::endl;
-			Instruction& instr = prog(i);
-			instr.src %= RegistersCount;
-			instr.dst %= RegistersCount;
-			generateCode(instr, i);
-			//asmCode << std::endl;
-		}
-	}
-
 	void AssemblyGeneratorX86::traceint(Instruction& instr) {
 		if (trace) {
 			asmCode << "\tpush " << regR[instr.dst] << std::endl;

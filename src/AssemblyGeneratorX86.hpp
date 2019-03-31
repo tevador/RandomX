@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "Instruction.hpp"
 #include "configuration.h"
+#include "common.hpp"
 #include <sstream>
 
 namespace RandomX {
@@ -32,7 +33,21 @@ namespace RandomX {
 
 	class AssemblyGeneratorX86 {
 	public:
-		void generateProgram(Program&);
+		template<class P>
+		void generateProgram(P& prog) {
+			for (unsigned i = 0; i < 8; ++i) {
+				registerUsage[i] = -1;
+			}
+			asmCode.str(std::string()); //clear
+			for (unsigned i = 0; i < prog.getSize(); ++i) {
+				asmCode << "randomx_isn_" << i << ":" << std::endl;
+				Instruction& instr = prog(i);
+				instr.src %= RegistersCount;
+				instr.dst %= RegistersCount;
+				generateCode(instr, i);
+				//asmCode << std::endl;
+			}
+		}
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}

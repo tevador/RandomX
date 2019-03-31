@@ -224,7 +224,10 @@ int main(int argc, char** argv) {
 	if (genLight) {
 		RandomX::LightProgram p;
 		RandomX::generateLightProg2(p, seed, 0);
-		//std::cout << p << std::endl;
+		RandomX::AssemblyGeneratorX86 asmX86;
+		asmX86.generateProgram(p);
+		std::cout << "-------------------------------------------------------" << std::endl;
+		asmX86.printCode(std::cout);
 		return 0;
 	}
 
