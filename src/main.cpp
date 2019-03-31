@@ -223,8 +223,8 @@ int main(int argc, char** argv) {
 
 	if (genLight) {
 		RandomX::LightProgram p;
-		RandomX::generateLightProgram(p, seed, 0);
-		std::cout << p << std::endl;
+		RandomX::generateLightProg2(p, seed, 0);
+		//std::cout << p << std::endl;
 		return 0;
 	}
 

@@ -21,4 +21,5 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister);
+	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister);
 }
