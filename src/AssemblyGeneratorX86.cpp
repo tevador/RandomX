@@ -475,7 +475,7 @@ namespace RandomX {
 	//4 uOPs
 	void AssemblyGeneratorX86::h_COND_R(Instruction& instr, int i) {
 		handleCondition(instr, i);
-		asmCode << "\txor ecx, ecx" << std::endl;
+		asmCode << "\txor rcx, rcx" << std::endl;
 		asmCode << "\tcmp " << regR32[instr.src] << ", " << (int32_t)instr.getImm32() << std::endl;
 		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
 		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
@@ -485,7 +485,7 @@ namespace RandomX {
 	//6 uOPs
 	void AssemblyGeneratorX86::h_COND_M(Instruction& instr, int i) {
 		handleCondition(instr, i);
-		asmCode << "\txor ecx, ecx" << std::endl;
+		asmCode << "\txor rcx, rcx" << std::endl;
 		genAddressReg(instr);
 		asmCode << "\tcmp dword ptr [rsi+rax], " << (int32_t)instr.getImm32() << std::endl;
 		asmCode << "\tset" << condition(instr) << " cl" << std::endl;

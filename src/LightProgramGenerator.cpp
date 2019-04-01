@@ -111,10 +111,10 @@ namespace RandomX {
 
 	class Blake2Generator {
 	public:
-		Blake2Generator(const void* seed) : dataIndex(sizeof(data)) {
+		Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
 			memset(data, 0, sizeof(data));
 			memcpy(data, seed, SeedSize);
-			data[60] = 39;
+			store32(&data[60], nonce);
 		}
 
 		uint8_t getByte() {
@@ -434,7 +434,7 @@ namespace RandomX {
 	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
 	const LightInstructionInfo* slot_3F[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IROR_R };
 	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IMUL_R, &LightInstructionInfo::IROR_C };
-	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IADD_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::IXOR_C };
+	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IADD_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::IMUL_C };
 	const LightInstructionInfo* slot_7L   = &LightInstructionInfo::COND_R;
 	const LightInstructionInfo* slot_8[]  = { &LightInstructionInfo::IADD_RC, &LightInstructionInfo::IMUL_9C };
 	const LightInstructionInfo* slot_10   = &LightInstructionInfo::IMUL_RCP;
@@ -771,12 +771,12 @@ namespace RandomX {
 		}
 	}
 
-	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister) {
+	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister, int nonce) {
 
 		ExecutionPort::type portBusy[RANDOMX_LPROG_LATENCY + 1][3];
 		memset(portBusy, 0, sizeof(portBusy));
 		RegisterInfo registers[8];
-		Blake2Generator gen(seed);
+		Blake2Generator gen(seed, nonce);
 		std::vector<LightInstruction> instructions;
 
 		DecoderBuffer& fetchLine = DecoderBuffer::Default;
@@ -790,6 +790,8 @@ namespace RandomX {
 		int mopIndex = 0;
 		bool portsSaturated = false;
 		int outIndex = 0;
+		int attempts = 0;
+		constexpr int MAX_ATTEMPTS = 4;
 
 		while(!portsSaturated) {
 			fetchLine = fetchLine.fetchNext(currentInstruction.getType(), gen);
@@ -798,6 +800,7 @@ namespace RandomX {
 			mopIndex = 0;
 			
 			while (!portsSaturated && mopIndex < fetchLine.getSize()) {
+				int topCycle = cycle;
 				if (instrIndex >= currentInstruction.getInfo().getSize()) {
 					if (currentInstruction.getType() >= 0) {
 						currentInstruction.toInstr(prog(outIndex++));
@@ -818,18 +821,30 @@ namespace RandomX {
 				mop.setCycle(scheduleCycle);
 
 				if (instrIndex == currentInstruction.getInfo().getSrcOp()) {
-					while (!currentInstruction.selectSource(scheduleCycle, registers, gen)) {
+					for (attempts = 0; attempts < MAX_ATTEMPTS && !currentInstruction.selectSource(scheduleCycle, registers, gen); ++attempts) {
 						std::cout << "; src STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
 					}
+					if (attempts == MAX_ATTEMPTS) { //throw instruction away
+						cycle = topCycle;
+						instrIndex = currentInstruction.getInfo().getSize();
+						std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+						continue;
+					}
 					std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
 				}
 				if (instrIndex == currentInstruction.getInfo().getDstOp()) {
-					while (!currentInstruction.selectDestination(scheduleCycle, registers, gen)) {
+					for (attempts = 0; attempts < MAX_ATTEMPTS && !currentInstruction.selectDestination(scheduleCycle, registers, gen); ++attempts) {
 						std::cout << "; dst STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
+					}
+					if (attempts == MAX_ATTEMPTS) { //throw instruction away
+						cycle = topCycle;
+						instrIndex = currentInstruction.getInfo().getSize();
+						std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+						continue;
 					}
 					std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
@@ -850,6 +865,7 @@ namespace RandomX {
 				if (scheduleCycle >= RANDOMX_LPROG_LATENCY) {
 					portsSaturated = true;
 				}
+				cycle = topCycle;
 			}
 			++cycle;
 		}
