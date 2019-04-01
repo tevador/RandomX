@@ -143,10 +143,10 @@ namespace RandomX {
 
 	class RegisterInfo {
 	public:
-		RegisterInfo() : latency(0), lastOpGroup(-1), source(-1), value(0) {}
+		RegisterInfo() : latency(0), lastOpGroup(-1), lastOpPar(-1), value(0) {}
 		int latency;
 		int lastOpGroup;
-		int source;
+		int lastOpPar;
 		int value;
 	};
 
@@ -260,8 +260,8 @@ namespace RandomX {
 
 	class LightInstructionInfo {
 	public:
-		LightInstructionInfo(const char* name, int type, const MacroOp& op)
-			: name_(name), type_(type), latency_(op.getLatency()) {
+		LightInstructionInfo(const char* name, int type, const MacroOp& op, int srcOp)
+			: name_(name), type_(type), latency_(op.getLatency()), srcOp_(srcOp) {
 			ops_.push_back(MacroOp(op));
 		}
 		template <size_t N>
@@ -334,26 +334,26 @@ namespace RandomX {
 		int latency_;
 		int resultOp_ = 0;
 		int dstOp_ = 0;
-		int srcOp_ = 0;
+		int srcOp_;
 
 		LightInstructionInfo(const char* name)
 			: name_(name), type_(-1), latency_(0) {}
 	};
 
-	const LightInstructionInfo LightInstructionInfo::IADD_R = LightInstructionInfo("IADD_R", LightInstructionType::IADD_R, MacroOp::Add_rr);
-	const LightInstructionInfo LightInstructionInfo::IADD_C = LightInstructionInfo("IADD_C", LightInstructionType::IADD_C, MacroOp::Add_ri);
-	const LightInstructionInfo LightInstructionInfo::IADD_RC = LightInstructionInfo("IADD_RC", LightInstructionType::IADD_RC, MacroOp::Lea_sib);
-	const LightInstructionInfo LightInstructionInfo::ISUB_R = LightInstructionInfo("ISUB_R", LightInstructionType::ISUB_R, MacroOp::Sub_rr);
-	const LightInstructionInfo LightInstructionInfo::IMUL_9C = LightInstructionInfo("IMUL_9C", LightInstructionType::IMUL_9C, MacroOp::Lea_sib);
-	const LightInstructionInfo LightInstructionInfo::IMUL_R = LightInstructionInfo("IMUL_R", LightInstructionType::IMUL_R, MacroOp::Imul_rr);
-	const LightInstructionInfo LightInstructionInfo::IMUL_C = LightInstructionInfo("IMUL_C", LightInstructionType::IMUL_C, MacroOp::Imul_rri);
+	const LightInstructionInfo LightInstructionInfo::IADD_R = LightInstructionInfo("IADD_R", LightInstructionType::IADD_R, MacroOp::Add_rr, 0);
+	const LightInstructionInfo LightInstructionInfo::IADD_C = LightInstructionInfo("IADD_C", LightInstructionType::IADD_C, MacroOp::Add_ri, -1);
+	const LightInstructionInfo LightInstructionInfo::IADD_RC = LightInstructionInfo("IADD_RC", LightInstructionType::IADD_RC, MacroOp::Lea_sib, 0);
+	const LightInstructionInfo LightInstructionInfo::ISUB_R = LightInstructionInfo("ISUB_R", LightInstructionType::ISUB_R, MacroOp::Sub_rr, 0);
+	const LightInstructionInfo LightInstructionInfo::IMUL_9C = LightInstructionInfo("IMUL_9C", LightInstructionType::IMUL_9C, MacroOp::Lea_sib, 0);
+	const LightInstructionInfo LightInstructionInfo::IMUL_R = LightInstructionInfo("IMUL_R", LightInstructionType::IMUL_R, MacroOp::Imul_rr, 0);
+	const LightInstructionInfo LightInstructionInfo::IMUL_C = LightInstructionInfo("IMUL_C", LightInstructionType::IMUL_C, MacroOp::Imul_rri, -1);
 	const LightInstructionInfo LightInstructionInfo::IMULH_R = LightInstructionInfo("IMULH_R", LightInstructionType::IMULH_R, IMULH_R_ops_array, 1, 0, 1);
 	const LightInstructionInfo LightInstructionInfo::ISMULH_R = LightInstructionInfo("ISMULH_R", LightInstructionType::ISMULH_R, ISMULH_R_ops_array, 1, 0, 1);
 	const LightInstructionInfo LightInstructionInfo::IMUL_RCP = LightInstructionInfo("IMUL_RCP", LightInstructionType::IMUL_RCP, IMUL_RCP_ops_array, 1, 1, -1);
-	const LightInstructionInfo LightInstructionInfo::IXOR_R = LightInstructionInfo("IXOR_R", LightInstructionType::IXOR_R, MacroOp::Xor_rr);
-	const LightInstructionInfo LightInstructionInfo::IXOR_C = LightInstructionInfo("IXOR_C", LightInstructionType::IXOR_C, MacroOp::Xor_ri);
+	const LightInstructionInfo LightInstructionInfo::IXOR_R = LightInstructionInfo("IXOR_R", LightInstructionType::IXOR_R, MacroOp::Xor_rr, 0);
+	const LightInstructionInfo LightInstructionInfo::IXOR_C = LightInstructionInfo("IXOR_C", LightInstructionType::IXOR_C, MacroOp::Xor_ri, -1);
 	const LightInstructionInfo LightInstructionInfo::IROR_R = LightInstructionInfo("IROR_R", LightInstructionType::IROR_R, IROR_R_ops_array, 1, 1, 0);
-	const LightInstructionInfo LightInstructionInfo::IROR_C = LightInstructionInfo("IROR_C", LightInstructionType::IROR_C, MacroOp::Ror_ri);
+	const LightInstructionInfo LightInstructionInfo::IROR_C = LightInstructionInfo("IROR_C", LightInstructionType::IROR_C, MacroOp::Ror_ri, -1);
 	const LightInstructionInfo LightInstructionInfo::COND_R = LightInstructionInfo("COND_R", LightInstructionType::COND_R, COND_R_ops_array, 5, 5, 3);
 	const LightInstructionInfo LightInstructionInfo::NOP = LightInstructionInfo("NOP");
 
@@ -504,29 +504,28 @@ namespace RandomX {
 				li.mod_ = 0;
 				li.imm32_ = 0;
 				li.opGroup_ = LightInstructionType::IADD_R;
-				li.opGroupPar_ = li.src_;
+				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::IADD_C: {
-				li.hasSource_ = false;
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
 				li.opGroup_ = LightInstructionType::IADD_R;
-				li.opGroupPar_ = li.src_;
+				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::IADD_RC: {
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
 				li.opGroup_ = LightInstructionType::IADD_R;
-				li.opGroupPar_ = li.src_;
+				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::ISUB_R: {
 				li.mod_ = 0;
 				li.imm32_ = 0;
 				li.opGroup_ = LightInstructionType::IADD_R;
-				li.opGroupPar_ = li.src_;
+				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::IMUL_9C: {
@@ -544,11 +543,10 @@ namespace RandomX {
 			} break;
 
 			case LightInstructionType::IMUL_C: {
-				li.hasSource_ = false;
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
 				li.opGroup_ = LightInstructionType::IMUL_C;
-				li.opGroupPar_ = li.src_;
+				li.opGroupPar_ = -1;
 			} break;
 
 			case LightInstructionType::IMULH_R: {
@@ -568,7 +566,6 @@ namespace RandomX {
 			} break;
 
 			case LightInstructionType::IMUL_RCP: {
-				li.hasSource_ = false;
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
 				li.opGroup_ = LightInstructionType::IMUL_C;
@@ -579,15 +576,14 @@ namespace RandomX {
 				li.mod_ = 0;
 				li.imm32_ = 0;
 				li.opGroup_ = LightInstructionType::IXOR_R;
-				li.opGroupPar_ = li.src_;
+				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::IXOR_C: {
-				li.hasSource_ = false;
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
 				li.opGroup_ = LightInstructionType::IXOR_R;
-				li.opGroupPar_ = li.src_;
+				li.opGroupPar_ = -1;
 			} break;
 
 			case LightInstructionType::IROR_R: {
@@ -598,9 +594,10 @@ namespace RandomX {
 			} break;
 
 			case LightInstructionType::IROR_C: {
-				li.hasSource_ = false;
 				li.mod_ = 0;
-				li.imm32_ = gen.getByte();
+				do {
+					li.imm32_ = gen.getByte();
+				} while ((li.imm32_ & 63) == 0);
 				li.opGroup_ = LightInstructionType::IROR_R;
 				li.opGroupPar_ = -1;
 			} break;
@@ -623,7 +620,7 @@ namespace RandomX {
 		bool selectDestination(int cycle, RegisterInfo (&registers)[8], Blake2Generator& gen) {
 			std::vector<int> availableRegisters;
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle)
+				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_))
 					availableRegisters.push_back(i);
 			}
 			return selectRegister(availableRegisters, gen, dst_);
@@ -632,10 +629,15 @@ namespace RandomX {
 		bool selectSource(int cycle, RegisterInfo(&registers)[8], Blake2Generator& gen) {
 			std::vector<int> availableRegisters;
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle && (canReuse_ || i != dst_))
+				if (registers[i].latency <= cycle)
 					availableRegisters.push_back(i);
 			}
-			return selectRegister(availableRegisters, gen, src_);
+			if (selectRegister(availableRegisters, gen, src_)) {
+				if (groupParIsSource_)
+					opGroupPar_ = src_;
+				return true;
+			}
+			return false;
 		}
 
 		int getType() {
@@ -653,9 +655,6 @@ namespace RandomX {
 		int getGroupPar() {
 			return opGroupPar_;
 		}
-		bool hasSource() {
-			return hasSource_;
-		}
 
 		LightInstructionInfo& getInfo() {
 			return info_;
@@ -671,8 +670,8 @@ namespace RandomX {
 		uint32_t imm32_;
 		int opGroup_;
 		int opGroupPar_;
-		bool hasSource_ = true;
 		bool canReuse_ = false;
+		bool groupParIsSource_ = false;
 
 		LightInstruction(const LightInstructionInfo* info) : info_(*info) {
 			for (unsigned i = 0; i < info_.getSize(); ++i) {
@@ -818,6 +817,14 @@ namespace RandomX {
 				int scheduleCycle = scheduleUop(mop, portBusy, cycle, depCycle);
 				mop.setCycle(scheduleCycle);
 
+				if (instrIndex == currentInstruction.getInfo().getSrcOp()) {
+					while (!currentInstruction.selectSource(scheduleCycle, registers, gen)) {
+						std::cout << "; src STALL at cycle " << cycle << std::endl;
+						++scheduleCycle;
+						++cycle;
+					}
+					std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
+				}
 				if (instrIndex == currentInstruction.getInfo().getDstOp()) {
 					while (!currentInstruction.selectDestination(scheduleCycle, registers, gen)) {
 						std::cout << "; dst STALL at cycle " << cycle << std::endl;
@@ -826,20 +833,16 @@ namespace RandomX {
 					}
 					std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
-				if (currentInstruction.hasSource() && instrIndex == currentInstruction.getInfo().getSrcOp()) {
-					while (!currentInstruction.selectSource(scheduleCycle, registers, gen)) {
-						std::cout << "; src STALL at cycle " << cycle << std::endl;
-						++scheduleCycle;
-						++cycle;
-					}
-					std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
-				}
+				depCycle = scheduleCycle + mop.getLatency();
 				if (instrIndex == currentInstruction.getInfo().getResultOp()) {
-					int depCycle = scheduleCycle + mop.getLatency();
-					registers[currentInstruction.getDestination()].latency = depCycle;
+					int dst = currentInstruction.getDestination();
+					RegisterInfo& ri = registers[dst];
+
+					ri.latency = depCycle;
+					ri.lastOpGroup = currentInstruction.getGroup();
+					ri.lastOpPar = currentInstruction.getGroupPar();
 					std::cout << "; RETIRED at cycle " << depCycle << std::endl;
 				}
-
 				codeSize += mop.getSize();
 				mopIndex++;
 				instrIndex++;
