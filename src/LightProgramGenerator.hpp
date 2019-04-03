@@ -20,6 +20,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 
 namespace RandomX {
-	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister);
+	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister, int nonce);
 	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister, int nonce);
 }

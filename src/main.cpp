@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
 		RandomX::generateLightProg2(p, seed, 0, programCount);
 		RandomX::AssemblyGeneratorX86 asmX86;
 		asmX86.generateProgram(p);
-		std::cout << "-------------------------------------------------------" << std::endl;
+		//std::ofstream file("lightProg2.asm");
 		asmX86.printCode(std::cout);
 		return 0;
 	}

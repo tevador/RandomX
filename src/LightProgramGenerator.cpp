@@ -62,6 +62,10 @@ namespace RandomX {
 		constexpr int COND_R = IROR_R + RANDOMX_FREQ_IROR_R + RANDOMX_FREQ_IROL_R + RANDOMX_FREQ_ISWAP_R + RANDOMX_FREQ_FSWAP_R + RANDOMX_FREQ_FADD_R + RANDOMX_FREQ_FADD_M + RANDOMX_FREQ_FSUB_R + RANDOMX_FREQ_FSUB_M + RANDOMX_FREQ_FSCAL_R + RANDOMX_FREQ_FMUL_R + RANDOMX_FREQ_FDIV_M + RANDOMX_FREQ_FSQRT_R;
 	}
 
+	static bool isMul(uint8_t opcode) {
+		return opcode == LightInstructionOpcode::IMUL_R || opcode == LightInstructionOpcode::IMULH_R || opcode == LightInstructionOpcode::ISMULH_R || opcode == LightInstructionOpcode::IMUL_RCP;
+	}
+
 	const int lightInstructionOpcode[] = {
 		LightInstructionOpcode::IADD_R,
 		LightInstructionOpcode::IADD_R,
@@ -344,7 +348,7 @@ namespace RandomX {
 	const LightInstructionInfo LightInstructionInfo::IADD_C = LightInstructionInfo("IADD_C", LightInstructionType::IADD_C, MacroOp::Add_ri, -1);
 	const LightInstructionInfo LightInstructionInfo::IADD_RC = LightInstructionInfo("IADD_RC", LightInstructionType::IADD_RC, MacroOp::Lea_sib, 0);
 	const LightInstructionInfo LightInstructionInfo::ISUB_R = LightInstructionInfo("ISUB_R", LightInstructionType::ISUB_R, MacroOp::Sub_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IMUL_9C = LightInstructionInfo("IMUL_9C", LightInstructionType::IMUL_9C, MacroOp::Lea_sib, 0);
+	const LightInstructionInfo LightInstructionInfo::IMUL_9C = LightInstructionInfo("IMUL_9C", LightInstructionType::IMUL_9C, MacroOp::Lea_sib, -1);
 	const LightInstructionInfo LightInstructionInfo::IMUL_R = LightInstructionInfo("IMUL_R", LightInstructionType::IMUL_R, MacroOp::Imul_rr, 0);
 	const LightInstructionInfo LightInstructionInfo::IMUL_C = LightInstructionInfo("IMUL_C", LightInstructionType::IMUL_C, MacroOp::Imul_rri, -1);
 	const LightInstructionInfo LightInstructionInfo::IMULH_R = LightInstructionInfo("IMULH_R", LightInstructionType::IMULH_R, IMULH_R_ops_array, 1, 0, 1);
@@ -434,7 +438,7 @@ namespace RandomX {
 	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
 	const LightInstructionInfo* slot_3F[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IROR_R };
 	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IMUL_R, &LightInstructionInfo::IROR_C };
-	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IADD_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::IMUL_C };
+	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IADD_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::IADD_C };
 	const LightInstructionInfo* slot_7L   = &LightInstructionInfo::COND_R;
 	const LightInstructionInfo* slot_8[]  = { &LightInstructionInfo::IADD_RC, &LightInstructionInfo::IMUL_9C };
 	const LightInstructionInfo* slot_10   = &LightInstructionInfo::IMUL_RCP;
@@ -686,77 +690,95 @@ namespace RandomX {
 	const LightInstruction LightInstruction::Null = LightInstruction(&LightInstructionInfo::NOP);
 
 	constexpr int ALU_COUNT_MUL = 1;
-	constexpr int ALU_COUNT = 4;
+	constexpr int ALU_COUNT = 3;
 	constexpr int LIGHT_OPCODE_BITS = 4;
 	constexpr int V4_SRC_INDEX_BITS = 3;
 	constexpr int V4_DST_INDEX_BITS = 3;
+	constexpr int CYCLE_MAP_SIZE = RANDOMX_LPROG_LATENCY + 3;
+	constexpr bool TRACE = true;
 
 	static int blakeCounter = 0;
 
-	static int scheduleUop(const MacroOp& mop, ExecutionPort::type(&portBusy)[RANDOMX_LPROG_LATENCY + 1][3], int cycle, int depCycle) {
+	template<bool commit>
+	static int scheduleUop(const MacroOp& mop, ExecutionPort::type(&portBusy)[CYCLE_MAP_SIZE][3], int cycle, int depCycle) {
 		if (mop.isDependent()) {
 			cycle = std::max(cycle, depCycle);
 		}
 		if (mop.isEliminated()) {
-			std::cout << "; (eliminated)" << std::endl;
+			if (commit)
+				if (TRACE) std::cout << "; (eliminated)" << std::endl;
 			return cycle;
 		} 
 		else if (mop.isSimple()) {
 			if (mop.getUop1() <= ExecutionPort::P5) {
-				for (; cycle <= RANDOMX_LPROG_LATENCY; ++cycle) {
+				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 					if (!portBusy[cycle][mop.getUop1() - 1]) {
-						std::cout << "; P" << mop.getUop1() - 1 << " at cycle " << cycle << std::endl;
-						portBusy[cycle][mop.getUop1() - 1] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P" << mop.getUop1() - 1 << " at cycle " << cycle << std::endl;
+							portBusy[cycle][mop.getUop1() - 1] = mop.getUop1();
+						}
 						return cycle;
 					}
 				}
 			}
 			else if (mop.getUop1() == ExecutionPort::P05) {
-				for (; cycle <= RANDOMX_LPROG_LATENCY; ++cycle) {
+				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 					if (!portBusy[cycle][0]) {
-						std::cout << "; P0 at cycle " << cycle << std::endl;
-						portBusy[cycle][0] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
+							portBusy[cycle][0] = mop.getUop1();
+						}
 						return cycle;
 					}
 					if (!portBusy[cycle][2]) {
-						std::cout << "; P2 at cycle " << cycle << std::endl;
-						portBusy[cycle][2] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P2 at cycle " << cycle << std::endl;
+							portBusy[cycle][2] = mop.getUop1();
+						}
 						return cycle;
 					}
 				}
 			}
 			else {
-				for (; cycle <= RANDOMX_LPROG_LATENCY; ++cycle) {
+				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 					if (!portBusy[cycle][0]) {
-						std::cout << "; P0 at cycle " << cycle << std::endl;
-						portBusy[cycle][0] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
+							portBusy[cycle][0] = mop.getUop1();
+						}
 						return cycle;
 					}
 					if (!portBusy[cycle][2]) {
-						std::cout << "; P2 at cycle " << cycle << std::endl;
-						portBusy[cycle][2] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P2 at cycle " << cycle << std::endl;
+							portBusy[cycle][2] = mop.getUop1();
+						}
 						return cycle;
 					}
 					if (!portBusy[cycle][1]) {
-						std::cout << "; P1 at cycle " << cycle << std::endl;
-						portBusy[cycle][1] = mop.getUop1();
+						if (commit) {
+							if (TRACE) std::cout << "; P1 at cycle " << cycle << std::endl;
+							portBusy[cycle][1] = mop.getUop1();
+						}
 						return cycle;
 					}
 				}
 			}
 		}
 		else {
-			for (; cycle <= RANDOMX_LPROG_LATENCY; ++cycle) {
+			for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 				if (!portBusy[cycle][mop.getUop1() - 1] && !portBusy[cycle][mop.getUop2() - 1]) {
-					std::cout << "; P" << mop.getUop1() - 1 << " P" << mop.getUop2() - 1 << " at cycle " << cycle << std::endl;
-					portBusy[cycle][mop.getUop1() - 1] = mop.getUop1();
-					portBusy[cycle][mop.getUop2() - 1] = mop.getUop2();
+					if (commit) {
+						if (TRACE) std::cout << "; P" << mop.getUop1() - 1 << " P" << mop.getUop2() - 1 << " at cycle " << cycle << std::endl;
+						portBusy[cycle][mop.getUop1() - 1] = mop.getUop1();
+						portBusy[cycle][mop.getUop2() - 1] = mop.getUop2();
+					}
 					return cycle;
 				}
 			}
 		}
 
-		std::cout << "Unable to map operation '" << mop.getName() << "' to execution port";
+		if (TRACE) std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
 		return -1;
 	}
 
@@ -773,7 +795,7 @@ namespace RandomX {
 
 	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister, int nonce) {
 
-		ExecutionPort::type portBusy[RANDOMX_LPROG_LATENCY + 1][3];
+		ExecutionPort::type portBusy[CYCLE_MAP_SIZE][3];
 		memset(portBusy, 0, sizeof(portBusy));
 		RegisterInfo registers[8];
 		Blake2Generator gen(seed, nonce);
@@ -784,9 +806,9 @@ namespace RandomX {
 		int instrIndex = 0;
 		int codeSize = 0;
 		int macroOpCount = 0;
-		int rxOpCount = 0;
 		int cycle = 0;
 		int depCycle = 0;
+		int retireCycle = 0;
 		int mopIndex = 0;
 		bool portsSaturated = false;
 		int outIndex = 0;
@@ -795,69 +817,72 @@ namespace RandomX {
 
 		while(!portsSaturated) {
 			fetchLine = fetchLine.fetchNext(currentInstruction.getType(), gen);
-			std::cout << "; ------------- fetch cycle " << cycle << " (" << fetchLine.getName() << ")" << std::endl;
+			if (TRACE) std::cout << "; ------------- fetch cycle " << cycle << " (" << fetchLine.getName() << ")" << std::endl;
 
 			mopIndex = 0;
 			
-			while (!portsSaturated && mopIndex < fetchLine.getSize()) {
+			while (mopIndex < fetchLine.getSize()) {
 				int topCycle = cycle;
 				if (instrIndex >= currentInstruction.getInfo().getSize()) {
-					if (currentInstruction.getType() >= 0) {
-						currentInstruction.toInstr(prog(outIndex++));
-					}
+					if (portsSaturated)
+						break;
 					currentInstruction = LightInstruction::createForSlot(gen, fetchLine.getCounts()[mopIndex], fetchLine.getSize() == mopIndex + 1, fetchLine.getIndex() == 0 && mopIndex == 0);
 					instrIndex = 0;
-					std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
-					rxOpCount++;
+					if (TRACE) std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
 				}
 				MacroOp& mop = currentInstruction.getInfo().getOp(instrIndex);
 				if (fetchLine.getCounts()[mopIndex] != mop.getSize()) {
-					std::cout << "ERROR instruction " << mop.getName() << " doesn't fit into slot of size " << fetchLine.getCounts()[mopIndex] << std::endl;
+					if (TRACE) std::cout << "ERROR instruction " << mop.getName() << " doesn't fit into slot of size " << fetchLine.getCounts()[mopIndex] << std::endl;
 					return;
 				}
 				
-				std::cout << mop.getName() << " ";
-				int scheduleCycle = scheduleUop(mop, portBusy, cycle, depCycle);
+				if (TRACE) std::cout << mop.getName() << " ";
+				int scheduleCycle = scheduleUop<false>(mop, portBusy, cycle, depCycle);
 				mop.setCycle(scheduleCycle);
+				if (scheduleCycle < 0) {
+					if (TRACE) std::cout << "; Failed at cycle " << cycle << std::endl;
+					return;
+				}
 
 				if (instrIndex == currentInstruction.getInfo().getSrcOp()) {
 					for (attempts = 0; attempts < MAX_ATTEMPTS && !currentInstruction.selectSource(scheduleCycle, registers, gen); ++attempts) {
-						std::cout << "; src STALL at cycle " << cycle << std::endl;
+						if (TRACE) std::cout << "; src STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
 					}
 					if (attempts == MAX_ATTEMPTS) { //throw instruction away
-						cycle = topCycle;
+						//cycle = topCycle;
 						instrIndex = currentInstruction.getInfo().getSize();
-						std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+						if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
 						continue;
 					}
-					std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
+					if (TRACE) std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
 				}
 				if (instrIndex == currentInstruction.getInfo().getDstOp()) {
 					for (attempts = 0; attempts < MAX_ATTEMPTS && !currentInstruction.selectDestination(scheduleCycle, registers, gen); ++attempts) {
-						std::cout << "; dst STALL at cycle " << cycle << std::endl;
+						if (TRACE) std::cout << "; dst STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
 					}
 					if (attempts == MAX_ATTEMPTS) { //throw instruction away
-						cycle = topCycle;
+						//cycle = topCycle;
 						instrIndex = currentInstruction.getInfo().getSize();
-						std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+						if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
 						continue;
 					}
-					std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
+					if (TRACE) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
 				depCycle = scheduleCycle + mop.getLatency();
 				if (instrIndex == currentInstruction.getInfo().getResultOp()) {
 					int dst = currentInstruction.getDestination();
 					RegisterInfo& ri = registers[dst];
-
-					ri.latency = depCycle;
+					retireCycle = depCycle;
+					ri.latency = retireCycle;
 					ri.lastOpGroup = currentInstruction.getGroup();
 					ri.lastOpPar = currentInstruction.getGroupPar();
-					std::cout << "; RETIRED at cycle " << depCycle << std::endl;
+					if (TRACE) std::cout << "; RETIRED at cycle " << retireCycle << std::endl;
 				}
+				scheduleUop<true>(mop, portBusy, scheduleCycle, scheduleCycle);
 				codeSize += mop.getSize();
 				mopIndex++;
 				instrIndex++;
@@ -866,43 +891,60 @@ namespace RandomX {
 					portsSaturated = true;
 				}
 				cycle = topCycle;
+				if (instrIndex >= currentInstruction.getInfo().getSize()) {
+					currentInstruction.toInstr(prog(outIndex++));
+				}
 			}
 			++cycle;
 		}
 
-		while (instrIndex < currentInstruction.getInfo().getSize()) {
-			if (mopIndex >= fetchLine.getSize()) {
-				fetchLine = fetchLine.fetchNext(currentInstruction.getType(), gen);
-				std::cout << "; cycle " << cycle++ << " buffer " << fetchLine.getName() << std::endl;
-				mopIndex = 0;
-			}
-			MacroOp& mop = currentInstruction.getInfo().getOp(instrIndex);
-			std::cout << mop.getName() << " ";
-			codeSize += mop.getSize();
-			mopIndex++;
-			instrIndex++;
-			macroOpCount++;
-			int scheduleCycle = scheduleUop(mop, portBusy, cycle, depCycle);
-			mop.setCycle(scheduleCycle);
-			depCycle = scheduleCycle + mop.getLatency();
-		}
+		std::cout << "; ALU port utilization:" << std::endl;
+		std::cout << "; (*= in use, _ = idle)" << std::endl;
 
-		std::cout << "; code size " << codeSize << std::endl;
-		std::cout << "; x86 macro-ops: " << macroOpCount << std::endl;
-		std::cout << "; RandomX instructions: " << rxOpCount << std::endl;
-
-		for (int i = 0; i < RANDOMX_LPROG_LATENCY + 1; ++i) {
-			std::cout << std::setw(3) << i << " ";
+		int portCycles = 0;
+		for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
+			std::cout << "; " << std::setw(3) << i << " ";
 			for (int j = 0; j < 3; ++j) {
 				std::cout << (portBusy[i][j] ? '*' : '_');
+				portCycles += !!portBusy[i][j];
 			}
 			std::cout << std::endl;
+		}
+
+		std::cout << "; code size " << codeSize << " bytes" << std::endl;
+		std::cout << "; x86 macro-ops: " << macroOpCount << std::endl;
+		std::cout << "; RandomX instructions: " << outIndex << std::endl;
+		std::cout << "; Execution time: " << retireCycle << " cycles" << std::endl;
+		std::cout << "; IPC = " << (macroOpCount / (double)retireCycle) << std::endl;
+		std::cout << "; Port-cycles: " << portCycles << std::endl;
+
+		int asicLatency[8];
+		memset(asicLatency, 0, sizeof(asicLatency));
+		int mulCount = 0;
+
+		for (int i = 0; i < outIndex; ++i) {
+			Instruction& instr = prog(i);
+			int latDst = asicLatency[instr.dst] + 1;
+			int latSrc = instr.dst != instr.src ? asicLatency[instr.src] + 1 : 0;
+			asicLatency[instr.dst] = std::max(latDst, latSrc);
+			mulCount += isMul(instr.opcode);
+		}
+
+		std::cout << "; Multiplications: " << mulCount << std::endl;
+
+		std::cout << "; ASIC latency:" << std::endl;
+		for (int i = 0; i < 8; ++i) {
+			std::cout << ";  r" << i << " = " << asicLatency[i] << std::endl;
+		}
+		std::cout << "; CPU latency:" << std::endl;
+		for (int i = 0; i < 8; ++i) {
+			std::cout << ";  r" << i << " = " << registers[i].latency << std::endl;
 		}
 
 		prog.setSize(outIndex);
 	}
 
-	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister) {
+	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister, int nonce) {
 
 		// Source: https://www.agner.org/optimize/instruction_tables.pdf
 		const int op_latency[LightInstructionType::COUNT] = { 1, 2, 1, 2, 3, 5, 5, 4, 1, 2, 5 };
