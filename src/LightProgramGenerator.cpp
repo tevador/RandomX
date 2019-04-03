@@ -30,22 +30,20 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
                                             //                             Intel Ivy Bridge reference
 	namespace LightInstructionType {        //uOPs (decode)   execution ports         latency       code size
-		constexpr int IADD_R = 0;           //1               p015                    1               3
-		constexpr int IADD_C = 1;           //1               p015                    1               7
-		constexpr int IADD_RC = 2;          //1               p1                      3               8
-		constexpr int ISUB_R = 3;           //1               p015                    1               3
-		constexpr int IMUL_9C = 4;          //1               p1                      3               8
-		constexpr int IMUL_R = 5;           //1               p1                      3               4
-		constexpr int IMUL_C = 6;           //1               p1                      3               7
-		constexpr int IMULH_R = 7;          //1+2+1           0+(p1,p5)+0             3               3+3+3
-		constexpr int ISMULH_R = 8;         //1+2+1           0+(p1,p5)+0             3               3+3+3
-		constexpr int IMUL_RCP = 9;         //1+1             p015+p1                 4              10+4
-		constexpr int IXOR_R = 10;          //1               p015                    1               3
-		constexpr int IXOR_C = 11;          //1               p015                    1               7
-		constexpr int IROR_R = 12;          //1+2             0+(p0,p5)               1               3+3
-		constexpr int IROR_C = 13;          //1               p05                     1               4
-		constexpr int COND_R = 14;          //1+1+1+1+1+1     p015+p5+0+p015+p05+p015 3               7+13+3+7+3+3
-		constexpr int COUNT = 15;
+		constexpr int IADD_RS = 0;          //1               p01                     1               4
+		constexpr int ISUB_R = 1;           //1               p015                    1               3
+		constexpr int ISUB_C = 2;           //1               p015                    3               7
+		constexpr int IMUL_R = 3;           //1               p1                      3               4
+		constexpr int IMUL_C = 4;           //1               p1                      3               7
+		constexpr int IMULH_R = 5;          //1+2+1           0+(p1,p5)+0             3               3+3+3
+		constexpr int ISMULH_R = 6;         //1+2+1           0+(p1,p5)+0             3               3+3+3
+		constexpr int IMUL_RCP = 7;         //1+1             p015+p1                 4              10+4
+		constexpr int IXOR_R = 8;           //1               p015                    1               3
+		constexpr int IXOR_C = 9;           //1               p015                    1               7
+		constexpr int IROR_R = 10;          //1+2             0+(p0,p5)               1               3+3
+		constexpr int IROR_C = 11;          //1               p05                     1               4
+		constexpr int COND_R = 12;          //1+1+1+1+1+1     p015+p5+0+p015+p05+p015 3               7+13+3+7+3+3
+		constexpr int COUNT = 13;
 	}
 
 	namespace LightInstructionOpcode {
@@ -62,8 +60,8 @@ namespace RandomX {
 		constexpr int COND_R = IROR_R + RANDOMX_FREQ_IROR_R + RANDOMX_FREQ_IROL_R + RANDOMX_FREQ_ISWAP_R + RANDOMX_FREQ_FSWAP_R + RANDOMX_FREQ_FADD_R + RANDOMX_FREQ_FADD_M + RANDOMX_FREQ_FSUB_R + RANDOMX_FREQ_FSUB_M + RANDOMX_FREQ_FSCAL_R + RANDOMX_FREQ_FMUL_R + RANDOMX_FREQ_FDIV_M + RANDOMX_FREQ_FSQRT_R;
 	}
 
-	static bool isMul(uint8_t opcode) {
-		return opcode == LightInstructionOpcode::IMUL_R || opcode == LightInstructionOpcode::IMULH_R || opcode == LightInstructionOpcode::ISMULH_R || opcode == LightInstructionOpcode::IMUL_RCP;
+	static bool isMul(int type) {
+		return type == LightInstructionType::IMUL_R || type == LightInstructionType::IMUL_C || type == LightInstructionType::IMULH_R || type == LightInstructionType::ISMULH_R || type == LightInstructionType::IMUL_RCP;
 	}
 
 	const int lightInstructionOpcode[] = {
@@ -84,33 +82,15 @@ namespace RandomX {
 		LightInstructionOpcode::COND_R
 	};
 
-	const int lightInstruction[] = {
-		LightInstructionType::IADD_R,
-		LightInstructionType::IADD_C,
-		LightInstructionType::IADD_RC,
-		LightInstructionType::ISUB_R,
-		LightInstructionType::IMUL_9C,
-		LightInstructionType::IMUL_R,
-		LightInstructionType::IMUL_R,
-		LightInstructionType::IMUL_C,
-		LightInstructionType::IMULH_R,
-		LightInstructionType::ISMULH_R,
-		LightInstructionType::IMUL_RCP,
-		LightInstructionType::IXOR_R,
-		LightInstructionType::IXOR_C,
-		LightInstructionType::IROR_R,
-		LightInstructionType::IROR_C,
-		LightInstructionType::COND_R
-	};
-
 	namespace ExecutionPort {
 		using type = int;
 		constexpr type Null = 0;
 		constexpr type P0 = 1;
 		constexpr type P1 = 2;
 		constexpr type P5 = 3;
-		constexpr type P05 = 4;
-		constexpr type P015 = 5;
+		constexpr type P01 = 4;
+		constexpr type P05 = 5;
+		constexpr type P015 = 6;
 	}
 
 	class Blake2Generator {
@@ -210,6 +190,7 @@ namespace RandomX {
 		static const MacroOp Add_ri;
 		static const MacroOp Lea_sib;
 		static const MacroOp Sub_rr;
+		static const MacroOp Sub_ri;
 		static const MacroOp Imul_rr;
 		static const MacroOp Imul_rri;
 		static const MacroOp Imul_r;
@@ -238,8 +219,9 @@ namespace RandomX {
 
 	const MacroOp MacroOp::Add_rr = MacroOp("add r,r", 3, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Add_ri = MacroOp("add r,i", 7, 1, ExecutionPort::P015);
-	const MacroOp MacroOp::Lea_sib = MacroOp("lea r,m", 8, 3, ExecutionPort::P1);
+	const MacroOp MacroOp::Lea_sib = MacroOp("lea r,r+r*s", 4, 1, ExecutionPort::P01);
 	const MacroOp MacroOp::Sub_rr = MacroOp("sub r,r", 3, 1, ExecutionPort::P015);
+	const MacroOp MacroOp::Sub_ri = MacroOp("sub r,i", 7, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Imul_rr = MacroOp("imul r,r", 4, 3, ExecutionPort::P1);
 	const MacroOp MacroOp::Imul_rri = MacroOp("imul r,r,i", 7, 3, ExecutionPort::P1);
 	const MacroOp MacroOp::Imul_r = MacroOp("imul r", 3, 3, ExecutionPort::P1, ExecutionPort::P5);
@@ -253,7 +235,7 @@ namespace RandomX {
 	const MacroOp MacroOp::Xor_self = MacroOp("xor rcx,rcx", 3);
 	const MacroOp MacroOp::Cmp_ri = MacroOp("cmp r,i", 7, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Setcc_r = MacroOp("setcc cl", 3, 1, ExecutionPort::P05);
-	const MacroOp MacroOp::TestJmp_fused = MacroOp("testjmp r,i", 13, 0, ExecutionPort::P5);
+	const MacroOp MacroOp::TestJmp_fused = MacroOp("testjz r,i", 13, 0, ExecutionPort::P5);
 
 	const MacroOp IMULH_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Mul_r, MacroOp::Mov_rr };
 	const MacroOp ISMULH_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Imul_r, MacroOp::Mov_rr };
@@ -315,11 +297,9 @@ namespace RandomX {
 		int getSrcOp() const {
 			return srcOp_;
 		}
-		static const LightInstructionInfo IADD_R;
-		static const LightInstructionInfo IADD_C;
-		static const LightInstructionInfo IADD_RC;
+		static const LightInstructionInfo IADD_RS;
 		static const LightInstructionInfo ISUB_R;
-		static const LightInstructionInfo IMUL_9C;
+		static const LightInstructionInfo ISUB_C;
 		static const LightInstructionInfo IMUL_R;
 		static const LightInstructionInfo IMUL_C;
 		static const LightInstructionInfo IMULH_R;
@@ -344,11 +324,9 @@ namespace RandomX {
 			: name_(name), type_(-1), latency_(0) {}
 	};
 
-	const LightInstructionInfo LightInstructionInfo::IADD_R = LightInstructionInfo("IADD_R", LightInstructionType::IADD_R, MacroOp::Add_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IADD_C = LightInstructionInfo("IADD_C", LightInstructionType::IADD_C, MacroOp::Add_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IADD_RC = LightInstructionInfo("IADD_RC", LightInstructionType::IADD_RC, MacroOp::Lea_sib, 0);
+	const LightInstructionInfo LightInstructionInfo::IADD_RS = LightInstructionInfo("IADD_RS", LightInstructionType::IADD_RS, MacroOp::Lea_sib, 0);
 	const LightInstructionInfo LightInstructionInfo::ISUB_R = LightInstructionInfo("ISUB_R", LightInstructionType::ISUB_R, MacroOp::Sub_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IMUL_9C = LightInstructionInfo("IMUL_9C", LightInstructionType::IMUL_9C, MacroOp::Lea_sib, -1);
+	const LightInstructionInfo LightInstructionInfo::ISUB_C = LightInstructionInfo("ISUB_C", LightInstructionType::ISUB_C, MacroOp::Sub_ri, -1);
 	const LightInstructionInfo LightInstructionInfo::IMUL_R = LightInstructionInfo("IMUL_R", LightInstructionType::IMUL_R, MacroOp::Imul_rr, 0);
 	const LightInstructionInfo LightInstructionInfo::IMUL_C = LightInstructionInfo("IMUL_C", LightInstructionType::IMUL_C, MacroOp::Imul_rri, -1);
 	const LightInstructionInfo LightInstructionInfo::IMULH_R = LightInstructionInfo("IMULH_R", LightInstructionType::IMULH_R, IMULH_R_ops_array, 1, 0, 1);
@@ -364,7 +342,6 @@ namespace RandomX {
 	const int buffer0[] = { 3, 3, 10 };
 	const int buffer1[] = { 7, 3, 3, 3 };
 	const int buffer2[] = { 3, 3, 3, 7 };
-	const int buffer3[] = { 4, 8, 4 };
 	const int buffer4[] = { 4, 4, 4, 4 };
 	const int buffer5[] = { 3, 7, 3, 3 };
 	const int buffer6[] = { 3, 3, 7, 3 };
@@ -390,18 +367,15 @@ namespace RandomX {
 		}
 		const DecoderBuffer& fetchNext(int prevType, Blake2Generator& gen) {
 			if (prevType == LightInstructionType::IMULH_R || prevType == LightInstructionType::ISMULH_R)
-				return decodeBuffers[0];
+				return decodeBuffer3310; //2-1-1 decode
 			if (index_ == 0) {
-				if ((gen.getByte() % 2) == 0)
-					return decodeBuffers[3];
-				else
-					return decodeBuffers[4];
+				return decodeBuffer4444; //IMUL_RCP end
 			}
 			if (index_ == 2) {
-				return decodeBuffers[7];
+				return decodeBuffer133; //COND_R middle
 			}
 			if (index_ == 7) {
-				return decodeBuffers[1];
+				return decodeBuffer7333; //COND_R end
 			}
 			return fetchNextDefault(gen);
 		}
@@ -411,36 +385,49 @@ namespace RandomX {
 		const int* counts_;
 		int opsCount_;
 		DecoderBuffer() : index_(-1) {}
-		static const DecoderBuffer decodeBuffers[8];
+		static const DecoderBuffer decodeBuffer3310;
+		static const DecoderBuffer decodeBuffer7333;
+		static const DecoderBuffer decodeBuffer3337;
+		static const DecoderBuffer decodeBuffer4444;
+		static const DecoderBuffer decodeBuffer3733;
+		static const DecoderBuffer decodeBuffer3373;
+		static const DecoderBuffer decodeBuffer133;
+		static const DecoderBuffer* decodeBuffers[7];
 		const DecoderBuffer& fetchNextDefault(Blake2Generator& gen) {
 			int select;
 			do {
 				select = gen.getByte() & 7;
 			} while (select == 7);
-			return decodeBuffers[select];
+			return *decodeBuffers[select];
 		}
 	};
 
-	const DecoderBuffer DecoderBuffer::decodeBuffers[8] = {
-			DecoderBuffer("3,3,10", 0, buffer0),
-			DecoderBuffer("7,3,3,3", 1, buffer1),
-			DecoderBuffer("3,3,3,7", 2, buffer2),
-			DecoderBuffer("4,8,4", 3, buffer3),
-			DecoderBuffer("4,4,4,4", 4, buffer4),
-			DecoderBuffer("3,7,3,3", 5, buffer5),
-			DecoderBuffer("3,3,7,3", 6, buffer6),
-			DecoderBuffer("13,3", 7, buffer7),
+	const DecoderBuffer DecoderBuffer::decodeBuffer3310 = DecoderBuffer("3,3,10", 0, buffer0);
+	const DecoderBuffer DecoderBuffer::decodeBuffer7333 = DecoderBuffer("7,3,3,3", 1, buffer1);
+	const DecoderBuffer DecoderBuffer::decodeBuffer3337 = DecoderBuffer("3,3,3,7", 2, buffer2);
+	const DecoderBuffer DecoderBuffer::decodeBuffer4444 = DecoderBuffer("4,4,4,4", 4, buffer4);
+	const DecoderBuffer DecoderBuffer::decodeBuffer3733 = DecoderBuffer("3,7,3,3", 5, buffer5);
+	const DecoderBuffer DecoderBuffer::decodeBuffer3373 = DecoderBuffer("3,3,7,3", 6, buffer6);
+	const DecoderBuffer DecoderBuffer::decodeBuffer133 = DecoderBuffer("13,3", 7, buffer7);
+
+	const DecoderBuffer* DecoderBuffer::decodeBuffers[7] = {
+			&DecoderBuffer::decodeBuffer3310,
+			&DecoderBuffer::decodeBuffer7333,
+			&DecoderBuffer::decodeBuffer3337,
+			&DecoderBuffer::decodeBuffer4444,
+			&DecoderBuffer::decodeBuffer4444,
+			&DecoderBuffer::decodeBuffer3733,
+			&DecoderBuffer::decodeBuffer3373,
 	};
 
 	DecoderBuffer DecoderBuffer::Default = DecoderBuffer();
 
-	const LightInstructionInfo* slot_3[]  = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IADD_R };
-	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
-	const LightInstructionInfo* slot_3F[] = { &LightInstructionInfo::IADD_R, &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IROR_R };
-	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IMUL_R, &LightInstructionInfo::IROR_C };
-	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IADD_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::IADD_C };
+	const LightInstructionInfo* slot_3[]  = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R };
+	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
+	const LightInstructionInfo* slot_3C[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IROR_R, &LightInstructionInfo::IXOR_R };
+	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IMUL_R, &LightInstructionInfo::IROR_C, &LightInstructionInfo::IADD_RS, &LightInstructionInfo::IMUL_R };
+	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::ISUB_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::ISUB_C };
 	const LightInstructionInfo* slot_7L   = &LightInstructionInfo::COND_R;
-	const LightInstructionInfo* slot_8[]  = { &LightInstructionInfo::IADD_RC, &LightInstructionInfo::IMUL_9C };
 	const LightInstructionInfo* slot_10   = &LightInstructionInfo::IMUL_RCP;
 
 	static bool selectRegister(std::vector<int>& availableRegisters, Blake2Generator& gen, int& reg) {
@@ -469,21 +456,21 @@ namespace RandomX {
 			instr.setImm32(imm32_);
 		}
 
-		static LightInstruction createForSlot(Blake2Generator& gen, int slotSize, bool isLast = false, bool isFirst = false) {
+		static LightInstruction createForSlot(Blake2Generator& gen, int slotSize, bool isLast = false, bool complex = false) {
 			switch (slotSize)
 			{
 			case 3:
 				if (isLast) {
-					return create(slot_3L[gen.getByte() & 7], gen);
+					return create(slot_3L[gen.getByte() & 3], gen);
 				}
-				else if (isFirst) {
-					return create(slot_3F[gen.getByte() & 3], gen);
+				else if (complex) {
+					return create(slot_3C[gen.getByte() & 3], gen);
 				}
 				else {
-					return create(slot_3[gen.getByte() & 3], gen);
+					return create(slot_3[gen.getByte() & 1], gen);
 				}
 			case 4:
-				return create(slot_4[gen.getByte() & 1], gen);
+				return create(slot_4[gen.getByte() & 3], gen);
 			case 7:
 				if (isLast) {
 					return create(slot_7L, gen);
@@ -491,12 +478,10 @@ namespace RandomX {
 				else {
 					return create(slot_7[gen.getByte() & 3], gen);
 				}
-			case 8:
-				return create(slot_8[gen.getByte() & 1], gen);
 			case 10:
 				return create(slot_10, gen);
 			default:
-				break;
+				throw std::runtime_error("Invalid slot");
 			}
 		}
 
@@ -504,38 +489,24 @@ namespace RandomX {
 			LightInstruction li(info);
 			switch (info->getType())
 			{
-			case LightInstructionType::IADD_R: {
-				li.mod_ = 0;
+			case LightInstructionType::IADD_RS: {
+				li.mod_ = gen.getByte();
 				li.imm32_ = 0;
-				li.opGroup_ = LightInstructionType::IADD_R;
-				li.groupParIsSource_ = true;
-			} break;
-
-			case LightInstructionType::IADD_C: {
-				li.mod_ = 0;
-				li.imm32_ = gen.getInt32();
-				li.opGroup_ = LightInstructionType::IADD_R;
-				li.groupParIsSource_ = true;
-			} break;
-
-			case LightInstructionType::IADD_RC: {
-				li.mod_ = 0;
-				li.imm32_ = gen.getInt32();
-				li.opGroup_ = LightInstructionType::IADD_R;
+				li.opGroup_ = LightInstructionType::IADD_RS;
 				li.groupParIsSource_ = true;
 			} break;
 
 			case LightInstructionType::ISUB_R: {
 				li.mod_ = 0;
 				li.imm32_ = 0;
-				li.opGroup_ = LightInstructionType::IADD_R;
+				li.opGroup_ = LightInstructionType::IADD_RS;
 				li.groupParIsSource_ = true;
 			} break;
 
-			case LightInstructionType::IMUL_9C: {
+			case LightInstructionType::ISUB_C: {
 				li.mod_ = 0;
 				li.imm32_ = gen.getInt32();
-				li.opGroup_ = LightInstructionType::IMUL_C;
+				li.opGroup_ = LightInstructionType::ISUB_C;
 				li.opGroupPar_ = -1;
 			} break;
 
@@ -721,7 +692,7 @@ namespace RandomX {
 					}
 				}
 			}
-			else if (mop.getUop1() == ExecutionPort::P05) {
+			else if (mop.getUop1() == ExecutionPort::P01) {
 				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 					if (!portBusy[cycle][0]) {
 						if (commit) {
@@ -730,10 +701,28 @@ namespace RandomX {
 						}
 						return cycle;
 					}
+					if (!portBusy[cycle][1]) {
+						if (commit) {
+							if (TRACE) std::cout << "; P1 at cycle " << cycle << std::endl;
+							portBusy[cycle][1] = mop.getUop1();
+						}
+						return cycle;
+					}
+				}
+			}
+			else if (mop.getUop1() == ExecutionPort::P05) {
+				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 					if (!portBusy[cycle][2]) {
 						if (commit) {
 							if (TRACE) std::cout << "; P2 at cycle " << cycle << std::endl;
 							portBusy[cycle][2] = mop.getUop1();
+						}
+						return cycle;
+					}
+					if (!portBusy[cycle][0]) {
+						if (commit) {
+							if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
+							portBusy[cycle][0] = mop.getUop1();
 						}
 						return cycle;
 					}
@@ -741,17 +730,17 @@ namespace RandomX {
 			}
 			else {
 				for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
-					if (!portBusy[cycle][0]) {
-						if (commit) {
-							if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
-							portBusy[cycle][0] = mop.getUop1();
-						}
-						return cycle;
-					}
 					if (!portBusy[cycle][2]) {
 						if (commit) {
 							if (TRACE) std::cout << "; P2 at cycle " << cycle << std::endl;
 							portBusy[cycle][2] = mop.getUop1();
+						}
+						return cycle;
+					}
+					if (!portBusy[cycle][0]) {
+						if (commit) {
+							if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
+							portBusy[cycle][0] = mop.getUop1();
 						}
 						return cycle;
 					}
@@ -813,6 +802,7 @@ namespace RandomX {
 		bool portsSaturated = false;
 		int outIndex = 0;
 		int attempts = 0;
+		int mulCount = 0;
 		constexpr int MAX_ATTEMPTS = 4;
 
 		while(!portsSaturated) {
@@ -872,6 +862,7 @@ namespace RandomX {
 					}
 					if (TRACE) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
+				scheduleCycle = scheduleUop<true>(mop, portBusy, scheduleCycle, scheduleCycle);
 				depCycle = scheduleCycle + mop.getLatency();
 				if (instrIndex == currentInstruction.getInfo().getResultOp()) {
 					int dst = currentInstruction.getDestination();
@@ -882,7 +873,6 @@ namespace RandomX {
 					ri.lastOpPar = currentInstruction.getGroupPar();
 					if (TRACE) std::cout << "; RETIRED at cycle " << retireCycle << std::endl;
 				}
-				scheduleUop<true>(mop, portBusy, scheduleCycle, scheduleCycle);
 				codeSize += mop.getSize();
 				mopIndex++;
 				instrIndex++;
@@ -893,13 +883,14 @@ namespace RandomX {
 				cycle = topCycle;
 				if (instrIndex >= currentInstruction.getInfo().getSize()) {
 					currentInstruction.toInstr(prog(outIndex++));
+					mulCount += isMul(currentInstruction.getType());
 				}
 			}
 			++cycle;
 		}
 
 		std::cout << "; ALU port utilization:" << std::endl;
-		std::cout << "; (*= in use, _ = idle)" << std::endl;
+		std::cout << "; (* = in use, _ = idle)" << std::endl;
 
 		int portCycles = 0;
 		for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
@@ -920,14 +911,12 @@ namespace RandomX {
 
 		int asicLatency[8];
 		memset(asicLatency, 0, sizeof(asicLatency));
-		int mulCount = 0;
 
 		for (int i = 0; i < outIndex; ++i) {
 			Instruction& instr = prog(i);
 			int latDst = asicLatency[instr.dst] + 1;
 			int latSrc = instr.dst != instr.src ? asicLatency[instr.src] + 1 : 0;
 			asicLatency[instr.dst] = std::max(latDst, latSrc);
-			mulCount += isMul(instr.opcode);
 		}
 
 		std::cout << "; Multiplications: " << mulCount << std::endl;
@@ -942,239 +931,5 @@ namespace RandomX {
 		}
 
 		prog.setSize(outIndex);
-	}
-
-	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister, int nonce) {
-
-		// Source: https://www.agner.org/optimize/instruction_tables.pdf
-		const int op_latency[LightInstructionType::COUNT] = { 1, 2, 1, 2, 3, 5, 5, 4, 1, 2, 5 };
-
-		// Instruction latencies for theoretical ASIC implementation
-		const int asic_op_latency[LightInstructionType::COUNT] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-
-		// Available ALUs for each instruction
-		const int op_ALUs[LightInstructionType::COUNT] = { ALU_COUNT, ALU_COUNT, ALU_COUNT, ALU_COUNT, ALU_COUNT_MUL, ALU_COUNT_MUL, ALU_COUNT_MUL, ALU_COUNT_MUL, ALU_COUNT, ALU_COUNT, ALU_COUNT };
-
-		uint8_t data[64];
-		memset(data, 0, sizeof(data));
-		memcpy(data, seed, SeedSize);
-
-		// Set data_index past the last byte in data
-		// to trigger full data update with blake hash
-		// before we start using it
-		size_t data_index = sizeof(data);
-
-		int code_size;
-
-		do {
-			uint8_t opcode;
-			uint8_t dst_index;
-			uint8_t src_index;
-			uint32_t imm32 = 0;
-
-			int latency[8];
-			int asic_latency[9];
-
-			// Tracks previous instruction and value of the source operand for registers R0-R3 throughout code execution
-			// byte 0: current value of the destination register
-			// byte 1: instruction opcode
-			// byte 2: current value of the source register
-			//
-			// Registers R4-R8 are constant and are treated as having the same value because when we do
-			// the same operation twice with two constant source registers, it can be optimized into a single operation
-			uint64_t inst_data[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-
-			bool alu_busy[RANDOMX_LPROG_LATENCY + 1][ALU_COUNT];
-			bool is_rotation[LightInstructionType::COUNT];
-			bool rotated[8];
-			int rotate_count = 0;
-
-			memset(latency, 0, sizeof(latency));
-			memset(asic_latency, 0, sizeof(asic_latency));
-			memset(alu_busy, 0, sizeof(alu_busy));
-			memset(is_rotation, 0, sizeof(is_rotation));
-			memset(rotated, 0, sizeof(rotated));
-			is_rotation[LightInstructionType::IROR_R] = true;
-
-			int num_retries = 0;
-			code_size = 0;
-
-			int total_iterations = 0;
-
-			// Generate random code to achieve minimal required latency for our abstract CPU
-			// Try to get this latency for all 4 registers
-			while (((latency[0] < RANDOMX_LPROG_LATENCY) || (latency[1] < RANDOMX_LPROG_LATENCY) || (latency[2] < RANDOMX_LPROG_LATENCY) || (latency[3] < RANDOMX_LPROG_LATENCY)
-				|| (latency[4] < RANDOMX_LPROG_LATENCY) || (latency[5] < RANDOMX_LPROG_LATENCY) || (latency[6] < RANDOMX_LPROG_LATENCY) || (latency[7] < RANDOMX_LPROG_LATENCY)) && (num_retries < 64))
-			{
-				// Fail-safe to guarantee loop termination
-				++total_iterations;
-				if (total_iterations > 1024) {
-					std::cout << "total_iterations = " << total_iterations << std::endl;
-					break;
-				}
-
-				check_data(data_index, 1, data, sizeof(data));
-				const uint8_t b1 = data[data_index++];
-				int instrType = lightInstruction[b1 & ((1 << LIGHT_OPCODE_BITS) - 1)];
-
-				check_data(data_index, 1, data, sizeof(data));
-				const uint8_t b2 = data[data_index++];
-				dst_index = b2 & ((1 << V4_DST_INDEX_BITS) - 1);
-				src_index = (b2 >> (V4_DST_INDEX_BITS)) & ((1 << V4_SRC_INDEX_BITS) - 1);
-
-				const int a = dst_index;
-				int b = src_index;
-
-				// Don't do rotation with the same destination twice because it's equal to a single rotation
-				if (is_rotation[instrType] && rotated[a])
-				{
-					continue;
-				}
-
-				// Don't do the same instruction (except MUL) with the same source value twice because all other cases can be optimized:
-				//	2x IADD_RC(a, b, C) = IADD_RC(a, b*2, C1+C2)
-				//	2x ISUB_R(a, b) = ISUB_R(a, 2*b)
-				//	2x IMUL_R(a, b) = IMUL_R(a, b*b)
-				//	2x IMUL_9C(a, C) = 9 * (9 * a + C1) + C2 = 81 * a + (9 * C1 + C2)
-				//	2x IMUL_RCP(a, C) = a * (C * C)
-				//	2x IXOR_R = NOP
-				//	2x IROR_R(a, b) = IROR_R(a, 2*b)
-				if (instrType != LightInstructionType::IMULH_R && instrType != LightInstructionType::ISMULH_R && ((inst_data[a] & 0xFFFF00) == (instrType << 8) + ((inst_data[b] & 255) << 16)))
-				{
-					continue;
-				}
-
-				if ((instrType == LightInstructionType::IADD_RC) || (instrType == LightInstructionType::IMUL_9C) || (instrType == LightInstructionType::IMUL_RCP) || (instrType == LightInstructionType::COND_R) || ((instrType != LightInstructionType::IMULH_R) && (instrType != LightInstructionType::ISMULH_R) && (a == b)))
-				{
-					check_data(data_index, 4, data, sizeof(data));
-					imm32 = load32(&data[data_index++]);
-				}
-
-				// Find which ALU is available (and when) for this instruction
-				int next_latency = (latency[a] > latency[b]) ? latency[a] : latency[b];
-				int alu_index = -1;
-				while (next_latency < RANDOMX_LPROG_LATENCY)
-				{
-					for (int i = op_ALUs[instrType] - 1; i >= 0; --i)
-					{
-						if (!alu_busy[next_latency][i])
-						{
-							// ADD is implemented as two 1-cycle instructions on a real CPU, so do an additional availability check
-							if ((instrType == LightInstructionType::IADD_RC || instrType == LightInstructionType::IMUL_9C || instrType == LightInstructionType::IMULH_R || instrType == LightInstructionType::ISMULH_R) && alu_busy[next_latency + 1][i])
-							{
-								continue;
-							}
-
-							// Rotation can only start when previous rotation is finished, so do an additional availability check
-							if (is_rotation[instrType] && (next_latency < rotate_count * op_latency[instrType]))
-							{
-								continue;
-							}
-
-							alu_index = i;
-							break;
-						}
-					}
-					if (alu_index >= 0)
-					{
-						break;
-					}
-					++next_latency;
-				}
-
-				// Don't generate instructions that leave some register unchanged for more than 15 cycles
-				if (next_latency > latency[a] + 15)
-				{
-					continue;
-				}
-
-				next_latency += op_latency[instrType];
-
-				if (next_latency <= RANDOMX_LPROG_LATENCY)
-				{
-					if (is_rotation[instrType])
-					{
-						++rotate_count;
-					}
-
-					// Mark ALU as busy only for the first cycle when it starts executing the instruction because ALUs are fully pipelined
-					alu_busy[next_latency - op_latency[instrType]][alu_index] = true;
-					latency[a] = next_latency;
-
-					// ASIC is supposed to have enough ALUs to run as many independent instructions per cycle as possible, so latency calculation for ASIC is simple
-					asic_latency[a] = ((asic_latency[a] > asic_latency[b]) ? asic_latency[a] : asic_latency[b]) + asic_op_latency[instrType];
-
-					rotated[a] = is_rotation[instrType];
-
-					inst_data[a] = code_size + (instrType << 8) + ((inst_data[b] & 255) << 16);
-
-					prog(code_size).opcode = lightInstructionOpcode[instrType];
-					prog(code_size).dst = dst_index;
-					prog(code_size).src = src_index;
-					prog(code_size).setImm32(imm32);
-
-					if (instrType == LightInstructionType::IADD_RC || instrType == LightInstructionType::IMUL_9C || instrType == LightInstructionType::IMULH_R || instrType == LightInstructionType::ISMULH_R)
-					{
-						// ADD instruction is implemented as two 1-cycle instructions on a real CPU, so mark ALU as busy for the next cycle too
-						alu_busy[next_latency - op_latency[instrType] + 1][alu_index] = true;
-					}
-
-					++code_size;
-					if (code_size >= RANDOMX_LPROG_MIN_SIZE)
-					{
-						break;
-					}
-				}
-				else
-				{
-					++num_retries;
-					std::cout << "Retry " << num_retries << " with code_size = " << code_size << ", next_latency = " << next_latency << std::endl;
-				}
-			}
-
-			// ASIC has more execution resources and can extract as much parallelism from the code as possible
-			// We need to add a few more MUL and ROR instructions to achieve minimal required latency for ASIC
-			// Get this latency for at least 1 of the 4 registers
-			const int prev_code_size = code_size;
-			if ((code_size < RANDOMX_LPROG_MAX_SIZE) && (asic_latency[indexRegister] < RANDOMX_LPROG_ASIC_LATENCY))
-			{
-				int min_idx = indexRegister;
-				int max_idx = 0;
-				for (int i = 1; i < 8; ++i)
-				{
-					//if (asic_latency[i] < asic_latency[min_idx]) min_idx = i;
-					if (asic_latency[i] > asic_latency[max_idx]) max_idx = i;
-				}
-
-				const int pattern[3] = { LightInstructionType::IMUL_R, LightInstructionType::IROR_R, LightInstructionType::IMUL_R };
-				const int instrType = pattern[(code_size - prev_code_size) % 3];
-				latency[min_idx] = latency[max_idx] + op_latency[instrType];
-				asic_latency[min_idx] = asic_latency[max_idx] + asic_op_latency[instrType];
-
-				prog(code_size).opcode = lightInstructionOpcode[instrType];
-				prog(code_size).dst = min_idx;
-				prog(code_size).src = max_idx;
-
-				++code_size;
-			}
-
-			for (int i = 0; i < 8; ++i) {
-				std::cout << "Latency " << i << " = " << latency[i] << std::endl;
-			}
-
-			std::cout << "Code size = " << code_size << std::endl;
-			std::cout << "ALUs:" << std::endl;
-			for (int i = 0; i < RANDOMX_LPROG_LATENCY + 1; ++i) {
-				for (int j = 0; j < ALU_COUNT; ++j) {
-					std::cout << (alu_busy[i][j] ? '*' : '_');
-				}
-				std::cout << std::endl;
-			}
-
-			// There is ~98.15% chance that loop condition is false, so this loop will execute only 1 iteration most of the time
-			// It never does more than 4 iterations for all block heights < 10,000,000
-		} while ((code_size < RANDOMX_LPROG_MIN_SIZE) || (code_size > RANDOMX_LPROG_MAX_SIZE));
-
-		prog.setSize(code_size);
 	}
 }
