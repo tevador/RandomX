@@ -37,7 +37,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Number of random Cache accesses per Dataset block. Minimum is 2.
 #define RANDOMX_CACHE_ACCESSES     8
 
-#define RANDOMX_LPROG_LATENCY      130
+#define RANDOMX_LPROG_LATENCY      170
 #define RANDOMX_LPROG_ASIC_LATENCY 84
 #define RANDOMX_LPROG_MIN_SIZE     225
 #define RANDOMX_LPROG_MAX_SIZE     512

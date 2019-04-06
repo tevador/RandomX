@@ -216,7 +216,7 @@ namespace RandomX {
 	const MacroOp MacroOp::Sub_ri = MacroOp("sub r,i", 7, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Imul_rr = MacroOp("imul r,r", 4, 3, ExecutionPort::P1);
 	const MacroOp MacroOp::Imul_rri = MacroOp("imul r,r,i", 7, 3, ExecutionPort::P1);
-	const MacroOp MacroOp::Imul_r = MacroOp("imul r", 3, 3, ExecutionPort::P1, ExecutionPort::P5);
+	const MacroOp MacroOp::Imul_r = MacroOp("imul r", 3, 4, ExecutionPort::P1, ExecutionPort::P5);
 	const MacroOp MacroOp::Mul_r = MacroOp("mul r", 3, 3, ExecutionPort::P1, ExecutionPort::P5);
 	const MacroOp MacroOp::Mov_rr = MacroOp("mov r,r", 3);
 	const MacroOp MacroOp::Mov_ri64 = MacroOp("mov rax,i64", 10, 1, ExecutionPort::P015);
@@ -357,9 +357,11 @@ namespace RandomX {
 		const char* getName() const {
 			return name_;
 		}
-		const DecoderBuffer* fetchNext(int prevType, Blake2Generator& gen) const {
-			if (prevType == LightInstructionType::IMULH_R || prevType == LightInstructionType::ISMULH_R)
+		const DecoderBuffer* fetchNext(int instrType, int cycle, int mulCount, Blake2Generator& gen) const {
+			if (instrType == LightInstructionType::IMULH_R || instrType == LightInstructionType::ISMULH_R)
 				return &decodeBuffer3310; //2-1-1 decode
+			if (mulCount < cycle)
+				return &decodeBuffer4444_mul;
 			if (index_ == 0) {
 				return &decodeBuffer4444; //IMUL_RCP end
 			}
@@ -381,15 +383,16 @@ namespace RandomX {
 		static const DecoderBuffer decodeBuffer7333;
 		static const DecoderBuffer decodeBuffer3337;
 		static const DecoderBuffer decodeBuffer4444;
+		static const DecoderBuffer decodeBuffer4444_mul;
 		static const DecoderBuffer decodeBuffer3733;
 		static const DecoderBuffer decodeBuffer3373;
 		static const DecoderBuffer decodeBuffer133;
 		static const DecoderBuffer* decodeBuffers[7];
 		const DecoderBuffer* fetchNextDefault(Blake2Generator& gen) const {
 			int select;
-			do {
-				select = gen.getByte() & 7;
-			} while (select == 7);
+			//do {
+				select = gen.getByte() & 3;
+			//} while (select == 7);
 			return decodeBuffers[select];
 		}
 	};
@@ -397,17 +400,16 @@ namespace RandomX {
 	const DecoderBuffer DecoderBuffer::decodeBuffer3310 = DecoderBuffer("3,3,10", 0, buffer0);
 	const DecoderBuffer DecoderBuffer::decodeBuffer7333 = DecoderBuffer("7,3,3,3", 1, buffer1);
 	const DecoderBuffer DecoderBuffer::decodeBuffer3337 = DecoderBuffer("3,3,3,7", 2, buffer2);
+	const DecoderBuffer DecoderBuffer::decodeBuffer4444_mul = DecoderBuffer("4,4,4,4-MUL", 3, buffer4);
 	const DecoderBuffer DecoderBuffer::decodeBuffer4444 = DecoderBuffer("4,4,4,4", 4, buffer4);
+	
 	const DecoderBuffer DecoderBuffer::decodeBuffer3733 = DecoderBuffer("3,7,3,3", 5, buffer5);
 	const DecoderBuffer DecoderBuffer::decodeBuffer3373 = DecoderBuffer("3,3,7,3", 6, buffer6);
 	const DecoderBuffer DecoderBuffer::decodeBuffer133 = DecoderBuffer("13,3", 7, buffer7);
 
 	const DecoderBuffer* DecoderBuffer::decodeBuffers[7] = {
 			&DecoderBuffer::decodeBuffer3310,
-			&DecoderBuffer::decodeBuffer7333,
 			&DecoderBuffer::decodeBuffer3337,
-			&DecoderBuffer::decodeBuffer4444,
-			&DecoderBuffer::decodeBuffer4444,
 			&DecoderBuffer::decodeBuffer3733,
 			&DecoderBuffer::decodeBuffer3373,
 	};
@@ -417,8 +419,8 @@ namespace RandomX {
 	const LightInstructionInfo* slot_3[]  = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R };
 	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
 	const LightInstructionInfo* slot_3C[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IROR_R, &LightInstructionInfo::IXOR_R };
-	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IMUL_R, &LightInstructionInfo::IROR_C, &LightInstructionInfo::IADD_RS, &LightInstructionInfo::IMUL_R };
-	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::ISUB_C, &LightInstructionInfo::IMUL_C, &LightInstructionInfo::IXOR_C, &LightInstructionInfo::ISUB_C };
+	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IROR_C, &LightInstructionInfo::IADD_RS };
+	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IXOR_C, &LightInstructionInfo::ISUB_C };
 	const LightInstructionInfo* slot_7L   = &LightInstructionInfo::COND_R;
 	const LightInstructionInfo* slot_10   = &LightInstructionInfo::IMUL_RCP;
 
@@ -448,27 +450,34 @@ namespace RandomX {
 			instr.setImm32(imm32_);
 		}
 
-		static LightInstruction createForSlot(Blake2Generator& gen, int slotSize, bool isLast = false, bool complex = false) {
+		static LightInstruction createForSlot(Blake2Generator& gen, int slotSize, int fetchType, bool isLast, bool isFirst) {
 			switch (slotSize)
 			{
 			case 3:
 				if (isLast) {
 					return create(slot_3L[gen.getByte() & 3], gen);
 				}
-				else if (complex) {
+				else if (false && isFirst && fetchType == 0) {
 					return create(slot_3C[gen.getByte() & 3], gen);
 				}
 				else {
 					return create(slot_3[gen.getByte() & 1], gen);
 				}
 			case 4:
-				return create(slot_4[gen.getByte() & 3], gen);
+				if (fetchType == 3 && !isLast) {
+					return create(&LightInstructionInfo::IMUL_R, gen);
+				}
+				else {
+					return create(slot_4[gen.getByte() & 1], gen);
+				}
 			case 7:
 				if (false && isLast) {
 					return create(slot_7L, gen);
 				}
-				else {
-					return create(slot_7[gen.getByte() & 3], gen);
+				if (false && isFirst) {
+					return create(&LightInstructionInfo::IMUL_C, gen);
+				} else {
+					return create(slot_7[gen.getByte() & 1], gen);
 				}
 			case 10:
 				return create(slot_10, gen);
@@ -664,7 +673,11 @@ namespace RandomX {
 	constexpr int V4_SRC_INDEX_BITS = 3;
 	constexpr int V4_DST_INDEX_BITS = 3;
 	constexpr int CYCLE_MAP_SIZE = RANDOMX_LPROG_LATENCY + 3;
+#ifndef _DEBUG
 	constexpr bool TRACE = false;
+#else
+	constexpr bool TRACE = true;
+#endif
 
 	static int blakeCounter = 0;
 
@@ -803,7 +816,7 @@ namespace RandomX {
 		constexpr int MAX_ATTEMPTS = 4;
 
 		while(!portsSaturated) {
-			fetchLine = fetchLine->fetchNext(currentInstruction.getType(), gen);
+			fetchLine = fetchLine->fetchNext(currentInstruction.getType(), cycle, mulCount, gen);
 			if (TRACE) std::cout << "; ------------- fetch cycle " << cycle << " (" << fetchLine->getName() << ")" << std::endl;
 
 			mopIndex = 0;
@@ -813,7 +826,7 @@ namespace RandomX {
 				if (instrIndex >= currentInstruction.getInfo().getSize()) {
 					if (portsSaturated)
 						break;
-					currentInstruction = LightInstruction::createForSlot(gen, fetchLine->getCounts()[mopIndex], fetchLine->getSize() == mopIndex + 1, fetchLine->getIndex() == 0 && mopIndex == 0);
+					currentInstruction = LightInstruction::createForSlot(gen, fetchLine->getCounts()[mopIndex], fetchLine->getIndex(), fetchLine->getSize() == mopIndex + 1, mopIndex == 0);
 					instrIndex = 0;
 					if (TRACE) std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
 				}

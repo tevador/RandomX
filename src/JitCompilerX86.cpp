@@ -628,7 +628,7 @@ namespace RandomX {
 			emitByte(0xc8 + instr.dst);
 		}
 		else {
-			if (NOP_TEST) {
+			if (false && NOP_TEST) {
 				emit(NOP4);
 				return;
 			}
