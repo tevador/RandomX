@@ -97,14 +97,12 @@ namespace RandomX {
 	}
 
 	//1 uOP
-	void AssemblyGeneratorX86::h_IADD_R(Instruction& instr, int i) {
+	void AssemblyGeneratorX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		if (instr.src != instr.dst) {
-			asmCode << "\tadd " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
-		}
-		else {
-			asmCode << "\tadd " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
-		}
+		if(instr.dst == 5)
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
+		else
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << "]" << std::endl;
 		traceint(instr);
 	}
 
@@ -517,7 +515,7 @@ namespace RandomX {
 
 	InstructionGenerator AssemblyGeneratorX86::engine[256] = {
 		//Integer
-		INST_HANDLE(IADD_R)
+		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
 		INST_HANDLE(IADD_RC)
 		INST_HANDLE(ISUB_R)

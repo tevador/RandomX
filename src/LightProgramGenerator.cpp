@@ -26,6 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
+#include "LightProgramGenerator.hpp"
 
 namespace RandomX {
                                             //                             Intel Ivy Bridge reference
@@ -47,8 +48,8 @@ namespace RandomX {
 	}
 
 	namespace LightInstructionOpcode {
-		constexpr int IADD_R = 0;
-		constexpr int IADD_RC = RANDOMX_FREQ_IADD_R + RANDOMX_FREQ_IADD_M;
+		constexpr int IADD_RS = 0;
+		constexpr int IADD_RC = RANDOMX_FREQ_IADD_RS + RANDOMX_FREQ_IADD_M;
 		constexpr int ISUB_R = IADD_RC + RANDOMX_FREQ_IADD_RC;
 		constexpr int IMUL_9C = ISUB_R + RANDOMX_FREQ_ISUB_R + RANDOMX_FREQ_ISUB_M;
 		constexpr int IMUL_R = IMUL_9C + RANDOMX_FREQ_IMUL_9C;
@@ -65,20 +66,18 @@ namespace RandomX {
 	}
 
 	const int lightInstructionOpcode[] = {
-		LightInstructionOpcode::IADD_R,
-		LightInstructionOpcode::IADD_R,
-		LightInstructionOpcode::IADD_RC,
-		LightInstructionOpcode::ISUB_R,
-		LightInstructionOpcode::IMUL_9C,
-		LightInstructionOpcode::IMUL_R,
-		LightInstructionOpcode::IMUL_R,
+		LightInstructionOpcode::IADD_RS,
+		LightInstructionOpcode::ISUB_R,    //ISUB_R
+		LightInstructionOpcode::ISUB_R,    //ISUB_R
+		LightInstructionOpcode::IMUL_R,    //IMUL_R
+		LightInstructionOpcode::IMUL_R,    //IMUL_C
 		LightInstructionOpcode::IMULH_R,
 		LightInstructionOpcode::ISMULH_R,
 		LightInstructionOpcode::IMUL_RCP,
-		LightInstructionOpcode::IXOR_R,
-		LightInstructionOpcode::IXOR_R,
-		LightInstructionOpcode::IROR_R,
-		LightInstructionOpcode::IROR_R,
+		LightInstructionOpcode::IXOR_R,    //IXOR_R
+		LightInstructionOpcode::IXOR_R,    //IXOR_C
+		LightInstructionOpcode::IROR_R,    //IROR_R
+		LightInstructionOpcode::IROR_R,    //IROR_C
 		LightInstructionOpcode::COND_R
 	};
 
@@ -93,37 +92,30 @@ namespace RandomX {
 		constexpr type P015 = 6;
 	}
 
-	class Blake2Generator {
-	public:
-		Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
-			memset(data, 0, sizeof(data));
-			memcpy(data, seed, SeedSize);
-			store32(&data[60], nonce);
-		}
+	Blake2Generator::Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
+		memset(data, 0, sizeof(data));
+		memcpy(data, seed, SeedSize);
+		store32(&data[60], nonce);
+	}
 
-		uint8_t getByte() {
-			checkData(1);
-			return data[dataIndex++];
-		}
+	uint8_t Blake2Generator::getByte() {
+		checkData(1);
+		return data[dataIndex++];
+	}
 
-		uint32_t getInt32() {
-			checkData(4);
-			auto ret = load32(&data[dataIndex]);
-			dataIndex += 4;
-			return ret;
-		}
+	uint32_t Blake2Generator::getInt32() {
+		checkData(4);
+		auto ret = load32(&data[dataIndex]);
+		dataIndex += 4;
+		return ret;
+	}
 
-	private:
-		uint8_t data[64];
-		size_t dataIndex;
-
-		void checkData(const size_t bytesNeeded) {
-			if (dataIndex + bytesNeeded > sizeof(data))	{
-				blake2b(data, sizeof(data), data, sizeof(data), nullptr, 0);
-				dataIndex = 0;
-			}
+	void Blake2Generator::checkData(const size_t bytesNeeded) {
+		if (dataIndex + bytesNeeded > sizeof(data))	{
+			blake2b(data, sizeof(data), data, sizeof(data), nullptr, 0);
+			dataIndex = 0;
 		}
-	};
+	}
 
 	class RegisterInfo {
 	public:
@@ -201,7 +193,7 @@ namespace RandomX {
 		static const MacroOp Xor_ri;
 		static const MacroOp Ror_rcl;
 		static const MacroOp Ror_ri;
-		static const MacroOp TestJmp_fused;
+		static const MacroOp TestJz_fused;
 		static const MacroOp Xor_self;
 		static const MacroOp Cmp_ri;
 		static const MacroOp Setcc_r;
@@ -235,13 +227,13 @@ namespace RandomX {
 	const MacroOp MacroOp::Xor_self = MacroOp("xor rcx,rcx", 3);
 	const MacroOp MacroOp::Cmp_ri = MacroOp("cmp r,i", 7, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Setcc_r = MacroOp("setcc cl", 3, 1, ExecutionPort::P05);
-	const MacroOp MacroOp::TestJmp_fused = MacroOp("testjz r,i", 13, 0, ExecutionPort::P5);
+	const MacroOp MacroOp::TestJz_fused = MacroOp("testjz r,i", 13, 0, ExecutionPort::P5);
 
 	const MacroOp IMULH_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Mul_r, MacroOp::Mov_rr };
 	const MacroOp ISMULH_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Imul_r, MacroOp::Mov_rr };
 	const MacroOp IMUL_RCP_ops_array[] = { MacroOp::Mov_ri64, MacroOp(MacroOp::Imul_rr, true) };
 	const MacroOp IROR_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Ror_rcl };
-	const MacroOp COND_R_ops_array[] = { MacroOp::Add_ri, MacroOp(MacroOp::TestJmp_fused, true), MacroOp::Xor_self, MacroOp::Cmp_ri, MacroOp(MacroOp::Setcc_r, true), MacroOp(MacroOp::Add_rr, true) };
+	const MacroOp COND_R_ops_array[] = { MacroOp::Add_ri, MacroOp(MacroOp::TestJz_fused, true), MacroOp::Xor_self, MacroOp::Cmp_ri, MacroOp(MacroOp::Setcc_r, true), MacroOp(MacroOp::Add_rr, true) };
 
 
 	class LightInstructionInfo {
@@ -349,7 +341,7 @@ namespace RandomX {
 
 	class DecoderBuffer {
 	public:
-		static DecoderBuffer Default;
+		static const DecoderBuffer Default;
 		template <size_t N>
 		DecoderBuffer(const char* name, int index, const int(&arr)[N])
 			: name_(name), index_(index), counts_(arr), opsCount_(N) {}
@@ -365,17 +357,17 @@ namespace RandomX {
 		const char* getName() const {
 			return name_;
 		}
-		const DecoderBuffer& fetchNext(int prevType, Blake2Generator& gen) {
+		const DecoderBuffer* fetchNext(int prevType, Blake2Generator& gen) const {
 			if (prevType == LightInstructionType::IMULH_R || prevType == LightInstructionType::ISMULH_R)
-				return decodeBuffer3310; //2-1-1 decode
+				return &decodeBuffer3310; //2-1-1 decode
 			if (index_ == 0) {
-				return decodeBuffer4444; //IMUL_RCP end
+				return &decodeBuffer4444; //IMUL_RCP end
 			}
-			if (index_ == 2) {
-				return decodeBuffer133; //COND_R middle
-			}
+			/*if (index_ == 2) {
+				return &decodeBuffer133; //COND_R middle
+			}*/
 			if (index_ == 7) {
-				return decodeBuffer7333; //COND_R end
+				return &decodeBuffer7333; //COND_R end
 			}
 			return fetchNextDefault(gen);
 		}
@@ -393,12 +385,12 @@ namespace RandomX {
 		static const DecoderBuffer decodeBuffer3373;
 		static const DecoderBuffer decodeBuffer133;
 		static const DecoderBuffer* decodeBuffers[7];
-		const DecoderBuffer& fetchNextDefault(Blake2Generator& gen) {
+		const DecoderBuffer* fetchNextDefault(Blake2Generator& gen) const {
 			int select;
 			do {
 				select = gen.getByte() & 7;
 			} while (select == 7);
-			return *decodeBuffers[select];
+			return decodeBuffers[select];
 		}
 	};
 
@@ -420,7 +412,7 @@ namespace RandomX {
 			&DecoderBuffer::decodeBuffer3373,
 	};
 
-	DecoderBuffer DecoderBuffer::Default = DecoderBuffer();
+	const DecoderBuffer DecoderBuffer::Default = DecoderBuffer();
 
 	const LightInstructionInfo* slot_3[]  = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R };
 	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
@@ -472,7 +464,7 @@ namespace RandomX {
 			case 4:
 				return create(slot_4[gen.getByte() & 3], gen);
 			case 7:
-				if (isLast) {
+				if (false && isLast) {
 					return create(slot_7L, gen);
 				}
 				else {
@@ -595,7 +587,7 @@ namespace RandomX {
 		bool selectDestination(int cycle, RegisterInfo (&registers)[8], Blake2Generator& gen) {
 			std::vector<int> availableRegisters;
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_))
+				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_.getType() != LightInstructionType::IADD_RS || i != 5))
 					availableRegisters.push_back(i);
 			}
 			return selectRegister(availableRegisters, gen, dst_);
@@ -606,6 +598,12 @@ namespace RandomX {
 			for (unsigned i = 0; i < 8; ++i) {
 				if (registers[i].latency <= cycle)
 					availableRegisters.push_back(i);
+			}
+			if (availableRegisters.size() == 2 && info_.getType() == LightInstructionType::IADD_RS) {
+				if (availableRegisters[0] == 5 || availableRegisters[1] == 5) {
+					opGroupPar_ = src_ = 5;
+					return true;
+				}
 			}
 			if (selectRegister(availableRegisters, gen, src_)) {
 				if (groupParIsSource_)
@@ -666,7 +664,7 @@ namespace RandomX {
 	constexpr int V4_SRC_INDEX_BITS = 3;
 	constexpr int V4_DST_INDEX_BITS = 3;
 	constexpr int CYCLE_MAP_SIZE = RANDOMX_LPROG_LATENCY + 3;
-	constexpr bool TRACE = true;
+	constexpr bool TRACE = false;
 
 	static int blakeCounter = 0;
 
@@ -782,15 +780,14 @@ namespace RandomX {
 		}
 	}
 
-	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister, int nonce) {
+	double generateLightProg2(LightProgram& prog, Blake2Generator& gen) {
 
 		ExecutionPort::type portBusy[CYCLE_MAP_SIZE][3];
 		memset(portBusy, 0, sizeof(portBusy));
 		RegisterInfo registers[8];
-		Blake2Generator gen(seed, nonce);
 		std::vector<LightInstruction> instructions;
 
-		DecoderBuffer& fetchLine = DecoderBuffer::Default;
+		const DecoderBuffer* fetchLine = &DecoderBuffer::Default;
 		LightInstruction currentInstruction = LightInstruction::Null;
 		int instrIndex = 0;
 		int codeSize = 0;
@@ -806,24 +803,24 @@ namespace RandomX {
 		constexpr int MAX_ATTEMPTS = 4;
 
 		while(!portsSaturated) {
-			fetchLine = fetchLine.fetchNext(currentInstruction.getType(), gen);
-			if (TRACE) std::cout << "; ------------- fetch cycle " << cycle << " (" << fetchLine.getName() << ")" << std::endl;
+			fetchLine = fetchLine->fetchNext(currentInstruction.getType(), gen);
+			if (TRACE) std::cout << "; ------------- fetch cycle " << cycle << " (" << fetchLine->getName() << ")" << std::endl;
 
 			mopIndex = 0;
 			
-			while (mopIndex < fetchLine.getSize()) {
+			while (mopIndex < fetchLine->getSize()) {
 				int topCycle = cycle;
 				if (instrIndex >= currentInstruction.getInfo().getSize()) {
 					if (portsSaturated)
 						break;
-					currentInstruction = LightInstruction::createForSlot(gen, fetchLine.getCounts()[mopIndex], fetchLine.getSize() == mopIndex + 1, fetchLine.getIndex() == 0 && mopIndex == 0);
+					currentInstruction = LightInstruction::createForSlot(gen, fetchLine->getCounts()[mopIndex], fetchLine->getSize() == mopIndex + 1, fetchLine->getIndex() == 0 && mopIndex == 0);
 					instrIndex = 0;
 					if (TRACE) std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
 				}
 				MacroOp& mop = currentInstruction.getInfo().getOp(instrIndex);
-				if (fetchLine.getCounts()[mopIndex] != mop.getSize()) {
-					if (TRACE) std::cout << "ERROR instruction " << mop.getName() << " doesn't fit into slot of size " << fetchLine.getCounts()[mopIndex] << std::endl;
-					return;
+				if (fetchLine->getCounts()[mopIndex] != mop.getSize()) {
+					if (TRACE) std::cout << "ERROR instruction " << mop.getName() << " doesn't fit into slot of size " << fetchLine->getCounts()[mopIndex] << std::endl;
+					return DBL_MIN;
 				}
 				
 				if (TRACE) std::cout << mop.getName() << " ";
@@ -831,7 +828,7 @@ namespace RandomX {
 				mop.setCycle(scheduleCycle);
 				if (scheduleCycle < 0) {
 					if (TRACE) std::cout << "; Failed at cycle " << cycle << std::endl;
-					return;
+					return DBL_MIN;
 				}
 
 				if (instrIndex == currentInstruction.getInfo().getSrcOp()) {
@@ -893,25 +890,29 @@ namespace RandomX {
 		std::cout << "; (* = in use, _ = idle)" << std::endl;
 
 		int portCycles = 0;
-		for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
+		/*for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
 			std::cout << "; " << std::setw(3) << i << " ";
 			for (int j = 0; j < 3; ++j) {
 				std::cout << (portBusy[i][j] ? '*' : '_');
 				portCycles += !!portBusy[i][j];
 			}
 			std::cout << std::endl;
-		}
+		}*/
+
+		double ipc = (macroOpCount / (double)retireCycle);
 
 		std::cout << "; code size " << codeSize << " bytes" << std::endl;
 		std::cout << "; x86 macro-ops: " << macroOpCount << std::endl;
 		std::cout << "; RandomX instructions: " << outIndex << std::endl;
 		std::cout << "; Execution time: " << retireCycle << " cycles" << std::endl;
-		std::cout << "; IPC = " << (macroOpCount / (double)retireCycle) << std::endl;
+		std::cout << "; IPC = " << ipc << std::endl;
 		std::cout << "; Port-cycles: " << portCycles << std::endl;
+		std::cout << "; Multiplications: " << mulCount << std::endl;
 
 		int asicLatency[8];
 		memset(asicLatency, 0, sizeof(asicLatency));
 
+		
 		for (int i = 0; i < outIndex; ++i) {
 			Instruction& instr = prog(i);
 			int latDst = asicLatency[instr.dst] + 1;
@@ -919,7 +920,16 @@ namespace RandomX {
 			asicLatency[instr.dst] = std::max(latDst, latSrc);
 		}
 
-		std::cout << "; Multiplications: " << mulCount << std::endl;
+		int asicLatencyFinal = 0;
+		int addressReg = 0;
+		for (int i = 0; i < 8; ++i) {
+			if (asicLatency[i] > asicLatencyFinal) {
+				asicLatencyFinal = asicLatency[i];
+				addressReg = i;
+			}
+		}
+
+		std::cout << "; ASIC latency: " << asicLatencyFinal << std::endl;
 
 		std::cout << "; ASIC latency:" << std::endl;
 		for (int i = 0; i < 8; ++i) {
@@ -931,5 +941,7 @@ namespace RandomX {
 		}
 
 		prog.setSize(outIndex);
+		prog.setAddressRegister(addressReg);
+		return addressReg;
 	}
 }

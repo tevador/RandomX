@@ -27,6 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	class Program;
+	class LightProgram;
 	class JitCompilerX86;
 
 	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
@@ -36,10 +37,17 @@ namespace RandomX {
 	class JitCompilerX86 {
 	public:
 		JitCompilerX86();
+		~JitCompilerX86();
 		void generateProgram(Program&);
 		void generateProgramLight(Program&);
+		template<size_t N>
+		void generateSuperScalarHash(LightProgram (&programs)[N]);
 		ProgramFunc getProgramFunc() {
 			return (ProgramFunc)code;
+		}
+		DatasetInitFunc getDatasetInitFunc() {
+			generateDatasetInitCode();
+			return (DatasetInitFunc)code;
 		}
 		uint8_t* getCode() {
 			return code;
@@ -61,6 +69,8 @@ namespace RandomX {
 				generateCode(instr, i);
 			}
 		}
+
+		void generateDatasetInitCode();
 
 		void generateProgramPrologue(Program&);
 		void generateProgramEpilogue(Program&);
@@ -100,13 +110,15 @@ namespace RandomX {
 
 		template<size_t N>
 		void emit(const uint8_t (&src)[N]) {
-			for (unsigned i = 0; i < N; ++i) {
-				code[codePos + i] = src[i];
-			}
-			codePos += N;
+			emit(src, N);
 		}
 
-		void  h_IADD_R(Instruction&, int);
+		void emit(const uint8_t* src, size_t count) {
+			memcpy(code + codePos, src, count);
+			codePos += count;
+		}
+
+		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);
 		void  h_ISUB_R(Instruction&, int);

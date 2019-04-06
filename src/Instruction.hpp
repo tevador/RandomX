@@ -98,7 +98,7 @@ namespace RandomX {
 		void genAddressImm(std::ostream& os) const;
 		void genAddressRegDst(std::ostream&) const;
 
-		void  h_IADD_R(std::ostream&) const;
+		void  h_IADD_RS(std::ostream&) const;
 		void  h_IADD_M(std::ostream&) const;
 		void  h_IADD_RC(std::ostream&) const;
 		void  h_ISUB_R(std::ostream&) const;

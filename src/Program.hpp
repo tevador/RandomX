@@ -68,6 +68,12 @@ namespace RandomX {
 		void setSize(uint32_t val) {
 			size = val;
 		}
+		int getAddressRegister() {
+			return addrReg;
+		}
+		void setAddressRegister(uint32_t val) {
+			addrReg = val;
+		}
 	private:
 		void print(std::ostream& os) const {
 			for (unsigned i = 0; i < size; ++i) {
@@ -77,6 +83,7 @@ namespace RandomX {
 		}
 		Instruction programBuffer[RANDOMX_LPROG_MAX_SIZE];
 		uint32_t size;
+		int addrReg;
 	};
 
 	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");

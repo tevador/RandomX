@@ -37,7 +37,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Number of random Cache accesses per Dataset block. Minimum is 2.
 #define RANDOMX_CACHE_ACCESSES     8
 
-#define RANDOMX_LPROG_LATENCY      168
+#define RANDOMX_LPROG_LATENCY      130
 #define RANDOMX_LPROG_ASIC_LATENCY 84
 #define RANDOMX_LPROG_MIN_SIZE     225
 #define RANDOMX_LPROG_MAX_SIZE     512
@@ -80,12 +80,12 @@ Instruction frequencies (per 256 opcodes)
 Total sum of frequencies must be 256
 */
 
-#define RANDOMX_FREQ_IADD_R        12
+#define RANDOMX_FREQ_IADD_RS       32
 #define RANDOMX_FREQ_IADD_M         7
-#define RANDOMX_FREQ_IADD_RC       16
-#define RANDOMX_FREQ_ISUB_R        12
+#define RANDOMX_FREQ_IADD_RC        0
+#define RANDOMX_FREQ_ISUB_R        17
 #define RANDOMX_FREQ_ISUB_M         7
-#define RANDOMX_FREQ_IMUL_9C        9
+#define RANDOMX_FREQ_IMUL_9C        0
 #define RANDOMX_FREQ_IMUL_R        16
 #define RANDOMX_FREQ_IMUL_M         4
 #define RANDOMX_FREQ_IMULH_R        4

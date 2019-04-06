@@ -37,6 +37,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Cache.hpp"
 #include "hashAes1Rx4.hpp"
 #include "LightProgramGenerator.hpp"
+#include "JitCompilerX86.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -204,7 +205,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genLight;
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genLight, useSuperscalar;
 	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -220,14 +221,16 @@ int main(int argc, char** argv) {
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--help", argc, argv, help);
 	readOption("--genLight", argc, argv, genLight);
+	readOption("--useSuperscalar", argc, argv, useSuperscalar);
 
 	if (genLight) {
 		RandomX::LightProgram p;
-		RandomX::generateLightProg2(p, seed, 0, programCount);
-		//RandomX::AssemblyGeneratorX86 asmX86;
-		//asmX86.generateProgram(p);
+		RandomX::Blake2Generator gen(seed, programCount);
+		RandomX::generateLightProg2(p, gen);
+		RandomX::AssemblyGeneratorX86 asmX86;
+		asmX86.generateProgram(p);
 		//std::ofstream file("lightProg2.asm");
-		//asmX86.printCode(std::cout);
+		asmX86.printCode(std::cout);
 		return 0;
 	}
 
@@ -287,24 +290,37 @@ int main(int argc, char** argv) {
 			dataset.dataset.size = datasetSize;
 			RandomX::datasetAlloc(dataset, largePages);
 			const uint64_t datasetBlockCount = datasetSize / RandomX::CacheLineSize;
-			if (initThreadCount > 1) {
-				auto perThread = datasetBlockCount / initThreadCount;
-				auto remainder = datasetBlockCount % initThreadCount;
-				for (int i = 0; i < initThreadCount; ++i) {
-					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-					threads.push_back(std::thread(&RandomX::datasetInit, std::ref(cache), std::ref(dataset.dataset), i * perThread, count));
+			if (useSuperscalar) {
+				RandomX::Blake2Generator gen(seed, programCount);
+				RandomX::LightProgram programs[RANDOMX_CACHE_ACCESSES];
+				for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+					RandomX::generateLightProg2(programs[i], gen);
 				}
-				for (unsigned i = 0; i < threads.size(); ++i) {
-					threads[i].join();
-				}
+				RandomX::JitCompilerX86 jit86;
+				jit86.generateSuperScalarHash(programs);
+				jit86.getDatasetInitFunc()(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
 			}
 			else {
-				RandomX::datasetInit(cache, dataset.dataset, 0, datasetBlockCount);
+				if (initThreadCount > 1) {
+					auto perThread = datasetBlockCount / initThreadCount;
+					auto remainder = datasetBlockCount % initThreadCount;
+					for (int i = 0; i < initThreadCount; ++i) {
+						auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+						threads.push_back(std::thread(&RandomX::datasetInit, std::ref(cache), std::ref(dataset.dataset), i * perThread, count));
+					}
+					for (unsigned i = 0; i < threads.size(); ++i) {
+						threads[i].join();
+					}
+				}
+				else {
+					RandomX::datasetInit(cache, dataset.dataset, 0, datasetBlockCount);
+				}
 			}
 			RandomX::deallocCache(cache, largePages);
 			threads.clear();
 			std::cout << "Dataset (" << datasetSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
+		return 0;
 		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
 			RandomX::VirtualMachine* vm;

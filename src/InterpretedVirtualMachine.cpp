@@ -442,7 +442,7 @@ namespace RandomX {
 			auto& instr = program(i);
 			auto& ibc = byteCode[i];
 			switch (instr.opcode) {
-				CASE_REP(IADD_R) {
+				CASE_REP(IADD_RS) {
 					auto dst = instr.dst % RegistersCount;
 					auto src = instr.src % RegistersCount;
 					ibc.type = InstructionType::IADD_R;

@@ -20,6 +20,18 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 
 namespace RandomX {
-	void generateLightProgram(LightProgram& prog, const void* seed, int indexRegister, int nonce);
-	void generateLightProg2(LightProgram& prog, const void* seed, int indexRegister, int nonce);
+
+	class Blake2Generator {
+	public:
+		Blake2Generator(const void* seed, int nonce);
+		uint8_t getByte();
+		uint32_t getInt32();
+	private:
+		uint8_t data[64];
+		size_t dataIndex;
+
+		void checkData(const size_t);
+	};
+
+	double generateLightProg2(LightProgram& prog, Blake2Generator& gen);
 }

@@ -68,7 +68,7 @@ namespace RandomX {
 		void traceflt(Instruction&);
 		void tracenop(Instruction&);
 
-		void  h_IADD_R(Instruction&, int);
+		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);
 		void  h_ISUB_R(Instruction&, int);
