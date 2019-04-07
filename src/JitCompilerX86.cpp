@@ -87,6 +87,7 @@ namespace RandomX {
 	*/
 
 #include "JitCompilerX86-static.hpp"
+#include "LightProgramGenerator.hpp"
 
 #define NOP_TEST true
 
@@ -96,6 +97,8 @@ namespace RandomX {
 	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
 	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
 	const uint8_t* codeReadDatasetLight = (uint8_t*)&randomx_program_read_dataset_light;
+	const uint8_t* codeReadDatasetLightSshInit = (uint8_t*)&randomx_program_read_dataset_sshash_init;
+	const uint8_t* codeReadDatasetLightSshFin = (uint8_t*)&randomx_program_read_dataset_sshash_fin;
 	const uint8_t* codeDatasetInit = (uint8_t*)&randomx_dataset_init;
 	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
 	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
@@ -110,7 +113,9 @@ namespace RandomX {
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
 	const int32_t readDatasetSize = codeReadDatasetLight - codeReadDataset;
-	const int32_t readDatasetLightSize = codeLoopStore - codeReadDatasetLight;
+	const int32_t readDatasetLightSize = codeReadDatasetLightSshInit - codeReadDatasetLight;
+	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
+	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
 	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
 	const int32_t readDatasetLightSubSize = codeDatasetInit - codeReadDatasetLightSub;
 	const int32_t datasetInitSize = codeEpilogue - codeDatasetInit;
@@ -199,7 +204,7 @@ namespace RandomX {
 
 	static const uint8_t NOP1[] = { 0x90 };
 	static const uint8_t NOP2[] = { 0x66, 0x90 };
-	static const uint8_t NOP3[] = { 0x0F, 0x1F, 0x00 };
+	static const uint8_t NOP3[] = { 0x66, 0x66, 0x90 };
 	static const uint8_t NOP4[] = { 0x0F, 0x1F, 0x40, 0x00 };
 	static const uint8_t NOP5[] = { 0x0F, 0x1F, 0x44, 0x00, 0x00 };
 	static const uint8_t NOP6[] = { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 };
@@ -230,18 +235,30 @@ namespace RandomX {
 		generateProgramEpilogue(prog);
 	}
 
+	template<bool superscalar>
 	void JitCompilerX86::generateProgramLight(Program& prog) {
 		if (RANDOMX_CACHE_ACCESSES != 8)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
 		if (RANDOMX_ARGON_GROWTH != 0)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
 		generateProgramPrologue(prog);
-		memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
-		codePos += readDatasetLightSize;
-		emitByte(CALL);
-		emit32(readDatasetLightSubOffset - (codePos + 4));
+		if (superscalar) {
+			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
+			emitByte(CALL);
+			emit32(superScalarHashOffset - (codePos + 4));
+			emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
+		}
+		else {
+			memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
+			codePos += readDatasetLightSize;
+			emitByte(CALL);
+			emit32(readDatasetLightSubOffset - (codePos + 4));
+		}
 		generateProgramEpilogue(prog);
 	}
+
+	template void JitCompilerX86::generateProgramLight<true>(Program& prog);
+	template void JitCompilerX86::generateProgramLight<false>(Program& prog);
 
 	template<size_t N>
 	void JitCompilerX86::generateSuperScalarHash(LightProgram(&programs)[N]) {
@@ -253,7 +270,7 @@ namespace RandomX {
 				Instruction& instr = prog(i);
 				instr.src %= RegistersCount;
 				instr.dst %= RegistersCount;
-				generateCode(instr, i);
+				generateCode<LightProgram>(instr, i);
 			}
 			emit(codeShhLoad, codeSshLoadSize);
 			if (j < N - 1) {
@@ -318,6 +335,7 @@ namespace RandomX {
 		emit32(epilogueOffset - codePos - 4);
 	}
 
+	template<class P>
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
 #ifdef RANDOMX_JUMP
 		instructionOffsets.push_back(codePos);
@@ -325,6 +343,95 @@ namespace RandomX {
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
+
+	template<>
+	void JitCompilerX86::generateCode<LightProgram>(Instruction& instr, int i) {
+		switch (instr.opcode)
+		{
+		case RandomX::LightInstructionType::ISUB_R:
+			emit(REX_SUB_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::LightInstructionType::IXOR_R:
+			emit(REX_XOR_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::LightInstructionType::IADD_RS:
+			emit(REX_LEA);
+			emitByte(0x04 + 8 * instr.dst);
+			genSIB(instr.mod % 4, instr.src, instr.dst);
+			break;
+		case RandomX::LightInstructionType::IMUL_R:
+			emit(REX_IMUL_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::LightInstructionType::IROR_C:
+			emit(REX_ROT_I8);
+			emitByte(0xc8 + instr.dst);
+			emitByte(instr.getImm32() & 63);
+			break;
+		case RandomX::LightInstructionType::IADD_C7:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			break;
+		case RandomX::LightInstructionType::IXOR_C7:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			break;
+		case RandomX::LightInstructionType::IADD_C8:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP1);
+			break;
+		case RandomX::LightInstructionType::IXOR_C8:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP1);
+			break;
+		case RandomX::LightInstructionType::IADD_C9:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP2);
+			break;
+		case RandomX::LightInstructionType::IXOR_C9:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP2);
+			break;
+		case RandomX::LightInstructionType::IMULH_R:
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe0 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+			break;
+		case RandomX::LightInstructionType::ISMULH_R:
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe8 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+			break;
+		case RandomX::LightInstructionType::IMUL_RCP:
+			emit(MOV_RAX_I);
+			emit64(reciprocal(instr.getImm32()));
+			emit(REX_IMUL_RM);
+			emitByte(0xc0 + 8 * instr.dst);
+			break;
+		default:
+			UNREACHABLE;
+		}
+	}
+
+	template void JitCompilerX86::generateCode<Program>(Instruction& instr, int i);
 
 	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
 		emit(REX_MOV_RR);

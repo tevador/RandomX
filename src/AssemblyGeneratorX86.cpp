@@ -23,6 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include "reciprocal.h"
 #include "Program.hpp"
+#include "./LightProgramGenerator.hpp"
 
 namespace RandomX {
 
@@ -45,6 +46,179 @@ namespace RandomX {
 	static const char* regIc8 = "bl";
 	static const char* regDatasetAddr = "rdi";
 	static const char* regScratchpadAddr = "rsi";
+
+	void AssemblyGeneratorX86::generateProgram(Program& prog) {
+		for (unsigned i = 0; i < 8; ++i) {
+			registerUsage[i] = -1;
+		}
+		asmCode.str(std::string()); //clear
+		for (unsigned i = 0; i < prog.getSize(); ++i) {
+			asmCode << "randomx_isn_" << i << ":" << std::endl;
+			Instruction& instr = prog(i);
+			instr.src %= RegistersCount;
+			instr.dst %= RegistersCount;
+			generateCode(instr, i);
+			//asmCode << std::endl;
+		}
+	}
+
+	void AssemblyGeneratorX86::generateAsm(LightProgram& prog) {
+		asmCode.str(std::string()); //clear
+		asmCode << "ALIGN 16" << std::endl;
+		for (unsigned i = 0; i < prog.getSize(); ++i) {
+			Instruction& instr = prog(i);
+			switch (instr.opcode)
+			{
+			case RandomX::LightInstructionType::ISUB_R:
+				asmCode << "sub " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_R:
+				asmCode << "xor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_RS:
+				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << "]" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMUL_R:
+				asmCode << "imul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
+				break;
+			case RandomX::LightInstructionType::IROR_C:
+				asmCode << "ror " << regR[instr.dst] << ", " << instr.getImm32() << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_C7:
+				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_C7:
+				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_C8:
+				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				asmCode << "nop" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_C8:
+				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				asmCode << "nop" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_C9:
+				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				asmCode << "xchg ax, ax ;nop" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_C9:
+				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+				asmCode << "xchg ax, ax ;nop" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMULH_R:
+				asmCode << "mov rax, " << regR[instr.dst] << std::endl;
+				asmCode << "mul " << regR[instr.src] << std::endl;
+				asmCode << "mov " << regR[instr.dst] << ", rdx" << std::endl;
+				break;
+			case RandomX::LightInstructionType::ISMULH_R:
+				asmCode << "mov rax, " << regR[instr.dst] << std::endl;
+				asmCode << "imul " << regR[instr.src] << std::endl;
+				asmCode << "mov " << regR[instr.dst] << ", rdx" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMUL_RCP:
+				asmCode << "mov rax, " << (int64_t)reciprocal(instr.getImm32()) << std::endl;
+				asmCode << "imul " << regR[instr.dst] << ", rax" << std::endl;
+				break;
+			default:
+				UNREACHABLE;
+			}
+		}
+	}
+
+	void AssemblyGeneratorX86::generateC(LightProgram& prog) {
+		asmCode.str(std::string()); //clear
+		asmCode << "#include <stdint.h>" << std::endl;
+		asmCode << "#if defined(__SIZEOF_INT128__)" << std::endl;
+		asmCode << "	static inline uint64_t mulh(uint64_t a, uint64_t b) {" << std::endl;
+		asmCode << "		return ((unsigned __int128)a * b) >> 64;" << std::endl;
+		asmCode << "	}" << std::endl;
+		asmCode << "	static inline int64_t smulh(int64_t a, int64_t b) {" << std::endl;
+		asmCode << "		return ((__int128)a * b) >> 64;" << std::endl;
+		asmCode << "	}" << std::endl;
+		asmCode << "	#define HAVE_MULH" << std::endl;
+		asmCode << "	#define HAVE_SMULH" << std::endl;
+		asmCode << "#endif" << std::endl;
+		asmCode << "#if defined(_MSC_VER)" << std::endl;
+		asmCode << "	#define HAS_VALUE(X) X ## 0" << std::endl;
+		asmCode << "	#define EVAL_DEFINE(X) HAS_VALUE(X)" << std::endl;
+		asmCode << "	#include <intrin.h>" << std::endl;
+		asmCode << "	#include <stdlib.h>" << std::endl;
+		asmCode << "	static __inline uint64_t rotr(uint64_t x , int c) {" << std::endl;
+		asmCode << "		return _rotr64(x, c);" << std::endl;
+		asmCode << "	}" << std::endl;
+		asmCode << "	#define HAVE_ROTR" << std::endl;
+		asmCode << "	#if EVAL_DEFINE(__MACHINEARM64_X64(1))" << std::endl;
+		asmCode << "		static __inline uint64_t mulh(uint64_t a, uint64_t b) {" << std::endl;
+		asmCode << "			return __umulh(a, b);" << std::endl;
+		asmCode << "		}" << std::endl;
+		asmCode << "		#define HAVE_MULH" << std::endl;
+		asmCode << "	#endif" << std::endl;
+		asmCode << "	#if EVAL_DEFINE(__MACHINEX64(1))" << std::endl;
+		asmCode << "		static __inline int64_t smulh(int64_t a, int64_t b) {" << std::endl;
+		asmCode << "			int64_t hi;" << std::endl;
+		asmCode << "			_mul128(a, b, &hi);" << std::endl;
+		asmCode << "			return hi;" << std::endl;
+		asmCode << "		}" << std::endl;
+		asmCode << "		#define HAVE_SMULH" << std::endl;
+		asmCode << "	#endif" << std::endl;
+		asmCode << "#endif" << std::endl;
+		asmCode << "#ifndef HAVE_ROTR" << std::endl;
+		asmCode << "	static inline uint64_t rotr(uint64_t a, int b) {" << std::endl;
+		asmCode << "		return (a >> b) | (a << (64 - b));" << std::endl;
+		asmCode << "	}" << std::endl;
+		asmCode << "	#define HAVE_ROTR" << std::endl;
+		asmCode << "#endif" << std::endl;
+		asmCode << "#if !defined(HAVE_MULH) || !defined(HAVE_SMULH) || !defined(HAVE_ROTR)" << std::endl;
+		asmCode << "	#error \"Required functions are not defined\"" << std::endl;
+		asmCode << "#endif" << std::endl;
+		asmCode << "void superScalar(uint64_t r[8]) {" << std::endl;
+		asmCode << "uint64_t r8 = r[0], r9 = r[1], r10 = r[2], r11 = r[3], r12 = r[4], r13 = r[5], r14 = r[6], r15 = r[7];" << std::endl;
+		for (unsigned i = 0; i < prog.getSize(); ++i) {
+			Instruction& instr = prog(i);
+			switch (instr.opcode)
+			{
+			case RandomX::LightInstructionType::ISUB_R:
+				asmCode << regR[instr.dst] << " -= " << regR[instr.src] << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_R:
+				asmCode << regR[instr.dst] << " ^= " << regR[instr.src] << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_RS:
+				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMUL_R:
+				asmCode << regR[instr.dst] << " *= " << regR[instr.src] << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IROR_C:
+				asmCode << regR[instr.dst] << " = rotr(" << regR[instr.dst] << ", " << instr.getImm32() << ");" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IADD_C7:
+			case RandomX::LightInstructionType::IADD_C8:
+			case RandomX::LightInstructionType::IADD_C9:
+				asmCode << regR[instr.dst] << " += " << (int32_t)instr.getImm32() << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IXOR_C7:
+			case RandomX::LightInstructionType::IXOR_C8:
+			case RandomX::LightInstructionType::IXOR_C9:
+				asmCode << regR[instr.dst] << " ^= " << (int32_t)instr.getImm32() << ";" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMULH_R:
+				asmCode << regR[instr.dst] << " = mulh(" << regR[instr.dst] << ", " << regR[instr.src] << ");" << std::endl;
+				break;
+			case RandomX::LightInstructionType::ISMULH_R:
+				asmCode << regR[instr.dst] << " = smulh(" << regR[instr.dst] << ", " << regR[instr.src] << ");" << std::endl;
+				break;
+			case RandomX::LightInstructionType::IMUL_RCP:
+				asmCode << regR[instr.dst] << " *= " << (int64_t)reciprocal(instr.getImm32()) << ";" << std::endl;
+				break;
+			default:
+				UNREACHABLE;
+			}
+		}
+		asmCode << "r[0] = r8; r[1] = r9; r[2] = r10; r[3] = r11; r[4] = r12; r[5] = r13; r[6] = r14; r[7] = r15;" << std::endl;
+		asmCode << "}" << std::endl;
+	}
 
 	int AssemblyGeneratorX86::getConditionRegister() {
 		int min = INT_MAX;

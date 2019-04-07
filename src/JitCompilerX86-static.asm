@@ -25,6 +25,8 @@ PUBLIC randomx_program_loop_load
 PUBLIC randomx_program_start
 PUBLIC randomx_program_read_dataset
 PUBLIC randomx_program_read_dataset_light
+PUBLIC randomx_program_read_dataset_sshash_init
+PUBLIC randomx_program_read_dataset_sshash_fin
 PUBLIC randomx_program_read_dataset_light_sub
 PUBLIC randomx_dataset_init
 PUBLIC randomx_program_loop_store
@@ -64,6 +66,38 @@ randomx_program_read_dataset ENDP
 randomx_program_read_dataset_light PROC
 	include asm/program_read_dataset_light.inc
 randomx_program_read_dataset_light ENDP
+
+randomx_program_read_dataset_sshash_init PROC
+	sub rsp, 72
+	mov qword ptr [rsp+64], rbx
+	mov qword ptr [rsp+56], r8
+	mov qword ptr [rsp+48], r9
+	mov qword ptr [rsp+40], r10
+	mov qword ptr [rsp+32], r11
+	mov qword ptr [rsp+24], r12
+	mov qword ptr [rsp+16], r13
+	mov qword ptr [rsp+8], r14
+	mov qword ptr [rsp+0], r15
+	xor rbp, rax                       ;# modify "mx"
+	ror rbp, 32                        ;# swap "ma" and "mx"
+	mov ebx, ebp                       ;# ecx = ma
+	and ebx, 2147483584                ;# align "ma" to the start of a cache line
+	shr ebx, 6                         ;# ebx = Dataset block number
+	;# call 32768
+randomx_program_read_dataset_sshash_init ENDP
+
+randomx_program_read_dataset_sshash_fin PROC
+	mov rbx, qword ptr [rsp+64]
+	xor r8, qword ptr [rsp+56]
+	xor r9, qword ptr [rsp+48]
+	xor r10, qword ptr [rsp+40]
+	xor r11, qword ptr [rsp+32]
+	xor r12, qword ptr [rsp+24]
+	xor r13, qword ptr [rsp+16]
+	xor r14, qword ptr [rsp+8]
+	xor r15, qword ptr [rsp+0]
+	add rsp, 72
+randomx_program_read_dataset_sshash_fin ENDP
 
 randomx_program_loop_store PROC
 	include asm/program_loop_store.inc

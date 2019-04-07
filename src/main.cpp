@@ -205,7 +205,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genLight, useSuperscalar;
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genSuperscalar, useSuperscalar;
 	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -220,15 +220,15 @@ int main(int argc, char** argv) {
 	readOption("--jit", argc, argv, jit);
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--help", argc, argv, help);
-	readOption("--genLight", argc, argv, genLight);
+	readOption("--genSuperscalar", argc, argv, genSuperscalar);
 	readOption("--useSuperscalar", argc, argv, useSuperscalar);
 
-	if (genLight) {
+	if (genSuperscalar) {
 		RandomX::LightProgram p;
 		RandomX::Blake2Generator gen(seed, programCount);
 		RandomX::generateLightProg2(p, gen);
 		RandomX::AssemblyGeneratorX86 asmX86;
-		asmX86.generateProgram(p);
+		asmX86.generateAsm(p);
 		//std::ofstream file("lightProg2.asm");
 		asmX86.printCode(std::cout);
 		return 0;
@@ -266,6 +266,7 @@ int main(int argc, char** argv) {
 	const uint64_t cacheSize = (RANDOMX_ARGON_MEMORY + RANDOMX_ARGON_GROWTH * epoch) * RandomX::ArgonBlockSize;
 	const uint64_t datasetSize = (RANDOMX_DATASET_SIZE + RANDOMX_DS_GROWTH * epoch);
 	dataset.cache.size = cacheSize;
+	RandomX::LightProgram programs[RANDOMX_CACHE_ACCESSES];
 
 	std::cout << "RandomX - " << (miningMode ? "mining" : "verification") << " mode" << std::endl;
 
@@ -282,6 +283,12 @@ int main(int argc, char** argv) {
 			outputHex(std::cout, (char*)dataset.cache.memory, sizeof(__m128i));
 			std::cout << std::endl;
 		}
+		if (useSuperscalar) {
+			RandomX::Blake2Generator gen(seed, programCount);
+			for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+				RandomX::generateLightProg2(programs[i], gen);
+			}
+		}
 		if (!miningMode) {
 			std::cout << "Cache (" << cacheSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
@@ -291,11 +298,6 @@ int main(int argc, char** argv) {
 			RandomX::datasetAlloc(dataset, largePages);
 			const uint64_t datasetBlockCount = datasetSize / RandomX::CacheLineSize;
 			if (useSuperscalar) {
-				RandomX::Blake2Generator gen(seed, programCount);
-				RandomX::LightProgram programs[RANDOMX_CACHE_ACCESSES];
-				for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-					RandomX::generateLightProg2(programs[i], gen);
-				}
 				RandomX::JitCompilerX86 jit86;
 				jit86.generateSuperScalarHash(programs);
 				jit86.getDatasetInitFunc()(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
@@ -320,7 +322,6 @@ int main(int argc, char** argv) {
 			threads.clear();
 			std::cout << "Dataset (" << datasetSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
-		return 0;
 		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
 			RandomX::VirtualMachine* vm;
@@ -328,12 +329,14 @@ int main(int argc, char** argv) {
 				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				if (jit)
-					vm = new RandomX::CompiledLightVirtualMachine();
+				if (jit && useSuperscalar)
+					vm = new RandomX::CompiledLightVirtualMachine<true>();
+				else if(jit)
+					vm = new RandomX::CompiledLightVirtualMachine<false>();
 				else
 					vm = new RandomX::InterpretedVirtualMachine(softAes);
 			}
-			vm->setDataset(dataset, datasetSize);
+			vm->setDataset(dataset, datasetSize, programs);
 			vms.push_back(vm);
 		}
 		uint8_t* scratchpadMem;

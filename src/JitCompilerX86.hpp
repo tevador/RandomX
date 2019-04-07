@@ -39,6 +39,7 @@ namespace RandomX {
 		JitCompilerX86();
 		~JitCompilerX86();
 		void generateProgram(Program&);
+		template<bool superscalar>
 		void generateProgramLight(Program&);
 		template<size_t N>
 		void generateSuperScalarHash(LightProgram (&programs)[N]);
@@ -66,7 +67,7 @@ namespace RandomX {
 				Instruction& instr = prog(i);
 				instr.src %= RegistersCount;
 				instr.dst %= RegistersCount;
-				generateCode(instr, i);
+				generateCode<P>(instr, i);
 			}
 		}
 
@@ -81,6 +82,8 @@ namespace RandomX {
 		void genSIB(int scale, int index, int base);
 
 		void handleCondition(Instruction&, int);
+
+		template<class P>
 		void generateCode(Instruction&, int);
 
 		void emitByte(uint8_t val) {

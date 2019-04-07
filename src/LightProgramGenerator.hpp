@@ -21,6 +21,27 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	//                             Intel Ivy Bridge reference
+	namespace LightInstructionType {        //uOPs (decode)   execution ports         latency       code size
+		constexpr int ISUB_R = 0;           //1               p015                    1               3
+		constexpr int IXOR_R = 1;           //1               p015                    1               3
+		constexpr int IADD_RS = 2;          //1               p01                     1               4
+		constexpr int IMUL_R = 3;           //1               p1                      3               4
+		constexpr int IROR_C = 4;           //1               p05                     1               4
+		constexpr int IADD_C7 = 5;          //1               p015                    1               7
+		constexpr int IXOR_C7 = 6;          //1               p015                    1               7
+		constexpr int IADD_C8 = 7;          //1+0             p015                    1               8
+		constexpr int IXOR_C8 = 8;          //1+0             p015                    1               8
+		constexpr int IADD_C9 = 9;          //1+0             p015                    1               9
+		constexpr int IXOR_C9 = 10;         //1+0             p015                    1               9
+		constexpr int IMULH_R = 11;         //1+2+1           0+(p1,p5)+0             3               3+3+3
+		constexpr int ISMULH_R = 12;        //1+2+1           0+(p1,p5)+0             3               3+3+3
+		constexpr int IMUL_RCP = 13;        //1+1             p015+p1                 4              10+4
+
+		constexpr int COUNT = 14;
+		constexpr int INVALID = -1;
+	}
+
 	class Blake2Generator {
 	public:
 		Blake2Generator(const void* seed, int nonce);

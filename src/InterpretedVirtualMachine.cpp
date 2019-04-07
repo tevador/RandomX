@@ -49,7 +49,7 @@ namespace RandomX {
 
 	}
 
-	void InterpretedVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
+	void InterpretedVirtualMachine::setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
 		mem.ds = ds;
 		readDataset = &datasetReadLight;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;

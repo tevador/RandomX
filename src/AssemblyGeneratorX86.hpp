@@ -27,27 +27,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	class Program;
+	class LightProgram;
 	class AssemblyGeneratorX86;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
 
 	class AssemblyGeneratorX86 {
 	public:
-		template<class P>
-		void generateProgram(P& prog) {
-			for (unsigned i = 0; i < 8; ++i) {
-				registerUsage[i] = -1;
-			}
-			asmCode.str(std::string()); //clear
-			for (unsigned i = 0; i < prog.getSize(); ++i) {
-				asmCode << "randomx_isn_" << i << ":" << std::endl;
-				Instruction& instr = prog(i);
-				instr.src %= RegistersCount;
-				instr.dst %= RegistersCount;
-				generateCode(instr, i);
-				//asmCode << std::endl;
-			}
-		}
+		void generateProgram(Program& prog);
+		void generateAsm(LightProgram& prog);
+		void generateC(LightProgram& prog);
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}

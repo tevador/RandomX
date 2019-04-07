@@ -75,7 +75,7 @@ namespace RandomX {
 		}
 		InterpretedVirtualMachine(bool soft) : softAes(soft) {}
 		~InterpretedVirtualMachine();
-		void setDataset(dataset_t ds, uint64_t size) override;
+		void setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 		void execute() override;
 	private:

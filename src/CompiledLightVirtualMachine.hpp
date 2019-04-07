@@ -26,6 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	template<bool superscalar>
 	class CompiledLightVirtualMachine : public CompiledVirtualMachine {
 	public:
 		void* operator new(size_t size) {
@@ -37,8 +38,8 @@ namespace RandomX {
 		void operator delete(void* ptr) {
 			_mm_free(ptr);
 		}
-		CompiledLightVirtualMachine();
-		void setDataset(dataset_t ds, uint64_t size) override;
+		CompiledLightVirtualMachine() {}
+		void setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 	};
 }
