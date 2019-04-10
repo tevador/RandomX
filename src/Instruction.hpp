@@ -30,7 +30,7 @@ namespace RandomX {
 	typedef void(Instruction::*InstructionVisualizer)(std::ostream&) const;
 
 	namespace InstructionType {
-		constexpr int IADD_R = 0;
+		constexpr int IADD_RS = 0;
 		constexpr int IADD_M = 1;
 		constexpr int IADD_RC = 2;
 		constexpr int ISUB_R = 3;

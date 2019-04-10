@@ -17,10 +17,11 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+#include <stddef.h>
 #include "blake2/blake2.h"
 #include "configuration.h"
 #include "Program.hpp"
-#include "blake2/endian.h";
+#include "blake2/endian.h"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -793,7 +794,7 @@ namespace RandomX {
 				mop.setCycle(scheduleCycle);
 				if (scheduleCycle < 0) {
 					if (TRACE) std::cout << "; Failed at cycle " << cycle << std::endl;
-					return DBL_MIN;
+					return 0;
 				}
 
 				if (instrIndex == currentInstruction.getInfo().getSrcOp()) {

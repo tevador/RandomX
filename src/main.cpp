@@ -301,6 +301,7 @@ int main(int argc, char** argv) {
 				RandomX::JitCompilerX86 jit86;
 				jit86.generateSuperScalarHash(programs);
 				jit86.getDatasetInitFunc()(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
+			//dump((const char*)dataset.dataset.memory, RANDOMX_DATASET_SIZE, "dataset.dat");
 			}
 			else {
 				if (initThreadCount > 1) {
@@ -331,10 +332,12 @@ int main(int argc, char** argv) {
 			else {
 				if (jit && useSuperscalar)
 					vm = new RandomX::CompiledLightVirtualMachine<true>();
-				else if(jit)
+				else if (jit)
 					vm = new RandomX::CompiledLightVirtualMachine<false>();
+				else if (useSuperscalar)
+					vm = new RandomX::InterpretedVirtualMachine<true>(softAes);
 				else
-					vm = new RandomX::InterpretedVirtualMachine(softAes);
+					vm = new RandomX::InterpretedVirtualMachine<false>(softAes);
 			}
 			vm->setDataset(dataset, datasetSize, programs);
 			vms.push_back(vm);

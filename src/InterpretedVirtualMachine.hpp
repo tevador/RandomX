@@ -23,23 +23,17 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include "intrinPortable.h"
+#include <vector>
 
 namespace RandomX {
 
-	class ITransform {
-	public:
-		virtual int32_t apply(int32_t) const = 0;
-		virtual const char* getName() const = 0;
-		virtual std::ostream& printAsm(std::ostream&) const = 0;
-		virtual std::ostream& printCxx(std::ostream&) const = 0;
-	};
-
 	struct InstructionByteCode;
-	class InterpretedVirtualMachine;
+	template<bool superscalar> class InterpretedVirtualMachine;
 
-	typedef void(InterpretedVirtualMachine::*InstructionHandler)(Instruction&);
+	template<bool superscalar>
+	using InstructionHandler = void(InterpretedVirtualMachine<superscalar>::*)(Instruction&);
 
-	struct alignas(8) InstructionByteCode {
+	struct InstructionByteCode {
 		union {
 			int_reg_t* idst;
 			__m128d* fdst;
@@ -62,6 +56,7 @@ namespace RandomX {
 
 	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
 
+	template<bool superscalar>
 	class InterpretedVirtualMachine : public VirtualMachine {
 	public:
 		void* operator new(size_t size) {
@@ -74,16 +69,17 @@ namespace RandomX {
 			_mm_free(ptr);
 		}
 		InterpretedVirtualMachine(bool soft) : softAes(soft) {}
-		~InterpretedVirtualMachine();
+		~InterpretedVirtualMachine() {}
 		void setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 		void execute() override;
 	private:
-		static InstructionHandler engine[256];
+		static InstructionHandler<superscalar> engine[256];
 		DatasetReadFunc readDataset;
 		bool softAes;
 		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
-		
+		std::vector<uint64_t> reciprocals;
+		alignas(64) LightProgram superScalarPrograms[RANDOMX_CACHE_ACCESSES];
 #ifdef STATS
 		int count_ADD_64 = 0;
 		int count_ADD_32 = 0;
@@ -131,7 +127,9 @@ namespace RandomX {
 		int datasetAccess[256] = { 0 };
 #endif
 		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		void precompileSuperscalar(LightProgram*);
 		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		void executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]);
 	};
 }
