@@ -81,7 +81,7 @@ namespace RandomX {
 				os << instr;
 			}
 		}
-		Instruction programBuffer[RANDOMX_LPROG_MAX_SIZE];
+		Instruction programBuffer[RANDOMX_SUPERSCALAR_MAX_SIZE];
 		uint32_t size;
 		int addrReg;
 	};
