@@ -453,7 +453,7 @@ namespace RandomX {
 	}
 
 	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;
-	constexpr uint64_t superscalarAdd1 = 9298410992540426048ULL;
+	constexpr uint64_t superscalarAdd1 = 9298410992540426748ULL;
 	constexpr uint64_t superscalarAdd2 = 12065312585734608966ULL;
 	constexpr uint64_t superscalarAdd3 = 9306329213124610396ULL;
 	constexpr uint64_t superscalarAdd4 = 5281919268842080866ULL;
@@ -475,6 +475,55 @@ namespace RandomX {
 	}
 
 	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(int_reg_t(&r)[8], LightProgram& prog, std::vector<uint64_t>& reciprocals) {
+		for (unsigned j = 0; j < prog.getSize(); ++j) {
+			Instruction& instr = prog(j);
+			switch (instr.opcode)
+			{
+			case RandomX::LightInstructionType::ISUB_R:
+				r[instr.dst] -= r[instr.src];
+				break;
+			case RandomX::LightInstructionType::IXOR_R:
+				r[instr.dst] ^= r[instr.src];
+				break;
+			case RandomX::LightInstructionType::IADD_RS:
+				r[instr.dst] += r[instr.src] << (instr.mod % 4);
+				break;
+			case RandomX::LightInstructionType::IMUL_R:
+				r[instr.dst] *= r[instr.src];
+				break;
+			case RandomX::LightInstructionType::IROR_C:
+				r[instr.dst] = rotr(r[instr.dst], instr.getImm32());
+				break;
+			case RandomX::LightInstructionType::IADD_C7:
+			case RandomX::LightInstructionType::IADD_C8:
+			case RandomX::LightInstructionType::IADD_C9:
+				r[instr.dst] += signExtend2sCompl(instr.getImm32());
+				break;
+			case RandomX::LightInstructionType::IXOR_C7:
+			case RandomX::LightInstructionType::IXOR_C8:
+			case RandomX::LightInstructionType::IXOR_C9:
+				r[instr.dst] ^= signExtend2sCompl(instr.getImm32());
+				break;
+			case RandomX::LightInstructionType::IMULH_R:
+				r[instr.dst] = mulh(r[instr.dst], r[instr.src]);
+				break;
+			case RandomX::LightInstructionType::ISMULH_R:
+				r[instr.dst] = smulh(r[instr.dst], r[instr.src]);
+				break;
+			case RandomX::LightInstructionType::IMUL_RCP:
+				if(superscalar)
+					r[instr.dst] *= reciprocals[instr.getImm32()];
+				else
+					r[instr.dst] *= reciprocal(instr.getImm32());
+				break;
+			default:
+				UNREACHABLE;
+			}
+		}
+	}
+
+	template<bool superscalar>
 	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]) {
 		int_reg_t rl[8];
 		uint8_t* mixBlock;
@@ -491,49 +540,9 @@ namespace RandomX {
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			mixBlock = getMixBlock(registerValue, cache);
 			LightProgram& prog = superScalarPrograms[i];
-			for (unsigned j = 0; j < prog.getSize(); ++j) {
-				Instruction& instr = prog(j);
-				switch (instr.opcode)
-				{
-					case RandomX::LightInstructionType::ISUB_R:
-						rl[instr.dst] -= rl[instr.src];
-						break;
-					case RandomX::LightInstructionType::IXOR_R:
-						rl[instr.dst] ^= rl[instr.src];
-						break;
-					case RandomX::LightInstructionType::IADD_RS:
-						rl[instr.dst] += rl[instr.src] << (instr.mod % 4);
-						break;
-					case RandomX::LightInstructionType::IMUL_R:
-						rl[instr.dst] *= rl[instr.src];
-						break;
-					case RandomX::LightInstructionType::IROR_C:
-						rl[instr.dst] = rotr(rl[instr.dst], instr.getImm32());
-						break;
-					case RandomX::LightInstructionType::IADD_C7:
-					case RandomX::LightInstructionType::IADD_C8:
-					case RandomX::LightInstructionType::IADD_C9:
-						rl[instr.dst] += signExtend2sCompl(instr.getImm32());
-						break;
-					case RandomX::LightInstructionType::IXOR_C7:
-					case RandomX::LightInstructionType::IXOR_C8:
-					case RandomX::LightInstructionType::IXOR_C9:
-						rl[instr.dst] ^= signExtend2sCompl(instr.getImm32());
-						break;
-					case RandomX::LightInstructionType::IMULH_R:
-						rl[instr.dst] = mulh(rl[instr.dst], rl[instr.src]);
-						break;
-					case RandomX::LightInstructionType::ISMULH_R:
-						rl[instr.dst] = smulh(rl[instr.dst], rl[instr.src]);
-						break;
-					case RandomX::LightInstructionType::IMUL_RCP:
-						rl[instr.dst] *= reciprocals[instr.getImm32()];
-						break;
-					default:
-						UNREACHABLE;
-				}
-			}
 			
+			executeSuperscalar(rl, prog, reciprocals);
+
 			for(unsigned q = 0; q < 8; ++q)
 				rl[q] ^= load64(mixBlock + 8 * q);
 

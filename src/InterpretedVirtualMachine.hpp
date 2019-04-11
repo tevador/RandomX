@@ -73,6 +73,7 @@ namespace RandomX {
 		void setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 		void execute() override;
+		static void executeSuperscalar(int_reg_t(&r)[8], LightProgram& prog, std::vector<uint64_t>& reciprocals);
 	private:
 		static InstructionHandler<superscalar> engine[256];
 		DatasetReadFunc readDataset;
