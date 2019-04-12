@@ -54,5 +54,5 @@ namespace RandomX {
 		void checkData(const size_t);
 	};
 
-	double generateLightProg2(LightProgram& prog, Blake2Generator& gen);
+	double generateSuperscalar(LightProgram& prog, Blake2Generator& gen);
 }

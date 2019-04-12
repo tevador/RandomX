@@ -228,11 +228,11 @@ int main(int argc, char** argv) {
 	if (genSuperscalar) {
 		RandomX::LightProgram p;
 		RandomX::Blake2Generator gen(seed, programCount);
-		RandomX::generateLightProg2(p, gen);
+		RandomX::generateSuperscalar(p, gen);
 		RandomX::AssemblyGeneratorX86 asmX86;
 		asmX86.generateAsm(p);
 		//std::ofstream file("lightProg2.asm");
-		asmX86.printCode(std::cout);
+		//asmX86.printCode(std::cout);
 		return 0;
 	}
 
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
 		if (!legacy) {
 			RandomX::Blake2Generator gen(seed, programCount);
 			for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-				RandomX::generateLightProg2(programs[i], gen);
+				RandomX::generateSuperscalar(programs[i], gen);
 			}
 		}
 		if (!miningMode) {

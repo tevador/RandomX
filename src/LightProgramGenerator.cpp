@@ -507,8 +507,16 @@ namespace RandomX {
 
 		bool selectDestination(int cycle, RegisterInfo (&registers)[8], Blake2Generator& gen) {
 			std::vector<int> availableRegisters;
+			//Conditions for the destination register:
+			// * value must be ready at the required cycle
+			// * cannot be the same as the source register unless the instruction allows it
+			//   - this avoids optimizable instructions such as "xor r, r" or "sub r, r"
+			// * either the last instruction applied to the register or its source must be different than this instruction
+			//   - this avoids optimizable instruction sequences such as "xor r1, r2; xor r1, r2" or "ror r, C1; ror r, C2" or "add r, C1; add r, C2"
+			//   - it also avoids accumulation of trailing zeroes in registers due to excessive multiplication
+			// * register r5 cannot be the destination of the IADD_RS instruction (limitation of the x86 lea instruction)
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != 5))
+				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != LimitedAddressRegister))
 					availableRegisters.push_back(i);
 			}
 			return selectRegister(availableRegisters, gen, dst_);
@@ -516,13 +524,15 @@ namespace RandomX {
 
 		bool selectSource(int cycle, RegisterInfo(&registers)[8], Blake2Generator& gen) {
 			std::vector<int> availableRegisters;
+			//all registers that are ready at the cycle
 			for (unsigned i = 0; i < 8; ++i) {
 				if (registers[i].latency <= cycle)
 					availableRegisters.push_back(i);
 			}
+			//if there are only 2 available registers for IADD_RS and one of them is r5, select it as the source because it cannot be the destination
 			if (availableRegisters.size() == 2 && info_->getType() == SuperscalarInstructionType::IADD_RS) {
-				if (availableRegisters[0] == 5 || availableRegisters[1] == 5) {
-					opGroupPar_ = src_ = 5;
+				if (availableRegisters[0] == LimitedAddressRegister || availableRegisters[1] == LimitedAddressRegister) {
+					opGroupPar_ = src_ = LimitedAddressRegister;
 					return true;
 				}
 			}
@@ -656,7 +666,7 @@ namespace RandomX {
 		return -1;
 	}
 
-	double generateLightProg2(LightProgram& prog, Blake2Generator& gen) {
+	double generateSuperscalar(LightProgram& prog, Blake2Generator& gen) {
 
 		ExecutionPort::type portBusy[CYCLE_MAP_SIZE][3];
 		memset(portBusy, 0, sizeof(portBusy));
@@ -674,6 +684,7 @@ namespace RandomX {
 		int programSize = 0;
 		int mulCount = 0;
 		int decodeCycle;
+		int throwAwayCount = 0;
 
 		//decode instructions for RANDOMX_SUPERSCALAR_LATENCY cycles or until an execution port is saturated.
 		//Each decode cycle decodes 16 bytes of x86 code.
@@ -722,12 +733,20 @@ namespace RandomX {
 					}
 					//if no register was found, throw the instruction away and try another one
 					if (forward == LOOK_FORWARD_CYCLES) {
-						macroOpIndex = currentInstruction.getInfo().getSize();
-						if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
-						continue;
+						if (throwAwayCount < MAX_THROWAWAY_COUNT) {
+							throwAwayCount++;
+							macroOpIndex = currentInstruction.getInfo().getSize();
+							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							continue;
+						}
+						//abort this decode buffer
+						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available" << std::endl;
+						currentInstruction = LightInstruction::Null;
+						break;
 					}
 					if (TRACE) std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
 				}
+				throwAwayCount = 0;
 				//find a destination register that will be ready when this instruction executes
 				if (macroOpIndex == currentInstruction.getInfo().getDstOp()) {
 					int forward;
@@ -737,12 +756,20 @@ namespace RandomX {
 						++cycle;
 					}
 					if (forward == LOOK_FORWARD_CYCLES) { //throw instruction away
-						macroOpIndex = currentInstruction.getInfo().getSize();
-						if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
-						continue;
+						if (throwAwayCount < MAX_THROWAWAY_COUNT) {
+							throwAwayCount++;
+							macroOpIndex = currentInstruction.getInfo().getSize();
+							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							continue;
+						}
+						//abort this decode buffer
+						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
+						currentInstruction = LightInstruction::Null;
+						break;
 					}
 					if (TRACE) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
+				throwAwayCount = 0;
 				//recalculate when the instruction can be scheduled for execution based on operand availability
 				scheduleCycle = scheduleMop<true>(mop, portBusy, scheduleCycle, scheduleCycle);
 

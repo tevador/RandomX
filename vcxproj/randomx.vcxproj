@@ -149,6 +149,35 @@
     <MASM Include="..\src\JitCompilerX86-static.asm" />
     <MASM Include="..\src\squareHash.asm" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\argon2.h" />
+    <ClInclude Include="..\src\argon2_core.h" />
+    <ClInclude Include="..\src\AssemblyGeneratorX86.hpp" />
+    <ClInclude Include="..\src\Cache.hpp" />
+    <ClInclude Include="..\src\catch.hpp" />
+    <ClInclude Include="..\src\common.hpp" />
+    <ClInclude Include="..\src\CompiledLightVirtualMachine.hpp" />
+    <ClInclude Include="..\src\CompiledVirtualMachine.hpp" />
+    <ClInclude Include="..\src\configuration.h" />
+    <ClInclude Include="..\src\dataset.hpp" />
+    <ClInclude Include="..\src\hashAes1Rx4.hpp" />
+    <ClInclude Include="..\src\Instruction.hpp" />
+    <ClInclude Include="..\src\instructionWeights.hpp" />
+    <ClInclude Include="..\src\InterpretedVirtualMachine.hpp" />
+    <ClInclude Include="..\src\intrinPortable.h" />
+    <ClInclude Include="..\src\JitCompilerX86-static.hpp" />
+    <ClInclude Include="..\src\JitCompilerX86.hpp" />
+    <ClInclude Include="..\src\LightClientAsyncWorker.hpp" />
+    <ClInclude Include="..\src\LightProgramGenerator.hpp" />
+    <ClInclude Include="..\src\Program.hpp" />
+    <ClInclude Include="..\src\reciprocal.h" />
+    <ClInclude Include="..\src\softAes.h" />
+    <ClInclude Include="..\src\squareHash.h" />
+    <ClInclude Include="..\src\Stopwatch.hpp" />
+    <ClInclude Include="..\src\variant4_random_math.h" />
+    <ClInclude Include="..\src\VirtualMachine.hpp" />
+    <ClInclude Include="..\src\virtualMemory.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
