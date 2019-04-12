@@ -22,7 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	//                             Intel Ivy Bridge reference
-	namespace LightInstructionType {        //uOPs (decode)   execution ports         latency       code size
+	namespace SuperscalarInstructionType {        //uOPs (decode)   execution ports         latency       code size
 		constexpr int ISUB_R = 0;           //1               p015                    1               3
 		constexpr int IXOR_R = 1;           //1               p015                    1               3
 		constexpr int IADD_RS = 2;          //1               p01                     1               4

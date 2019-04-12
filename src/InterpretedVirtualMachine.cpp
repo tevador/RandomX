@@ -480,38 +480,38 @@ namespace RandomX {
 			Instruction& instr = prog(j);
 			switch (instr.opcode)
 			{
-			case RandomX::LightInstructionType::ISUB_R:
+			case RandomX::SuperscalarInstructionType::ISUB_R:
 				r[instr.dst] -= r[instr.src];
 				break;
-			case RandomX::LightInstructionType::IXOR_R:
+			case RandomX::SuperscalarInstructionType::IXOR_R:
 				r[instr.dst] ^= r[instr.src];
 				break;
-			case RandomX::LightInstructionType::IADD_RS:
+			case RandomX::SuperscalarInstructionType::IADD_RS:
 				r[instr.dst] += r[instr.src] << (instr.mod % 4);
 				break;
-			case RandomX::LightInstructionType::IMUL_R:
+			case RandomX::SuperscalarInstructionType::IMUL_R:
 				r[instr.dst] *= r[instr.src];
 				break;
-			case RandomX::LightInstructionType::IROR_C:
+			case RandomX::SuperscalarInstructionType::IROR_C:
 				r[instr.dst] = rotr(r[instr.dst], instr.getImm32());
 				break;
-			case RandomX::LightInstructionType::IADD_C7:
-			case RandomX::LightInstructionType::IADD_C8:
-			case RandomX::LightInstructionType::IADD_C9:
+			case RandomX::SuperscalarInstructionType::IADD_C7:
+			case RandomX::SuperscalarInstructionType::IADD_C8:
+			case RandomX::SuperscalarInstructionType::IADD_C9:
 				r[instr.dst] += signExtend2sCompl(instr.getImm32());
 				break;
-			case RandomX::LightInstructionType::IXOR_C7:
-			case RandomX::LightInstructionType::IXOR_C8:
-			case RandomX::LightInstructionType::IXOR_C9:
+			case RandomX::SuperscalarInstructionType::IXOR_C7:
+			case RandomX::SuperscalarInstructionType::IXOR_C8:
+			case RandomX::SuperscalarInstructionType::IXOR_C9:
 				r[instr.dst] ^= signExtend2sCompl(instr.getImm32());
 				break;
-			case RandomX::LightInstructionType::IMULH_R:
+			case RandomX::SuperscalarInstructionType::IMULH_R:
 				r[instr.dst] = mulh(r[instr.dst], r[instr.src]);
 				break;
-			case RandomX::LightInstructionType::ISMULH_R:
+			case RandomX::SuperscalarInstructionType::ISMULH_R:
 				r[instr.dst] = smulh(r[instr.dst], r[instr.src]);
 				break;
-			case RandomX::LightInstructionType::IMUL_RCP:
+			case RandomX::SuperscalarInstructionType::IMUL_RCP:
 				if(superscalar)
 					r[instr.dst] *= reciprocals[instr.getImm32()];
 				else
@@ -560,7 +560,7 @@ namespace RandomX {
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			for (unsigned j = 0; j < superScalarPrograms[i].getSize(); ++j) {
 				Instruction& instr = superScalarPrograms[i](j);
-				if (instr.opcode == LightInstructionType::IMUL_RCP) {
+				if (instr.opcode == SuperscalarInstructionType::IMUL_RCP) {
 					auto rcp = reciprocal(instr.getImm32());
 					instr.setImm32(reciprocals.size());
 					reciprocals.push_back(rcp);

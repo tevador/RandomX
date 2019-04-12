@@ -348,63 +348,63 @@ namespace RandomX {
 	void JitCompilerX86::generateCode<LightProgram>(Instruction& instr, int i) {
 		switch (instr.opcode)
 		{
-		case RandomX::LightInstructionType::ISUB_R:
+		case RandomX::SuperscalarInstructionType::ISUB_R:
 			emit(REX_SUB_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::LightInstructionType::IXOR_R:
+		case RandomX::SuperscalarInstructionType::IXOR_R:
 			emit(REX_XOR_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::LightInstructionType::IADD_RS:
+		case RandomX::SuperscalarInstructionType::IADD_RS:
 			emit(REX_LEA);
 			emitByte(0x04 + 8 * instr.dst);
 			genSIB(instr.mod % 4, instr.src, instr.dst);
 			break;
-		case RandomX::LightInstructionType::IMUL_R:
+		case RandomX::SuperscalarInstructionType::IMUL_R:
 			emit(REX_IMUL_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::LightInstructionType::IROR_C:
+		case RandomX::SuperscalarInstructionType::IROR_C:
 			emit(REX_ROT_I8);
 			emitByte(0xc8 + instr.dst);
 			emitByte(instr.getImm32() & 63);
 			break;
-		case RandomX::LightInstructionType::IADD_C7:
+		case RandomX::SuperscalarInstructionType::IADD_C7:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			break;
-		case RandomX::LightInstructionType::IXOR_C7:
+		case RandomX::SuperscalarInstructionType::IXOR_C7:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			break;
-		case RandomX::LightInstructionType::IADD_C8:
+		case RandomX::SuperscalarInstructionType::IADD_C8:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP1);
 			break;
-		case RandomX::LightInstructionType::IXOR_C8:
+		case RandomX::SuperscalarInstructionType::IXOR_C8:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP1);
 			break;
-		case RandomX::LightInstructionType::IADD_C9:
+		case RandomX::SuperscalarInstructionType::IADD_C9:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP2);
 			break;
-		case RandomX::LightInstructionType::IXOR_C9:
+		case RandomX::SuperscalarInstructionType::IXOR_C9:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP2);
 			break;
-		case RandomX::LightInstructionType::IMULH_R:
+		case RandomX::SuperscalarInstructionType::IMULH_R:
 			emit(REX_MOV_RR64);
 			emitByte(0xc0 + instr.dst);
 			emit(REX_MUL_R);
@@ -412,7 +412,7 @@ namespace RandomX {
 			emit(REX_MOV_R64R);
 			emitByte(0xc2 + 8 * instr.dst);
 			break;
-		case RandomX::LightInstructionType::ISMULH_R:
+		case RandomX::SuperscalarInstructionType::ISMULH_R:
 			emit(REX_MOV_RR64);
 			emitByte(0xc0 + instr.dst);
 			emit(REX_MUL_R);
@@ -420,7 +420,7 @@ namespace RandomX {
 			emit(REX_MOV_R64R);
 			emitByte(0xc2 + 8 * instr.dst);
 			break;
-		case RandomX::LightInstructionType::IMUL_RCP:
+		case RandomX::SuperscalarInstructionType::IMUL_RCP:
 			emit(MOV_RAX_I);
 			emit64(reciprocal(instr.getImm32()));
 			emit(REX_IMUL_RM);
