@@ -20,9 +20,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <cstdint>
 #include <vector>
-#include "../LightProgramGenerator.hpp"
+#include "../superscalarGenerator.hpp"
 #include "../InterpretedVirtualMachine.hpp"
 #include "../intrinPortable.h"
+#include "../Blake2Generator.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -45,9 +46,9 @@ int main() {
 			uint64_t rb[8];
 			memcpy(rb, ra, sizeof rb);
 			rb[0] ^= (1ULL << bit);
-			RandomX::LightProgram p;
+			RandomX::SuperscalarProgram p;
 			RandomX::Blake2Generator gen(seed, i);
-			RandomX::generateLightProg2(p, gen);
+			RandomX::generateSuperscalar(p, gen);
 			RandomX::InterpretedVirtualMachine<false>::executeSuperscalar(ra, p, dummy);
 			RandomX::InterpretedVirtualMachine<false>::executeSuperscalar(rb, p, dummy);
 			uint64_t diff = 0;

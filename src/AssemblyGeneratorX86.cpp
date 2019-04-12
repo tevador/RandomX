@@ -23,7 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include "reciprocal.h"
 #include "Program.hpp"
-#include "./LightProgramGenerator.hpp"
+#include "superscalarGenerator.hpp"
 
 namespace RandomX {
 
@@ -62,7 +62,7 @@ namespace RandomX {
 		}
 	}
 
-	void AssemblyGeneratorX86::generateAsm(LightProgram& prog) {
+	void AssemblyGeneratorX86::generateAsm(SuperscalarProgram& prog) {
 		asmCode.str(std::string()); //clear
 		asmCode << "ALIGN 16" << std::endl;
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
@@ -126,7 +126,7 @@ namespace RandomX {
 		}
 	}
 
-	void AssemblyGeneratorX86::generateC(LightProgram& prog) {
+	void AssemblyGeneratorX86::generateC(SuperscalarProgram& prog) {
 		asmCode.str(std::string()); //clear
 		asmCode << "#include <stdint.h>" << std::endl;
 		asmCode << "#if defined(__SIZEOF_INT128__)" << std::endl;

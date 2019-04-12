@@ -21,7 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <vector>
 #include <unordered_set>
-#include "../LightProgramGenerator.hpp"
+#include "../superscalarGenerator.hpp"
 #include "../InterpretedVirtualMachine.hpp"
 #include "../intrinPortable.h"
 #include "../configuration.h"

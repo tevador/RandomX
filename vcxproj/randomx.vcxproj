@@ -127,6 +127,7 @@
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
     <ClCompile Include="..\src\AssemblyGeneratorX86.cpp" />
+    <ClCompile Include="..\src\Blake2Generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
     <ClCompile Include="..\src\Cache.cpp" />
     <ClCompile Include="..\src\CompiledLightVirtualMachine.cpp" />
@@ -137,8 +138,7 @@
     <ClCompile Include="..\src\instructionsPortable.cpp" />
     <ClCompile Include="..\src\InterpretedVirtualMachine.cpp" />
     <ClCompile Include="..\src\JitCompilerX86.cpp" />
-    <ClCompile Include="..\src\LightClientAsyncWorker.cpp" />
-    <ClCompile Include="..\src\LightProgramGenerator.cpp" />
+    <ClCompile Include="..\src\superscalarGenerator.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\reciprocal.c" />
     <ClCompile Include="..\src\softAes.cpp" />
@@ -153,6 +153,7 @@
     <ClInclude Include="..\src\argon2.h" />
     <ClInclude Include="..\src\argon2_core.h" />
     <ClInclude Include="..\src\AssemblyGeneratorX86.hpp" />
+    <ClInclude Include="..\src\Blake2Generator.hpp" />
     <ClInclude Include="..\src\Cache.hpp" />
     <ClInclude Include="..\src\catch.hpp" />
     <ClInclude Include="..\src\common.hpp" />
@@ -167,8 +168,7 @@
     <ClInclude Include="..\src\intrinPortable.h" />
     <ClInclude Include="..\src\JitCompilerX86-static.hpp" />
     <ClInclude Include="..\src\JitCompilerX86.hpp" />
-    <ClInclude Include="..\src\LightClientAsyncWorker.hpp" />
-    <ClInclude Include="..\src\LightProgramGenerator.hpp" />
+    <ClInclude Include="..\src\superscalarGenerator.hpp" />
     <ClInclude Include="..\src\Program.hpp" />
     <ClInclude Include="..\src\reciprocal.h" />
     <ClInclude Include="..\src\softAes.h" />

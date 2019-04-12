@@ -22,7 +22,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "InterpretedVirtualMachine.hpp"
 #include "dataset.hpp"
 #include "Cache.hpp"
-#include "LightClientAsyncWorker.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -36,7 +35,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #ifdef STATS
 #include <algorithm>
 #endif
-#include "LightProgramGenerator.hpp"
+#include "superscalarGenerator.hpp"
 
 #ifdef FPUCHECK
 constexpr bool fpuCheck = true;
@@ -47,7 +46,7 @@ constexpr bool fpuCheck = false;
 namespace RandomX {
 
 	template<bool superscalar>
-	void InterpretedVirtualMachine<superscalar>::setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
+	void InterpretedVirtualMachine<superscalar>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
 		mem.ds = ds;
 		readDataset = &datasetReadLight;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
@@ -55,8 +54,8 @@ namespace RandomX {
 			precompileSuperscalar(programs);
 	}
 
-	template void InterpretedVirtualMachine<true>::setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
-	template void InterpretedVirtualMachine<false>::setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	template void InterpretedVirtualMachine<true>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	template void InterpretedVirtualMachine<false>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
 
 	template<bool superscalar>
 	void InterpretedVirtualMachine<superscalar>::initialize() {
@@ -475,7 +474,7 @@ namespace RandomX {
 	}
 
 	template<bool superscalar>
-	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(int_reg_t(&r)[8], LightProgram& prog, std::vector<uint64_t>& reciprocals) {
+	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t>& reciprocals) {
 		for (unsigned j = 0; j < prog.getSize(); ++j) {
 			Instruction& instr = prog(j);
 			switch (instr.opcode)
@@ -539,7 +538,7 @@ namespace RandomX {
 		Cache& cache = mem.ds.cache;
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			mixBlock = getMixBlock(registerValue, cache);
-			LightProgram& prog = superScalarPrograms[i];
+			SuperscalarProgram& prog = superScalarPrograms[i];
 			
 			executeSuperscalar(rl, prog, reciprocals);
 
@@ -554,7 +553,7 @@ namespace RandomX {
 	}
 
 	template<bool superscalar>
-	void InterpretedVirtualMachine<superscalar>::precompileSuperscalar(LightProgram* programs) {
+	void InterpretedVirtualMachine<superscalar>::precompileSuperscalar(SuperscalarProgram* programs) {
 		memcpy(superScalarPrograms, programs, sizeof(superScalarPrograms));
 		reciprocals.clear();
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {

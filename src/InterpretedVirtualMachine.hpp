@@ -70,17 +70,17 @@ namespace RandomX {
 		}
 		InterpretedVirtualMachine(bool soft) : softAes(soft) {}
 		~InterpretedVirtualMachine() {}
-		void setDataset(dataset_t ds, uint64_t size, LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
+		void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 		void execute() override;
-		static void executeSuperscalar(int_reg_t(&r)[8], LightProgram& prog, std::vector<uint64_t>& reciprocals);
+		static void executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t>& reciprocals);
 	private:
 		static InstructionHandler<superscalar> engine[256];
 		DatasetReadFunc readDataset;
 		bool softAes;
 		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
 		std::vector<uint64_t> reciprocals;
-		alignas(64) LightProgram superScalarPrograms[RANDOMX_CACHE_ACCESSES];
+		alignas(64) SuperscalarProgram superScalarPrograms[RANDOMX_CACHE_ACCESSES];
 #ifdef STATS
 		int count_ADD_64 = 0;
 		int count_ADD_32 = 0;
@@ -128,7 +128,7 @@ namespace RandomX {
 		int datasetAccess[256] = { 0 };
 #endif
 		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void precompileSuperscalar(LightProgram*);
+		void precompileSuperscalar(SuperscalarProgram*);
 		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]);

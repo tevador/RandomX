@@ -87,7 +87,7 @@ namespace RandomX {
 	*/
 
 #include "JitCompilerX86-static.hpp"
-#include "LightProgramGenerator.hpp"
+#include "superscalarGenerator.hpp"
 
 #define NOP_TEST true
 
@@ -261,16 +261,16 @@ namespace RandomX {
 	template void JitCompilerX86::generateProgramLight<false>(Program& prog);
 
 	template<size_t N>
-	void JitCompilerX86::generateSuperScalarHash(LightProgram(&programs)[N]) {
+	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[N]) {
 		memcpy(code + superScalarHashOffset, codeShhInit, codeSshInitSize);
 		codePos = superScalarHashOffset + codeSshInitSize;
 		for (unsigned j = 0; j < N; ++j) {
-			LightProgram& prog = programs[j];
+			SuperscalarProgram& prog = programs[j];
 			for (unsigned i = 0; i < prog.getSize(); ++i) {
 				Instruction& instr = prog(i);
 				instr.src %= RegistersCount;
 				instr.dst %= RegistersCount;
-				generateCode<LightProgram>(instr, i);
+				generateCode<SuperscalarProgram>(instr, i);
 			}
 			emit(codeShhLoad, codeSshLoadSize);
 			if (j < N - 1) {
@@ -290,7 +290,7 @@ namespace RandomX {
 	}
 
 	template
-	void JitCompilerX86::generateSuperScalarHash(LightProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
 
 	void JitCompilerX86::generateDatasetInitCode() {
 		memcpy(code, codeDatasetInit, datasetInitSize);
@@ -345,7 +345,7 @@ namespace RandomX {
 	}
 
 	template<>
-	void JitCompilerX86::generateCode<LightProgram>(Instruction& instr, int i) {
+	void JitCompilerX86::generateCode<SuperscalarProgram>(Instruction& instr, int i) {
 		switch (instr.opcode)
 		{
 		case RandomX::SuperscalarInstructionType::ISUB_R:

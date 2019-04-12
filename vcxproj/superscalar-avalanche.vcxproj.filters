@@ -45,9 +45,6 @@
     <ClCompile Include="..\src\blake2\blake2b.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\LightProgramGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\hashAes1Rx4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -58,6 +55,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\virtualMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\superscalarGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Blake2Generator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

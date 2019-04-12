@@ -118,6 +118,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
+    <ClCompile Include="..\src\Blake2Generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
     <ClCompile Include="..\src\Cache.cpp" />
     <ClCompile Include="..\src\dataset.cpp" />
@@ -125,9 +126,9 @@
     <ClCompile Include="..\src\Instruction.cpp" />
     <ClCompile Include="..\src\instructionsPortable.cpp" />
     <ClCompile Include="..\src\InterpretedVirtualMachine.cpp" />
-    <ClCompile Include="..\src\LightProgramGenerator.cpp" />
     <ClCompile Include="..\src\reciprocal.c" />
     <ClCompile Include="..\src\softAes.cpp" />
+    <ClCompile Include="..\src\superscalarGenerator.cpp" />
     <ClCompile Include="..\src\tests\superscalar-avalanche.cpp" />
     <ClCompile Include="..\src\VirtualMachine.cpp" />
     <ClCompile Include="..\src\virtualMemory.cpp" />

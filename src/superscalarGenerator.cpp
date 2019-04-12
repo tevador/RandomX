@@ -18,7 +18,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include <stddef.h>
-#include "blake2/blake2.h"
 #include "configuration.h"
 #include "Program.hpp"
 #include "blake2/endian.h"
@@ -27,7 +26,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
-#include "LightProgramGenerator.hpp"
+#include "superscalarGenerator.hpp"
 
 namespace RandomX {
 
@@ -35,6 +34,7 @@ namespace RandomX {
 		return type == SuperscalarInstructionType::IMUL_R || type == SuperscalarInstructionType::IMULH_R || type == SuperscalarInstructionType::ISMULH_R || type == SuperscalarInstructionType::IMUL_RCP;
 	}
 
+	//uOPs (micro-ops) are represented only by the execution port they can go to
 	namespace ExecutionPort {
 		using type = int;
 		constexpr type Null = 0;
@@ -46,40 +46,9 @@ namespace RandomX {
 		constexpr type P015 = P0 | P1 | P5;
 	}
 
-	Blake2Generator::Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
-		memset(data, 0, sizeof(data));
-		memcpy(data, seed, SeedSize);
-		store32(&data[60], nonce);
-	}
-
-	uint8_t Blake2Generator::getByte() {
-		checkData(1);
-		return data[dataIndex++];
-	}
-
-	uint32_t Blake2Generator::getInt32() {
-		checkData(4);
-		auto ret = load32(&data[dataIndex]);
-		dataIndex += 4;
-		return ret;
-	}
-
-	void Blake2Generator::checkData(const size_t bytesNeeded) {
-		if (dataIndex + bytesNeeded > sizeof(data))	{
-			blake2b(data, sizeof(data), data, sizeof(data), nullptr, 0);
-			dataIndex = 0;
-		}
-	}
-
-	class RegisterInfo {
-	public:
-		RegisterInfo() : latency(0), lastOpGroup(-1), lastOpPar(-1), value(0) {}
-		int latency;
-		int lastOpGroup;
-		int lastOpPar;
-		int value;
-	};
-
+	//Macro-operation as output of the x86 decoder
+	//Usually one macro-op = one x86 instruction, but 2 instructions are sometimes fused into 1 macro-op
+	//Macro-op can consist of 1 or 2 uOPs.
 	class MacroOp {
 	public:
 		MacroOp(const char* name, int size)
@@ -137,10 +106,7 @@ namespace RandomX {
 		int latency_;
 		ExecutionPort::type uop1_;
 		ExecutionPort::type uop2_;
-		int cycle_;
 		bool dependent_ = false;
-		MacroOp* depDst_ = nullptr;
-		MacroOp* depSrc_ = nullptr;
 	};
 
 	//Size: 3 bytes
@@ -174,7 +140,7 @@ namespace RandomX {
 	const MacroOp ISMULH_R_ops_array[] = { MacroOp::Mov_rr, MacroOp::Imul_r, MacroOp::Mov_rr };
 	const MacroOp IMUL_RCP_ops_array[] = { MacroOp::Mov_ri64, MacroOp(MacroOp::Imul_rr, true) };
 
-	class LightInstructionInfo {
+	class SuperscalarInstructionInfo {
 	public:
 		const char* getName() const {
 			return name_;
@@ -203,21 +169,21 @@ namespace RandomX {
 		int getSrcOp() const {
 			return srcOp_;
 		}
-		static const LightInstructionInfo ISUB_R;
-		static const LightInstructionInfo IXOR_R;
-		static const LightInstructionInfo IADD_RS;
-		static const LightInstructionInfo IMUL_R;
-		static const LightInstructionInfo IROR_C;
-		static const LightInstructionInfo IADD_C7;
-		static const LightInstructionInfo IXOR_C7;
-		static const LightInstructionInfo IADD_C8;
-		static const LightInstructionInfo IXOR_C8;
-		static const LightInstructionInfo IADD_C9;
-		static const LightInstructionInfo IXOR_C9;
-		static const LightInstructionInfo IMULH_R;
-		static const LightInstructionInfo ISMULH_R;
-		static const LightInstructionInfo IMUL_RCP;
-		static const LightInstructionInfo NOP;
+		static const SuperscalarInstructionInfo ISUB_R;
+		static const SuperscalarInstructionInfo IXOR_R;
+		static const SuperscalarInstructionInfo IADD_RS;
+		static const SuperscalarInstructionInfo IMUL_R;
+		static const SuperscalarInstructionInfo IROR_C;
+		static const SuperscalarInstructionInfo IADD_C7;
+		static const SuperscalarInstructionInfo IXOR_C7;
+		static const SuperscalarInstructionInfo IADD_C8;
+		static const SuperscalarInstructionInfo IXOR_C8;
+		static const SuperscalarInstructionInfo IADD_C9;
+		static const SuperscalarInstructionInfo IXOR_C9;
+		static const SuperscalarInstructionInfo IMULH_R;
+		static const SuperscalarInstructionInfo ISMULH_R;
+		static const SuperscalarInstructionInfo IMUL_RCP;
+		static const SuperscalarInstructionInfo NOP;
 	private:
 		const char* name_;
 		int type_;
@@ -227,14 +193,14 @@ namespace RandomX {
 		int dstOp_ = 0;
 		int srcOp_;
 
-		LightInstructionInfo(const char* name)
+		SuperscalarInstructionInfo(const char* name)
 			: name_(name), type_(-1), latency_(0) {}
-		LightInstructionInfo(const char* name, int type, const MacroOp& op, int srcOp)
+		SuperscalarInstructionInfo(const char* name, int type, const MacroOp& op, int srcOp)
 			: name_(name), type_(type), latency_(op.getLatency()), srcOp_(srcOp) {
 			ops_.push_back(MacroOp(op));
 		}
 		template <size_t N>
-		LightInstructionInfo(const char* name, int type, const MacroOp(&arr)[N], int resultOp, int dstOp, int srcOp)
+		SuperscalarInstructionInfo(const char* name, int type, const MacroOp(&arr)[N], int resultOp, int dstOp, int srcOp)
 			: name_(name), type_(type), latency_(0), resultOp_(resultOp), dstOp_(dstOp), srcOp_(srcOp) {
 			for (unsigned i = 0; i < N; ++i) {
 				ops_.push_back(MacroOp(arr[i]));
@@ -244,24 +210,34 @@ namespace RandomX {
 		}
 	};
 
-	const LightInstructionInfo LightInstructionInfo::ISUB_R = LightInstructionInfo("ISUB_R", SuperscalarInstructionType::ISUB_R, MacroOp::Sub_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IXOR_R = LightInstructionInfo("IXOR_R", SuperscalarInstructionType::IXOR_R, MacroOp::Xor_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IADD_RS = LightInstructionInfo("IADD_RS", SuperscalarInstructionType::IADD_RS, MacroOp::Lea_sib, 0);
-	const LightInstructionInfo LightInstructionInfo::IMUL_R = LightInstructionInfo("IMUL_R", SuperscalarInstructionType::IMUL_R, MacroOp::Imul_rr, 0);
-	const LightInstructionInfo LightInstructionInfo::IROR_C = LightInstructionInfo("IROR_C", SuperscalarInstructionType::IROR_C, MacroOp::Ror_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::ISUB_R = SuperscalarInstructionInfo("ISUB_R", SuperscalarInstructionType::ISUB_R, MacroOp::Sub_rr, 0);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IXOR_R = SuperscalarInstructionInfo("IXOR_R", SuperscalarInstructionType::IXOR_R, MacroOp::Xor_rr, 0);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IADD_RS = SuperscalarInstructionInfo("IADD_RS", SuperscalarInstructionType::IADD_RS, MacroOp::Lea_sib, 0);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IMUL_R = SuperscalarInstructionInfo("IMUL_R", SuperscalarInstructionType::IMUL_R, MacroOp::Imul_rr, 0);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IROR_C = SuperscalarInstructionInfo("IROR_C", SuperscalarInstructionType::IROR_C, MacroOp::Ror_ri, -1);
 
-	const LightInstructionInfo LightInstructionInfo::IADD_C7 = LightInstructionInfo("IADD_C7", SuperscalarInstructionType::IADD_C7, MacroOp::Add_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IXOR_C7 = LightInstructionInfo("IXOR_C7", SuperscalarInstructionType::IXOR_C7, MacroOp::Xor_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IADD_C8 = LightInstructionInfo("IADD_C8", SuperscalarInstructionType::IADD_C8, MacroOp::Add_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IXOR_C8 = LightInstructionInfo("IXOR_C8", SuperscalarInstructionType::IXOR_C8, MacroOp::Xor_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IADD_C9 = LightInstructionInfo("IADD_C9", SuperscalarInstructionType::IADD_C9, MacroOp::Add_ri, -1);
-	const LightInstructionInfo LightInstructionInfo::IXOR_C9 = LightInstructionInfo("IXOR_C9", SuperscalarInstructionType::IXOR_C9, MacroOp::Xor_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IADD_C7 = SuperscalarInstructionInfo("IADD_C7", SuperscalarInstructionType::IADD_C7, MacroOp::Add_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IXOR_C7 = SuperscalarInstructionInfo("IXOR_C7", SuperscalarInstructionType::IXOR_C7, MacroOp::Xor_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IADD_C8 = SuperscalarInstructionInfo("IADD_C8", SuperscalarInstructionType::IADD_C8, MacroOp::Add_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IXOR_C8 = SuperscalarInstructionInfo("IXOR_C8", SuperscalarInstructionType::IXOR_C8, MacroOp::Xor_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IADD_C9 = SuperscalarInstructionInfo("IADD_C9", SuperscalarInstructionType::IADD_C9, MacroOp::Add_ri, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IXOR_C9 = SuperscalarInstructionInfo("IXOR_C9", SuperscalarInstructionType::IXOR_C9, MacroOp::Xor_ri, -1);
 
-	const LightInstructionInfo LightInstructionInfo::IMULH_R = LightInstructionInfo("IMULH_R", SuperscalarInstructionType::IMULH_R, IMULH_R_ops_array, 1, 0, 1);
-	const LightInstructionInfo LightInstructionInfo::ISMULH_R = LightInstructionInfo("ISMULH_R", SuperscalarInstructionType::ISMULH_R, ISMULH_R_ops_array, 1, 0, 1);
-	const LightInstructionInfo LightInstructionInfo::IMUL_RCP = LightInstructionInfo("IMUL_RCP", SuperscalarInstructionType::IMUL_RCP, IMUL_RCP_ops_array, 1, 1, -1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IMULH_R = SuperscalarInstructionInfo("IMULH_R", SuperscalarInstructionType::IMULH_R, IMULH_R_ops_array, 1, 0, 1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::ISMULH_R = SuperscalarInstructionInfo("ISMULH_R", SuperscalarInstructionType::ISMULH_R, ISMULH_R_ops_array, 1, 0, 1);
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::IMUL_RCP = SuperscalarInstructionInfo("IMUL_RCP", SuperscalarInstructionType::IMUL_RCP, IMUL_RCP_ops_array, 1, 1, -1);
 	
-	const LightInstructionInfo LightInstructionInfo::NOP = LightInstructionInfo("NOP");
+	const SuperscalarInstructionInfo SuperscalarInstructionInfo::NOP = SuperscalarInstructionInfo("NOP");
+
+	//these are some of the options how to split a 16-byte window into 3 or 4 x86 instructions.
+	//RandomX uses instructions with a native size of 3 (sub, xor, mul, mov), 4 (lea, mul), 7 (xor, add immediate) or 10 bytes (mov 64-bit immediate).
+	//Slots with sizes of 8 or 9 bytes need to be padded with a nop instruction.
+	const int buffer0[] = { 4, 8, 4 };
+	const int buffer1[] = { 7, 3, 3, 3 };
+	const int buffer2[] = { 3, 7, 3, 3 };
+	const int buffer3[] = { 4, 9, 3 };
+	const int buffer4[] = { 4, 4, 4, 4 };
+	const int buffer5[] = { 3, 3, 10 };
 
 	class DecoderBuffer {
 	public:
@@ -318,16 +294,6 @@ namespace RandomX {
 		}
 	};
 
-	//these are some of the options how to split a 16-byte window into 3 or 4 x86 instructions.
-	//RandomX uses instructions with a native size of 3 (sub, xor, mul, mov), 4 (lea, mul), 7 (xor, add immediate) or 10 bytes (mov 64-bit immediate).
-	//Slots with sizes of 8 or 9 bytes need to be padded with a nop instruction.
-	const int buffer0[] = { 4, 8, 4 };
-	const int buffer1[] = { 7, 3, 3, 3 };
-	const int buffer2[] = { 3, 7, 3, 3 };
-	const int buffer3[] = { 4, 9, 3 };
-	const int buffer4[] = { 4, 4, 4, 4 };
-	const int buffer5[] = { 3, 3, 10 };
-
 	const DecoderBuffer DecoderBuffer::decodeBuffer484 = DecoderBuffer("4,8,4", 0, buffer0);
 	const DecoderBuffer DecoderBuffer::decodeBuffer7333 = DecoderBuffer("7,3,3,3", 1, buffer1);
 	const DecoderBuffer DecoderBuffer::decodeBuffer3733 = DecoderBuffer("3,7,3,3", 2, buffer2);
@@ -344,13 +310,13 @@ namespace RandomX {
 
 	const DecoderBuffer DecoderBuffer::Default = DecoderBuffer();
 
-	const LightInstructionInfo* slot_3[]  = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R };
-	const LightInstructionInfo* slot_3L[] = { &LightInstructionInfo::ISUB_R, &LightInstructionInfo::IXOR_R, &LightInstructionInfo::IMULH_R, &LightInstructionInfo::ISMULH_R };
-	const LightInstructionInfo* slot_4[]  = { &LightInstructionInfo::IROR_C, &LightInstructionInfo::IADD_RS };
-	const LightInstructionInfo* slot_7[]  = { &LightInstructionInfo::IXOR_C7, &LightInstructionInfo::IADD_C7 };
-	const LightInstructionInfo* slot_8[] = { &LightInstructionInfo::IXOR_C8, &LightInstructionInfo::IADD_C8 };
-	const LightInstructionInfo* slot_9[] = { &LightInstructionInfo::IXOR_C9, &LightInstructionInfo::IADD_C9 };
-	const LightInstructionInfo* slot_10   = &LightInstructionInfo::IMUL_RCP;
+	const SuperscalarInstructionInfo* slot_3[]  = { &SuperscalarInstructionInfo::ISUB_R, &SuperscalarInstructionInfo::IXOR_R };
+	const SuperscalarInstructionInfo* slot_3L[] = { &SuperscalarInstructionInfo::ISUB_R, &SuperscalarInstructionInfo::IXOR_R, &SuperscalarInstructionInfo::IMULH_R, &SuperscalarInstructionInfo::ISMULH_R };
+	const SuperscalarInstructionInfo* slot_4[]  = { &SuperscalarInstructionInfo::IROR_C, &SuperscalarInstructionInfo::IADD_RS };
+	const SuperscalarInstructionInfo* slot_7[]  = { &SuperscalarInstructionInfo::IXOR_C7, &SuperscalarInstructionInfo::IADD_C7 };
+	const SuperscalarInstructionInfo* slot_8[] = { &SuperscalarInstructionInfo::IXOR_C8, &SuperscalarInstructionInfo::IADD_C8 };
+	const SuperscalarInstructionInfo* slot_9[] = { &SuperscalarInstructionInfo::IXOR_C9, &SuperscalarInstructionInfo::IADD_C9 };
+	const SuperscalarInstructionInfo* slot_10   = &SuperscalarInstructionInfo::IMUL_RCP;
 
 	static bool selectRegister(std::vector<int>& availableRegisters, Blake2Generator& gen, int& reg) {
 		int index;
@@ -367,9 +333,19 @@ namespace RandomX {
 		return true;
 	}
 
-	class LightInstruction {
+	class RegisterInfo {
 	public:
-		void toInstr(Instruction& instr) {
+		RegisterInfo() : latency(0), lastOpGroup(-1), lastOpPar(-1), value(0) {}
+		int latency;
+		int lastOpGroup;
+		int lastOpPar;
+		int value;
+	};
+
+	//"SuperscalarInstruction" consists of one or more macro-ops
+	class SuperscalarInstruction {
+	public:
+		void toInstr(Instruction& instr) { //translate to a RandomX instruction format
 			instr.opcode = getType();
 			instr.dst = dst_;
 			instr.src = src_ >= 0 ? src_ : dst_;
@@ -392,7 +368,7 @@ namespace RandomX {
 			case 4:
 				//if this is the 4-4-4-4 buffer, issue multiplications as the first 3 instructions
 				if (fetchType == 4 && !isLast) {
-					create(&LightInstructionInfo::IMUL_R, gen);
+					create(&SuperscalarInstructionInfo::IMUL_R, gen);
 				}
 				else {
 					create(slot_4[gen.getByte() & 1], gen);
@@ -415,7 +391,7 @@ namespace RandomX {
 			}
 		}
 
-		void create(const LightInstructionInfo* info, Blake2Generator& gen) {
+		void create(const SuperscalarInstructionInfo* info, Blake2Generator& gen) {
 			info_ = info;
 			reset();
 			switch (info->getType())
@@ -445,7 +421,7 @@ namespace RandomX {
 				mod_ = 0;
 				imm32_ = 0;
 				opGroup_ = SuperscalarInstructionType::IMUL_R;
-				opGroupPar_ = -1;
+				groupParIsSource_ = true;
 			} break;
 
 			case SuperscalarInstructionType::IROR_C: {
@@ -505,18 +481,22 @@ namespace RandomX {
 			}
 		}
 
-		bool selectDestination(int cycle, RegisterInfo (&registers)[8], Blake2Generator& gen) {
+		bool selectDestination(int cycle, bool allowChainedMul, RegisterInfo (&registers)[8], Blake2Generator& gen) {
+			/*if (allowChainedMultiplication && opGroup_ == SuperscalarInstructionType::IMUL_R)
+				std::cout << "Selecting destination with chained MUL enabled" << std::endl;*/
 			std::vector<int> availableRegisters;
 			//Conditions for the destination register:
 			// * value must be ready at the required cycle
 			// * cannot be the same as the source register unless the instruction allows it
 			//   - this avoids optimizable instructions such as "xor r, r" or "sub r, r"
+			// * register cannot be multiplied twice in a row unless allowChainedMul is true 
+			//   - this avoids accumulation of trailing zeroes in registers due to excessive multiplication
+			//   - allowChainedMul is set to true if an attempt to find source/destination registers failed (this is quite rare, but prevents a catastrophic failure of the generator)
 			// * either the last instruction applied to the register or its source must be different than this instruction
 			//   - this avoids optimizable instruction sequences such as "xor r1, r2; xor r1, r2" or "ror r, C1; ror r, C2" or "add r, C1; add r, C2"
-			//   - it also avoids accumulation of trailing zeroes in registers due to excessive multiplication
 			// * register r5 cannot be the destination of the IADD_RS instruction (limitation of the x86 lea instruction)
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != LimitedAddressRegister))
+				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (allowChainedMul || opGroup_ != SuperscalarInstructionType::IMUL_R || registers[i].lastOpGroup != SuperscalarInstructionType::IMUL_R) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != LimitedAddressRegister))
 					availableRegisters.push_back(i);
 			}
 			return selectRegister(availableRegisters, gen, dst_);
@@ -560,14 +540,14 @@ namespace RandomX {
 			return opGroupPar_;
 		}
 
-		const LightInstructionInfo& getInfo() const {
+		const SuperscalarInstructionInfo& getInfo() const {
 			return *info_;
 		}
 
-		static const LightInstruction Null;
+		static const SuperscalarInstruction Null;
 
 	private:
-		const LightInstructionInfo* info_;
+		const SuperscalarInstructionInfo* info_;
 		int src_ = -1;
 		int dst_ = -1;
 		int mod_;
@@ -582,15 +562,16 @@ namespace RandomX {
 			canReuse_ = groupParIsSource_ = false;
 		}
 
-		LightInstruction(const LightInstructionInfo* info) : info_(info) {
+		SuperscalarInstruction(const SuperscalarInstructionInfo* info) : info_(info) {
 		}
 	};
 
-	const LightInstruction LightInstruction::Null = LightInstruction(&LightInstructionInfo::NOP);
+	const SuperscalarInstruction SuperscalarInstruction::Null = SuperscalarInstruction(&SuperscalarInstructionInfo::NOP);
 
-	constexpr int CYCLE_MAP_SIZE = RANDOMX_SUPERSCALAR_LATENCY + 3;
+	constexpr int CYCLE_MAP_SIZE = RANDOMX_SUPERSCALAR_LATENCY + 4;
 	constexpr int LOOK_FORWARD_CYCLES = 4;
 	constexpr int MAX_THROWAWAY_COUNT = 256;
+
 #ifndef _DEBUG
 	constexpr bool TRACE = false;
 	constexpr bool INFO = false;
@@ -602,7 +583,7 @@ namespace RandomX {
 	template<bool commit>
 	static int scheduleUop(ExecutionPort::type uop, ExecutionPort::type(&portBusy)[CYCLE_MAP_SIZE][3], int cycle) {
 		//The scheduling here is done optimistically by checking port availability in order P5 -> P0 -> P1 to not overload
-		//P1 (multiplication port) by instructions that can go to any port.
+		//port P1 (multiplication) by instructions that can go to any port.
 		for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 			if ((uop & ExecutionPort::P5) != 0 && !portBusy[cycle][2]) {
 				if (commit) {
@@ -666,14 +647,14 @@ namespace RandomX {
 		return -1;
 	}
 
-	double generateSuperscalar(LightProgram& prog, Blake2Generator& gen) {
+	void generateSuperscalar(SuperscalarProgram& prog, Blake2Generator& gen) {
 
 		ExecutionPort::type portBusy[CYCLE_MAP_SIZE][3];
 		memset(portBusy, 0, sizeof(portBusy));
 		RegisterInfo registers[8];
 
 		const DecoderBuffer* decodeBuffer = &DecoderBuffer::Default;
-		LightInstruction currentInstruction = LightInstruction::Null;
+		SuperscalarInstruction currentInstruction = SuperscalarInstruction::Null;
 		int macroOpIndex = 0;
 		int codeSize = 0;
 		int macroOpCount = 0;
@@ -719,7 +700,9 @@ namespace RandomX {
 				int scheduleCycle = scheduleMop<false>(mop, portBusy, cycle, depCycle);
 				if (scheduleCycle < 0) {
 					/*if (TRACE)*/ std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
-					return 0;
+					//__debugbreak();
+					portsSaturated = true;
+					break;
 				}
 
 				//find a source register (if applicable) that will be ready when this instruction executes
@@ -737,20 +720,20 @@ namespace RandomX {
 							throwAwayCount++;
 							macroOpIndex = currentInstruction.getInfo().getSize();
 							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							//cycle = topCycle;
 							continue;
 						}
 						//abort this decode buffer
-						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available" << std::endl;
-						currentInstruction = LightInstruction::Null;
+						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available for operation " << currentInstruction.getInfo().getName() << std::endl;
+						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}
 					if (TRACE) std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
 				}
-				throwAwayCount = 0;
 				//find a destination register that will be ready when this instruction executes
 				if (macroOpIndex == currentInstruction.getInfo().getDstOp()) {
 					int forward;
-					for (forward = 0; forward < LOOK_FORWARD_CYCLES && !currentInstruction.selectDestination(scheduleCycle, registers, gen); ++forward) {
+					for (forward = 0; forward < LOOK_FORWARD_CYCLES && !currentInstruction.selectDestination(scheduleCycle, throwAwayCount > 0, registers, gen); ++forward) {
 						if (TRACE) std::cout << "; dst STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
@@ -760,16 +743,18 @@ namespace RandomX {
 							throwAwayCount++;
 							macroOpIndex = currentInstruction.getInfo().getSize();
 							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							//cycle = topCycle;
 							continue;
 						}
 						//abort this decode buffer
 						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
-						currentInstruction = LightInstruction::Null;
+						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}
 					if (TRACE) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
 				throwAwayCount = 0;
+
 				//recalculate when the instruction can be scheduled for execution based on operand availability
 				scheduleCycle = scheduleMop<true>(mop, portBusy, scheduleCycle, scheduleCycle);
 
@@ -809,67 +794,53 @@ namespace RandomX {
 			++cycle;
 		}
 
-		if(INFO) std::cout << "; ALU port utilization:" << std::endl;
-		if (INFO) std::cout << "; (* = in use, _ = idle)" << std::endl;
-
-		int portCycles = 0;
-		for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
-			//std::cout << "; " << std::setw(3) << i << " ";
-			for (int j = 0; j < 3; ++j) {
-				//std::cout << (portBusy[i][j] ? '*' : '_');
-				portCycles += !!portBusy[i][j];
-			}
-			//std::cout << std::endl;
-		}
-
 		double ipc = (macroOpCount / (double)retireCycle);
 
-		if (INFO) std::cout << "; code size " << codeSize << " bytes" << std::endl;
-		if (INFO) std::cout << "; x86 macro-ops: " << macroOpCount << std::endl;
-		if (INFO) std::cout << "; fetch cycles: " << decodeCycle << std::endl;
-		if (INFO) std::cout << "; RandomX instructions: " << programSize << std::endl;
-		if (INFO) std::cout << "; Execution time: " << retireCycle << " cycles" << std::endl;
-		if (INFO) std::cout << "; IPC = " << ipc << std::endl;
-		if (INFO) std::cout << "; Port-cycles: " << portCycles << std::endl;
-		if (INFO) std::cout << "; Multiplications: " << mulCount << std::endl;
-
-		int asicLatency[8];
-		memset(asicLatency, 0, sizeof(asicLatency));
+		memset(prog.asicLatencies, 0, sizeof(prog.asicLatencies));
 
 		//Calculate ASIC latency:
 		//Assumes 1 cycle latency for all operations and unlimited parallelization.
 		for (int i = 0; i < programSize; ++i) {
 			Instruction& instr = prog(i);
-			int latDst = asicLatency[instr.dst] + 1;
-			int latSrc = instr.dst != instr.src ? asicLatency[instr.src] + 1 : 0;
-			asicLatency[instr.dst] = std::max(latDst, latSrc);
+			int latDst = prog.asicLatencies[instr.dst] + 1;
+			int latSrc = instr.dst != instr.src ? prog.asicLatencies[instr.src] + 1 : 0;
+			prog.asicLatencies[instr.dst] = std::max(latDst, latSrc);
 		}
 
 		//address register is the register with the highest ASIC latency
 		int asicLatencyMax = 0;
 		int addressReg = 0;
 		for (int i = 0; i < 8; ++i) {
-			if (asicLatency[i] > asicLatencyMax) {
-				asicLatencyMax = asicLatency[i];
+			if (prog.asicLatencies[i] > asicLatencyMax) {
+				asicLatencyMax = prog.asicLatencies[i];
 				addressReg = i;
 			}
-		}
-
-		if (INFO) std::cout << "; ASIC latency: " << asicLatencyMax << std::endl;
-
-		if (INFO) {
-			std::cout << "; ASIC latency:" << std::endl;
-			for (int i = 0; i < 8; ++i) {
-				std::cout << ";  r" << i << " = " << asicLatency[i] << std::endl;
-			}
-			if (INFO) std::cout << "; CPU latency:" << std::endl;
-			for (int i = 0; i < 8; ++i) {
-				std::cout << ";  r" << i << " = " << registers[i].latency << std::endl;
-			}
+			prog.cpuLatencies[i] = registers[i].latency;
 		}
 
 		prog.setSize(programSize);
 		prog.setAddressRegister(addressReg);
-		return ipc;
+
+		prog.cpuLatency = retireCycle;
+		prog.asicLatency = asicLatencyMax;
+		prog.codeSize = codeSize;
+		prog.macroOps = macroOpCount;
+		prog.decodeCycles = decodeCycle;
+		prog.ipc = ipc;
+		prog.mulCount = mulCount;
+		
+
+		/*if(INFO) std::cout << "; ALU port utilization:" << std::endl;
+		if (INFO) std::cout << "; (* = in use, _ = idle)" << std::endl;
+
+		int portCycles = 0;
+		for (int i = 0; i < CYCLE_MAP_SIZE; ++i) {
+			std::cout << "; " << std::setw(3) << i << " ";
+			for (int j = 0; j < 3; ++j) {
+				std::cout << (portBusy[i][j] ? '*' : '_');
+				portCycles += !!portBusy[i][j];
+			}
+			std::cout << std::endl;
+		}*/
 	}
 }

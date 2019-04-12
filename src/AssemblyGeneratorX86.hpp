@@ -27,7 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	class Program;
-	class LightProgram;
+	class SuperscalarProgram;
 	class AssemblyGeneratorX86;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
@@ -35,8 +35,8 @@ namespace RandomX {
 	class AssemblyGeneratorX86 {
 	public:
 		void generateProgram(Program& prog);
-		void generateAsm(LightProgram& prog);
-		void generateC(LightProgram& prog);
+		void generateAsm(SuperscalarProgram& prog);
+		void generateC(SuperscalarProgram& prog);
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}

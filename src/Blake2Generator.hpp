@@ -18,28 +18,19 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-//#define TRACEVM
-#include <new>
-#include "CompiledVirtualMachine.hpp"
-#include "JitCompilerX86.hpp"
-#include "intrinPortable.h"
+#include <cstdint>
 
 namespace RandomX {
 
-	template<bool superscalar>
-	class CompiledLightVirtualMachine : public CompiledVirtualMachine {
+	class Blake2Generator {
 	public:
-		void* operator new(size_t size) {
-			void* ptr = _mm_malloc(size, 64);
-			if (ptr == nullptr)
-				throw std::bad_alloc();
-			return ptr;
-		}
-		void operator delete(void* ptr) {
-			_mm_free(ptr);
-		}
-		CompiledLightVirtualMachine() {}
-		void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
-		void initialize() override;
+		Blake2Generator(const void* seed, int nonce);
+		uint8_t getByte();
+		uint32_t getInt32();
+	private:
+		uint8_t data[64];
+		size_t dataIndex;
+
+		void checkData(const size_t);
 	};
 }

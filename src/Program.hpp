@@ -53,12 +53,14 @@ namespace RandomX {
 		Instruction programBuffer[RANDOMX_PROGRAM_SIZE];
 	};
 
-	class LightProgram {
+	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
+
+	class SuperscalarProgram {
 	public:
 		Instruction& operator()(int pc) {
 			return programBuffer[pc];
 		}
-		friend std::ostream& operator<<(std::ostream& os, const LightProgram& p) {
+		friend std::ostream& operator<<(std::ostream& os, const SuperscalarProgram& p) {
 			p.print(os);
 			return os;
 		}
@@ -74,6 +76,15 @@ namespace RandomX {
 		void setAddressRegister(uint32_t val) {
 			addrReg = val;
 		}
+		double ipc;
+		int codeSize;
+		int macroOps;
+		int decodeCycles;
+		int cpuLatency;
+		int asicLatency;
+		int mulCount;
+		int cpuLatencies[8];
+		int asicLatencies[8];
 	private:
 		void print(std::ostream& os) const {
 			for (unsigned i = 0; i < size; ++i) {
@@ -85,6 +96,4 @@ namespace RandomX {
 		uint32_t size;
 		int addrReg;
 	};
-
-	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
 }

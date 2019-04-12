@@ -36,7 +36,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "Cache.hpp"
 #include "hashAes1Rx4.hpp"
-#include "LightProgramGenerator.hpp"
+#include "superscalarGenerator.hpp"
 #include "JitCompilerX86.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
@@ -226,13 +226,13 @@ int main(int argc, char** argv) {
 	readOption("--legacy", argc, argv, legacy);
 
 	if (genSuperscalar) {
-		RandomX::LightProgram p;
+		RandomX::SuperscalarProgram p;
 		RandomX::Blake2Generator gen(seed, programCount);
 		RandomX::generateSuperscalar(p, gen);
 		RandomX::AssemblyGeneratorX86 asmX86;
 		asmX86.generateAsm(p);
 		//std::ofstream file("lightProg2.asm");
-		//asmX86.printCode(std::cout);
+		asmX86.printCode(std::cout);
 		return 0;
 	}
 
@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
 	const uint64_t cacheSize = (RANDOMX_ARGON_MEMORY + RANDOMX_ARGON_GROWTH * epoch) * RandomX::ArgonBlockSize;
 	const uint64_t datasetSize = (RANDOMX_DATASET_SIZE + RANDOMX_DS_GROWTH * epoch);
 	dataset.cache.size = cacheSize;
-	RandomX::LightProgram programs[RANDOMX_CACHE_ACCESSES];
+	RandomX::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 
 	std::cout << "RandomX - " << (miningMode ? "mining" : "verification") << " mode" << std::endl;
 
