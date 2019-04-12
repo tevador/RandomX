@@ -24,13 +24,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-
-
 	class VirtualMachine {
 	public:
 		VirtualMachine();
 		virtual ~VirtualMachine() {}
-		virtual void setDataset(dataset_t ds, uint64_t size) = 0;
+		virtual void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram (&programs)[RANDOMX_CACHE_ACCESSES]) = 0;
 		void setScratchpad(void* ptr) {
 			scratchpad = (uint8_t*)ptr;
 		}

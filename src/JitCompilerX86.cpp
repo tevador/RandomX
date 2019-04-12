@@ -87,6 +87,9 @@ namespace RandomX {
 	*/
 
 #include "JitCompilerX86-static.hpp"
+#include "superscalarGenerator.hpp"
+
+#define NOP_TEST true
 
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
 	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_program_loop_begin;
@@ -94,23 +97,36 @@ namespace RandomX {
 	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
 	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
 	const uint8_t* codeReadDatasetLight = (uint8_t*)&randomx_program_read_dataset_light;
+	const uint8_t* codeReadDatasetLightSshInit = (uint8_t*)&randomx_program_read_dataset_sshash_init;
+	const uint8_t* codeReadDatasetLightSshFin = (uint8_t*)&randomx_program_read_dataset_sshash_fin;
+	const uint8_t* codeDatasetInit = (uint8_t*)&randomx_dataset_init;
 	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
 	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
 	const uint8_t* codeReadDatasetLightSub = (uint8_t*)&randomx_program_read_dataset_light_sub;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
+	const uint8_t* codeShhLoad = (uint8_t*)&randomx_sshash_load;
+	const uint8_t* codeShhPrefetch = (uint8_t*)&randomx_sshash_prefetch;
+	const uint8_t* codeShhEnd = (uint8_t*)&randomx_sshash_end;
+	const uint8_t* codeShhInit = (uint8_t*)&randomx_sshash_init;
 
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
-	const int32_t epilogueSize = codeProgramEnd - codeEpilogue;
-
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
 	const int32_t readDatasetSize = codeReadDatasetLight - codeReadDataset;
-	const int32_t readDatasetLightSize = codeLoopStore - codeReadDatasetLight;
+	const int32_t readDatasetLightSize = codeReadDatasetLightSshInit - codeReadDatasetLight;
+	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
+	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
 	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
-	const int32_t readDatasetLightSubSize = codeEpilogue - codeReadDatasetLightSub;
+	const int32_t readDatasetLightSubSize = codeDatasetInit - codeReadDatasetLightSub;
+	const int32_t datasetInitSize = codeEpilogue - codeDatasetInit;
+	const int32_t epilogueSize = codeShhLoad - codeEpilogue;
+	const int32_t codeSshLoadSize = codeShhPrefetch - codeShhLoad;
+	const int32_t codeSshPrefetchSize = codeShhEnd - codeShhPrefetch;
+	const int32_t codeSshInitSize = codeProgramEnd - codeShhInit;
 
 	const int32_t epilogueOffset = CodeSize - epilogueSize;
 	const int32_t readDatasetLightSubOffset = epilogueOffset - readDatasetLightSubSize;
+	constexpr int32_t superScalarHashOffset = 32768;
 
 	static const uint8_t REX_ADD_RR[] = { 0x4d, 0x03 };
 	static const uint8_t REX_ADD_RM[] = { 0x4c, 0x03 };
@@ -166,7 +182,7 @@ namespace RandomX {
 	static const uint8_t SQRTPD[] = { 0x66, 0x0f, 0x51 };
 	static const uint8_t AND_OR_MOV_LDMXCSR[] = { 0x25, 0x00, 0x60, 0x00, 0x00, 0x0D, 0xC0, 0x9F, 0x00, 0x00, 0x89, 0x44, 0x24, 0xF8, 0x0F, 0xAE, 0x54, 0x24, 0xF8 };
 	static const uint8_t ROL_RAX[] = { 0x48, 0xc1, 0xc0 };
-	static const uint8_t XOR_ECX_ECX[] = { 0x33, 0xC9 };
+	static const uint8_t XOR_RCX_RCX[] = { 0x48, 0x33, 0xC9 };
 	static const uint8_t REX_CMP_R32I[] = { 0x41, 0x81 };
 	static const uint8_t REX_CMP_M32I[] = { 0x81, 0x3c, 0x06 };
 	static const uint8_t MOVAPD[] = { 0x66, 0x0f, 0x29 };
@@ -184,6 +200,18 @@ namespace RandomX {
 	static const uint8_t REX_ADD_I[] = { 0x49, 0x81 };
 	static const uint8_t REX_TEST[] = { 0x49, 0xF7 };
 	static const uint8_t JZ[] = { 0x0f, 0x84 };
+	static const uint8_t RET = 0xc3;
+
+	static const uint8_t NOP1[] = { 0x90 };
+	static const uint8_t NOP2[] = { 0x66, 0x90 };
+	static const uint8_t NOP3[] = { 0x66, 0x66, 0x90 };
+	static const uint8_t NOP4[] = { 0x0F, 0x1F, 0x40, 0x00 };
+	static const uint8_t NOP5[] = { 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+	static const uint8_t NOP6[] = { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 };
+	static const uint8_t NOP7[] = { 0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00 };
+	static const uint8_t NOP8[] = { 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+	static const uint8_t* NOPX[] = { NOP1, NOP2, NOP3, NOP4, NOP5, NOP6, NOP7, NOP8 };
 
 	size_t JitCompilerX86::getCodeSize() {
 		return codePos - prologueSize;
@@ -196,6 +224,10 @@ namespace RandomX {
 		memcpy(code + readDatasetLightSubOffset, codeReadDatasetLightSub, readDatasetLightSubSize);
 	}
 
+	JitCompilerX86::~JitCompilerX86() {
+		freePagedMemory(code, CodeSize);
+	}
+
 	void JitCompilerX86::generateProgram(Program& prog) {
 		generateProgramPrologue(prog);
 		memcpy(code + codePos, codeReadDataset, readDatasetSize);
@@ -203,17 +235,65 @@ namespace RandomX {
 		generateProgramEpilogue(prog);
 	}
 
+	template<bool superscalar>
 	void JitCompilerX86::generateProgramLight(Program& prog) {
 		if (RANDOMX_CACHE_ACCESSES != 8)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
 		if (RANDOMX_ARGON_GROWTH != 0)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
 		generateProgramPrologue(prog);
-		memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
-		codePos += readDatasetLightSize;
-		emitByte(CALL);
-		emit32(readDatasetLightSubOffset - (codePos + 4));
+		if (superscalar) {
+			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
+			emitByte(CALL);
+			emit32(superScalarHashOffset - (codePos + 4));
+			emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
+		}
+		else {
+			memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
+			codePos += readDatasetLightSize;
+			emitByte(CALL);
+			emit32(readDatasetLightSubOffset - (codePos + 4));
+		}
 		generateProgramEpilogue(prog);
+	}
+
+	template void JitCompilerX86::generateProgramLight<true>(Program& prog);
+	template void JitCompilerX86::generateProgramLight<false>(Program& prog);
+
+	template<size_t N>
+	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[N]) {
+		memcpy(code + superScalarHashOffset, codeShhInit, codeSshInitSize);
+		codePos = superScalarHashOffset + codeSshInitSize;
+		for (unsigned j = 0; j < N; ++j) {
+			SuperscalarProgram& prog = programs[j];
+			for (unsigned i = 0; i < prog.getSize(); ++i) {
+				Instruction& instr = prog(i);
+				instr.src %= RegistersCount;
+				instr.dst %= RegistersCount;
+				generateCode<SuperscalarProgram>(instr, i);
+			}
+			emit(codeShhLoad, codeSshLoadSize);
+			if (j < N - 1) {
+				emit(REX_MOV_RR64);
+				emitByte(0xd8 + prog.getAddressRegister());
+				emit(codeShhPrefetch, codeSshPrefetchSize);
+				int align = (codePos % 16);
+				while (align != 0) {
+					int nopSize = 16 - align;
+					if (nopSize > 8) nopSize = 8;
+					emit(NOPX[nopSize - 1], nopSize);
+					align = (codePos % 16);
+				}
+			}
+		}
+		emitByte(RET);
+	}
+
+	template
+	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+
+	void JitCompilerX86::generateDatasetInitCode() {
+		memcpy(code, codeDatasetInit, datasetInitSize);
 	}
 
 	void JitCompilerX86::generateProgramPrologue(Program& prog) {
@@ -238,12 +318,7 @@ namespace RandomX {
 		emitByte(0xc0 + readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			Instruction& instr = prog(i);
-			instr.src %= RegistersCount;
-			instr.dst %= RegistersCount;
-			generateCode(instr, i);
-		}
+		generateCode(prog);
 		emit(REX_MOV_RR);
 		emitByte(0xc0 + readReg2);
 		emit(REX_XOR_EAX);
@@ -258,9 +333,9 @@ namespace RandomX {
 		emit32(prologueSize - codePos - 4);
 		emitByte(JMP);
 		emit32(epilogueOffset - codePos - 4);
-		emitByte(0x90);
 	}
 
+	template<class P>
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
 #ifdef RANDOMX_JUMP
 		instructionOffsets.push_back(codePos);
@@ -268,6 +343,95 @@ namespace RandomX {
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
+
+	template<>
+	void JitCompilerX86::generateCode<SuperscalarProgram>(Instruction& instr, int i) {
+		switch (instr.opcode)
+		{
+		case RandomX::SuperscalarInstructionType::ISUB_R:
+			emit(REX_SUB_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::SuperscalarInstructionType::IXOR_R:
+			emit(REX_XOR_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::SuperscalarInstructionType::IADD_RS:
+			emit(REX_LEA);
+			emitByte(0x04 + 8 * instr.dst);
+			genSIB(instr.mod % 4, instr.src, instr.dst);
+			break;
+		case RandomX::SuperscalarInstructionType::IMUL_R:
+			emit(REX_IMUL_RR);
+			emitByte(0xc0 + 8 * instr.dst + instr.src);
+			break;
+		case RandomX::SuperscalarInstructionType::IROR_C:
+			emit(REX_ROT_I8);
+			emitByte(0xc8 + instr.dst);
+			emitByte(instr.getImm32() & 63);
+			break;
+		case RandomX::SuperscalarInstructionType::IADD_C7:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			break;
+		case RandomX::SuperscalarInstructionType::IXOR_C7:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			break;
+		case RandomX::SuperscalarInstructionType::IADD_C8:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP1);
+			break;
+		case RandomX::SuperscalarInstructionType::IXOR_C8:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP1);
+			break;
+		case RandomX::SuperscalarInstructionType::IADD_C9:
+			emit(REX_81);
+			emitByte(0xc0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP2);
+			break;
+		case RandomX::SuperscalarInstructionType::IXOR_C9:
+			emit(REX_XOR_RI);
+			emitByte(0xf0 + instr.dst);
+			emit32(instr.getImm32());
+			emit(NOP2);
+			break;
+		case RandomX::SuperscalarInstructionType::IMULH_R:
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe0 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+			break;
+		case RandomX::SuperscalarInstructionType::ISMULH_R:
+			emit(REX_MOV_RR64);
+			emitByte(0xc0 + instr.dst);
+			emit(REX_MUL_R);
+			emitByte(0xe8 + instr.src);
+			emit(REX_MOV_R64R);
+			emitByte(0xc2 + 8 * instr.dst);
+			break;
+		case RandomX::SuperscalarInstructionType::IMUL_RCP:
+			emit(MOV_RAX_I);
+			emit64(reciprocal(instr.getImm32()));
+			emit(REX_IMUL_RM);
+			emitByte(0xc0 + 8 * instr.dst);
+			break;
+		default:
+			UNREACHABLE;
+		}
+	}
+
+	template void JitCompilerX86::generateCode<Program>(Instruction& instr, int i);
 
 	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
 		emit(REX_MOV_RR);
@@ -292,9 +456,9 @@ namespace RandomX {
 		emit32(instr.getImm32() & ScratchpadL3Mask);
 	}
 
-	void JitCompilerX86::h_IADD_R(Instruction& instr, int i) {
+	void JitCompilerX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		if (instr.src != instr.dst) {
+		/*if (instr.src != instr.dst) {
 			emit(REX_ADD_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
@@ -302,7 +466,19 @@ namespace RandomX {
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
+		}*/
+		if (false && NOP_TEST) {
+			emit(NOP4);
+			return;
 		}
+		emit(REX_LEA);
+		if (instr.dst == 5) //rbp,r13 cannot be the base register without offset
+			emitByte(0xac);
+		else
+			emitByte(0x04 + 8 * instr.dst);
+		genSIB(instr.mod % 4, instr.src, instr.dst);
+		if (instr.dst == 5)
+			emit32(instr.getImm32());
 	}
 
 	void JitCompilerX86::h_IADD_M(Instruction& instr, int i) {
@@ -335,10 +511,18 @@ namespace RandomX {
 	void JitCompilerX86::h_ISUB_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
+			if (false && NOP_TEST) {
+				emit(NOP3);
+				return;
+			}
 			emit(REX_SUB_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
+			if (false && NOP_TEST) {
+				emit(NOP7);
+				return;
+			}
 			emit(REX_81);
 			emitByte(0xe8 + instr.dst);
 			emit32(instr.getImm32());
@@ -371,10 +555,18 @@ namespace RandomX {
 	void JitCompilerX86::h_IMUL_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
+			if (false && NOP_TEST) {
+				emit(NOP4);
+				return;
+			}
 			emit(REX_IMUL_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
+			if (false && NOP_TEST) {
+				emit(NOP7);
+				return;
+			}
 			emit(REX_IMUL_RRI);
 			emitByte(0xc0 + 9 * instr.dst);
 			emit32(instr.getImm32());
@@ -398,6 +590,12 @@ namespace RandomX {
 
 	void JitCompilerX86::h_IMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
+		if (false && NOP_TEST) {
+			emit(NOP3);
+			emit(NOP3);
+			emit(NOP3);
+			return;
+		}
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -427,6 +625,12 @@ namespace RandomX {
 
 	void JitCompilerX86::h_ISMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
+		if (false && NOP_TEST) {
+			emit(NOP3);
+			emit(NOP3);
+			emit(NOP3);
+			return;
+		}
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -456,6 +660,13 @@ namespace RandomX {
 
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
 		if (instr.getImm32() != 0) {
+			if (false && NOP_TEST) {
+				emitByte(0x66);
+				emitByte(0x66);
+				emit(NOP8);
+				emit(NOP4);
+				return;
+			}
 			registerUsage[instr.dst] = i;
 			emit(MOV_RAX_I);
 			emit64(reciprocal(instr.getImm32()));
@@ -477,10 +688,18 @@ namespace RandomX {
 	void JitCompilerX86::h_IXOR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
+			if (false && NOP_TEST) {
+				emit(NOP3);
+				return;
+			}
 			emit(REX_XOR_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
+			if (false && NOP_TEST) {
+				emit(NOP7);
+				return;
+			}
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
@@ -505,12 +724,21 @@ namespace RandomX {
 	void JitCompilerX86::h_IROR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
+			if (false && NOP_TEST) {
+				emit(NOP3);
+				emit(NOP3);
+				return;
+			}
 			emit(REX_MOV_RR);
 			emitByte(0xc8 + instr.src);
 			emit(REX_ROT_CL);
 			emitByte(0xc8 + instr.dst);
 		}
 		else {
+			if (false && NOP_TEST) {
+				emit(NOP4);
+				return;
+			}
 			emit(REX_ROT_I8);
 			emitByte(0xc8 + instr.dst);
 			emitByte(instr.getImm32() & 63);
@@ -705,14 +933,21 @@ namespace RandomX {
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
-		emit(REX_ADD_I);
-		emitByte(0xc0 + reg);
-		emit32(1 << shift);
-		emit(REX_TEST);
-		emitByte(0xc0 + reg);
-		emit32(conditionMask);
-		emit(JZ);
-		emit32(instructionOffsets[target] - (codePos + 4));
+		if (false && NOP_TEST) {
+			emit(NOP7);
+			emit(NOP7);
+			emit(NOP6);
+		}
+		else {
+			emit(REX_ADD_I);
+			emitByte(0xc0 + reg);
+			emit32(1 << shift);
+			emit(REX_TEST);
+			emitByte(0xc0 + reg);
+			emit32(conditionMask);
+			emit(JZ);
+			emit32(instructionOffsets[target] - (codePos + 4));
+		}
 		for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
 			registerUsage[j] = i;
 		}
@@ -722,7 +957,14 @@ namespace RandomX {
 #ifdef RANDOMX_JUMP
 		handleCondition(instr, i);
 #endif
-		emit(XOR_ECX_ECX);
+		if (false && NOP_TEST) {
+			emit(NOP3);
+			emit(NOP7);
+			emit(NOP3);
+			emit(NOP3);
+			return;
+		}
+		emit(XOR_RCX_RCX);
 		emit(REX_CMP_R32I);
 		emitByte(0xf8 + instr.src);
 		emit32(instr.getImm32());
@@ -737,7 +979,7 @@ namespace RandomX {
 #ifdef RANDOMX_JUMP
 		handleCondition(instr, i);
 #endif
-		emit(XOR_ECX_ECX);
+		emit(XOR_RCX_RCX);
 		genAddressReg(instr);
 		emit(REX_CMP_M32I);
 		emit32(instr.getImm32());
@@ -770,7 +1012,7 @@ namespace RandomX {
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
 	InstructionGeneratorX86 JitCompilerX86::engine[256] = {
-		INST_HANDLE(IADD_R)
+		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
 		INST_HANDLE(IADD_RC)
 		INST_HANDLE(ISUB_R)

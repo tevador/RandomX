@@ -22,7 +22,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "InterpretedVirtualMachine.hpp"
 #include "dataset.hpp"
 #include "Cache.hpp"
-#include "LightClientAsyncWorker.hpp"
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -36,6 +35,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #ifdef STATS
 #include <algorithm>
 #endif
+#include "superscalarGenerator.hpp"
 
 #ifdef FPUCHECK
 constexpr bool fpuCheck = true;
@@ -45,17 +45,20 @@ constexpr bool fpuCheck = false;
 
 namespace RandomX {
 
-	InterpretedVirtualMachine::~InterpretedVirtualMachine() {
-
-	}
-
-	void InterpretedVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
 		mem.ds = ds;
 		readDataset = &datasetReadLight;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		if(superscalar)
+			precompileSuperscalar(programs);
 	}
 
-	void InterpretedVirtualMachine::initialize() {
+	template void InterpretedVirtualMachine<true>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	template void InterpretedVirtualMachine<false>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::initialize() {
 		VirtualMachine::initialize();
 		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			program(i).src %= RegistersCount;
@@ -63,11 +66,18 @@ namespace RandomX {
 		}
 	}
 
-	void InterpretedVirtualMachine::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+	template void InterpretedVirtualMachine<true>::initialize();
+	template void InterpretedVirtualMachine<false>::initialize();
+
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		for (int ic = 0; ic < RANDOMX_PROGRAM_SIZE; ++ic) {
 			executeBytecode(ic, r, f, e, a);
 		}
 	}
+
+	template void InterpretedVirtualMachine<true>::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+	template void InterpretedVirtualMachine<false>::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 
 	static void print(int_reg_t r) {
 		std::cout << std::hex << std::setw(16) << std::setfill('0') << r << std::endl;
@@ -98,14 +108,15 @@ namespace RandomX {
 		return std::fpclassify(x) == FP_SUBNORMAL;
 	}
 
-	FORCE_INLINE void InterpretedVirtualMachine::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+	 template<bool superscalar>
+	 FORCE_INLINE void InterpretedVirtualMachine<superscalar>::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[ic];
 		if (trace) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
 		//if(trace) printState(r, f, e, a);
 		switch (ibc.type)
 		{
-			case InstructionType::IADD_R: {
-				*ibc.idst += *ibc.isrc;
+			case InstructionType::IADD_RS: {
+				*ibc.idst += (*ibc.isrc << ibc.shift) + ibc.imm;
 			} break;
 
 			case InstructionType::IADD_M: {
@@ -289,7 +300,8 @@ namespace RandomX {
 #endif
 	}
 
-	void InterpretedVirtualMachine::execute() {
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::execute() {
 		int_reg_t r[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 		__m128d f[4];
 		__m128d e[4];
@@ -350,11 +362,16 @@ namespace RandomX {
 
 			mem.mx ^= r[readReg2] ^ r[readReg3];
 			mem.mx &= CacheLineAlignMask;
-			Cache& cache = mem.ds.cache;
-			uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-			initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
-			for (int i = 0; i < RegistersCount; ++i)
-				r[i] ^= datasetLine[i];
+			if (superscalar) {
+				executeSuperscalar(datasetBase + mem.ma / CacheLineSize, r);
+			}
+			else {
+				Cache& cache = mem.ds.cache;
+				uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
+				initBlock(cache, (uint8_t*)datasetLine, datasetBase + mem.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
+				for (int i = 0; i < RegistersCount; ++i)
+					r[i] ^= datasetLine[i];
+			}
 			std::swap(mem.mx, mem.ma);
 
 			if (trace) {
@@ -419,6 +436,9 @@ namespace RandomX {
 		_mm_store_pd(&reg.e[3].lo, e[3]);
 	}
 
+	template void InterpretedVirtualMachine<true>::execute();
+	template void InterpretedVirtualMachine<false>::execute();
+
 	static int getConditionRegister(int(&registerUsage)[8]) {
 		int min = INT_MAX;
 		int minIndex;
@@ -431,9 +451,127 @@ namespace RandomX {
 		return minIndex;
 	}
 
+	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;
+	constexpr uint64_t superscalarAdd1 = 9298410992540426748ULL;
+	constexpr uint64_t superscalarAdd2 = 12065312585734608966ULL;
+	constexpr uint64_t superscalarAdd3 = 9306329213124610396ULL;
+	constexpr uint64_t superscalarAdd4 = 5281919268842080866ULL;
+	constexpr uint64_t superscalarAdd5 = 10536153434571861004ULL;
+	constexpr uint64_t superscalarAdd6 = 3398623926847679864ULL;
+	constexpr uint64_t superscalarAdd7 = 9549104520008361294ULL;
+
+	static uint8_t* getMixBlock(uint64_t registerValue, Cache& cache) {
+		uint8_t* mixBlock;
+		if (RANDOMX_ARGON_GROWTH == 0) {
+			constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
+			mixBlock = cache.memory + (registerValue & mask) * CacheLineSize;
+		}
+		else {
+			const uint32_t modulus = cache.size / CacheLineSize;
+			mixBlock = cache.memory + (registerValue % modulus) * CacheLineSize;
+		}
+		return mixBlock;
+	}
+
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t>& reciprocals) {
+		for (unsigned j = 0; j < prog.getSize(); ++j) {
+			Instruction& instr = prog(j);
+			switch (instr.opcode)
+			{
+			case RandomX::SuperscalarInstructionType::ISUB_R:
+				r[instr.dst] -= r[instr.src];
+				break;
+			case RandomX::SuperscalarInstructionType::IXOR_R:
+				r[instr.dst] ^= r[instr.src];
+				break;
+			case RandomX::SuperscalarInstructionType::IADD_RS:
+				r[instr.dst] += r[instr.src] << (instr.mod % 4);
+				break;
+			case RandomX::SuperscalarInstructionType::IMUL_R:
+				r[instr.dst] *= r[instr.src];
+				break;
+			case RandomX::SuperscalarInstructionType::IROR_C:
+				r[instr.dst] = rotr(r[instr.dst], instr.getImm32());
+				break;
+			case RandomX::SuperscalarInstructionType::IADD_C7:
+			case RandomX::SuperscalarInstructionType::IADD_C8:
+			case RandomX::SuperscalarInstructionType::IADD_C9:
+				r[instr.dst] += signExtend2sCompl(instr.getImm32());
+				break;
+			case RandomX::SuperscalarInstructionType::IXOR_C7:
+			case RandomX::SuperscalarInstructionType::IXOR_C8:
+			case RandomX::SuperscalarInstructionType::IXOR_C9:
+				r[instr.dst] ^= signExtend2sCompl(instr.getImm32());
+				break;
+			case RandomX::SuperscalarInstructionType::IMULH_R:
+				r[instr.dst] = mulh(r[instr.dst], r[instr.src]);
+				break;
+			case RandomX::SuperscalarInstructionType::ISMULH_R:
+				r[instr.dst] = smulh(r[instr.dst], r[instr.src]);
+				break;
+			case RandomX::SuperscalarInstructionType::IMUL_RCP:
+				if(superscalar)
+					r[instr.dst] *= reciprocals[instr.getImm32()];
+				else
+					r[instr.dst] *= reciprocal(instr.getImm32());
+				break;
+			default:
+				UNREACHABLE;
+			}
+		}
+	}
+
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]) {
+		int_reg_t rl[8];
+		uint8_t* mixBlock;
+		uint64_t registerValue = blockNumber;
+		rl[0] = (blockNumber + 1) * superscalarMul0;
+		rl[1] = rl[0] ^ superscalarAdd1;
+		rl[2] = rl[0] ^ superscalarAdd2;
+		rl[3] = rl[0] ^ superscalarAdd3;
+		rl[4] = rl[0] ^ superscalarAdd4;
+		rl[5] = rl[0] ^ superscalarAdd5;
+		rl[6] = rl[0] ^ superscalarAdd6;
+		rl[7] = rl[0] ^ superscalarAdd7;
+		Cache& cache = mem.ds.cache;
+		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+			mixBlock = getMixBlock(registerValue, cache);
+			SuperscalarProgram& prog = superScalarPrograms[i];
+			
+			executeSuperscalar(rl, prog, reciprocals);
+
+			for(unsigned q = 0; q < 8; ++q)
+				rl[q] ^= load64(mixBlock + 8 * q);
+
+			registerValue = rl[prog.getAddressRegister()];
+		}
+
+		for (unsigned q = 0; q < 8; ++q)
+			r[q] ^= rl[q];
+	}
+
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::precompileSuperscalar(SuperscalarProgram* programs) {
+		memcpy(superScalarPrograms, programs, sizeof(superScalarPrograms));
+		reciprocals.clear();
+		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+			for (unsigned j = 0; j < superScalarPrograms[i].getSize(); ++j) {
+				Instruction& instr = superScalarPrograms[i](j);
+				if (instr.opcode == SuperscalarInstructionType::IMUL_RCP) {
+					auto rcp = reciprocal(instr.getImm32());
+					instr.setImm32(reciprocals.size());
+					reciprocals.push_back(rcp);
+				}	
+			}
+		}
+	}
+
 #include "instructionWeights.hpp"
 
-	void InterpretedVirtualMachine::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
+	template<bool superscalar>
+	void InterpretedVirtualMachine<superscalar>::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		int registerUsage[8];
 		for (unsigned i = 0; i < 8; ++i) {
 			registerUsage[i] = -1;
@@ -442,17 +580,20 @@ namespace RandomX {
 			auto& instr = program(i);
 			auto& ibc = byteCode[i];
 			switch (instr.opcode) {
-				CASE_REP(IADD_R) {
+				CASE_REP(IADD_RS) {
 					auto dst = instr.dst % RegistersCount;
 					auto src = instr.src % RegistersCount;
-					ibc.type = InstructionType::IADD_R;
+					ibc.type = InstructionType::IADD_RS;
 					ibc.idst = &r[dst];
-					if (src != dst) {
+					if (dst != 5) {
 						ibc.isrc = &r[src];
+						ibc.shift = instr.mod % 4;
+						ibc.imm = 0;
 					}
 					else {
+						ibc.isrc = &r[src];
+						ibc.shift = instr.mod % 4;
 						ibc.imm = signExtend2sCompl(instr.getImm32());
-						ibc.isrc = &ibc.imm;
 					}
 					registerUsage[instr.dst] = i;
 				} break;

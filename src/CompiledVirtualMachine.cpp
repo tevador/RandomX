@@ -29,7 +29,7 @@ namespace RandomX {
 	CompiledVirtualMachine::CompiledVirtualMachine() {
 	}
 
-	void CompiledVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
+	void CompiledVirtualMachine::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
 		mem.ds = ds;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
 		datasetBasePtr = ds.dataset.memory;

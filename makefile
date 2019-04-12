@@ -9,7 +9,7 @@ OBJDIR=obj
 LDFLAGS=-lpthread
 CPPSRC=src/argon2_core.c src/Cache.cpp src/divideByConstantCodegen.c src/Instruction.cpp src/JitCompilerX86.cpp src/Program.cpp src/VirtualMachine.cpp src/argon2_ref.c src/CompiledVirtualMachine.cpp src/executeProgram-linux.cpp src/instructionsPortable.cpp src/LightClientAsyncWorker.cpp src/softAes.cpp src/virtualMemory.cpp src/AssemblyGeneratorX86.cpp  src/dataset.cpp src/hashAes1Rx4.cpp src/InterpretedVirtualMachine.cpp src/main.cpp src/TestAluFpu.cpp src/blake2/blake2b.c
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o CompiledLightVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o Program.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o LightClientAsyncWorker.o hashAes1Rx4.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o CompiledLightVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o LightClientAsyncWorker.o hashAes1Rx4.o LightProgramGenerator.o)
 ifeq ($(PLATFORM),amd64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
     CXXFLAGS += -maes
@@ -99,6 +99,9 @@ $(OBJDIR)/InterpretedVirtualMachine.o: $(addprefix $(SRCDIR)/,InterpretedVirtual
 
 $(OBJDIR)/LightClientAsyncWorker.o: $(addprefix $(SRCDIR)/,LightClientAsyncWorker.cpp LightClientAsyncWorker.hpp common.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/LightClientAsyncWorker.cpp -o $@
+
+$(OBJDIR)/LightProgramGenerator.o: $(addprefix $(SRCDIR)/,LightProgramGenerator.cpp LightProgramGenerator.hpp Program.hpp blake2/blake2.h blake2/endian.h configuration.h) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/LightProgramGenerator.cpp -o $@
   
 $(OBJDIR)/main.o: $(addprefix $(SRCDIR)/,main.cpp InterpretedVirtualMachine.hpp Stopwatch.hpp blake2/blake2.h VirtualMachine.hpp common.hpp blake2/endian.h Program.hpp Instruction.hpp intrinPortable.h CompiledVirtualMachine.hpp JitCompilerX86.hpp AssemblyGeneratorX86.hpp dataset.hpp Cache.hpp virtualMemory.hpp hashAes1Rx4.hpp softAes.h configuration.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/main.cpp -o $@

@@ -34,7 +34,7 @@ namespace RandomX {
 			return (uint8_t*)allocLargePagesMemory(size);
 		}
 		else {
-			void* ptr = _mm_malloc(size, sizeof(__m128i));
+			void* ptr = _mm_malloc(size, CacheLineSize);
 			if (ptr == nullptr)
 				throw std::bad_alloc();
 			return (uint8_t*)ptr;

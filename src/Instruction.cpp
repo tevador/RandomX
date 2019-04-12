@@ -40,9 +40,9 @@ namespace RandomX {
 		os << "L3" << "[" << (getImm32() & ScratchpadL3Mask) << "]";
 	}
 
-	void Instruction::h_IADD_R(std::ostream& os) const {
+	void Instruction::h_IADD_RS(std::ostream& os) const {
 		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+			os << "r" << (int)dst << ", r" << (int)src << ", LSH " << (int)(mod % 4) << std::endl;
 		}
 		else {
 			os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
@@ -302,13 +302,13 @@ namespace RandomX {
 	}
 
 	void Instruction::h_COND_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)getImm32() << "), " << (int)(mod >> 5) << std::endl;
+		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)getImm32() << "), LSH " << (int)(mod >> 5) << std::endl;
 	}
 
 	void Instruction::h_COND_M(std::ostream& os) const {
 		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(";
 		genAddressReg(os);
-		os << ", " << (int32_t)getImm32() << "), " << (int)(mod >> 5) << std::endl;
+		os << ", " << (int32_t)getImm32() << "), LSH " << (int)(mod >> 5) << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {
@@ -333,7 +333,7 @@ namespace RandomX {
 
 	const char* Instruction::names[256] = {
 		//Integer
-		INST_NAME(IADD_R)
+		INST_NAME(IADD_RS)
 		INST_NAME(IADD_M)
 		INST_NAME(IADD_RC)
 		INST_NAME(ISUB_R)
@@ -379,7 +379,7 @@ namespace RandomX {
 
 	InstructionVisualizer Instruction::engine[256] = {
 		//Integer
-		INST_HANDLE(IADD_R)
+		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
 		INST_HANDLE(IADD_RC)
 		INST_HANDLE(ISUB_R)

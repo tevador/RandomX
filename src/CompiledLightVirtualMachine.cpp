@@ -23,18 +23,25 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
-	CompiledLightVirtualMachine::CompiledLightVirtualMachine() {
-	}
-
-	void CompiledLightVirtualMachine::setDataset(dataset_t ds, uint64_t size) {
+	template<bool superscalar>
+	void CompiledLightVirtualMachine<superscalar>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
 		mem.ds = ds;
 		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		if(superscalar)
+			compiler.generateSuperScalarHash(programs);
 		//datasetBasePtr = ds.dataset.memory;
 	}
 
-	void CompiledLightVirtualMachine::initialize() {
+	template void CompiledLightVirtualMachine<true>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	template void CompiledLightVirtualMachine<false>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+
+	template<bool superscalar>
+	void CompiledLightVirtualMachine<superscalar>::initialize() {
 		VirtualMachine::initialize();
-		compiler.generateProgramLight(program);
+		compiler.generateProgramLight<superscalar>(program);
 		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
+
+	template void CompiledLightVirtualMachine<true>::initialize();
+	template void CompiledLightVirtualMachine<false>::initialize();
 }

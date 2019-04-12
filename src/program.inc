@@ -1,3 +1,5 @@
+	mov ebx, 111          ; Start marker bytes
+	db 064h, 067h, 090h   ; Start marker bytes
 randomx_isn_0:
 	; IROR_R r3, 30
 	ror r11, 30
@@ -1001,3 +1003,5 @@ randomx_isn_255:
 	; IROR_R r7, r3
 	mov ecx, r11d
 	ror r15, cl
+	mov ebx, 222          ; End marker bytes
+	db 064h, 067h, 090h   ; End marker bytes

@@ -36,6 +36,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "Cache.hpp"
 #include "hashAes1Rx4.hpp"
+#include "superscalarGenerator.hpp"
+#include "JitCompilerX86.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -176,7 +178,6 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 		fillAes1Rx4<softAes>((void*)hash, RANDOMX_SCRATCHPAD_L3, scratchpad);
 		vm->resetRoundingMode();
 		vm->setScratchpad(scratchpad);
-		//dump((char*)scratchpad, RandomX::ScratchpadSize, "spad-before.txt");
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
 			vm->initialize();
@@ -193,6 +194,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 			}
 		}*/
 		vm->getResult<softAes>(scratchpad, RANDOMX_SCRATCHPAD_L3, hash);
+		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad.txt");
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";
@@ -203,8 +205,10 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 	}
 }
 
+
+
 int main(int argc, char** argv) {
-	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit;
+	bool softAes, genAsm, miningMode, verificationMode, help, largePages, async, genNative, jit, genSuperscalar, legacy;
 	int programCount, threadCount, initThreadCount, epoch;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -219,6 +223,19 @@ int main(int argc, char** argv) {
 	readOption("--jit", argc, argv, jit);
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--help", argc, argv, help);
+	readOption("--genSuperscalar", argc, argv, genSuperscalar);
+	readOption("--legacy", argc, argv, legacy);
+
+	if (genSuperscalar) {
+		RandomX::SuperscalarProgram p;
+		RandomX::Blake2Generator gen(seed, programCount);
+		RandomX::generateSuperscalar(p, gen);
+		RandomX::AssemblyGeneratorX86 asmX86;
+		asmX86.generateAsm(p);
+		//std::ofstream file("lightProg2.asm");
+		asmX86.printCode(std::cout);
+		return 0;
+	}
 
 	if (genAsm) {
 		if (softAes)
@@ -252,6 +269,7 @@ int main(int argc, char** argv) {
 	const uint64_t cacheSize = (RANDOMX_ARGON_MEMORY + RANDOMX_ARGON_GROWTH * epoch) * RandomX::ArgonBlockSize;
 	const uint64_t datasetSize = (RANDOMX_DATASET_SIZE + RANDOMX_DS_GROWTH * epoch);
 	dataset.cache.size = cacheSize;
+	RandomX::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 
 	std::cout << "RandomX - " << (miningMode ? "mining" : "verification") << " mode" << std::endl;
 
@@ -268,6 +286,12 @@ int main(int argc, char** argv) {
 			outputHex(std::cout, (char*)dataset.cache.memory, sizeof(__m128i));
 			std::cout << std::endl;
 		}
+		if (!legacy) {
+			RandomX::Blake2Generator gen(seed, programCount);
+			for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+				RandomX::generateSuperscalar(programs[i], gen);
+			}
+		}
 		if (!miningMode) {
 			std::cout << "Cache (" << cacheSize << " bytes) initialized in " << sw.getElapsed() << " s" << std::endl;
 		}
@@ -276,19 +300,27 @@ int main(int argc, char** argv) {
 			dataset.dataset.size = datasetSize;
 			RandomX::datasetAlloc(dataset, largePages);
 			const uint64_t datasetBlockCount = datasetSize / RandomX::CacheLineSize;
-			if (initThreadCount > 1) {
-				auto perThread = datasetBlockCount / initThreadCount;
-				auto remainder = datasetBlockCount % initThreadCount;
-				for (int i = 0; i < initThreadCount; ++i) {
-					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-					threads.push_back(std::thread(&RandomX::datasetInit, std::ref(cache), std::ref(dataset.dataset), i * perThread, count));
-				}
-				for (unsigned i = 0; i < threads.size(); ++i) {
-					threads[i].join();
-				}
+			if (!legacy) {
+				RandomX::JitCompilerX86 jit86;
+				jit86.generateSuperScalarHash(programs);
+				jit86.getDatasetInitFunc()(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
+			//dump((const char*)dataset.dataset.memory, RANDOMX_DATASET_SIZE, "dataset.dat");
 			}
 			else {
-				RandomX::datasetInit(cache, dataset.dataset, 0, datasetBlockCount);
+				if (initThreadCount > 1) {
+					auto perThread = datasetBlockCount / initThreadCount;
+					auto remainder = datasetBlockCount % initThreadCount;
+					for (int i = 0; i < initThreadCount; ++i) {
+						auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+						threads.push_back(std::thread(&RandomX::datasetInit, std::ref(cache), std::ref(dataset.dataset), i * perThread, count));
+					}
+					for (unsigned i = 0; i < threads.size(); ++i) {
+						threads[i].join();
+					}
+				}
+				else {
+					RandomX::datasetInit(cache, dataset.dataset, 0, datasetBlockCount);
+				}
 			}
 			RandomX::deallocCache(cache, largePages);
 			threads.clear();
@@ -301,12 +333,16 @@ int main(int argc, char** argv) {
 				vm = new RandomX::CompiledVirtualMachine();
 			}
 			else {
-				if (jit)
-					vm = new RandomX::CompiledLightVirtualMachine();
+				if (jit && !legacy)
+					vm = new RandomX::CompiledLightVirtualMachine<true>();
+				else if (jit)
+					vm = new RandomX::CompiledLightVirtualMachine<false>();
+				else if (!legacy)
+					vm = new RandomX::InterpretedVirtualMachine<true>(softAes);
 				else
-					vm = new RandomX::InterpretedVirtualMachine(softAes);
+					vm = new RandomX::InterpretedVirtualMachine<false>(softAes);
 			}
-			vm->setDataset(dataset, datasetSize);
+			vm->setDataset(dataset, datasetSize, programs);
 			vms.push_back(vm);
 		}
 		uint8_t* scratchpadMem;
@@ -340,8 +376,8 @@ int main(int argc, char** argv) {
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
-		if(programCount == 1000)
-		std::cout << "Reference result:  83875c55fb9ff4a75205a744b82926ebbe23219c6291889c9ee91603c845c597" << std::endl;
+		if(!legacy && programCount == 1000)
+		std::cout << "Reference result:  4a74a376d490c8b41d42887e86d4addb5a95572e0c663d1e81aec928e4e094e1" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / programCount << " ms per hash" << std::endl;
 		}

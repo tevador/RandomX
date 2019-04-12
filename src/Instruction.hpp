@@ -30,7 +30,7 @@ namespace RandomX {
 	typedef void(Instruction::*InstructionVisualizer)(std::ostream&) const;
 
 	namespace InstructionType {
-		constexpr int IADD_R = 0;
+		constexpr int IADD_RS = 0;
 		constexpr int IADD_M = 1;
 		constexpr int IADD_RC = 2;
 		constexpr int ISUB_R = 3;
@@ -78,6 +78,9 @@ namespace RandomX {
 		uint32_t getImm32() const {
 			return load32(&imm32);
 		}
+		void setImm32(uint32_t val) {
+			return store32(&imm32, val);
+		}
 		const char* getName() const {
 			return names[opcode];
 		}
@@ -95,7 +98,7 @@ namespace RandomX {
 		void genAddressImm(std::ostream& os) const;
 		void genAddressRegDst(std::ostream&) const;
 
-		void  h_IADD_R(std::ostream&) const;
+		void  h_IADD_RS(std::ostream&) const;
 		void  h_IADD_M(std::ostream&) const;
 		void  h_IADD_RC(std::ostream&) const;
 		void  h_ISUB_R(std::ostream&) const;

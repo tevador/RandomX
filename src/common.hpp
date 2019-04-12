@@ -41,7 +41,7 @@ namespace RandomX {
 	static_assert((RANDOMX_SCRATCHPAD_L1 & (RANDOMX_SCRATCHPAD_L1 - 1)) == 0, "RANDOMX_SCRATCHPAD_L1 must be a power of 2.");
 	static_assert(RANDOMX_CACHE_ACCESSES > 1, "RANDOMX_CACHE_ACCESSES must be greater than 1");
 
-	constexpr int wtSum = RANDOMX_FREQ_IADD_R + RANDOMX_FREQ_IADD_M + RANDOMX_FREQ_IADD_RC + RANDOMX_FREQ_ISUB_R + \
+	constexpr int wtSum = RANDOMX_FREQ_IADD_RS + RANDOMX_FREQ_IADD_M + RANDOMX_FREQ_IADD_RC + RANDOMX_FREQ_ISUB_R + \
 		RANDOMX_FREQ_ISUB_M + RANDOMX_FREQ_IMUL_9C + RANDOMX_FREQ_IMUL_R + RANDOMX_FREQ_IMUL_M + RANDOMX_FREQ_IMULH_R + \
 		RANDOMX_FREQ_IMULH_M + RANDOMX_FREQ_ISMULH_R + RANDOMX_FREQ_ISMULH_M + RANDOMX_FREQ_IMUL_RCP + \
 		RANDOMX_FREQ_INEG_R + RANDOMX_FREQ_IXOR_R + RANDOMX_FREQ_IXOR_M + RANDOMX_FREQ_IROR_R + RANDOMX_FREQ_ISWAP_R + \
@@ -95,6 +95,7 @@ namespace RandomX {
 	constexpr int ScratchpadL3Mask = (ScratchpadL3 - 1) * 8;
 	constexpr int ScratchpadL3Mask64 = (ScratchpadL3 / 8 - 1) * 64;
 	constexpr int RegistersCount = 8;
+	constexpr int LimitedAddressRegister = 5; //x86 r13 register
 
 	struct Cache {
 		uint8_t* memory;
@@ -141,6 +142,7 @@ namespace RandomX {
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
 
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
+	typedef void(*DatasetInitFunc)(uint8_t* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 }
 
 std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf);

@@ -42,7 +42,7 @@ namespace RandomX {
 			_mm_free(ptr);
 		}
 		CompiledVirtualMachine();
-		void setDataset(dataset_t ds, uint64_t size) override;
+		void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
 		void initialize() override;
 		virtual void execute() override;
 		void* getProgram() {

@@ -27,6 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	class Program;
+	class SuperscalarProgram;
 	class JitCompilerX86;
 
 	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
@@ -36,10 +37,18 @@ namespace RandomX {
 	class JitCompilerX86 {
 	public:
 		JitCompilerX86();
+		~JitCompilerX86();
 		void generateProgram(Program&);
+		template<bool superscalar>
 		void generateProgramLight(Program&);
+		template<size_t N>
+		void generateSuperScalarHash(SuperscalarProgram (&programs)[N]);
 		ProgramFunc getProgramFunc() {
 			return (ProgramFunc)code;
+		}
+		DatasetInitFunc getDatasetInitFunc() {
+			generateDatasetInitCode();
+			return (DatasetInitFunc)code;
 		}
 		uint8_t* getCode() {
 			return code;
@@ -52,6 +61,18 @@ namespace RandomX {
 		uint8_t* code;
 		int32_t codePos;
 
+		template<class P>
+		void generateCode(P& prog) {
+			for (unsigned i = 0; i < prog.getSize(); ++i) {
+				Instruction& instr = prog(i);
+				instr.src %= RegistersCount;
+				instr.dst %= RegistersCount;
+				generateCode<P>(instr, i);
+			}
+		}
+
+		void generateDatasetInitCode();
+
 		void generateProgramPrologue(Program&);
 		void generateProgramEpilogue(Program&);
 		int getConditionRegister();
@@ -61,6 +82,8 @@ namespace RandomX {
 		void genSIB(int scale, int index, int base);
 
 		void handleCondition(Instruction&, int);
+
+		template<class P>
 		void generateCode(Instruction&, int);
 
 		void emitByte(uint8_t val) {
@@ -90,13 +113,15 @@ namespace RandomX {
 
 		template<size_t N>
 		void emit(const uint8_t (&src)[N]) {
-			for (unsigned i = 0; i < N; ++i) {
-				code[codePos + i] = src[i];
-			}
-			codePos += N;
+			emit(src, N);
 		}
 
-		void  h_IADD_R(Instruction&, int);
+		void emit(const uint8_t* src, size_t count) {
+			memcpy(code + codePos, src, count);
+			codePos += count;
+		}
+
+		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);
 		void  h_ISUB_R(Instruction&, int);

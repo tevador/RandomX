@@ -20,18 +20,23 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "Instruction.hpp"
+#include "configuration.h"
+#include "common.hpp"
 #include <sstream>
 
 namespace RandomX {
 
 	class Program;
+	class SuperscalarProgram;
 	class AssemblyGeneratorX86;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
 
 	class AssemblyGeneratorX86 {
 	public:
-		void generateProgram(Program&);
+		void generateProgram(Program& prog);
+		void generateAsm(SuperscalarProgram& prog);
+		void generateC(SuperscalarProgram& prog);
 		void printCode(std::ostream& os) {
 			os << asmCode.rdbuf();
 		}
@@ -52,7 +57,7 @@ namespace RandomX {
 		void traceflt(Instruction&);
 		void tracenop(Instruction&);
 
-		void  h_IADD_R(Instruction&, int);
+		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);
 		void  h_ISUB_R(Instruction&, int);
