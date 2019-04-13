@@ -303,8 +303,26 @@ int main(int argc, char** argv) {
 			if (!legacy) {
 				RandomX::JitCompilerX86 jit86;
 				jit86.generateSuperScalarHash(programs);
-				jit86.getDatasetInitFunc()(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
-			//dump((const char*)dataset.dataset.memory, RANDOMX_DATASET_SIZE, "dataset.dat");
+				RandomX::DatasetInitFunc dsfunc = jit86.getDatasetInitFunc();
+				if (initThreadCount > 1) {
+					auto perThread = datasetBlockCount / initThreadCount;
+					auto remainder = datasetBlockCount % initThreadCount;
+					uint32_t startBlock = 0;
+					uint32_t endBlock = 0;
+					for (int i = 0; i < initThreadCount; ++i) {
+						auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
+						endBlock += count;
+						threads.push_back(std::thread(dsfunc, cache.memory, dataset.dataset.memory + startBlock * RandomX::CacheLineSize, startBlock, endBlock));
+						startBlock += count;
+					}
+					for (unsigned i = 0; i < threads.size(); ++i) {
+						threads[i].join();
+					}
+				}
+				else {
+					dsfunc(cache.memory, dataset.dataset.memory, 0, datasetBlockCount);
+				}
+				//dump((const char*)dataset.dataset.memory, RANDOMX_DATASET_SIZE, "dataset.dat");
 			}
 			else {
 				if (initThreadCount > 1) {
