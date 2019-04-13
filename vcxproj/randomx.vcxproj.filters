@@ -151,9 +151,6 @@
     <ClInclude Include="..\src\Stopwatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\variant4_random_math.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\VirtualMachine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -9,7 +9,7 @@ OBJDIR=obj
 LDFLAGS=-lpthread
 CPPSRC=src/argon2_core.c src/Cache.cpp src/divideByConstantCodegen.c src/Instruction.cpp src/JitCompilerX86.cpp src/Program.cpp src/VirtualMachine.cpp src/argon2_ref.c src/CompiledVirtualMachine.cpp src/executeProgram-linux.cpp src/instructionsPortable.cpp src/LightClientAsyncWorker.cpp src/softAes.cpp src/virtualMemory.cpp src/AssemblyGeneratorX86.cpp  src/dataset.cpp src/hashAes1Rx4.cpp src/InterpretedVirtualMachine.cpp src/main.cpp src/TestAluFpu.cpp src/blake2/blake2b.c
 TOBJS=$(addprefix $(OBJDIR)/,instructionsPortable.o TestAluFpu.o)
-ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o CompiledLightVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o LightClientAsyncWorker.o hashAes1Rx4.o LightProgramGenerator.o)
+ROBJS=$(addprefix $(OBJDIR)/,argon2_core.o argon2_ref.o AssemblyGeneratorX86.o blake2b.o CompiledVirtualMachine.o CompiledLightVirtualMachine.o dataset.o JitCompilerX86.o instructionsPortable.o Instruction.o InterpretedVirtualMachine.o main.o softAes.o VirtualMachine.o Cache.o virtualMemory.o reciprocal.o hashAes1Rx4.o superscalarGenerator.o Blake2Generator.o)
 ifeq ($(PLATFORM),amd64)
     ROBJS += $(OBJDIR)/JitCompilerX86-static.o $(OBJDIR)/squareHash.o
     CXXFLAGS += -maes
@@ -58,7 +58,7 @@ $(OBJDIR)/argon2_core.o: $(addprefix $(SRCDIR)/,argon2_core.c argon2_core.h blak
 $(OBJDIR)/argon2_ref.o: $(addprefix $(SRCDIR)/,argon2_ref.c argon2.h argon2_core.h blake2/blake2.h blake2/blake2-impl.h blake2/blamka-round-ref.h blake2/endian.h) | $(OBJDIR)
 	$(CC) $(CCFLAGS) -c $(SRCDIR)/argon2_ref.c -o $@
 
-$(OBJDIR)/AssemblyGeneratorX86.o: $(addprefix $(SRCDIR)/,AssemblyGeneratorX86.cpp AssemblyGeneratorX86.hpp Instruction.hpp common.hpp instructionWeights.hpp blake2/endian.h reciprocal.h Program.hpp configuration.h) | $(OBJDIR)
+$(OBJDIR)/AssemblyGeneratorX86.o: $(addprefix $(SRCDIR)/,AssemblyGeneratorX86.cpp AssemblyGeneratorX86.hpp Instruction.hpp common.hpp instructionWeights.hpp blake2/endian.h reciprocal.h Program.hpp configuration.h superscalarGenerator.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/AssemblyGeneratorX86.cpp -o $@
 
 $(OBJDIR)/blake2b.o: $(addprefix $(SRCDIR)/blake2/,blake2b.c blake2.h blake2-impl.h endian.h) | $(OBJDIR)
@@ -79,7 +79,7 @@ $(OBJDIR)/reciprocal.o: $(addprefix $(SRCDIR)/,reciprocal.c reciprocal.h) | $(OB
 $(OBJDIR)/hashAes1Rx4.o: $(addprefix $(SRCDIR)/,hashAes1Rx4.cpp softAes.h intrinPortable.h blake2/endian.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/hashAes1Rx4.cpp -o $@
 
-$(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp instructionWeights.hpp common.hpp blake2/endian.h Program.hpp reciprocal.h virtualMemory.hpp configuration.h) | $(OBJDIR)
+$(OBJDIR)/JitCompilerX86.o: $(addprefix $(SRCDIR)/,JitCompilerX86.cpp JitCompilerX86.hpp Instruction.hpp instructionWeights.hpp common.hpp blake2/endian.h Program.hpp reciprocal.h virtualMemory.hpp configuration.h superscalarGenerator.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/JitCompilerX86.cpp -o $@
 
 $(OBJDIR)/JitCompilerX86-static.o: $(addprefix $(SRCDIR)/,JitCompilerX86-static.S $(addprefix asm/program_, prologue_linux.inc prologue_load.inc epilogue_linux.inc epilogue_store.inc read_dataset.inc loop_load.inc loop_store.inc xmm_constants.inc read_dataset_light.inc read_dataset_light_sub.inc)) | $(OBJDIR)
@@ -94,16 +94,16 @@ $(OBJDIR)/instructionsPortable.o: $(addprefix $(SRCDIR)/,instructionsPortable.cp
 $(OBJDIR)/Instruction.o: $(addprefix $(SRCDIR)/,Instruction.cpp Instruction.hpp instructionWeights.hpp blake2/endian.h common.hpp configuration.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/Instruction.cpp -o $@
   
-$(OBJDIR)/InterpretedVirtualMachine.o: $(addprefix $(SRCDIR)/,InterpretedVirtualMachine.cpp InterpretedVirtualMachine.hpp instructionWeights.hpp VirtualMachine.hpp common.hpp blake2/endian.h Program.hpp Instruction.hpp intrinPortable.h dataset.hpp Cache.hpp virtualMemory.hpp LightClientAsyncWorker.hpp configuration.h) | $(OBJDIR)
+$(OBJDIR)/InterpretedVirtualMachine.o: $(addprefix $(SRCDIR)/,InterpretedVirtualMachine.cpp InterpretedVirtualMachine.hpp instructionWeights.hpp VirtualMachine.hpp common.hpp blake2/endian.h Program.hpp Instruction.hpp intrinPortable.h dataset.hpp Cache.hpp virtualMemory.hpp configuration.h) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/InterpretedVirtualMachine.cpp -o $@
 
-$(OBJDIR)/LightClientAsyncWorker.o: $(addprefix $(SRCDIR)/,LightClientAsyncWorker.cpp LightClientAsyncWorker.hpp common.hpp) | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/LightClientAsyncWorker.cpp -o $@
+$(OBJDIR)/superscalarGenerator.o: $(addprefix $(SRCDIR)/,superscalarGenerator.cpp superscalarGenerator.hpp Program.hpp blake2/blake2.h blake2/endian.h configuration.h Blake2Generator.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/superscalarGenerator.cpp -o $@
 
-$(OBJDIR)/LightProgramGenerator.o: $(addprefix $(SRCDIR)/,LightProgramGenerator.cpp LightProgramGenerator.hpp Program.hpp blake2/blake2.h blake2/endian.h configuration.h) | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/LightProgramGenerator.cpp -o $@
+$(OBJDIR)/Blake2Generator.o: $(addprefix $(SRCDIR)/,Blake2Generator.cpp blake2/blake2.h blake2/endian.h common.hpp Blake2Generator.hpp) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/Blake2Generator.cpp -o $@
   
-$(OBJDIR)/main.o: $(addprefix $(SRCDIR)/,main.cpp InterpretedVirtualMachine.hpp Stopwatch.hpp blake2/blake2.h VirtualMachine.hpp common.hpp blake2/endian.h Program.hpp Instruction.hpp intrinPortable.h CompiledVirtualMachine.hpp JitCompilerX86.hpp AssemblyGeneratorX86.hpp dataset.hpp Cache.hpp virtualMemory.hpp hashAes1Rx4.hpp softAes.h configuration.h) | $(OBJDIR)
+$(OBJDIR)/main.o: $(addprefix $(SRCDIR)/,main.cpp InterpretedVirtualMachine.hpp Stopwatch.hpp blake2/blake2.h VirtualMachine.hpp common.hpp blake2/endian.h Program.hpp Instruction.hpp intrinPortable.h CompiledVirtualMachine.hpp JitCompilerX86.hpp AssemblyGeneratorX86.hpp dataset.hpp Cache.hpp virtualMemory.hpp hashAes1Rx4.hpp softAes.h configuration.h superscalarGenerator.hpp) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $(SRCDIR)/main.cpp -o $@
   
 $(OBJDIR)/Program.o: $(addprefix $(SRCDIR)/,Program.cpp Program.hpp configuration.h) | $(OBJDIR)
