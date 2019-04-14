@@ -95,7 +95,8 @@ namespace RandomX {
 	constexpr int ScratchpadL3Mask = (ScratchpadL3 - 1) * 8;
 	constexpr int ScratchpadL3Mask64 = (ScratchpadL3 / 8 - 1) * 64;
 	constexpr int RegistersCount = 8;
-	constexpr int LimitedAddressRegister = 5; //x86 r13 register
+	constexpr int RegisterNeedsDisplacement = 5; //x86 r13 register
+	constexpr int RegisterNeedsSib = 4; //x86 r12 register
 
 	struct Cache {
 		uint8_t* memory;

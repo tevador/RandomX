@@ -29,11 +29,11 @@ namespace RandomX {
 	}
 
 	void Instruction::genAddressReg(std::ostream& os) const {
-		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)src << "]";
+		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)src << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
 	}
 
 	void Instruction::genAddressRegDst(std::ostream& os) const {
-		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)dst << "]";
+		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)dst << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
 	}
 
 	void Instruction::genAddressImm(std::ostream& os) const {
@@ -41,12 +41,11 @@ namespace RandomX {
 	}
 
 	void Instruction::h_IADD_RS(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << ", LSH " << (int)(mod % 4) << std::endl;
+		os << "r" << (int)dst << ", r" << (int)src;
+		if(dst == RegisterNeedsDisplacement) {
+			os << ", " << (int32_t)getImm32();
 		}
-		else {
-			os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
-		}
+		os << ", LSH " << (int)(mod % 4) << std::endl;
 	}
 
 	void Instruction::h_IADD_M(std::ostream& os) const {

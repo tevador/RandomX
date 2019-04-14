@@ -201,6 +201,7 @@ namespace RandomX {
 	static const uint8_t REX_TEST[] = { 0x49, 0xF7 };
 	static const uint8_t JZ[] = { 0x0f, 0x84 };
 	static const uint8_t RET = 0xc3;
+	static const uint8_t LEA_32[] = { 0x67, 0x41, 0x8d };
 
 	static const uint8_t NOP1[] = { 0x90 };
 	static const uint8_t NOP2[] = { 0x66, 0x90 };
@@ -434,8 +435,12 @@ namespace RandomX {
 	template void JitCompilerX86::generateCode<Program>(Instruction& instr, int i);
 
 	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
-		emit(REX_MOV_RR);
-		emitByte((rax ? 0xc0 : 0xc8) + instr.src);
+		emit(LEA_32);
+		emitByte(0x80 + instr.src + (rax ? 0 : 8));
+		if (instr.src == RegisterNeedsSib) {
+			emitByte(0x24);
+		}
+		emit32(instr.getImm32());
 		if (rax)
 			emitByte(AND_EAX_I);
 		else
@@ -444,8 +449,12 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::genAddressRegDst(Instruction& instr, bool align16 = false) {
-		emit(REX_MOV_RR);
-		emitByte(0xc0 + instr.dst);
+		emit(LEA_32);
+		emitByte(0x80 + instr.dst);
+		if (instr.dst == RegisterNeedsSib) {
+			emitByte(0x24);
+		}
+		emit32(instr.getImm32());
 		emitByte(AND_EAX_I);
 		int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
 		int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
@@ -472,12 +481,12 @@ namespace RandomX {
 			return;
 		}
 		emit(REX_LEA);
-		if (instr.dst == 5) //rbp,r13 cannot be the base register without offset
+		if (instr.dst == RegisterNeedsDisplacement)
 			emitByte(0xac);
 		else
 			emitByte(0x04 + 8 * instr.dst);
 		genSIB(instr.mod % 4, instr.src, instr.dst);
-		if (instr.dst == 5)
+		if (instr.dst == RegisterNeedsDisplacement)
 			emit32(instr.getImm32());
 	}
 

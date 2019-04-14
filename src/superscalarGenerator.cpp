@@ -495,7 +495,7 @@ namespace RandomX {
 			//   - this avoids optimizable instruction sequences such as "xor r1, r2; xor r1, r2" or "ror r, C1; ror r, C2" or "add r, C1; add r, C2"
 			// * register r5 cannot be the destination of the IADD_RS instruction (limitation of the x86 lea instruction)
 			for (unsigned i = 0; i < 8; ++i) {
-				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (allowChainedMul || opGroup_ != SuperscalarInstructionType::IMUL_R || registers[i].lastOpGroup != SuperscalarInstructionType::IMUL_R) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != LimitedAddressRegister))
+				if (registers[i].latency <= cycle && (canReuse_ || i != src_) && (allowChainedMul || opGroup_ != SuperscalarInstructionType::IMUL_R || registers[i].lastOpGroup != SuperscalarInstructionType::IMUL_R) && (registers[i].lastOpGroup != opGroup_ || registers[i].lastOpPar != opGroupPar_) && (info_->getType() != SuperscalarInstructionType::IADD_RS || i != RegisterNeedsDisplacement))
 					availableRegisters.push_back(i);
 			}
 			return selectRegister(availableRegisters, gen, dst_);
@@ -510,8 +510,8 @@ namespace RandomX {
 			}
 			//if there are only 2 available registers for IADD_RS and one of them is r5, select it as the source because it cannot be the destination
 			if (availableRegisters.size() == 2 && info_->getType() == SuperscalarInstructionType::IADD_RS) {
-				if (availableRegisters[0] == LimitedAddressRegister || availableRegisters[1] == LimitedAddressRegister) {
-					opGroupPar_ = src_ = LimitedAddressRegister;
+				if (availableRegisters[0] == RegisterNeedsDisplacement || availableRegisters[1] == RegisterNeedsDisplacement) {
+					opGroupPar_ = src_ = RegisterNeedsDisplacement;
 					return true;
 				}
 			}

@@ -257,12 +257,12 @@ namespace RandomX {
 	}
 
 	void AssemblyGeneratorX86::genAddressReg(Instruction& instr, const char* reg = "eax") {
-		asmCode << "\tmov " << reg << ", " << regR32[instr.src] << std::endl;
+		asmCode << "\tlea " << reg << ", [" << regR32[instr.src] << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		asmCode << "\tand " << reg << ", " << ((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask) << std::endl;
 	}
 
 	void AssemblyGeneratorX86::genAddressRegDst(Instruction& instr, int maskAlign = 8) {
-		asmCode << "\tmov eax" << ", " << regR32[instr.dst] << std::endl;
+		asmCode << "\tlea eax, [" << regR32[instr.dst] << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		asmCode << "\tand eax" << ", " << ((instr.mod % 4) ? (ScratchpadL1Mask & (-maskAlign)) : (ScratchpadL2Mask & (-maskAlign))) << std::endl;
 	}
 
@@ -273,7 +273,7 @@ namespace RandomX {
 	//1 uOP
 	void AssemblyGeneratorX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		if(instr.dst == 5)
+		if(instr.dst == RegisterNeedsDisplacement)
 			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		else
 			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.mod % 4)) << "]" << std::endl;
