@@ -74,7 +74,6 @@ namespace RandomX {
 		uint8_t opcode;
 		uint8_t dst;
 		uint8_t src;
-		uint8_t mod;
 		uint32_t getImm32() const {
 			return load32(&imm32);
 		}
@@ -88,7 +87,23 @@ namespace RandomX {
 			i.print(os);
 			return os;
 		}
+		int getModMem() const {
+			return mod % 4;
+		}
+		int getModCond() const {
+			return (mod >> 2) & 7;
+		}
+		int getModShift3() const {
+			return mod >> 5;
+		}
+		int getModShift2() const {
+			return mod >> 6;
+		}
+		void setMod(uint8_t val) {
+			mod = val;
+		}
 	private:
+		uint8_t mod;
 		uint32_t imm32;
 		void print(std::ostream&) const;
 		static const char* names[256];

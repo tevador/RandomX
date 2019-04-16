@@ -182,7 +182,7 @@ namespace RandomX {
 	static const uint8_t SQRTPD[] = { 0x66, 0x0f, 0x51 };
 	static const uint8_t AND_OR_MOV_LDMXCSR[] = { 0x25, 0x00, 0x60, 0x00, 0x00, 0x0D, 0xC0, 0x9F, 0x00, 0x00, 0x89, 0x44, 0x24, 0xF8, 0x0F, 0xAE, 0x54, 0x24, 0xF8 };
 	static const uint8_t ROL_RAX[] = { 0x48, 0xc1, 0xc0 };
-	static const uint8_t XOR_RCX_RCX[] = { 0x48, 0x33, 0xC9 };
+	static const uint8_t XOR_ECX_ECX[] = { 0x33, 0xC9 };
 	static const uint8_t REX_CMP_R32I[] = { 0x41, 0x81 };
 	static const uint8_t REX_CMP_M32I[] = { 0x81, 0x3c, 0x06 };
 	static const uint8_t MOVAPD[] = { 0x66, 0x0f, 0x29 };
@@ -202,6 +202,7 @@ namespace RandomX {
 	static const uint8_t JZ[] = { 0x0f, 0x84 };
 	static const uint8_t RET = 0xc3;
 	static const uint8_t LEA_32[] = { 0x67, 0x41, 0x8d };
+	static const uint8_t MOVNTI[] = { 0x4c, 0x0f, 0xc3 };
 
 	static const uint8_t NOP1[] = { 0x90 };
 	static const uint8_t NOP2[] = { 0x66, 0x90 };
@@ -360,7 +361,7 @@ namespace RandomX {
 		case RandomX::SuperscalarInstructionType::IADD_RS:
 			emit(REX_LEA);
 			emitByte(0x04 + 8 * instr.dst);
-			genSIB(instr.mod % 4, instr.src, instr.dst);
+			genSIB(instr.getModShift2(), instr.src, instr.dst);
 			break;
 		case RandomX::SuperscalarInstructionType::IMUL_R:
 			emit(REX_IMUL_RR);
@@ -445,7 +446,7 @@ namespace RandomX {
 			emitByte(AND_EAX_I);
 		else
 			emit(AND_ECX_I);
-		emit32((instr.mod % 4) ? ScratchpadL1Mask : ScratchpadL2Mask);
+		emit32(instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
 	void JitCompilerX86::genAddressRegDst(Instruction& instr, bool align16 = false) {
@@ -456,9 +457,14 @@ namespace RandomX {
 		}
 		emit32(instr.getImm32());
 		emitByte(AND_EAX_I);
-		int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
-		int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
-		emit32((instr.mod % 4) ? maskL1 : maskL2);
+		if (instr.getModCond()) {
+			int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
+			int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
+			emit32(instr.getModMem() ? maskL1 : maskL2);
+		}
+		else {
+			emit32(ScratchpadL3Mask);
+		}
 	}
 
 	void JitCompilerX86::genAddressImm(Instruction& instr) {
@@ -485,7 +491,7 @@ namespace RandomX {
 			emitByte(0xac);
 		else
 			emitByte(0x04 + 8 * instr.dst);
-		genSIB(instr.mod % 4, instr.src, instr.dst);
+		genSIB(instr.getModShift2(), instr.src, instr.dst);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emit32(instr.getImm32());
 	}
@@ -880,7 +886,7 @@ namespace RandomX {
 	}
 
 	static inline uint8_t jumpCondition(Instruction& instr, bool invert = false) {
-		switch (((instr.mod >> 2) & 7) ^ invert)
+		switch (instr.getModCond() ^ invert)
 		{
 		case 0:
 			return 0x76; //jbe
@@ -902,7 +908,7 @@ namespace RandomX {
 	}
 
 	static inline uint8_t condition(Instruction& instr) {
-		switch ((instr.mod >> 2) & 7)
+		switch (instr.getModCond())
 		{
 			case 0:
 				return 0x96; //setbe
@@ -938,7 +944,7 @@ namespace RandomX {
 	}
 
 	void JitCompilerX86::handleCondition(Instruction& instr, int i) {
-		const int shift = (instr.mod >> 5);
+		const int shift = instr.getModShift3();
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
@@ -973,7 +979,7 @@ namespace RandomX {
 			emit(NOP3);
 			return;
 		}
-		emit(XOR_RCX_RCX);
+		emit(XOR_ECX_ECX);
 		emit(REX_CMP_R32I);
 		emitByte(0xf8 + instr.src);
 		emit32(instr.getImm32());
@@ -988,7 +994,7 @@ namespace RandomX {
 #ifdef RANDOMX_JUMP
 		handleCondition(instr, i);
 #endif
-		emit(XOR_RCX_RCX);
+		emit(XOR_ECX_ECX);
 		genAddressReg(instr);
 		emit(REX_CMP_M32I);
 		emit32(instr.getImm32());
@@ -1001,7 +1007,10 @@ namespace RandomX {
 
 	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr);
-		emit(REX_MOV_MR);
+		//if (instr.getModCond())
+			emit(REX_MOV_MR);
+		//else
+		//	emit(MOVNTI);
 		emitByte(0x04 + 8 * instr.src);
 		emitByte(0x06);
 	}

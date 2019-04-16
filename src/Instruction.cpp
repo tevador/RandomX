@@ -33,7 +33,11 @@ namespace RandomX {
 	}
 
 	void Instruction::genAddressRegDst(std::ostream& os) const {
-		os << ((mod % 4) ? "L1" : "L2") << "[r" << (int)dst << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
+		if (getModCond())
+			os << ((mod % 4) ? "L1" : "L2");
+		else
+			os << "L3";
+		os << "[r" << (int)dst << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
 	}
 
 	void Instruction::genAddressImm(std::ostream& os) const {

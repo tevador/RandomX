@@ -348,7 +348,7 @@ namespace RandomX {
 			instr.opcode = getType();
 			instr.dst = dst_;
 			instr.src = src_ >= 0 ? src_ : dst_;
-			instr.mod = mod_;
+			instr.setMod(mod_);
 			instr.setImm32(imm32_);
 		}
 

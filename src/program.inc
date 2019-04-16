@@ -56,7 +56,7 @@ randomx_isn_14:
 	sqrtpd xmm6, xmm6
 randomx_isn_15:
 	; IADD_RS r6, r2, LSH 1
-	lea r14, [r14+r10*2]
+	lea r14, [r14+r10*8]
 randomx_isn_16:
 	; FSUB_M f2, L1[r1-1890725713]
 	lea eax, [r9d-1890725713]
@@ -68,9 +68,9 @@ randomx_isn_17:
 	mov ecx, r11d
 	ror r12, cl
 randomx_isn_18:
-	; ISTORE L1[r4+1297827817], r4
+	; ISTORE L3[r4+1297827817], r4
 	lea eax, [r12d+1297827817]
-	and eax, 16376
+	and eax, 2097144
 	mov qword ptr [rsi+rax], r12
 randomx_isn_19:
 	; FMUL_R e1, a2
@@ -145,7 +145,7 @@ randomx_isn_35:
 	imul r14, 835132161
 randomx_isn_36:
 	; IADD_RS r3, r4, LSH 2
-	lea r11, [r11+r12*4]
+	lea r11, [r11+r12*2]
 randomx_isn_37:
 	; ISUB_M r6, L2[r4+1885029796]
 	lea eax, [r12d+1885029796]
@@ -173,13 +173,13 @@ randomx_isn_44:
 	; FADD_R f1, a2
 	addpd xmm1, xmm10
 randomx_isn_45:
-	; ISTORE L1[r0+1805562386], r5
+	; ISTORE L3[r0+1805562386], r5
 	lea eax, [r8d+1805562386]
-	and eax, 16376
+	and eax, 2097144
 	mov qword ptr [rsi+rax], r13
 randomx_isn_46:
 	; IADD_RS r0, r7, LSH 0
-	lea r8, [r8+r15*1]
+	lea r8, [r8+r15*8]
 randomx_isn_47:
 	; IXOR_R r5, r2
 	xor r13, r10
@@ -227,7 +227,7 @@ randomx_isn_57:
 	imul r13, r9
 randomx_isn_58:
 	; IADD_RS r5, r1, -999103579, LSH 0
-	lea r13, [r13+r9*1-999103579]
+	lea r13, [r13+r9*8-999103579]
 randomx_isn_59:
 	; FMUL_R e2, a2
 	mulpd xmm6, xmm10
@@ -237,7 +237,7 @@ randomx_isn_60:
 	ror r10, cl
 randomx_isn_61:
 	; IADD_RS r0, r3, LSH 1
-	lea r8, [r8+r11*2]
+	lea r8, [r8+r11*1]
 randomx_isn_62:
 	; FSQRT_R e3
 	sqrtpd xmm7, xmm7
@@ -260,7 +260,7 @@ randomx_isn_66:
 	sub r12, 841292629
 randomx_isn_67:
 	; IADD_RS r4, r6, LSH 2
-	lea r12, [r12+r14*4]
+	lea r12, [r12+r14*1]
 randomx_isn_68:
 	; FSUB_M f3, L1[r4+613549729]
 	lea eax, [r12d+613549729]
@@ -315,9 +315,9 @@ randomx_isn_79:
 	; IADD_RS r3, r1, LSH 1
 	lea r11, [r11+r9*2]
 randomx_isn_80:
-	; ISTORE L1[r2+1885666804], r4
+	; ISTORE L3[r2+1885666804], r4
 	lea eax, [r10d+1885666804]
-	and eax, 16376
+	and eax, 2097144
 	mov qword ptr [rsi+rax], r12
 randomx_isn_81:
 	; IMULH_R r3, r0
@@ -348,14 +348,12 @@ randomx_isn_88:
 	; IMUL_R r1, r3
 	imul r9, r11
 randomx_isn_89:
-	; COND_M r2, no(L1[r0-122257389], -122257389), LSH 6
+	; COND_R r2, no(r0, -122257389), LSH 6
 	add r8, 64
 	test r8, 8128
 	jz randomx_isn_75
 	xor rcx, rcx
-	lea eax, [r8d-122257389]
-	and eax, 16376
-	cmp dword ptr [rsi+rax], -122257389
+	cmp r8d, -122257389
 	setno cl
 	add r10, rcx
 randomx_isn_90:
@@ -429,7 +427,7 @@ randomx_isn_107:
 	mov r14, rdx
 randomx_isn_108:
 	; IADD_RS r7, r0, LSH 1
-	lea r15, [r15+r8*2]
+	lea r15, [r15+r8*4]
 randomx_isn_109:
 	; IMUL_R r6, r5
 	imul r14, r13
@@ -444,13 +442,13 @@ randomx_isn_111:
 	addpd xmm2, xmm12
 randomx_isn_112:
 	; IADD_RS r0, r3, LSH 0
-	lea r8, [r8+r11*1]
+	lea r8, [r8+r11*2]
 randomx_isn_113:
 	; IADD_RS r3, r4, LSH 1
 	lea r11, [r11+r12*2]
 randomx_isn_114:
 	; IADD_RS r2, r4, LSH 2
-	lea r10, [r10+r12*4]
+	lea r10, [r10+r12*8]
 randomx_isn_115:
 	; IMUL_M r7, L1[r2-106928748]
 	lea eax, [r10d-106928748]
@@ -464,7 +462,7 @@ randomx_isn_117:
 	subpd xmm2, xmm10
 randomx_isn_118:
 	; IADD_RS r2, r2, LSH 0
-	lea r10, [r10+r10*1]
+	lea r10, [r10+r10*2]
 randomx_isn_119:
 	; ISUB_R r7, -342152774
 	sub r15, -342152774
@@ -473,7 +471,7 @@ randomx_isn_120:
 	lea r12, [r12+r9*2]
 randomx_isn_121:
 	; IADD_RS r4, r7, LSH 2
-	lea r12, [r12+r15*4]
+	lea r12, [r12+r15*1]
 randomx_isn_122:
 	; FSUB_R f0, a1
 	subpd xmm0, xmm9
@@ -504,7 +502,7 @@ randomx_isn_128:
 	subpd xmm3, xmm9
 randomx_isn_129:
 	; IADD_RS r1, r2, LSH 2
-	lea r9, [r9+r10*4]
+	lea r9, [r9+r10*2]
 randomx_isn_130:
 	; FSUB_R f1, a1
 	subpd xmm1, xmm9
@@ -531,7 +529,7 @@ randomx_isn_136:
 	sub r11, r14
 randomx_isn_137:
 	; IADD_RS r4, r1, LSH 0
-	lea r12, [r12+r9*1]
+	lea r12, [r12+r9*8]
 randomx_isn_138:
 	; ISTORE L1[r0+56684410], r0
 	lea eax, [r8d+56684410]
@@ -573,10 +571,10 @@ randomx_isn_145:
 	sub r13, r11
 randomx_isn_146:
 	; IADD_RS r0, r3, LSH 1
-	lea r8, [r8+r11*2]
+	lea r8, [r8+r11*4]
 randomx_isn_147:
 	; IADD_RS r1, r3, LSH 1
-	lea r9, [r9+r11*2]
+	lea r9, [r9+r11*1]
 randomx_isn_148:
 	; FSQRT_R e1
 	sqrtpd xmm5, xmm5
@@ -624,7 +622,7 @@ randomx_isn_158:
 	mov qword ptr [rsi+rax], r12
 randomx_isn_159:
 	; IADD_RS r7, r2, LSH 3
-	lea r15, [r15+r10*8]
+	lea r15, [r15+r10*4]
 randomx_isn_160:
 	; IMUL_RCP r7, 2040763167
 	mov rax, 9705702723791900149
@@ -716,7 +714,7 @@ randomx_isn_182:
 	mulpd xmm6, xmm10
 randomx_isn_183:
 	; IADD_RS r6, r2, LSH 0
-	lea r14, [r14+r10*1]
+	lea r14, [r14+r10*8]
 randomx_isn_184:
 	; FADD_R f2, a3
 	addpd xmm2, xmm11
@@ -728,7 +726,7 @@ randomx_isn_186:
 	xorps xmm3, xmm15
 randomx_isn_187:
 	; IADD_RS r6, r6, LSH 3
-	lea r14, [r14+r14*8]
+	lea r14, [r14+r14*4]
 randomx_isn_188:
 	; FSCAL_R f2
 	xorps xmm2, xmm15
@@ -781,7 +779,7 @@ randomx_isn_199:
 	subpd xmm3, xmm11
 randomx_isn_200:
 	; IADD_RS r2, r5, LSH 2
-	lea r10, [r10+r13*4]
+	lea r10, [r10+r13*1]
 randomx_isn_201:
 	; ISUB_M r6, L2[r3+376384700]
 	lea eax, [r11d+376384700]
@@ -811,7 +809,7 @@ randomx_isn_207:
 	xorps xmm1, xmm15
 randomx_isn_208:
 	; IADD_RS r6, r3, LSH 1
-	lea r14, [r14+r11*2]
+	lea r14, [r14+r11*1]
 randomx_isn_209:
 	; FSUB_M f0, L1[r4-557177119]
 	lea eax, [r12d-557177119]
@@ -874,7 +872,7 @@ randomx_isn_223:
 	xorps xmm2, xmm15
 randomx_isn_224:
 	; IADD_RS r5, r4, 312567979, LSH 1
-	lea r13, [r13+r12*2+312567979]
+	lea r13, [r13+r12*4+312567979]
 randomx_isn_225:
 	; ISTORE L2[r2+260885699], r1
 	lea eax, [r10d+260885699]
@@ -899,7 +897,7 @@ randomx_isn_229:
 	xchg r8, r14
 randomx_isn_230:
 	; IADD_RS r2, r7, LSH 2
-	lea r10, [r10+r15*4]
+	lea r10, [r10+r15*1]
 randomx_isn_231:
 	; FMUL_R e1, a0
 	mulpd xmm5, xmm8
@@ -925,7 +923,7 @@ randomx_isn_237:
 	subpd xmm1, xmm11
 randomx_isn_238:
 	; IADD_RS r4, r2, LSH 1
-	lea r12, [r12+r10*2]
+	lea r12, [r12+r10*4]
 randomx_isn_239:
 	; IMUL_RCP r7, 3065786637
 	mov rax, 12921343181238534701
@@ -958,14 +956,12 @@ randomx_isn_246:
 	and eax, 262136
 	sub r15, qword ptr [rsi+rax]
 randomx_isn_247:
-	; COND_M r2, be(L1[r5-8545330], -8545330), LSH 2
+	; COND_R r2, be(r5, -8545330), LSH 2
 	add r9, 4
 	test r9, 508
 	jz randomx_isn_223
 	xor rcx, rcx
-	lea eax, [r13d-8545330]
-	and eax, 16376
-	cmp dword ptr [rsi+rax], -8545330
+	cmp r13d, -8545330
 	setbe cl
 	add r10, rcx
 randomx_isn_248:
@@ -981,13 +977,13 @@ randomx_isn_250:
 	addpd xmm3, xmm8
 randomx_isn_251:
 	; IADD_RS r0, r0, LSH 0
-	lea r8, [r8+r8*1]
+	lea r8, [r8+r8*4]
 randomx_isn_252:
 	; ISUB_R r4, r2
 	sub r12, r10
 randomx_isn_253:
 	; IADD_RS r5, r4, 256175395, LSH 0
-	lea r13, [r13+r12*1+256175395]
+	lea r13, [r13+r12*4+256175395]
 randomx_isn_254:
 	; IADD_RS r6, r7, LSH 2
 	lea r14, [r14+r15*4]

@@ -176,6 +176,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 		store32(noncePtr, nonce);
 		blake2b(hash, sizeof(hash), blockTemplate, sizeof(blockTemplate), nullptr, 0);
 		fillAes1Rx4<softAes>((void*)hash, RANDOMX_SCRATCHPAD_L3, scratchpad);
+		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad-before.txt");
 		vm->resetRoundingMode();
 		vm->setScratchpad(scratchpad);
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
@@ -194,7 +195,7 @@ void mine(RandomX::VirtualMachine* vm, std::atomic<uint32_t>& atomicNonce, Atomi
 			}
 		}*/
 		vm->getResult<softAes>(scratchpad, RANDOMX_SCRATCHPAD_L3, hash);
-		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad.txt");
+		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad-after.txt");
 		result.xorWith(hash);
 		if (RandomX::trace) {
 			std::cout << "Nonce: " << nonce << " ";

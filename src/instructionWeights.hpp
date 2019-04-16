@@ -98,6 +98,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define REPCASE32(x) REPCASE31(x) case __COUNTER__:
 #define REPCASE64(x) REPCASE32(x) REPCASE32(x)
 #define REPCASE128(x) REPCASE64(x) REPCASE64(x)
+#define REPCASE256(x) REPCASE128(x) REPCASE128(x)
 #define REPCASENX(x,N) REPCASE##N(x)
 #define REPCASEN(x,N) REPCASENX(x,N)
 #define CASE_REP(x) REPCASEN(x, WT(x))
