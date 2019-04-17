@@ -27,6 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace RandomX {
 
 	class Program;
+	class ProgramConfiguration;
 	class SuperscalarProgram;
 	class JitCompilerX86;
 
@@ -38,9 +39,9 @@ namespace RandomX {
 	public:
 		JitCompilerX86();
 		~JitCompilerX86();
-		void generateProgram(Program&);
+		void generateProgram(Program&, ProgramConfiguration&);
 		template<bool superscalar>
-		void generateProgramLight(Program&);
+		void generateProgramLight(Program&, ProgramConfiguration&);
 		template<size_t N>
 		void generateSuperScalarHash(SuperscalarProgram (&programs)[N]);
 		ProgramFunc getProgramFunc() {
@@ -73,7 +74,7 @@ namespace RandomX {
 
 		void generateDatasetInitCode();
 
-		void generateProgramPrologue(Program&);
+		void generateProgramPrologue(Program&, ProgramConfiguration&);
 		void generateProgramEpilogue(Program&);
 		int getConditionRegister();
 		void genAddressReg(Instruction&, bool);

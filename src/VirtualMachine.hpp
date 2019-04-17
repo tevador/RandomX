@@ -46,9 +46,9 @@ namespace RandomX {
 	protected:
 		alignas(64) Program program;
 		alignas(64) RegisterFile reg;
+		alignas(16) ProgramConfiguration config;
 		MemoryRegisters mem;
 		uint8_t* scratchpad;
-		uint32_t readReg0, readReg1, readReg2, readReg3;
 		uint32_t datasetRange;
 		uint32_t datasetBase;
 	};

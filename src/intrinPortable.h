@@ -312,6 +312,12 @@ inline __m128d load_cvt_i32x2(const void* addr) {
 }
 
 template<int E>
+constexpr uint64_t ieee_get_exponent_mask() {
+	static_assert(E > -1023, "Invalid exponent value");
+	return (uint64_t)(E + 1023U) << 52;
+}
+
+template<int E>
 __m128d ieee_set_exponent(__m128d x) {
 	static_assert(E > -1023, "Invalid exponent value");
 	constexpr uint64_t mantissaMask64 = (1ULL << 52) - 1;

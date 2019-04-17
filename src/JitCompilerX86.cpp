@@ -24,6 +24,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 #include "reciprocal.h"
 #include "virtualMemory.hpp"
+#include "intrinPortable.h"
 
 #define RANDOMX_JUMP
 
@@ -230,20 +231,20 @@ namespace RandomX {
 		freePagedMemory(code, CodeSize);
 	}
 
-	void JitCompilerX86::generateProgram(Program& prog) {
-		generateProgramPrologue(prog);
+	void JitCompilerX86::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
+		generateProgramPrologue(prog, pcfg);
 		memcpy(code + codePos, codeReadDataset, readDatasetSize);
 		codePos += readDatasetSize;
 		generateProgramEpilogue(prog);
 	}
 
 	template<bool superscalar>
-	void JitCompilerX86::generateProgramLight(Program& prog) {
+	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg) {
 		if (RANDOMX_CACHE_ACCESSES != 8)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
 		if (RANDOMX_ARGON_GROWTH != 0)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
-		generateProgramPrologue(prog);
+		generateProgramPrologue(prog, pcfg);
 		if (superscalar) {
 			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
 			emitByte(CALL);
@@ -259,8 +260,8 @@ namespace RandomX {
 		generateProgramEpilogue(prog);
 	}
 
-	template void JitCompilerX86::generateProgramLight<true>(Program& prog);
-	template void JitCompilerX86::generateProgramLight<false>(Program& prog);
+	template void JitCompilerX86::generateProgramLight<true>(Program& prog, ProgramConfiguration& pcfg);
+	template void JitCompilerX86::generateProgramLight<false>(Program& prog, ProgramConfiguration& pcfg);
 
 	template<size_t N>
 	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[N]) {
@@ -298,33 +299,26 @@ namespace RandomX {
 		memcpy(code, codeDatasetInit, datasetInitSize);
 	}
 
-	void JitCompilerX86::generateProgramPrologue(Program& prog) {
+	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
 #ifdef RANDOMX_JUMP
 		instructionOffsets.clear();
 		for (unsigned i = 0; i < 8; ++i) {
 			registerUsage[i] = -1;
 		}
 #endif
-		auto addressRegisters = prog.getEntropy(12);
-		uint32_t readReg0 = 0 + (addressRegisters & 1);
-		addressRegisters >>= 1;
-		uint32_t readReg1 = 2 + (addressRegisters & 1);
-		addressRegisters >>= 1;
-		uint32_t readReg2 = 4 + (addressRegisters & 1);
-		addressRegisters >>= 1;
-		uint32_t readReg3 = 6 + (addressRegisters & 1);
 		codePos = prologueSize;
+		memcpy(code + codePos - 48, &pcfg.eMask, sizeof(pcfg.eMask));
 		emit(REX_XOR_RAX_R64);
-		emitByte(0xc0 + readReg0);
+		emitByte(0xc0 + pcfg.readReg0);
 		emit(REX_XOR_RAX_R64);
-		emitByte(0xc0 + readReg1);
+		emitByte(0xc0 + pcfg.readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
 		generateCode(prog);
 		emit(REX_MOV_RR);
-		emitByte(0xc0 + readReg2);
+		emitByte(0xc0 + pcfg.readReg2);
 		emit(REX_XOR_EAX);
-		emitByte(0xc0 + readReg3);
+		emitByte(0xc0 + pcfg.readReg3);
 	}
 
 	void JitCompilerX86::generateProgramEpilogue(Program& prog) {

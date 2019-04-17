@@ -38,7 +38,7 @@ namespace RandomX {
 	template<bool superscalar>
 	void CompiledLightVirtualMachine<superscalar>::initialize() {
 		VirtualMachine::initialize();
-		compiler.generateProgramLight<superscalar>(program);
+		compiler.generateProgramLight<superscalar>(program, config);
 		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
 

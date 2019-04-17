@@ -37,7 +37,7 @@ namespace RandomX {
 
 	void CompiledVirtualMachine::initialize() {
 		VirtualMachine::initialize();
-		compiler.generateProgram(program);
+		compiler.generateProgram(program, config);
 		mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
 

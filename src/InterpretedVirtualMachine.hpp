@@ -133,5 +133,6 @@ namespace RandomX {
 		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]);
 		void* getScratchpadAddress(InstructionByteCode& ibc);
+		__m128d maskRegisterExponentMantissa(__m128d);
 	};
 }

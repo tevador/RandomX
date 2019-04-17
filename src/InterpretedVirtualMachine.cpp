@@ -116,6 +116,16 @@ namespace RandomX {
 		return scratchpad + addr;
 	}
 
+	template<bool superscalar>
+	FORCE_INLINE __m128d InterpretedVirtualMachine<superscalar>::maskRegisterExponentMantissa(__m128d x) {
+		constexpr uint64_t mantissaMask64 = (1ULL << 52) - 1;
+		const __m128d mantissaMask = _mm_castsi128_pd(_mm_set_epi64x(mantissaMask64, mantissaMask64));
+		const __m128d exponentMask = _mm_load_pd((const double*)&config.eMask);
+		x = _mm_and_pd(x, mantissaMask);
+		x = _mm_or_pd(x, exponentMask);
+		return x;
+	}
+
 	 template<bool superscalar>
 	 FORCE_INLINE void InterpretedVirtualMachine<superscalar>::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[ic];
@@ -229,7 +239,7 @@ namespace RandomX {
 			} break;
 
 			case InstructionType::FDIV_M: {
-				__m128d fsrc = ieee_set_exponent<-240>(load_cvt_i32x2(getScratchpadAddress(ibc)));
+				__m128d fsrc = maskRegisterExponentMantissa(load_cvt_i32x2(getScratchpadAddress(ibc)));
 				*ibc.fdst = _mm_div_pd(*ibc.fdst, fsrc);
 			} break;
 
@@ -326,7 +336,7 @@ namespace RandomX {
 		uint32_t spAddr1 = mem.ma;
 
 		if (trace) {
-			std::cout << "execute (reg: r" << readReg0 << ", r" << readReg1 << ", r" << readReg2 << ", r" << readReg3 << ")" << std::endl;
+			std::cout << "execute (reg: r" << config.readReg0 << ", r" << config.readReg1 << ", r" << config.readReg2 << ", r" << config.readReg3 << ")" << std::endl;
 			std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
 			std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
 			printState(r, f, e, a);
@@ -334,7 +344,7 @@ namespace RandomX {
 
 		for(unsigned ic = 0; ic < RANDOMX_PROGRAM_ITERATIONS; ++ic) {
 			//std::cout << "Iteration " << iter << std::endl;
-			uint64_t spMix = r[readReg0] ^ r[readReg1];
+			uint64_t spMix = r[config.readReg0] ^ r[config.readReg1];
 			spAddr0 ^= spMix;
 			spAddr0 &= ScratchpadL3Mask64;
 			spAddr1 ^= spMix >> 32;
@@ -353,10 +363,10 @@ namespace RandomX {
 			f[1] = load_cvt_i32x2(scratchpad + spAddr1 + 8);
 			f[2] = load_cvt_i32x2(scratchpad + spAddr1 + 16);
 			f[3] = load_cvt_i32x2(scratchpad + spAddr1 + 24);
-			e[0] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 32));
-			e[1] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 40));
-			e[2] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 48));
-			e[3] = ieee_set_exponent<-240>(load_cvt_i32x2(scratchpad + spAddr1 + 56));
+			e[0] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 32));
+			e[1] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 40));
+			e[2] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 48));
+			e[3] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 56));
 
 			if (trace) {
 				std::cout << "iteration " << std::dec << ic << std::endl;
@@ -368,7 +378,7 @@ namespace RandomX {
 
 			executeBytecode(r, f, e, a);
 
-			mem.mx ^= r[readReg2] ^ r[readReg3];
+			mem.mx ^= r[config.readReg2] ^ r[config.readReg3];
 			mem.mx &= CacheLineAlignMask;
 			if (superscalar) {
 				executeSuperscalar(datasetBase + mem.ma / CacheLineSize, r);

@@ -77,14 +77,18 @@ namespace RandomX {
 		mem.ma = program.getEntropy(8) & CacheLineAlignMask;
 		mem.mx = program.getEntropy(10);
 		auto addressRegisters = program.getEntropy(12);
-		readReg0 = 0 + (addressRegisters & 1);
+		config.readReg0 = 0 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		readReg1 = 2 + (addressRegisters & 1);
+		config.readReg1 = 2 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		readReg2 = 4 + (addressRegisters & 1);
+		config.readReg2 = 4 + (addressRegisters & 1);
 		addressRegisters >>= 1;
-		readReg3 = 6 + (addressRegisters & 1);
-		datasetBase = program.getEntropy(14) % datasetRange;
+		config.readReg3 = 6 + (addressRegisters & 1);
+		datasetBase = program.getEntropy(13) % datasetRange;
+		constexpr uint64_t mask22bit = (1ULL << 22) - 1;
+		constexpr uint64_t maskExp240 = ieee_get_exponent_mask<-240>();
+		store64(&config.eMask[0], (program.getEntropy(14) & mask22bit) | maskExp240);
+		store64(&config.eMask[1], (program.getEntropy(15) & mask22bit) | maskExp240);
 	}
 
 	template<bool softAes>

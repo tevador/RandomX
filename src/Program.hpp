@@ -27,6 +27,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace RandomX {
 
+	struct ProgramConfiguration {
+		uint64_t eMask[2];
+		uint32_t readReg0, readReg1, readReg2, readReg3;
+	};
+
 	class Program {
 	public:
 		Instruction& operator()(int pc) {
