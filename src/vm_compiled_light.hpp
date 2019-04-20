@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -20,15 +20,13 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <new>
-#include "InterpretedVirtualMachine.hpp"
-#include "superscalar_program.hpp"
+#include "vm_compiled.hpp"
 
 namespace randomx {
 
 	template<class Allocator, bool softAes>
-	class InterpretedLightVm : public InterpretedVm<Allocator, softAes> {
+	class CompiledLightVm : public CompiledVm<Allocator, softAes> {
 	public:
-		using VmBase<Allocator, softAes>::mem;
 		void* operator new(size_t size) {
 			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
 			if (ptr == nullptr)
@@ -36,18 +34,20 @@ namespace randomx {
 			return ptr;
 		}
 		void operator delete(void* ptr) {
-			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(InterpretedLightVm));
+			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledLightVm));
 		}
-		void setDataset(randomx_dataset* dataset) override { }
 		void setCache(randomx_cache* cache) override;
-	protected:
-		virtual void datasetRead(uint32_t address, int_reg_t(&r)[8]);
-	private:
-		randomx_cache* cachePtr;
+		void setDataset(randomx_dataset* dataset) override {}
+		void run(void* seed) override;
+
+		using CompiledVm<Allocator, softAes>::mem;
+		using CompiledVm<Allocator, softAes>::compiler;
+		using CompiledVm<Allocator, softAes>::program;
+		using CompiledVm<Allocator, softAes>::config;
 	};
 
-	using InterpretedLightVmDefault = InterpretedLightVm<AlignedAllocator<CacheLineSize>, true>;
-	using InterpretedLightVmHardAes = InterpretedLightVm<AlignedAllocator<CacheLineSize>, false>;
-	using InterpretedLightVmLargePage = InterpretedLightVm<LargePageAllocator, false>;
-	using InterpretedLightVmLargePageHardAes = InterpretedLightVm<LargePageAllocator, true>;
+	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;
+	using CompiledLightVmHardAes = CompiledLightVm<AlignedAllocator<CacheLineSize>, false>;
+	using CompiledLightVmLargePage = CompiledLightVm<LargePageAllocator, false>;
+	using CompiledLightVmLargePageHardAes = CompiledLightVm<LargePageAllocator, true>;
 }

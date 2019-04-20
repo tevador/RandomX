@@ -20,10 +20,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <new>
-#include "VirtualMachine.hpp"
-#include "Program.hpp"
-#include "intrinPortable.h"
 #include <vector>
+#include "common.hpp"
+#include "virtual_machine.hpp"
+#include "intrin_portable.h"
+#include "allocator.hpp"
 
 namespace randomx {
 

@@ -16,20 +16,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
+
 //#define TRACE
 //#define FPUCHECK
 #define RANDOMX_JUMP
-#include "InterpretedVirtualMachine.hpp"
-#include "dataset.hpp"
+
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
 #include <cfloat>
-#include <thread>
 #include <climits>
-#include "intrinPortable.h"
+#include "vm_interpreted.hpp"
+#include "dataset.hpp"
+#include "intrin_portable.h"
 #include "reciprocal.h"
 
 #ifdef FPUCHECK
@@ -465,7 +466,7 @@ namespace randomx {
 		}
 	}*/
 
-#include "instructionWeights.hpp"
+#include "instruction_weights.hpp"
 
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
@@ -652,7 +653,7 @@ namespace randomx {
 						auto dst = instr.dst % RegistersCount;
 						ibc.type = InstructionType::IMUL_R;
 						ibc.idst = &r[dst];
-						ibc.imm = reciprocal(divisor);
+						ibc.imm = randomx_reciprocal(divisor);
 						ibc.isrc = &ibc.imm;
 						registerUsage[instr.dst] = i;
 					}

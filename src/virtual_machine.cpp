@@ -17,13 +17,13 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "VirtualMachine.hpp"
+#include "virtual_machine.hpp"
 #include "common.hpp"
-#include "hashAes1Rx4.hpp"
+#include "aes_hash.hpp"
 #include "blake2/blake2.h"
 #include <cstring>
 #include <iomanip>
-#include "intrinPortable.h"
+#include "intrin_portable.h"
 #include "allocator.hpp"
 
 randomx_vm::~randomx_vm() {

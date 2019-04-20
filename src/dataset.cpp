@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+/* Original code from Argon2 reference source code package used under CC0 Licence
+ * https://github.com/P-H-C/phc-winner-argon2
+ * Copyright 2015
+ * Daniel Dinu, Dmitry Khovratovich, Jean-Philippe Aumasson, and Samuel Neves
+*/
+
 #include <new>
 #include <algorithm>
 #include <stdexcept>
@@ -26,9 +32,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 #include "dataset.hpp"
-#include "virtualMemory.hpp"
-#include "superscalarGenerator.hpp"
-#include "Blake2Generator.hpp"
+#include "virtual_memory.hpp"
+#include "superscalar.hpp"
+#include "blake2_generator.hpp"
 #include "reciprocal.h"
 #include "blake2/endian.h"
 #include "argon2.h"
@@ -100,13 +106,13 @@ void randomx_cache::initialize(const void *seed, size_t seedSize) {
 	fill_memory_blocks(&instance);
 
 	reciprocalCache.clear();
-	randomx::Blake2Generator gen(seed, 1000);
+	randomx::Blake2Generator gen(seed, seedSize, 1000); //TODO
 	for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 		randomx::generateSuperscalar(programs[i], gen);
 		for (unsigned j = 0; j < programs[i].getSize(); ++j) {
 			auto& instr = programs[i](j);
 			if (instr.opcode == randomx::SuperscalarInstructionType::IMUL_RCP) {
-				auto rcp = reciprocal(instr.getImm32());
+				auto rcp = randomx_reciprocal(instr.getImm32());
 				instr.setImm32(reciprocalCache.size());
 				reciprocalCache.push_back(rcp);
 			}

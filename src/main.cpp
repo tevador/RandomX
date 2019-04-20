@@ -19,7 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //#define TRACE
 
 //#include "AssemblyGeneratorX86.hpp"
-#include "Stopwatch.hpp"
+#include "stopwatch.hpp"
 //#include "blake2/blake2.h"
 #include "blake2/endian.h"
 #include <fstream>

@@ -19,11 +19,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //#define TRACE
 
 #include <climits>
-#include "AssemblyGeneratorX86.hpp"
+#include "assembly_generator_x86.hpp"
 #include "common.hpp"
 #include "reciprocal.h"
-#include "Program.hpp"
-#include "superscalarGenerator.hpp"
+#include "program.hpp"
+#include "superscalar.hpp"
 
 namespace randomx {
 
@@ -117,7 +117,7 @@ namespace randomx {
 				asmCode << "mov " << regR[instr.dst] << ", rdx" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_RCP:
-				asmCode << "mov rax, " << (int64_t)reciprocal(instr.getImm32()) << std::endl;
+				asmCode << "mov rax, " << (int64_t)randomx_reciprocal(instr.getImm32()) << std::endl;
 				asmCode << "imul " << regR[instr.dst] << ", rax" << std::endl;
 				break;
 			default:
@@ -210,7 +210,7 @@ namespace randomx {
 				asmCode << regR[instr.dst] << " = smulh(" << regR[instr.dst] << ", " << regR[instr.src] << ");" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_RCP:
-				asmCode << regR[instr.dst] << " *= " << (int64_t)reciprocal(instr.getImm32()) << ";" << std::endl;
+				asmCode << regR[instr.dst] << " *= " << (int64_t)randomx_reciprocal(instr.getImm32()) << ";" << std::endl;
 				break;
 			default:
 				UNREACHABLE;
@@ -477,7 +477,7 @@ namespace randomx {
 		if (instr.getImm32() != 0) {
 			registerUsage[instr.dst] = i;
 			uint32_t divisor = instr.getImm32();
-			asmCode << "\tmov rax, " << reciprocal(instr.getImm32()) << std::endl;
+			asmCode << "\tmov rax, " << randomx_reciprocal(instr.getImm32()) << std::endl;
 			asmCode << "\timul " << regR[instr.dst] << ", rax" << std::endl;
 			traceint(instr);
 		}
@@ -691,7 +691,7 @@ namespace randomx {
 		tracenop(instr);
 	}
 
-#include "instructionWeights.hpp"
+#include "instruction_weights.hpp"
 #define INST_HANDLE(x) REPN(&AssemblyGeneratorX86::h_##x, WT(x))
 
 	InstructionGenerator AssemblyGeneratorX86::engine[256] = {

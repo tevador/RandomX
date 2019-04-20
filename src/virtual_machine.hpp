@@ -21,8 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include "common.hpp"
-#include "dataset.hpp"
-#include "Program.hpp"
+#include "program.hpp"
 
 /* Global namespace for C binding */
 class randomx_vm {
@@ -38,7 +37,6 @@ public:
 	randomx::RegisterFile *getRegisterFile() {
 		return &reg;
 	}
-
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;

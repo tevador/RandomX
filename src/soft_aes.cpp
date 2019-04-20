@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "softAes.h"
+#include "soft_aes.h"
 
 alignas(16) const uint8_t sbox[256] = {
 	0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -321,8 +321,8 @@ alignas(16) const uint32_t lutDec3[256] = {
 __m128i soft_aesenc(__m128i in, __m128i key) {
 	uint32_t s0, s1, s2, s3;
 
-	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xFF));
-	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xAA));
+	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xff));
+	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xaa));
 	s2 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0x55));
 	s3 = _mm_cvtsi128_si32(in);
 
@@ -339,8 +339,8 @@ __m128i soft_aesenc(__m128i in, __m128i key) {
 __m128i soft_aesdec(__m128i in, __m128i key) {
 	uint32_t s0, s1, s2, s3;
 
-	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xFF));
-	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xAA));
+	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xff));
+	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xaa));
 	s2 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0x55));
 	s3 = _mm_cvtsi128_si32(in);
 

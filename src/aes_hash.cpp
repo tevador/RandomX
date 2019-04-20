@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "softAes.h"
+#include "soft_aes.h"
 
 /*
 	Calculate a 512-bit hash of 'input' using 4 lanes of AES.

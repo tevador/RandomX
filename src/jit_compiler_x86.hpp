@@ -19,11 +19,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "common.hpp"
-#include "Instruction.hpp"
-#include "superscalar_program.hpp"
+#include <cstdint>
 #include <cstring>
 #include <vector>
+#include "common.hpp"
 
 namespace randomx {
 
@@ -31,6 +30,7 @@ namespace randomx {
 	class ProgramConfiguration;
 	class SuperscalarProgram;
 	class JitCompilerX86;
+	class Instruction;
 
 	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
 

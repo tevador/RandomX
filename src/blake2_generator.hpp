@@ -17,10 +17,21 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "softAes.h"
+#pragma once
 
-template<bool softAes>
-void hashAes1Rx4(const void *input, size_t inputSize, void *hash);
+#include <cstdint>
 
-template<bool softAes>
-void fillAes1Rx4(void *state, size_t outputSize, void *buffer);
+namespace randomx {
+
+	class Blake2Generator {
+	public:
+		Blake2Generator(const void* seed, size_t seedSize, int nonce = 0);
+		uint8_t getByte();
+		uint32_t getInt32();
+	private:
+		void checkData(const size_t);
+
+		uint8_t data[64];
+		size_t dataIndex;
+	};
+}

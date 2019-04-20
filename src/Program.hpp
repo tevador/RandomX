@@ -22,7 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <ostream>
 #include "common.hpp"
-#include "Instruction.hpp"
+#include "instruction.hpp"
 #include "blake2/endian.h"
 
 namespace randomx {
@@ -58,5 +58,5 @@ namespace randomx {
 		Instruction programBuffer[RANDOMX_PROGRAM_SIZE];
 	};
 
-	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
+	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class randomx::Program");
 }

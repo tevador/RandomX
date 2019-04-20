@@ -330,7 +330,6 @@ __m128d ieee_set_exponent(__m128d x) {
 }
 
 double loadDoublePortable(const void* addr);
-
 uint64_t mulh(uint64_t, uint64_t);
 int64_t smulh(int64_t, int64_t);
 uint64_t rotl(uint64_t, int);

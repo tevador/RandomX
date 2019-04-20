@@ -20,15 +20,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stddef.h>
 #include "blake2/blake2.h"
 #include "blake2/endian.h"
-#include "Blake2Generator.hpp"
-#include "common.hpp"
+#include "blake2_generator.hpp"
 
 namespace randomx {
 
-	Blake2Generator::Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
+	constexpr int maxSeedSize = 60;
+
+	Blake2Generator::Blake2Generator(const void* seed, size_t seedSize, int nonce) : dataIndex(sizeof(data)) {
 		memset(data, 0, sizeof(data));
-		memcpy(data, seed, SeedSize);
-		store32(&data[60], nonce);
+		memcpy(data, seed, seedSize > maxSeedSize ? maxSeedSize : seedSize);
+		store32(&data[maxSeedSize], nonce);
 	}
 
 	uint8_t Blake2Generator::getByte() {

@@ -25,8 +25,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
-#include "superscalarGenerator.hpp"
-#include "intrinPortable.h"
+#include "superscalar.hpp"
+#include "intrin_portable.h"
 #include "reciprocal.h"
 
 namespace randomx {
@@ -885,7 +885,7 @@ namespace randomx {
 				if (reciprocals != nullptr)
 					r[instr.dst] *= (*reciprocals)[instr.getImm32()];
 				else
-					r[instr.dst] *= reciprocal(instr.getImm32());
+					r[instr.dst] *= randomx_reciprocal(instr.getImm32());
 				break;
 			default:
 				UNREACHABLE;

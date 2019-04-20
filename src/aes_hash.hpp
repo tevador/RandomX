@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -18,19 +18,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include <stdint.h>
-#include "intrinPortable.h"
 
-__m128i soft_aesenc(__m128i in, __m128i key);
+#include <cstddef>
 
-__m128i soft_aesdec(__m128i in, __m128i key);
+template<bool softAes>
+void hashAes1Rx4(const void *input, size_t inputSize, void *hash);
 
-template<bool soft>
-inline __m128i aesenc(__m128i in, __m128i key) {
-	return soft ? soft_aesenc(in, key) : _mm_aesenc_si128(in, key);
-}
-
-template<bool soft>
-inline __m128i aesdec(__m128i in, __m128i key) {
-	return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
-}
+template<bool softAes>
+void fillAes1Rx4(void *state, size_t outputSize, void *buffer);

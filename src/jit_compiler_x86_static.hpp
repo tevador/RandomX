@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
 extern "C" {
 	void randomx_program_prologue();
 	void randomx_program_loop_begin();

@@ -17,15 +17,21 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "Program.hpp"
-#include "hashAes1Rx4.hpp"
+#pragma once
 
-namespace RandomX {
-	template<size_t PROGRAM_SIZE>
-	void ProgramBase::print(std::ostream& os) const {
-		for (int i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			auto instr = programBuffer[i];
-			os << instr;
-		}
-	}
+#include <stdint.h>
+#include "intrin_portable.h"
+
+__m128i soft_aesenc(__m128i in, __m128i key);
+
+__m128i soft_aesdec(__m128i in, __m128i key);
+
+template<bool soft>
+inline __m128i aesenc(__m128i in, __m128i key) {
+	return soft ? soft_aesenc(in, key) : _mm_aesenc_si128(in, key);
+}
+
+template<bool soft>
+inline __m128i aesdec(__m128i in, __m128i key) {
+	return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
 }

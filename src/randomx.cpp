@@ -19,12 +19,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "randomx.h"
 #include "dataset.hpp"
-#include "VirtualMachine.hpp"
-#include "./InterpretedVirtualMachine.hpp"
-#include "./InterpretedLightVirtualMachine.hpp"
-#include "./CompiledVirtualMachine.hpp"
-#include "./CompiledLightVirtualMachine.hpp"
-#include "virtualMemory.hpp"
+#include "vm_interpreted.hpp"
+#include "vm_interpreted_light.hpp"
+#include "vm_compiled.hpp"
+#include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
 
 extern "C" {

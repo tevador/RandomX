@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "CompiledLightVirtualMachine.hpp"
+#include "vm_compiled_light.hpp"
 #include "common.hpp"
 #include <stdexcept>
 

@@ -18,9 +18,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include "superscalar_program.hpp"
-#include "Blake2Generator.hpp"
+
+#include <cstdint>
 #include <vector>
+#include "superscalar_program.hpp"
+#include "blake2_generator.hpp"
 
 namespace randomx {
 	                                              //                  Intel Ivy Bridge reference
@@ -45,5 +47,5 @@ namespace randomx {
 	}
 
 	void generateSuperscalar(SuperscalarProgram& prog, Blake2Generator& gen);
-	void executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t> *reciprocals = nullptr);
+	void executeSuperscalar(uint64_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t> *reciprocals = nullptr);
 }

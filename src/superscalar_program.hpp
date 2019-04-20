@@ -20,7 +20,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
-#include "Instruction.hpp"
+#include "instruction.hpp"
 #include "configuration.h"
 
 namespace randomx {

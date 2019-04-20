@@ -19,7 +19,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "reciprocal.h"
 
-
 /*
 	Calculates rcp = 2**x / divisor for highest integer x such that rcp < 2**64.
 
@@ -34,7 +33,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	ret
 
 */
-uint64_t reciprocal(uint64_t divisor) {
+uint64_t randomx_reciprocal(uint64_t divisor) {
 
 	const uint64_t p2exp63 = 1ULL << 63;
 

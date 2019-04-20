@@ -17,20 +17,14 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include <cstring>
-#include <climits>
 #include <stdexcept>
-#include "JitCompilerX86.hpp"
-#include "Program.hpp"
-#include "reciprocal.h"
-#include "virtualMemory.hpp"
-#include "intrinPortable.h"
+#include "jit_compiler_x86.hpp"
 
 #define RANDOMX_JUMP
 
+#if !defined(_M_X64) && !defined(__x86_64__)
 namespace randomx {
 
-#if !defined(_M_X64) && !defined(__x86_64__)
 	JitCompilerX86::JitCompilerX86() {
 		throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
@@ -46,8 +40,19 @@ namespace randomx {
 	size_t JitCompilerX86::getCodeSize() {
 		return 0;
 	}
+
+}
 #else
 
+#include <cstring>
+#include <climits>
+#include "jit_compiler_x86_static.hpp"
+#include "superscalar.hpp"
+#include "program.hpp"
+#include "reciprocal.h"
+#include "virtual_memory.hpp"
+
+namespace randomx {
 	/*
 
 	REGISTER ALLOCATION:
@@ -86,9 +91,6 @@ namespace randomx {
 	; xmm15 -> scale mask       = 0x81f000000000000081f0000000000000
 
 	*/
-
-#include "JitCompilerX86-static.hpp"
-#include "superscalarGenerator.hpp"
 
 #define NOP_TEST true
 
@@ -675,7 +677,7 @@ namespace randomx {
 			}
 			registerUsage[instr.dst] = i;
 			emit(MOV_RAX_I);
-			emit64(reciprocal(instr.getImm32()));
+			emit64(randomx_reciprocal(instr.getImm32()));
 			emit(REX_IMUL_RM);
 			emitByte(0xc0 + 8 * instr.dst);
 		}
@@ -1017,7 +1019,7 @@ namespace randomx {
 		emitByte(0x90);
 	}
 
-#include "instructionWeights.hpp"
+#include "instruction_weights.hpp"
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
 	InstructionGeneratorX86 JitCompilerX86::engine[256] = {

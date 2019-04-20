@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "Instruction.hpp"
+#include "instruction.hpp"
 #include "common.hpp"
 
 namespace randomx {
@@ -330,7 +330,7 @@ namespace randomx {
 		os << std::endl;
 	}
 
-#include "instructionWeights.hpp"
+#include "instruction_weights.hpp"
 #define INST_NAME(x) REPN(#x, WT(x))
 #define INST_HANDLE(x) REPN(&Instruction::h_##x, WT(x))
 
@@ -380,7 +380,7 @@ namespace randomx {
 		INST_NAME(NOP)
 	};
 
-	InstructionVisualizer Instruction::engine[256] = {
+	InstructionFormatter Instruction::engine[256] = {
 		//Integer
 		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)

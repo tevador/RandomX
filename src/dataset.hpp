@@ -21,28 +21,25 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include <vector>
-#include "intrinPortable.h"
 #include "common.hpp"
-#include "randomx.h"
-#include "Program.hpp"
 #include "superscalar_program.hpp"
-#include "JitCompilerX86.hpp"
+#include "jit_compiler_x86.hpp"
 #include "allocator.hpp"
 
+/* Global scope for C binding */
 struct randomx_dataset {
 	virtual ~randomx_dataset() = 0;
 	virtual bool allocate() = 0;
 	uint8_t* memory = nullptr;
 };
 
+/* Global scope for C binding */
 struct randomx_cache : public randomx_dataset {
 	virtual randomx::DatasetInitFunc getInitFunc() = 0;
-	virtual void initialize(const void *seed, size_t seedSize); //argon2
+	virtual void initialize(const void *seed, size_t seedSize);
 	randomx::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 	std::vector<uint64_t> reciprocalCache;
 };
-
-
 
 namespace randomx {
 

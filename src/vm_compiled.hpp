@@ -20,8 +20,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <new>
-#include "VirtualMachine.hpp"
-#include "JitCompilerX86.hpp"
+#include <cstdint>
+#include "virtual_machine.hpp"
+#include "jit_compiler_x86.hpp"
+#include "allocator.hpp"
+#include "dataset.hpp"
 
 namespace randomx {
 

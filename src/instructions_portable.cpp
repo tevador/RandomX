@@ -16,9 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
+
 //#define DEBUG
-#include "intrinPortable.h"
-#include "blake2/endian.h"
+
 #pragma STDC FENV_ACCESS on
 #include <cfenv>
 #include <cmath>
@@ -26,6 +26,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #endif
 #include "common.hpp"
+#include "intrin_portable.h"
+#include "blake2/endian.h"
 
 #if defined(__SIZEOF_INT128__)
 	typedef unsigned __int128 uint128_t;
@@ -87,14 +89,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	uint64_t rotr(uint64_t a, int b) {
 		return (a >> b) | (a << (64 - b));
 	}
-	#define HAS_ROTR
+	#define HAVE_ROTR
 #endif
 
 #ifndef HAVE_ROTL
 	uint64_t rotl(uint64_t a, int b) {
 		return (a << b) | (a >> (64 - b));
 	}
-	#define HAS_ROTL
+	#define HAVE_ROTL
 #endif
 
 #ifndef HAVE_MULH
@@ -125,11 +127,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	}
 	#define HAVE_SMULH
 #endif
-
-// avoid undefined behavior of signed overflow
-static inline int32_t safeSub(int32_t a, int32_t b) {
-	return int32_t(uint32_t(a) - uint32_t(b));
-}
 
 #if __GNUC__ >= 5
 #undef __has_builtin

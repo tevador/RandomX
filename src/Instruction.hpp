@@ -27,7 +27,7 @@ namespace randomx {
 
 	class Instruction;
 
-	typedef void(Instruction::*InstructionVisualizer)(std::ostream&) const;
+	typedef void(Instruction::*InstructionFormatter)(std::ostream&) const;
 
 	namespace InstructionType {
 		constexpr int IADD_RS = 0;
@@ -71,9 +71,6 @@ namespace randomx {
 
 	class Instruction {
 	public:
-		uint8_t opcode;
-		uint8_t dst;
-		uint8_t src;
 		uint32_t getImm32() const {
 			return load32(&imm32);
 		}
@@ -102,17 +99,20 @@ namespace randomx {
 		void setMod(uint8_t val) {
 			mod = val;
 		}
+
+		uint8_t opcode;
+		uint8_t dst;
+		uint8_t src;
 	private:
 		uint8_t mod;
 		uint32_t imm32;
+
 		void print(std::ostream&) const;
 		static const char* names[256];
-		static InstructionVisualizer engine[256];
-
+		static InstructionFormatter engine[256];
 		void genAddressReg(std::ostream& os) const;
 		void genAddressImm(std::ostream& os) const;
 		void genAddressRegDst(std::ostream&) const;
-
 		void  h_IADD_RS(std::ostream&) const;
 		void  h_IADD_M(std::ostream&) const;
 		void  h_IADD_RC(std::ostream&) const;
@@ -152,6 +152,6 @@ namespace randomx {
 		void  h_NOP(std::ostream&) const;
 	};
 
-	static_assert(sizeof(Instruction) == 8, "Invalid alignment of struct Instruction");
+	static_assert(sizeof(Instruction) == 8, "Invalid size of struct randomx::Instruction");
 
 }

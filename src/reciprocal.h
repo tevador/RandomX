@@ -18,13 +18,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+
 #include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-	uint64_t reciprocal(uint64_t);
+uint64_t randomx_reciprocal(uint64_t);
 
 #if defined(__cplusplus)
 }

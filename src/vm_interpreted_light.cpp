@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#include "InterpretedLightVirtualMachine.hpp"
+#include "vm_interpreted_light.hpp"
 #include "dataset.hpp"
 
 namespace randomx {

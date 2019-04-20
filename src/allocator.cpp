@@ -20,8 +20,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "allocator.hpp"
-#include "virtualMemory.hpp"
-#include "intrinPortable.h"
+#include "intrin_portable.h"
+#include "virtual_memory.hpp"
 #include "common.hpp"
 
 namespace randomx {

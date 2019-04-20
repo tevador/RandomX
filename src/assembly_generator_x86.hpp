@@ -19,9 +19,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "Instruction.hpp"
-#include "configuration.h"
-#include "common.hpp"
 #include <sstream>
 
 namespace randomx {
@@ -29,6 +26,7 @@ namespace randomx {
 	class Program;
 	class SuperscalarProgram;
 	class AssemblyGeneratorX86;
+	class Instruction;
 
 	typedef void(AssemblyGeneratorX86::*InstructionGenerator)(Instruction&, int);
 
@@ -41,22 +39,15 @@ namespace randomx {
 			os << asmCode.rdbuf();
 		}
 	private:
-		static InstructionGenerator engine[256];
-		std::stringstream asmCode;
-		int registerUsage[8];
-
 		void genAddressReg(Instruction&, const char*);
 		void genAddressRegDst(Instruction&, int);
 		int32_t genAddressImm(Instruction&);
 		int getConditionRegister();
 		void handleCondition(Instruction&, int);
-
 		void generateCode(Instruction&, int);
-
 		void traceint(Instruction&);
 		void traceflt(Instruction&);
 		void tracenop(Instruction&);
-
 		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
 		void  h_IADD_RC(Instruction&, int);
@@ -94,5 +85,9 @@ namespace randomx {
 		void  h_ISTORE(Instruction&, int);
 		void  h_FSTORE(Instruction&, int);
 		void  h_NOP(Instruction&, int);
+
+		static InstructionGenerator engine[256];
+		std::stringstream asmCode;
+		int registerUsage[8];
 	};
 }
