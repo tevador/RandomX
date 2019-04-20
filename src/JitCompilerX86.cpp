@@ -28,7 +28,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #define RANDOMX_JUMP
 
-namespace RandomX {
+namespace randomx {
 
 #if !defined(_M_X64) && !defined(__x86_64__)
 	JitCompilerX86::JitCompilerX86() {
@@ -238,33 +238,29 @@ namespace RandomX {
 		generateProgramEpilogue(prog);
 	}
 
-	template<bool superscalar>
 	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg) {
 		if (RANDOMX_CACHE_ACCESSES != 8)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
 		if (RANDOMX_ARGON_GROWTH != 0)
 			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
 		generateProgramPrologue(prog, pcfg);
-		if (superscalar) {
+		//if (superscalar) {
 			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
 			emitByte(CALL);
 			emit32(superScalarHashOffset - (codePos + 4));
 			emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
-		}
+		/*}
 		else {
 			memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
 			codePos += readDatasetLightSize;
 			emitByte(CALL);
 			emit32(readDatasetLightSubOffset - (codePos + 4));
-		}
+		}*/
 		generateProgramEpilogue(prog);
 	}
 
-	template void JitCompilerX86::generateProgramLight<true>(Program& prog, ProgramConfiguration& pcfg);
-	template void JitCompilerX86::generateProgramLight<false>(Program& prog, ProgramConfiguration& pcfg);
-
 	template<size_t N>
-	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[N]) {
+	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &reciprocalCache) {
 		memcpy(code + superScalarHashOffset, codeShhInit, codeSshInitSize);
 		codePos = superScalarHashOffset + codeSshInitSize;
 		for (unsigned j = 0; j < N; ++j) {
@@ -273,7 +269,7 @@ namespace RandomX {
 				Instruction& instr = prog(i);
 				instr.src %= RegistersCount;
 				instr.dst %= RegistersCount;
-				generateCode<SuperscalarProgram>(instr, i);
+				generateSuperscalarCode(instr, reciprocalCache);
 			}
 			emit(codeShhLoad, codeSshLoadSize);
 			if (j < N - 1) {
@@ -293,7 +289,7 @@ namespace RandomX {
 	}
 
 	template
-	void JitCompilerX86::generateSuperScalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
+	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
 
 	void JitCompilerX86::generateDatasetInitCode() {
 		memcpy(code, codeDatasetInit, datasetInitSize);
@@ -314,7 +310,12 @@ namespace RandomX {
 		emitByte(0xc0 + pcfg.readReg1);
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		generateCode(prog);
+		for (unsigned i = 0; i < prog.getSize(); ++i) {
+			Instruction& instr = prog(i);
+			instr.src %= RegistersCount;
+			instr.dst %= RegistersCount;
+			generateCode(instr, i);
+		}
 		emit(REX_MOV_RR);
 		emitByte(0xc0 + pcfg.readReg2);
 		emit(REX_XOR_EAX);
@@ -331,7 +332,6 @@ namespace RandomX {
 		emit32(epilogueOffset - codePos - 4);
 	}
 
-	template<class P>
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
 #ifdef RANDOMX_JUMP
 		instructionOffsets.push_back(codePos);
@@ -340,67 +340,66 @@ namespace RandomX {
 		(this->*generator)(instr, i);
 	}
 
-	template<>
-	void JitCompilerX86::generateCode<SuperscalarProgram>(Instruction& instr, int i) {
+	void JitCompilerX86::generateSuperscalarCode(Instruction& instr, std::vector<uint64_t> &reciprocalCache) {
 		switch (instr.opcode)
 		{
-		case RandomX::SuperscalarInstructionType::ISUB_R:
+		case randomx::SuperscalarInstructionType::ISUB_R:
 			emit(REX_SUB_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::SuperscalarInstructionType::IXOR_R:
+		case randomx::SuperscalarInstructionType::IXOR_R:
 			emit(REX_XOR_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::SuperscalarInstructionType::IADD_RS:
+		case randomx::SuperscalarInstructionType::IADD_RS:
 			emit(REX_LEA);
 			emitByte(0x04 + 8 * instr.dst);
 			genSIB(instr.getModShift2(), instr.src, instr.dst);
 			break;
-		case RandomX::SuperscalarInstructionType::IMUL_R:
+		case randomx::SuperscalarInstructionType::IMUL_R:
 			emit(REX_IMUL_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 			break;
-		case RandomX::SuperscalarInstructionType::IROR_C:
+		case randomx::SuperscalarInstructionType::IROR_C:
 			emit(REX_ROT_I8);
 			emitByte(0xc8 + instr.dst);
 			emitByte(instr.getImm32() & 63);
 			break;
-		case RandomX::SuperscalarInstructionType::IADD_C7:
+		case randomx::SuperscalarInstructionType::IADD_C7:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			break;
-		case RandomX::SuperscalarInstructionType::IXOR_C7:
+		case randomx::SuperscalarInstructionType::IXOR_C7:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			break;
-		case RandomX::SuperscalarInstructionType::IADD_C8:
+		case randomx::SuperscalarInstructionType::IADD_C8:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP1);
 			break;
-		case RandomX::SuperscalarInstructionType::IXOR_C8:
+		case randomx::SuperscalarInstructionType::IXOR_C8:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP1);
 			break;
-		case RandomX::SuperscalarInstructionType::IADD_C9:
+		case randomx::SuperscalarInstructionType::IADD_C9:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP2);
 			break;
-		case RandomX::SuperscalarInstructionType::IXOR_C9:
+		case randomx::SuperscalarInstructionType::IXOR_C9:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
 			emit(NOP2);
 			break;
-		case RandomX::SuperscalarInstructionType::IMULH_R:
+		case randomx::SuperscalarInstructionType::IMULH_R:
 			emit(REX_MOV_RR64);
 			emitByte(0xc0 + instr.dst);
 			emit(REX_MUL_R);
@@ -408,7 +407,7 @@ namespace RandomX {
 			emit(REX_MOV_R64R);
 			emitByte(0xc2 + 8 * instr.dst);
 			break;
-		case RandomX::SuperscalarInstructionType::ISMULH_R:
+		case randomx::SuperscalarInstructionType::ISMULH_R:
 			emit(REX_MOV_RR64);
 			emitByte(0xc0 + instr.dst);
 			emit(REX_MUL_R);
@@ -416,9 +415,9 @@ namespace RandomX {
 			emit(REX_MOV_R64R);
 			emitByte(0xc2 + 8 * instr.dst);
 			break;
-		case RandomX::SuperscalarInstructionType::IMUL_RCP:
+		case randomx::SuperscalarInstructionType::IMUL_RCP:
 			emit(MOV_RAX_I);
-			emit64(reciprocal(instr.getImm32()));
+			emit64(reciprocalCache[instr.getImm32()]);
 			emit(REX_IMUL_RM);
 			emitByte(0xc0 + 8 * instr.dst);
 			break;
@@ -426,8 +425,6 @@ namespace RandomX {
 			UNREACHABLE;
 		}
 	}
-
-	template void JitCompilerX86::generateCode<Program>(Instruction& instr, int i);
 
 	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
 		emit(LEA_32);

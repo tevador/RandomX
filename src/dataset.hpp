@@ -20,26 +20,62 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
+#include <vector>
 #include "intrinPortable.h"
 #include "common.hpp"
+#include "randomx.h"
+#include "Program.hpp"
+#include "superscalar_program.hpp"
+#include "JitCompilerX86.hpp"
+#include "allocator.hpp"
 
-namespace RandomX {
+struct randomx_dataset {
+	virtual ~randomx_dataset() = 0;
+	virtual bool allocate() = 0;
+	uint8_t* memory = nullptr;
+};
 
-#if false //RANDOMX_ARGON_GROWTH == 0 && (defined(_M_X64) || defined(__x86_64__))
-	extern "C"
-#endif
-	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations);
+struct randomx_cache : public randomx_dataset {
+	virtual randomx::DatasetInitFunc getInitFunc() = 0;
+	virtual void initialize(const void *seed, size_t seedSize); //argon2
+	randomx::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
+	std::vector<uint64_t> reciprocalCache;
+};
 
-	void datasetAlloc(dataset_t& ds, bool largePages);
 
-	void datasetInit(Cache& cache, Dataset& ds, uint32_t startBlock, uint32_t blockCount);
 
-	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile&);
+namespace randomx {
 
-	void datasetInitCache(const void* seed, dataset_t& dataset, bool largePages);
+	template<class Allocator>
+	struct Dataset : public randomx_dataset {
+		~Dataset() override;
+		bool allocate() override;
+	};
 
-	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
+	using DatasetDefault = Dataset<AlignedAllocator<CacheLineSize>>;
+	using DatasetLargePage = Dataset<LargePageAllocator>;
 
-	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]);
+	template<class Allocator>
+	struct Cache : public randomx_cache {
+		~Cache() override;
+		bool allocate() override;
+		DatasetInitFunc getInitFunc() override;
+	};
+
+	template<class Allocator>
+	struct CacheWithJit : public Cache<Allocator> {
+		using Cache<Allocator>::programs;
+		using Cache<Allocator>::reciprocalCache;
+		void initialize(const void *seed, size_t seedSize) override;
+		DatasetInitFunc getInitFunc() override;
+		JitCompilerX86 jit;
+	};
+
+	using CacheDefault = Cache<AlignedAllocator<CacheLineSize>>;
+	using CacheWithJitDefault = CacheWithJit<AlignedAllocator<CacheLineSize>>;
+	using CacheLargePage = Cache<LargePageAllocator>;
+	using CacheWithJitLargePage = CacheWithJit<LargePageAllocator>;
+
+	void initDatasetBlock(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);
+	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 }
-

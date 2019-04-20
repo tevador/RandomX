@@ -21,34 +21,34 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include <stdexcept>
 
-namespace RandomX {
+namespace randomx {
 
-	//static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct RandomX::MemoryRegisters");
-	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct RandomX::RegisterFile");
+	static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct randomx::MemoryRegisters");
+	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct randomx::RegisterFile");
 
-	CompiledVirtualMachine::CompiledVirtualMachine() {
+
+	template<class Allocator, bool softAes>
+	void CompiledVm<Allocator, softAes>::setDataset(randomx_dataset* dataset) {
+		this->mem.memory = dataset->memory;
+		//datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		//datasetBasePtr = ds.dataset.memory;
 	}
 
-	void CompiledVirtualMachine::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
-		mem.ds = ds;
-		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
-		datasetBasePtr = ds.dataset.memory;
+	template<class Allocator, bool softAes>
+	void CompiledVm<Allocator, softAes>::initialize() {
+		randomx_vm::initialize();
+		this->compiler.generateProgram(this->program, this->config);
+		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
 
-	void CompiledVirtualMachine::initialize() {
-		VirtualMachine::initialize();
-		compiler.generateProgram(program, config);
-		mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
-	}
-
-	void CompiledVirtualMachine::execute() {
+	template<class Allocator, bool softAes>
+	void CompiledVm<Allocator, softAes>::execute() {
 		//executeProgram(reg, mem, scratchpad, InstructionCount);
-		compiler.getProgramFunc()(reg, mem, scratchpad, RANDOMX_PROGRAM_ITERATIONS);
-#ifdef TRACEVM
-		for (int32_t i = InstructionCount - 1; i >= 0; --i) {
-			std::cout << std::hex << tracepad[i].u64 << std::endl;
-		}
-#endif
-
+		compiler.getProgramFunc()(this->reg, this->mem, this->scratchpad, RANDOMX_PROGRAM_ITERATIONS);
 	}
+
+	template class CompiledVm<AlignedAllocator<CacheLineSize>, false>;
+	template class CompiledVm<AlignedAllocator<CacheLineSize>, true>;
+	template class CompiledVm<LargePageAllocator, false>;
+	template class CompiledVm<LargePageAllocator, true>;
 }

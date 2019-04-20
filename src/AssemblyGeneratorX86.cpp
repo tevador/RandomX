@@ -25,7 +25,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 #include "superscalarGenerator.hpp"
 
-namespace RandomX {
+namespace randomx {
 
 	static const char* regR[8] = { "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
 	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
@@ -69,54 +69,54 @@ namespace RandomX {
 			Instruction& instr = prog(i);
 			switch (instr.opcode)
 			{
-			case RandomX::SuperscalarInstructionType::ISUB_R:
+			case SuperscalarInstructionType::ISUB_R:
 				asmCode << "sub " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_R:
+			case SuperscalarInstructionType::IXOR_R:
 				asmCode << "xor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_RS:
+			case SuperscalarInstructionType::IADD_RS:
 				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << "]" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMUL_R:
+			case SuperscalarInstructionType::IMUL_R:
 				asmCode << "imul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IROR_C:
+			case SuperscalarInstructionType::IROR_C:
 				asmCode << "ror " << regR[instr.dst] << ", " << instr.getImm32() << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_C7:
+			case SuperscalarInstructionType::IADD_C7:
 				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_C7:
+			case SuperscalarInstructionType::IXOR_C7:
 				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_C8:
+			case SuperscalarInstructionType::IADD_C8:
 				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				asmCode << "nop" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_C8:
+			case SuperscalarInstructionType::IXOR_C8:
 				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				asmCode << "nop" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_C9:
+			case SuperscalarInstructionType::IADD_C9:
 				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				asmCode << "xchg ax, ax ;nop" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_C9:
+			case SuperscalarInstructionType::IXOR_C9:
 				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
 				asmCode << "xchg ax, ax ;nop" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMULH_R:
+			case SuperscalarInstructionType::IMULH_R:
 				asmCode << "mov rax, " << regR[instr.dst] << std::endl;
 				asmCode << "mul " << regR[instr.src] << std::endl;
 				asmCode << "mov " << regR[instr.dst] << ", rdx" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::ISMULH_R:
+			case SuperscalarInstructionType::ISMULH_R:
 				asmCode << "mov rax, " << regR[instr.dst] << std::endl;
 				asmCode << "imul " << regR[instr.src] << std::endl;
 				asmCode << "mov " << regR[instr.dst] << ", rdx" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMUL_RCP:
+			case SuperscalarInstructionType::IMUL_RCP:
 				asmCode << "mov rax, " << (int64_t)reciprocal(instr.getImm32()) << std::endl;
 				asmCode << "imul " << regR[instr.dst] << ", rax" << std::endl;
 				break;
@@ -178,38 +178,38 @@ namespace RandomX {
 			Instruction& instr = prog(i);
 			switch (instr.opcode)
 			{
-			case RandomX::SuperscalarInstructionType::ISUB_R:
+			case SuperscalarInstructionType::ISUB_R:
 				asmCode << regR[instr.dst] << " -= " << regR[instr.src] << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_R:
+			case SuperscalarInstructionType::IXOR_R:
 				asmCode << regR[instr.dst] << " ^= " << regR[instr.src] << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_RS:
+			case SuperscalarInstructionType::IADD_RS:
 				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMUL_R:
+			case SuperscalarInstructionType::IMUL_R:
 				asmCode << regR[instr.dst] << " *= " << regR[instr.src] << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IROR_C:
+			case SuperscalarInstructionType::IROR_C:
 				asmCode << regR[instr.dst] << " = rotr(" << regR[instr.dst] << ", " << instr.getImm32() << ");" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IADD_C7:
-			case RandomX::SuperscalarInstructionType::IADD_C8:
-			case RandomX::SuperscalarInstructionType::IADD_C9:
+			case SuperscalarInstructionType::IADD_C7:
+			case SuperscalarInstructionType::IADD_C8:
+			case SuperscalarInstructionType::IADD_C9:
 				asmCode << regR[instr.dst] << " += " << (int32_t)instr.getImm32() << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IXOR_C7:
-			case RandomX::SuperscalarInstructionType::IXOR_C8:
-			case RandomX::SuperscalarInstructionType::IXOR_C9:
+			case SuperscalarInstructionType::IXOR_C7:
+			case SuperscalarInstructionType::IXOR_C8:
+			case SuperscalarInstructionType::IXOR_C9:
 				asmCode << regR[instr.dst] << " ^= " << (int32_t)instr.getImm32() << ";" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMULH_R:
+			case SuperscalarInstructionType::IMULH_R:
 				asmCode << regR[instr.dst] << " = mulh(" << regR[instr.dst] << ", " << regR[instr.src] << ");" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::ISMULH_R:
+			case SuperscalarInstructionType::ISMULH_R:
 				asmCode << regR[instr.dst] << " = smulh(" << regR[instr.dst] << ", " << regR[instr.src] << ");" << std::endl;
 				break;
-			case RandomX::SuperscalarInstructionType::IMUL_RCP:
+			case SuperscalarInstructionType::IMUL_RCP:
 				asmCode << regR[instr.dst] << " *= " << (int64_t)reciprocal(instr.getImm32()) << ";" << std::endl;
 				break;
 			default:

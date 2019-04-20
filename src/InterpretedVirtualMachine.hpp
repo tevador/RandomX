@@ -18,20 +18,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-//#define STATS
+
 #include <new>
 #include "VirtualMachine.hpp"
 #include "Program.hpp"
 #include "intrinPortable.h"
 #include <vector>
 
-namespace RandomX {
-
-	struct InstructionByteCode;
-	template<bool superscalar> class InterpretedVirtualMachine;
-
-	template<bool superscalar>
-	using InstructionHandler = void(InterpretedVirtualMachine<superscalar>::*)(Instruction&);
+namespace randomx {
 
 	struct InstructionByteCode {
 		union {
@@ -56,83 +50,40 @@ namespace RandomX {
 
 	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
 
-	template<bool superscalar>
-	class InterpretedVirtualMachine : public VirtualMachine {
+	template<class Allocator, bool softAes>
+	class InterpretedVm : public VmBase<Allocator, softAes> {
 	public:
+		using VmBase<Allocator, softAes>::mem;
+		using VmBase<Allocator, softAes>::scratchpad;
+		using VmBase<Allocator, softAes>::program;
+		using VmBase<Allocator, softAes>::config;
+		using VmBase<Allocator, softAes>::reg;
 		void* operator new(size_t size) {
-			void* ptr = _mm_malloc(size, 64);
+			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
 			if (ptr == nullptr)
 				throw std::bad_alloc();
 			return ptr;
 		}
 		void operator delete(void* ptr) {
-			_mm_free(ptr);
+			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(InterpretedVm));
 		}
-		InterpretedVirtualMachine(bool soft) : softAes(soft) {}
-		~InterpretedVirtualMachine() {}
-		void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
-		void initialize() override;
 		void execute() override;
-		static void executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t>& reciprocals);
+		void setDataset(randomx_dataset* dataset) override;
+		void initialize() override;
+	protected:
+		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[8]);
 	private:
-		static InstructionHandler<superscalar> engine[256];
-		DatasetReadFunc readDataset;
-		bool softAes;
-		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
-		std::vector<uint64_t> reciprocals;
-		alignas(64) SuperscalarProgram superScalarPrograms[RANDOMX_CACHE_ACCESSES];
-#ifdef STATS
-		int count_ADD_64 = 0;
-		int count_ADD_32 = 0;
-		int count_SUB_64 = 0;
-		int count_SUB_32 = 0;
-		int count_MUL_64 = 0;
-		int count_MULH_64 = 0;
-		int count_MUL_32 = 0;
-		int count_IMUL_32 = 0;
-		int count_IMULH_64 = 0;
-		int count_DIV_64 = 0;
-		int count_IDIV_64 = 0;
-		int count_AND_64 = 0;
-		int count_AND_32 = 0;
-		int count_OR_64 = 0;
-		int count_OR_32 = 0;
-		int count_XOR_64 = 0;
-		int count_XOR_32 = 0;
-		int count_SHL_64 = 0;
-		int count_SHR_64 = 0;
-		int count_SAR_64 = 0;
-		int count_ROL_64 = 0;
-		int count_ROR_64 = 0;
-		int count_FADD = 0;
-		int count_FSUB = 0;
-		int count_FMUL = 0;
-		int count_FDIV = 0;
-		int count_FSQRT = 0;
-		int count_FPROUND = 0;
-		int count_JUMP_taken = 0;
-		int count_JUMP_not_taken = 0;
-		int count_jump_taken[8] = { 0 };
-		int count_jump_not_taken[8] = { 0 };
-		int count_max_stack = 0;
-		int count_retdepth = 0;
-		int count_retdepth_max = 0;
-		int count_endstack = 0;
-		int count_instructions[RANDOMX_PROGRAM_SIZE] = { 0 };
-		int count_FADD_nop = 0;
-		int count_FADD_nop2 = 0;
-		int count_FSUB_nop = 0;
-		int count_FSUB_nop2 = 0;
-		int count_FMUL_nop = 0;
-		int count_FMUL_nop2 = 0;
-		int datasetAccess[256] = { 0 };
-#endif
 		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void precompileSuperscalar(SuperscalarProgram*);
 		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void executeSuperscalar(uint32_t blockNumber, int_reg_t(&r)[8]);
 		void* getScratchpadAddress(InstructionByteCode& ibc);
 		__m128d maskRegisterExponentMantissa(__m128d);
+
+		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
 	};
+
+	using InterpretedVmDefault = InterpretedVm<AlignedAllocator<CacheLineSize>, true>;
+	using InterpretedVmHardAes = InterpretedVm<AlignedAllocator<CacheLineSize>, false>;
+	using InterpretedVmLargePage = InterpretedVm<LargePageAllocator, false>;
+	using InterpretedVmLargePageHardAes = InterpretedVm<LargePageAllocator, true>;
 }

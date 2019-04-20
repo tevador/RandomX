@@ -23,8 +23,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #include "blake2/endian.h"
 #include "configuration.h"
+#include "randomx.h"
 
-namespace RandomX {
+namespace randomx {
 
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
 	static_assert((RANDOMX_DATASET_SIZE & (RANDOMX_DATASET_SIZE - 1)) == 0, "RANDOMX_DATASET_SIZE must be a power of 2.");
@@ -58,6 +59,7 @@ namespace RandomX {
 	constexpr int ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = 64;
+	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;
 	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
 	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
 	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
@@ -98,39 +100,9 @@ namespace RandomX {
 	constexpr int RegisterNeedsDisplacement = 5; //x86 r13 register
 	constexpr int RegisterNeedsSib = 4; //x86 r12 register
 
-	struct Cache {
-		uint8_t* memory;
-		uint64_t size;
-	};
-
-	struct Dataset : public Cache {
-	};
-
-	class ILightClientAsyncWorker {
-	public:
-		virtual ~ILightClientAsyncWorker() {}
-		virtual void prepareBlock(addr_t) = 0;
-		virtual void prepareBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
-		virtual const uint64_t* getBlock(addr_t) = 0;
-		virtual void getBlocks(void* out, uint32_t startBlock, uint32_t blockCount) = 0;
-		virtual void sync() = 0;
-		const Cache& getCache() {
-			return cache;
-		}
-	protected:
-		ILightClientAsyncWorker(const Cache& c) : cache(c) {}
-		const Cache& cache;
-	};
-
-	union dataset_t {
-		Dataset dataset;
-		Cache cache;
-		ILightClientAsyncWorker* asyncWorker;
-	};
-
 	struct MemoryRegisters {
 		addr_t mx, ma;
-		dataset_t ds;
+		uint8_t* memory = nullptr;
 	};
 
 	struct RegisterFile {
@@ -141,9 +113,8 @@ namespace RandomX {
 	};
 
 	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
-
 	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
-	typedef void(*DatasetInitFunc)(uint8_t* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
+	typedef void(*DatasetInitFunc)(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 }
 
-std::ostream& operator<<(std::ostream& os, const RandomX::RegisterFile& rf);
+std::ostream& operator<<(std::ostream& os, const randomx::RegisterFile& rf);

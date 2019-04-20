@@ -23,7 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #include "blake2/endian.h"
 
-namespace RandomX {
+namespace randomx {
 
 	class Instruction;
 

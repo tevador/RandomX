@@ -22,14 +22,17 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <cstring>
 #include <limits>
+#include <cstring>
 
 #include "common.hpp"
 #include "dataset.hpp"
-#include "Cache.hpp"
 #include "virtualMemory.hpp"
-#include "softAes.h"
-#include "squareHash.h"
+#include "superscalarGenerator.hpp"
+#include "Blake2Generator.hpp"
+#include "reciprocal.h"
 #include "blake2/endian.h"
+#include "argon2.h"
+#include "argon2_core.h"
 
 #if defined(__SSE2__)
 #include <wmmintrin.h>
@@ -38,113 +41,174 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define PREFETCH(memory)
 #endif
 
-namespace RandomX {
+randomx_dataset::~randomx_dataset() {
 
-#if true //RANDOMX_ARGON_GROWTH != 0 || (!defined(_M_X64) && !defined(__x86_64__))
-	static FORCE_INLINE uint8_t* selectMixBlock(const Cache& cache, uint64_t& currentIndex, uint64_t& nextIndex) {
+}
+
+static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
+
+void randomx_cache::initialize(const void *seed, size_t seedSize) {
+	uint32_t memory_blocks, segment_length;
+	argon2_instance_t instance;
+	argon2_context context;
+
+	context.out = nullptr;
+	context.outlen = 0;
+	context.pwd = CONST_CAST(uint8_t *)seed;
+	context.pwdlen = (uint32_t)seedSize;
+	context.salt = CONST_CAST(uint8_t *)RANDOMX_ARGON_SALT;
+	context.saltlen = (uint32_t)randomx::ArgonSaltSize;
+	context.secret = NULL;
+	context.secretlen = 0;
+	context.ad = NULL;
+	context.adlen = 0;
+	context.t_cost = RANDOMX_ARGON_ITERATIONS;
+	context.m_cost = RANDOMX_ARGON_MEMORY;
+	context.lanes = RANDOMX_ARGON_LANES;
+	context.threads = 1;
+	context.allocate_cbk = NULL;
+	context.free_cbk = NULL;
+	context.flags = ARGON2_DEFAULT_FLAGS;
+	context.version = ARGON2_VERSION_NUMBER;
+
+	/* 2. Align memory size */
+	/* Minimum memory_blocks = 8L blocks, where L is the number of lanes */
+	memory_blocks = context.m_cost;
+
+	segment_length = memory_blocks / (context.lanes * ARGON2_SYNC_POINTS);
+
+	instance.version = context.version;
+	instance.memory = NULL;
+	instance.passes = context.t_cost;
+	instance.memory_blocks = memory_blocks;
+	instance.segment_length = segment_length;
+	instance.lane_length = segment_length * ARGON2_SYNC_POINTS;
+	instance.lanes = context.lanes;
+	instance.threads = context.threads;
+	instance.type = Argon2_d;
+	instance.memory = (block*)memory;
+
+	if (instance.threads > instance.lanes) {
+		instance.threads = instance.lanes;
+	}
+
+	/* 3. Initialization: Hashing inputs, allocating memory, filling first
+	 * blocks
+	 */
+	argon_initialize(&instance, &context);
+
+	fill_memory_blocks(&instance);
+
+	reciprocalCache.clear();
+	randomx::Blake2Generator gen(seed, 1000);
+	for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+		randomx::generateSuperscalar(programs[i], gen);
+		for (unsigned j = 0; j < programs[i].getSize(); ++j) {
+			auto& instr = programs[i](j);
+			if (instr.opcode == randomx::SuperscalarInstructionType::IMUL_RCP) {
+				auto rcp = reciprocal(instr.getImm32());
+				instr.setImm32(reciprocalCache.size());
+				reciprocalCache.push_back(rcp);
+			}
+		}
+	}
+}
+
+namespace randomx {
+
+	template<class Allocator>
+	bool Dataset<Allocator>::allocate() {
+		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_DATASET_SIZE);
+		return true;
+	}
+
+	template<class Allocator>
+	Dataset<Allocator>::~Dataset() {
+		Allocator::freeMemory(memory, RANDOMX_DATASET_SIZE);
+	}
+
+	template<class Allocator>
+	bool Cache<Allocator>::allocate() {
+		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_ARGON_MEMORY * ARGON2_BLOCK_SIZE);
+		return true;
+	}
+
+	template<class Allocator>
+	Cache<Allocator>::~Cache() {
+		Allocator::freeMemory(memory, RANDOMX_ARGON_MEMORY * ARGON2_BLOCK_SIZE);
+	}
+
+	template<class Allocator>
+	DatasetInitFunc Cache<Allocator>::getInitFunc() {
+		return &initDataset;
+	}
+
+	template<class Allocator>
+	DatasetInitFunc CacheWithJit<Allocator>::getInitFunc() {
+		return jit.getDatasetInitFunc();
+	}
+
+	template<class Allocator>
+	void CacheWithJit<Allocator>::initialize(const void *seed, size_t seedSize) {
+		randomx_cache::initialize(seed, seedSize);
+		jit.generateSuperscalarHash(programs, reciprocalCache);
+		jit.generateDatasetInitCode();
+	}
+
+	template class Dataset<AlignedAllocator<CacheLineSize>>;
+	template class Dataset<LargePageAllocator>;
+	template class Cache<AlignedAllocator<CacheLineSize>>;
+	template class Cache<LargePageAllocator>;
+	template class CacheWithJit<AlignedAllocator<CacheLineSize>>;
+	template class CacheWithJit<LargePageAllocator>;
+
+	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;
+	constexpr uint64_t superscalarAdd1 = 9298410992540426748ULL;
+	constexpr uint64_t superscalarAdd2 = 12065312585734608966ULL;
+	constexpr uint64_t superscalarAdd3 = 9306329213124610396ULL;
+	constexpr uint64_t superscalarAdd4 = 5281919268842080866ULL;
+	constexpr uint64_t superscalarAdd5 = 10536153434571861004ULL;
+	constexpr uint64_t superscalarAdd6 = 3398623926847679864ULL;
+	constexpr uint64_t superscalarAdd7 = 9549104520008361294ULL;
+
+	static inline uint8_t* getMixBlock(uint64_t registerValue, uint8_t *memory) {
+		constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
+		return memory + (registerValue & mask) * CacheLineSize;
+	}
+
+	void initDatasetBlock(randomx_cache* cache, uint8_t* out, uint64_t blockNumber) {
+		int_reg_t rl[8];
 		uint8_t* mixBlock;
-		if (RANDOMX_ARGON_GROWTH == 0) {
-			constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
-			mixBlock = cache.memory + (currentIndex & mask) * CacheLineSize;
-		}
-		else {
-			const uint32_t modulus = cache.size / CacheLineSize;
-			mixBlock = cache.memory + (currentIndex % modulus) * CacheLineSize;
-		}
-		PREFETCHNTA(mixBlock);
-		nextIndex = squareHash(currentIndex + nextIndex);
-		return mixBlock;
-	}
+		uint64_t registerValue = blockNumber;
+		rl[0] = (blockNumber + 1) * superscalarMul0;
+		rl[1] = rl[0] ^ superscalarAdd1;
+		rl[2] = rl[0] ^ superscalarAdd2;
+		rl[3] = rl[0] ^ superscalarAdd3;
+		rl[4] = rl[0] ^ superscalarAdd4;
+		rl[5] = rl[0] ^ superscalarAdd5;
+		rl[6] = rl[0] ^ superscalarAdd6;
+		rl[7] = rl[0] ^ superscalarAdd7;
+		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+			mixBlock = getMixBlock(registerValue, cache->memory);
+			SuperscalarProgram& prog = cache->programs[i];
 
-	static FORCE_INLINE void mixCache(uint8_t* mixBlock, uint64_t& c0, uint64_t& c1, uint64_t& c2, uint64_t& c3, uint64_t& c4, uint64_t& c5, uint64_t& c6, uint64_t& c7) {
-		c0 ^= load64(mixBlock + 0);
-		c1 ^= load64(mixBlock + 8);
-		c2 ^= load64(mixBlock + 16);
-		c3 ^= load64(mixBlock + 24);
-		c4 ^= load64(mixBlock + 32);
-		c5 ^= load64(mixBlock + 40);
-		c6 ^= load64(mixBlock + 48);
-		c7 ^= load64(mixBlock + 56);
-	}
+			executeSuperscalar(rl, prog, &cache->reciprocalCache);
 
-	void initBlock(const Cache& cache, uint8_t* out, uint64_t blockNumber, unsigned iterations) {
-		uint64_t c0, c1, c2, c3, c4, c5, c6, c7;
+			for (unsigned q = 0; q < 8; ++q)
+				rl[q] ^= load64(mixBlock + 8 * q);
 
-		c0 = blockNumber;
-		c1 = c2 = c3 = c4 = c5 = c6 = c7 = 0;
-
-		uint8_t* mixBlock;
-
-		for (auto i = 0; i < iterations; ++i) {
-			mixBlock = selectMixBlock(cache, c0, c1);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c1, c2);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c2, c3);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c3, c4);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c4, c5);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c5, c6);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c6, c7);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
-
-			mixBlock = selectMixBlock(cache, c7, c0);
-			mixCache(mixBlock, c0, c1, c2, c3, c4, c5, c6, c7);
+			registerValue = rl[prog.getAddressRegister()];
 		}
 
-		store64(out + 0, c0);
-		store64(out + 8, c1);
-		store64(out + 16, c2);
-		store64(out + 24, c3);
-		store64(out + 32, c4);
-		store64(out + 40, c5);
-		store64(out + 48, c6);
-		store64(out + 56, c7);
-	}
-#endif
-
-	void datasetRead(addr_t addr, MemoryRegisters& memory, RegisterFile& reg) {
-		uint64_t* datasetLine = (uint64_t*)(memory.ds.dataset.memory + memory.ma);
-		memory.mx ^= addr;
-		memory.mx &= -64; //align to cache line
-		std::swap(memory.mx, memory.ma);
-		PREFETCHNTA(memory.ds.dataset.memory + memory.ma);
-		for (int i = 0; i < RegistersCount; ++i)
-			reg.r[i] ^= datasetLine[i];
+		memcpy(out, &rl, CacheLineSize);
 	}
 
-	void datasetReadLight(addr_t addr, MemoryRegisters& memory, int_reg_t (&reg)[RegistersCount]) {
-		memory.mx ^= addr;
-		memory.mx &= CacheLineAlignMask; //align to cache line
-		Cache& cache = memory.ds.cache;
-		uint64_t datasetLine[CacheLineSize / sizeof(uint64_t)];
-		initBlock(cache, (uint8_t*)datasetLine, memory.ma / CacheLineSize, RANDOMX_CACHE_ACCESSES / 8);
-		for (int i = 0; i < RegistersCount; ++i)
-			reg[i] ^= datasetLine[i];
-		std::swap(memory.mx, memory.ma);
+	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock) {
+		for (uint32_t blockNumber = startBlock; blockNumber < endBlock; ++blockNumber, dataset += CacheLineSize)
+			initDatasetBlock(cache, dataset, blockNumber);
 	}
-
-	void datasetReadLightAsync(addr_t addr, MemoryRegisters& memory, int_reg_t(&reg)[RegistersCount]) {
-		ILightClientAsyncWorker* aw = memory.ds.asyncWorker;
-		const uint64_t* datasetLine = aw->getBlock(memory.ma);
-		for (int i = 0; i < RegistersCount; ++i)
-			reg[i] ^= datasetLine[i];
-		memory.mx ^= addr;
-		memory.mx &= CacheLineAlignMask; //align to cache line
-		std::swap(memory.mx, memory.ma);
-		aw->prepareBlock(memory.ma);
-	}
-
-	void datasetAlloc(dataset_t& ds, bool largePages) {
+	
+	/*void datasetAlloc(dataset_t& ds, bool largePages) {
 		if (std::numeric_limits<size_t>::max() < RANDOMX_DATASET_SIZE)
 			throw std::runtime_error("Platform doesn't support enough memory for the dataset");
 		if (largePages) {
@@ -158,14 +222,8 @@ namespace RandomX {
 		}
 	}
 
-	void datasetInit(Cache& cache, Dataset& ds, uint32_t startBlock, uint32_t blockCount) {
-		for (uint64_t i = startBlock; i < startBlock + blockCount; ++i) {
-			initBlock(cache, ds.memory + i * CacheLineSize, i, RANDOMX_CACHE_ACCESSES / 8);
-		}
-	}
-
 	void datasetInitCache(const void* seed, dataset_t& ds, bool largePages) {
 		ds.cache.memory = allocCache(ds.cache.size, largePages);
 		argonFill(ds.cache, seed, SeedSize);
-	}
+	}*/
 }

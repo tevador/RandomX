@@ -18,38 +18,39 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-//#define TRACEVM
+
 #include <new>
 #include "VirtualMachine.hpp"
 #include "JitCompilerX86.hpp"
-#include "intrinPortable.h"
 
-namespace RandomX {
+namespace randomx {
 
 	extern "C" {
 		void executeProgram(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
 	}
 
-	class CompiledVirtualMachine : public VirtualMachine {
+	template<class Allocator, bool softAes>
+	class CompiledVm : public VmBase<Allocator, softAes> {
 	public:
 		void* operator new(size_t size) {
-			void* ptr = _mm_malloc(size, 64);
+			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
 			if (ptr == nullptr)
 				throw std::bad_alloc();
 			return ptr;
 		}
 		void operator delete(void* ptr) {
-			_mm_free(ptr);
+			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledVm));
 		}
-		CompiledVirtualMachine();
-		void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) override;
+		void setDataset(randomx_dataset* dataset) override;
+		void execute() override;
 		void initialize() override;
-		virtual void execute() override;
-		void* getProgram() {
-			return compiler.getCode();
-		}
 	protected:
 		JitCompilerX86 compiler;
 		uint8_t* datasetBasePtr;
 	};
+
+	using CompiledVmDefault = CompiledVm<AlignedAllocator<CacheLineSize>, true>;
+	using CompiledVmHardAes = CompiledVm<AlignedAllocator<CacheLineSize>, false>;
+	using CompiledVmLargePage = CompiledVm<LargePageAllocator, false>;
+	using CompiledVmLargePageHardAes = CompiledVm<LargePageAllocator, true>;
 }

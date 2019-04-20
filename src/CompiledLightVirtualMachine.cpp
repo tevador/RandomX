@@ -21,27 +21,25 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include <stdexcept>
 
-namespace RandomX {
+namespace randomx {
 
-	template<bool superscalar>
-	void CompiledLightVirtualMachine<superscalar>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]) {
-		mem.ds = ds;
-		datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
-		if(superscalar)
-			compiler.generateSuperScalarHash(programs);
+	template<class Allocator, bool softAes>
+	void CompiledLightVm<Allocator, softAes>::setCache(randomx_cache* cache) {
+		this->mem.memory = cache->memory;
+		//datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
+		this->compiler.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		//datasetBasePtr = ds.dataset.memory;
 	}
 
-	template void CompiledLightVirtualMachine<true>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
-	template void CompiledLightVirtualMachine<false>::setDataset(dataset_t ds, uint64_t size, SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES]);
-
-	template<bool superscalar>
-	void CompiledLightVirtualMachine<superscalar>::initialize() {
-		VirtualMachine::initialize();
-		compiler.generateProgramLight<superscalar>(program, config);
+	template<class Allocator, bool softAes>
+	void CompiledLightVm<Allocator, softAes>::initialize() {
+		randomx_vm::initialize();
+		this->compiler.generateProgramLight(this->program, this->config);
 		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
 	}
 
-	template void CompiledLightVirtualMachine<true>::initialize();
-	template void CompiledLightVirtualMachine<false>::initialize();
+	template class CompiledLightVm<AlignedAllocator<CacheLineSize>, false>;
+	template class CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;
+	template class CompiledLightVm<LargePageAllocator, false>;
+	template class CompiledLightVm<LargePageAllocator, true>;
 }

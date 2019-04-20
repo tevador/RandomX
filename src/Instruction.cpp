@@ -20,7 +20,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Instruction.hpp"
 #include "common.hpp"
 
-namespace RandomX {
+namespace randomx {
 
 	void Instruction::print(std::ostream& os) const {
 		os << names[opcode] << " ";

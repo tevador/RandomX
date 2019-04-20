@@ -23,7 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Blake2Generator.hpp"
 #include "common.hpp"
 
-namespace RandomX {
+namespace randomx {
 
 	Blake2Generator::Blake2Generator(const void* seed, int nonce) : dataIndex(sizeof(data)) {
 		memset(data, 0, sizeof(data));

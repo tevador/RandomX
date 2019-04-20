@@ -124,20 +124,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\allocator.cpp" />
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
     <ClCompile Include="..\src\AssemblyGeneratorX86.cpp" />
     <ClCompile Include="..\src\Blake2Generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
-    <ClCompile Include="..\src\Cache.cpp" />
     <ClCompile Include="..\src\CompiledLightVirtualMachine.cpp" />
     <ClCompile Include="..\src\CompiledVirtualMachine.cpp" />
     <ClCompile Include="..\src\dataset.cpp" />
     <ClCompile Include="..\src\hashAes1Rx4.cpp" />
     <ClCompile Include="..\src\Instruction.cpp" />
     <ClCompile Include="..\src\instructionsPortable.cpp" />
+    <ClCompile Include="..\src\InterpretedLightVirtualMachine.cpp" />
     <ClCompile Include="..\src\InterpretedVirtualMachine.cpp" />
     <ClCompile Include="..\src\JitCompilerX86.cpp" />
+    <ClCompile Include="..\src\randomx.cpp" />
     <ClCompile Include="..\src\superscalarGenerator.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\reciprocal.c" />
@@ -150,11 +152,11 @@
     <MASM Include="..\src\squareHash.asm" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\allocator.hpp" />
     <ClInclude Include="..\src\argon2.h" />
     <ClInclude Include="..\src\argon2_core.h" />
     <ClInclude Include="..\src\AssemblyGeneratorX86.hpp" />
     <ClInclude Include="..\src\Blake2Generator.hpp" />
-    <ClInclude Include="..\src\Cache.hpp" />
     <ClInclude Include="..\src\catch.hpp" />
     <ClInclude Include="..\src\common.hpp" />
     <ClInclude Include="..\src\CompiledLightVirtualMachine.hpp" />
@@ -164,16 +166,19 @@
     <ClInclude Include="..\src\hashAes1Rx4.hpp" />
     <ClInclude Include="..\src\Instruction.hpp" />
     <ClInclude Include="..\src\instructionWeights.hpp" />
+    <ClInclude Include="..\src\InterpretedLightVirtualMachine.hpp" />
     <ClInclude Include="..\src\InterpretedVirtualMachine.hpp" />
     <ClInclude Include="..\src\intrinPortable.h" />
     <ClInclude Include="..\src\JitCompilerX86-static.hpp" />
     <ClInclude Include="..\src\JitCompilerX86.hpp" />
+    <ClInclude Include="..\src\randomx.h" />
     <ClInclude Include="..\src\superscalarGenerator.hpp" />
     <ClInclude Include="..\src\Program.hpp" />
     <ClInclude Include="..\src\reciprocal.h" />
     <ClInclude Include="..\src\softAes.h" />
     <ClInclude Include="..\src\squareHash.h" />
     <ClInclude Include="..\src\Stopwatch.hpp" />
+    <ClInclude Include="..\src\superscalar_program.hpp" />
     <ClInclude Include="..\src\VirtualMachine.hpp" />
     <ClInclude Include="..\src\virtualMemory.hpp" />
   </ItemGroup>

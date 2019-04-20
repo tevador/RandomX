@@ -26,8 +26,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <iomanip>
 #include "superscalarGenerator.hpp"
+#include "intrinPortable.h"
+#include "reciprocal.h"
 
-namespace RandomX {
+namespace randomx {
 
 	static bool isMultiplication(int type) {
 		return type == SuperscalarInstructionType::IMUL_R || type == SuperscalarInstructionType::IMULH_R || type == SuperscalarInstructionType::ISMULH_R || type == SuperscalarInstructionType::IMUL_RCP;
@@ -841,5 +843,53 @@ namespace RandomX {
 			}
 			std::cout << std::endl;
 		}*/
+	}
+
+	void executeSuperscalar(int_reg_t(&r)[8], SuperscalarProgram& prog, std::vector<uint64_t> *reciprocals) {
+		for (unsigned j = 0; j < prog.getSize(); ++j) {
+			Instruction& instr = prog(j);
+			switch (instr.opcode)
+			{
+			case randomx::SuperscalarInstructionType::ISUB_R:
+				r[instr.dst] -= r[instr.src];
+				break;
+			case randomx::SuperscalarInstructionType::IXOR_R:
+				r[instr.dst] ^= r[instr.src];
+				break;
+			case randomx::SuperscalarInstructionType::IADD_RS:
+				r[instr.dst] += r[instr.src] << instr.getModShift2();
+				break;
+			case randomx::SuperscalarInstructionType::IMUL_R:
+				r[instr.dst] *= r[instr.src];
+				break;
+			case randomx::SuperscalarInstructionType::IROR_C:
+				r[instr.dst] = rotr(r[instr.dst], instr.getImm32());
+				break;
+			case randomx::SuperscalarInstructionType::IADD_C7:
+			case randomx::SuperscalarInstructionType::IADD_C8:
+			case randomx::SuperscalarInstructionType::IADD_C9:
+				r[instr.dst] += signExtend2sCompl(instr.getImm32());
+				break;
+			case randomx::SuperscalarInstructionType::IXOR_C7:
+			case randomx::SuperscalarInstructionType::IXOR_C8:
+			case randomx::SuperscalarInstructionType::IXOR_C9:
+				r[instr.dst] ^= signExtend2sCompl(instr.getImm32());
+				break;
+			case randomx::SuperscalarInstructionType::IMULH_R:
+				r[instr.dst] = mulh(r[instr.dst], r[instr.src]);
+				break;
+			case randomx::SuperscalarInstructionType::ISMULH_R:
+				r[instr.dst] = smulh(r[instr.dst], r[instr.src]);
+				break;
+			case randomx::SuperscalarInstructionType::IMUL_RCP:
+				if (reciprocals != nullptr)
+					r[instr.dst] *= (*reciprocals)[instr.getImm32()];
+				else
+					r[instr.dst] *= reciprocal(instr.getImm32());
+				break;
+			default:
+				UNREACHABLE;
+			}
+		}
 	}
 }

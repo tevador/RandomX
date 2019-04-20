@@ -24,7 +24,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "common.hpp"
 #include <sstream>
 
-namespace RandomX {
+namespace randomx {
 
 	class Program;
 	class SuperscalarProgram;

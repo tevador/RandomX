@@ -100,7 +100,7 @@ randomx_dataset_init PROC
 	push r13
 	push r14
 	push r15
-	mov rdi, rcx ;# cache
+	mov rdi, qword ptr [rcx+8] ;# after virtual method table pointer
 	mov rsi, rdx ;# dataset
 	mov rbp, r8  ;# block index
 	push r9      ;# max. block index

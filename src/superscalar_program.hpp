@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 tevador
+Copyright (c) 2019 tevador
 
 This file is part of RandomX.
 
@@ -20,43 +20,51 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <cstdint>
-#include <ostream>
-#include "common.hpp"
 #include "Instruction.hpp"
-#include "blake2/endian.h"
+#include "configuration.h"
 
 namespace randomx {
 
-	struct ProgramConfiguration {
-		uint64_t eMask[2];
-		uint32_t readReg0, readReg1, readReg2, readReg3;
-	};
-
-	class Program {
+	class SuperscalarProgram {
 	public:
 		Instruction& operator()(int pc) {
 			return programBuffer[pc];
 		}
-		friend std::ostream& operator<<(std::ostream& os, const Program& p) {
+		friend std::ostream& operator<<(std::ostream& os, const SuperscalarProgram& p) {
 			p.print(os);
 			return os;
 		}
-		uint64_t getEntropy(int i) {
-			return load64(&entropyBuffer[i]);
-		}
 		uint32_t getSize() {
-			return RANDOMX_PROGRAM_SIZE;
+			return size;
 		}
+		void setSize(uint32_t val) {
+			size = val;
+		}
+		int getAddressRegister() {
+			return addrReg;
+		}
+		void setAddressRegister(uint32_t val) {
+			addrReg = val;
+		}
+		double ipc;
+		int codeSize;
+		int macroOps;
+		int decodeCycles;
+		int cpuLatency;
+		int asicLatency;
+		int mulCount;
+		int cpuLatencies[8];
+		int asicLatencies[8];
 	private:
 		void print(std::ostream& os) const {
-			for (int i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
+			for (unsigned i = 0; i < size; ++i) {
 				auto instr = programBuffer[i];
 				os << instr;
 			}
 		}
-		uint64_t entropyBuffer[16];
-		Instruction programBuffer[RANDOMX_PROGRAM_SIZE];
+		Instruction programBuffer[RANDOMX_SUPERSCALAR_MAX_SIZE];
+		uint32_t size;
+		int addrReg;
 	};
 
-	static_assert(sizeof(Program) % 64 == 0, "Invalid size of class Program");
 }

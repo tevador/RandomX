@@ -21,10 +21,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "common.hpp"
 #include "Instruction.hpp"
+#include "superscalar_program.hpp"
 #include <cstring>
 #include <vector>
 
-namespace RandomX {
+namespace randomx {
 
 	class Program;
 	class ProgramConfiguration;
@@ -40,15 +41,14 @@ namespace RandomX {
 		JitCompilerX86();
 		~JitCompilerX86();
 		void generateProgram(Program&, ProgramConfiguration&);
-		template<bool superscalar>
 		void generateProgramLight(Program&, ProgramConfiguration&);
 		template<size_t N>
-		void generateSuperScalarHash(SuperscalarProgram (&programs)[N]);
+		void generateSuperscalarHash(SuperscalarProgram (&programs)[N], std::vector<uint64_t> &);
+		void generateDatasetInitCode();
 		ProgramFunc getProgramFunc() {
 			return (ProgramFunc)code;
 		}
 		DatasetInitFunc getDatasetInitFunc() {
-			generateDatasetInitCode();
 			return (DatasetInitFunc)code;
 		}
 		uint8_t* getCode() {
@@ -62,18 +62,6 @@ namespace RandomX {
 		uint8_t* code;
 		int32_t codePos;
 
-		template<class P>
-		void generateCode(P& prog) {
-			for (unsigned i = 0; i < prog.getSize(); ++i) {
-				Instruction& instr = prog(i);
-				instr.src %= RegistersCount;
-				instr.dst %= RegistersCount;
-				generateCode<P>(instr, i);
-			}
-		}
-
-		void generateDatasetInitCode();
-
 		void generateProgramPrologue(Program&, ProgramConfiguration&);
 		void generateProgramEpilogue(Program&);
 		int getConditionRegister();
@@ -84,8 +72,8 @@ namespace RandomX {
 
 		void handleCondition(Instruction&, int);
 
-		template<class P>
 		void generateCode(Instruction&, int);
+		void generateSuperscalarCode(Instruction &, std::vector<uint64_t> &);
 
 		void emitByte(uint8_t val) {
 			code[codePos] = val;

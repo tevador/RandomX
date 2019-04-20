@@ -18,19 +18,20 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
-#include <cstdint>
+
+#include <cstddef>
 
 namespace randomx {
 
-	class Blake2Generator {
-	public:
-		Blake2Generator(const void* seed, int nonce);
-		uint8_t getByte();
-		uint32_t getInt32();
-	private:
-		uint8_t data[64];
-		size_t dataIndex;
-
-		void checkData(const size_t);
+	template<size_t alignment>
+	struct AlignedAllocator {
+		static void* allocMemory(size_t);
+		static void freeMemory(void*, size_t);
 	};
+
+	struct LargePageAllocator {
+		static void* allocMemory(size_t);
+		static void freeMemory(void*, size_t);
+	};
+
 }

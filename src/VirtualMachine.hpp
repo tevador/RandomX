@@ -18,38 +18,40 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #pragma once
+
 #include <cstdint>
 #include "common.hpp"
+#include "dataset.hpp"
 #include "Program.hpp"
 
-namespace RandomX {
+/* Global namespace for C binding */
+struct randomx_vm {
+	virtual ~randomx_vm() = 0;
+	virtual bool allocate() = 0;
+	virtual void generate(void* seed, void* buffer, size_t bufferSize) = 0;
+	void resetRoundingMode();
+	virtual void initialize();
+	virtual void execute() = 0;
+	virtual void getFinalResult(void* out, size_t outSize) = 0;
+	virtual void setDataset(randomx_dataset* dataset) { }
+	virtual void setCache(randomx_cache* cache) { }
 
-	class VirtualMachine {
+	alignas(64) randomx::Program program;
+	alignas(64) randomx::RegisterFile reg;
+	alignas(16) randomx::ProgramConfiguration config;
+	randomx::MemoryRegisters mem;
+	uint8_t* scratchpad;
+};
+
+namespace randomx {
+
+	template<class Allocator, bool softAes>
+	class VmBase : public randomx_vm {
 	public:
-		VirtualMachine();
-		virtual ~VirtualMachine() {}
-		virtual void setDataset(dataset_t ds, uint64_t size, SuperscalarProgram (&programs)[RANDOMX_CACHE_ACCESSES]) = 0;
-		void setScratchpad(void* ptr) {
-			scratchpad = (uint8_t*)ptr;
-		}
-		void resetRoundingMode();
-		virtual void initialize();
-		virtual void execute() = 0;
-		template<bool softAes>
-		void getResult(void* scratchpad, size_t scratchpadSize, void* outHash);
-		const RegisterFile& getRegisterFile() {
-			return reg;
-		}
-		Program* getProgramBuffer() {
-			return &program;
-		}
-	protected:
-		alignas(64) Program program;
-		alignas(64) RegisterFile reg;
-		alignas(16) ProgramConfiguration config;
-		MemoryRegisters mem;
-		uint8_t* scratchpad;
-		uint32_t datasetRange;
-		uint32_t datasetBase;
+		~VmBase() override;
+		bool allocate() override;
+		void generate(void* seed, void* buffer, size_t bufferSize) override;
+		void getFinalResult(void* out, size_t outSize) override;
 	};
+
 }
