@@ -19,8 +19,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <cstdint>
-#include "../superscalarGenerator.hpp"
-#include "../Blake2Generator.hpp"
+#include "../superscalar.hpp"
+#include "../blake2_generator.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -34,9 +34,9 @@ int main() {
 	int64_t mulCount = 0;
 	int64_t size = 0;
 	for (int i = 0; i < count; ++i) {
-		RandomX::SuperscalarProgram prog;
-		RandomX::Blake2Generator gen(seed, i);
-		RandomX::generateSuperscalar(prog, gen);
+		randomx::SuperscalarProgram prog;
+		randomx::Blake2Generator gen(seed, i);
+		randomx::generateSuperscalar(prog, gen);
 		asicLatency += prog.asicLatency;
 		codesize += prog.codeSize;
 		cpuLatency += prog.cpuLatency;

@@ -21,10 +21,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstdint>
 #include <vector>
 #include <unordered_set>
-#include "../superscalarGenerator.hpp"
-#include "../InterpretedVirtualMachine.hpp"
-#include "../intrinPortable.h"
-#include "../configuration.h"
+#include "../superscalar.hpp"
+#include "../common.hpp"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -39,7 +37,7 @@ int main() {
 	constexpr uint64_t superscalarAdd5 = 10536153434571861004ULL;
 	constexpr uint64_t superscalarAdd6 = 3398623926847679864ULL;
 	constexpr uint64_t superscalarAdd7 = 9549104520008361294ULL;
-	constexpr uint32_t totalBlocks = RANDOMX_DATASET_SIZE / RandomX::CacheLineSize;
+	constexpr uint32_t totalBlocks = RANDOMX_DATASET_SIZE / randomx::CacheLineSize;
 	std::unordered_set<uint64_t> registerValues;
 	registerValues.reserve(totalBlocks);
 	registerValues.rehash(totalBlocks);

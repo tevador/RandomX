@@ -39,9 +39,6 @@
     <ClCompile Include="..\src\assembly_generator_x86.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\blake2_benerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\vm_compiled_light.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -76,6 +73,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\virtual_memory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\blake2_generator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

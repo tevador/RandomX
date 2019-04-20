@@ -128,7 +128,7 @@
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
     <ClCompile Include="..\src\assembly_generator_x86.cpp" />
-    <ClCompile Include="..\src\blake2_benerator.cpp" />
+    <ClCompile Include="..\src\blake2_generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
     <ClCompile Include="..\src\vm_compiled_light.cpp" />
     <ClCompile Include="..\src\vm_compiled.cpp" />

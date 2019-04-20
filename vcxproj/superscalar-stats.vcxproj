@@ -115,10 +115,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Blake2Generator.cpp" />
-    <ClCompile Include="..\src\blake2\blake2b.c" />
-    <ClCompile Include="..\src\superscalarGenerator.cpp" />
     <ClCompile Include="..\src\tests\superscalar-stats.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="randomx.vcxproj">
+      <Project>{3346a4ad-c438-4324-8b77-47a16452954b}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

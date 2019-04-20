@@ -20,10 +20,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <cstdint>
 #include <vector>
-#include "../superscalarGenerator.hpp"
-#include "../InterpretedVirtualMachine.hpp"
-#include "../intrinPortable.h"
-#include "../Blake2Generator.hpp"
+#include "../superscalar.hpp"
+#include "../intrin_portable.h"
 
 const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
 
@@ -35,7 +33,7 @@ int main() {
 		for (int i = 0; i < 10000; ++i) {
 			uint64_t ra[8] = {
 				6364136223846793005ULL,
-				9298410992540426048ULL,
+				9298410992540426748ULL,
 				12065312585734608966ULL,
 				9306329213124610396ULL,
 				5281919268842080866ULL,
@@ -46,11 +44,11 @@ int main() {
 			uint64_t rb[8];
 			memcpy(rb, ra, sizeof rb);
 			rb[0] ^= (1ULL << bit);
-			RandomX::SuperscalarProgram p;
-			RandomX::Blake2Generator gen(seed, i);
-			RandomX::generateSuperscalar(p, gen);
-			RandomX::InterpretedVirtualMachine<false>::executeSuperscalar(ra, p, dummy);
-			RandomX::InterpretedVirtualMachine<false>::executeSuperscalar(rb, p, dummy);
+			randomx::SuperscalarProgram p;
+			randomx::Blake2Generator gen(seed, sizeof seed, i);
+			randomx::generateSuperscalar(p, gen);
+			randomx::executeSuperscalar(ra, p, nullptr);
+			randomx::executeSuperscalar(rb, p, nullptr);
 			uint64_t diff = 0;
 			for (int j = 0; j < 8; ++j) {
 				diff += __popcnt64(ra[j] ^ rb[j]);
