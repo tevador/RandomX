@@ -20,73 +20,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #ifndef RANDOMX_H
 #define RANDOMX_H
 
-/*
-
-Minimal usage example:
-----------------------
-
-#include "randomx.h"
-#include <stdio.h>
-
-int main() {
-  const char mySeed[] = "RandomX example seed";
-  const char myInput[] = "RandomX example input";
-  char hash[RANDOMX_HASH_SIZE];
-
-  randomx_cache *myCache = randomx_alloc_cache(RANDOMX_FLAG_DEFAULT);
-  randomx_init_cache(myCache, mySeed, sizeof mySeed);
-  randomx_vm *myMachine = randomx_create_vm(RANDOMX_FLAG_DEFAULT);
-  randomx_vm_set_cache(myMachine, myCache);
-
-  randomx_calculate_hash(myMachine, myInput, sizeof myInput, hash);
-
-  randomx_destroy_vm(myMachine);
-  randomx_release_cache(myCache);
-
-  for (unsigned i = 0; i < RANDOMX_HASH_SIZE; ++i)
-    printf("%02x", hash[i]);
-
-  printf("\n");
-
-  return 0;
-}
-
-Optimized usage example:
-------------------------
-
-#include "randomx.h"
-#include <stdio.h>
-
-int main() {
-  const char mySeed[] = "RandomX example seed";
-  const char myInput[] = "RandomX example input";
-  char hash[RANDOMX_HASH_SIZE];
-
-  randomx_cache *myCache = randomx_alloc_cache(RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES);
-  randomx_init_cache(myCache, mySeed, sizeof mySeed);
-
-  randomx_dataset *myDataset = randomx_alloc_dataset(RANDOMX_FLAG_LARGE_PAGES);
-  randomx_init_dataset(myDataset, myCache, 0, RANDOMX_DATASET_BLOCKS);
-  randomx_release_cache(myCache);
-
-  randomx_vm *myMachine = randomx_create_vm(RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES);
-  randomx_vm_set_dataset(myMachine, myDataset);
-
-  randomx_calculate_hash(myMachine, myInput, sizeof myInput, hash);
-
-  randomx_destroy_vm(myMachine);
-  randomx_release_dataset(myDataset);
-
-  for (unsigned i = 0; i < RANDOMX_HASH_SIZE; ++i)
-    printf("%02x", hash[i]);
-
-  printf("\n");
-
-  return 0;
-}
-  
-*/
-
 #include <stddef.h>
 
 #define RANDOMX_HASH_SIZE 32
@@ -121,7 +54,7 @@ void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache);
 void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset);
 void randomx_destroy_vm(randomx_vm *machine);
 
-void randomx_calculate_hash(randomx_vm *machine, void *input, size_t inputSize, void *output);
+void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
 
 #if defined(__cplusplus)
 }

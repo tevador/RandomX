@@ -48,6 +48,6 @@ namespace randomx {
 
 	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;
 	using CompiledLightVmHardAes = CompiledLightVm<AlignedAllocator<CacheLineSize>, false>;
-	using CompiledLightVmLargePage = CompiledLightVm<LargePageAllocator, false>;
-	using CompiledLightVmLargePageHardAes = CompiledLightVm<LargePageAllocator, true>;
+	using CompiledLightVmLargePage = CompiledLightVm<LargePageAllocator, true>;
+	using CompiledLightVmLargePageHardAes = CompiledLightVm<LargePageAllocator, false>;
 }

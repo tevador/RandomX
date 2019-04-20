@@ -27,9 +27,6 @@
     <ClCompile Include="..\src\dataset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\blake2\blake2b.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,18 +80,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\src\jit_compiler_x86_staticc.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\src\argon2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\argon2_core.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\catch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\common.hpp">
@@ -160,9 +149,6 @@
     <ClInclude Include="..\src\soft_aes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\stopwatch.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\virtual_machine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -172,5 +158,10 @@
     <ClInclude Include="..\src\superscalar.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\src\jit_compiler_x86_static.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
   </ItemGroup>
 </Project>

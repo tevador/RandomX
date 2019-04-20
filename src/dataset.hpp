@@ -29,7 +29,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 /* Global scope for C binding */
 struct randomx_dataset {
 	virtual ~randomx_dataset() = 0;
-	virtual bool allocate() = 0;
+	virtual void allocate() = 0;
 	uint8_t* memory = nullptr;
 };
 
@@ -46,7 +46,7 @@ namespace randomx {
 	template<class Allocator>
 	struct Dataset : public randomx_dataset {
 		~Dataset() override;
-		bool allocate() override;
+		void allocate() override;
 	};
 
 	using DatasetDefault = Dataset<AlignedAllocator<CacheLineSize>>;
@@ -55,7 +55,7 @@ namespace randomx {
 	template<class Allocator>
 	struct Cache : public randomx_cache {
 		~Cache() override;
-		bool allocate() override;
+		void allocate() override;
 		DatasetInitFunc getInitFunc() override;
 	};
 

@@ -85,6 +85,6 @@ namespace randomx {
 
 	using InterpretedVmDefault = InterpretedVm<AlignedAllocator<CacheLineSize>, true>;
 	using InterpretedVmHardAes = InterpretedVm<AlignedAllocator<CacheLineSize>, false>;
-	using InterpretedVmLargePage = InterpretedVm<LargePageAllocator, false>;
-	using InterpretedVmLargePageHardAes = InterpretedVm<LargePageAllocator, true>;
+	using InterpretedVmLargePage = InterpretedVm<LargePageAllocator, true>;
+	using InterpretedVmLargePageHardAes = InterpretedVm<LargePageAllocator, false>;
 }

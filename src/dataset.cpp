@@ -106,7 +106,7 @@ void randomx_cache::initialize(const void *seed, size_t seedSize) {
 	fill_memory_blocks(&instance);
 
 	reciprocalCache.clear();
-	randomx::Blake2Generator gen(seed, seedSize, 1000); //TODO
+	randomx::Blake2Generator gen(seed, seedSize);
 	for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 		randomx::generateSuperscalar(programs[i], gen);
 		for (unsigned j = 0; j < programs[i].getSize(); ++j) {
@@ -123,9 +123,8 @@ void randomx_cache::initialize(const void *seed, size_t seedSize) {
 namespace randomx {
 
 	template<class Allocator>
-	bool Dataset<Allocator>::allocate() {
+	void Dataset<Allocator>::allocate() {
 		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_DATASET_SIZE);
-		return true;
 	}
 
 	template<class Allocator>
@@ -134,9 +133,8 @@ namespace randomx {
 	}
 
 	template<class Allocator>
-	bool Cache<Allocator>::allocate() {
+	void Cache<Allocator>::allocate() {
 		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_ARGON_MEMORY * ARGON2_BLOCK_SIZE);
-		return true;
 	}
 
 	template<class Allocator>

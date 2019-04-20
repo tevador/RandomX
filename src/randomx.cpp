@@ -51,7 +51,10 @@ extern "C" {
 			UNREACHABLE;
 		}
 
-		if (!cache->allocate()) {
+		try {
+			cache->allocate();
+		}
+		catch (std::exception &ex) {
 			delete cache;
 			cache = nullptr;
 		}
@@ -75,7 +78,11 @@ extern "C" {
 		else {
 			dataset = new randomx::DatasetDefault();
 		}
-		if (!dataset->allocate()) {
+
+		try {
+			dataset->allocate();
+		}
+		catch (std::exception &ex) {
 			delete dataset;
 			dataset = nullptr;
 		}
@@ -183,7 +190,7 @@ extern "C" {
 		delete machine;
 	}
 
-	void randomx_calculate_hash(randomx_vm *machine, void *input, size_t inputSize, void *output) {
+	void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output) {
 		alignas(16) uint64_t hash[8];
 		blake2b(hash, sizeof(hash), input, inputSize, nullptr, 0);
 		machine->initScratchpad(&hash);
@@ -194,7 +201,7 @@ extern "C" {
 			blake2b(hash, sizeof(hash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
 		}
 		machine->run(&hash);
-		machine->getFinalResult(output, 64);
+		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
 	}
 
 }
