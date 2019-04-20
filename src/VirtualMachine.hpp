@@ -25,17 +25,22 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "Program.hpp"
 
 /* Global namespace for C binding */
-struct randomx_vm {
+class randomx_vm {
+public:
 	virtual ~randomx_vm() = 0;
 	virtual bool allocate() = 0;
-	virtual void generate(void* seed, void* buffer, size_t bufferSize) = 0;
-	void resetRoundingMode();
-	virtual void initialize();
-	virtual void execute() = 0;
 	virtual void getFinalResult(void* out, size_t outSize) = 0;
 	virtual void setDataset(randomx_dataset* dataset) { }
 	virtual void setCache(randomx_cache* cache) { }
+	virtual void initScratchpad(void* seed) = 0;
+	virtual void run(void* seed) = 0;
+	void resetRoundingMode();
+	randomx::RegisterFile *getRegisterFile() {
+		return &reg;
+	}
 
+protected:
+	void initialize();
 	alignas(64) randomx::Program program;
 	alignas(64) randomx::RegisterFile reg;
 	alignas(16) randomx::ProgramConfiguration config;
@@ -50,8 +55,10 @@ namespace randomx {
 	public:
 		~VmBase() override;
 		bool allocate() override;
-		void generate(void* seed, void* buffer, size_t bufferSize) override;
+		void initScratchpad(void* seed) override;
 		void getFinalResult(void* out, size_t outSize) override;
+	protected:
+		void generateProgram(void* seed);
 	};
 
 }

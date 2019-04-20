@@ -188,21 +188,14 @@ extern "C" {
 	void randomx_calculate_hash(randomx_vm *machine, void *input, size_t inputSize, void *output) {
 		alignas(16) uint64_t hash[8];
 		blake2b(hash, sizeof(hash), input, inputSize, nullptr, 0);
-		machine->generate(&hash, machine->scratchpad, randomx::ScratchpadSize);
-		//fillAes1Rx4<false>((void*)hash, RANDOMX_SCRATCHPAD_L3, machine->scratchpad);
+		machine->initScratchpad(&hash);
 		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad-before.txt");
 		machine->resetRoundingMode();
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
-			machine->generate(&hash, &machine->program, sizeof(randomx::Program));
-			//fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
-			machine->initialize();
-			machine->execute();
-			blake2b(hash, sizeof(hash), &machine->reg, sizeof(machine->reg), nullptr, 0);
+			machine->run(&hash);
+			blake2b(hash, sizeof(hash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
 		}
-		machine->generate((void*)hash, &machine->program, sizeof(randomx::Program));
-		//fillAes1Rx4<softAes>((void*)hash, sizeof(RandomX::Program), vm->getProgramBuffer());
-		machine->initialize();
-		machine->execute();
+		machine->run(&hash);
 		machine->getFinalResult(output, 64);
 	}
 

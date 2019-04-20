@@ -67,12 +67,12 @@ namespace randomx {
 		void operator delete(void* ptr) {
 			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(InterpretedVm));
 		}
-		void execute() override;
+		void run(void* seed) override;
 		void setDataset(randomx_dataset* dataset) override;
-		void initialize() override;
 	protected:
 		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[8]);
 	private:
+		void execute();
 		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
 		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);

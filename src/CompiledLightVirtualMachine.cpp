@@ -25,17 +25,18 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void CompiledLightVm<Allocator, softAes>::setCache(randomx_cache* cache) {
-		this->mem.memory = cache->memory;
-		//datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
-		this->compiler.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
+		mem.memory = cache->memory;
+		compiler.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		//datasetBasePtr = ds.dataset.memory;
 	}
 
 	template<class Allocator, bool softAes>
-	void CompiledLightVm<Allocator, softAes>::initialize() {
+	void CompiledLightVm<Allocator, softAes>::run(void* seed) {
+		VmBase<Allocator, softAes>::generateProgram(seed);
 		randomx_vm::initialize();
-		this->compiler.generateProgramLight(this->program, this->config);
-		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
+		compiler.generateProgramLight(program, config);
+		//mem.memory = datasetBasePtr + (datasetBase * CacheLineSize);
+		CompiledVm<Allocator, softAes>::execute();
 	}
 
 	template class CompiledLightVm<AlignedAllocator<CacheLineSize>, false>;

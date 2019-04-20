@@ -40,7 +40,12 @@ namespace randomx {
 		}
 		void setCache(randomx_cache* cache) override;
 		void setDataset(randomx_dataset* dataset) override {}
-		void initialize() override;
+		void run(void* seed) override;
+
+		using CompiledVm<Allocator, softAes>::mem;
+		using CompiledVm<Allocator, softAes>::compiler;
+		using CompiledVm<Allocator, softAes>::program;
+		using CompiledVm<Allocator, softAes>::config;
 	};
 
 	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;

@@ -105,14 +105,19 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void VmBase<Allocator, softAes>::generate(void* seed, void* buffer, size_t bufferSize) {
-		fillAes1Rx4<softAes>(seed, bufferSize, buffer);
-	}
-
-	template<class Allocator, bool softAes>
 	void VmBase<Allocator, softAes>::getFinalResult(void* out, size_t outSize) {
 		hashAes1Rx4<softAes>(scratchpad, ScratchpadSize, &reg.a);
 		blake2b(out, outSize, &reg, sizeof(RegisterFile), nullptr, 0);
+	}
+
+	template<class Allocator, bool softAes>
+	void VmBase<Allocator, softAes>::initScratchpad(void* seed) {
+		fillAes1Rx4<softAes>(seed, ScratchpadSize, scratchpad);
+	}
+
+	template<class Allocator, bool softAes>
+	void VmBase<Allocator, softAes>::generateProgram(void* seed) {
+		fillAes1Rx4<softAes>(seed, sizeof(program), &program);
 	}
 
 	template class VmBase<AlignedAllocator<CacheLineSize>, false>;

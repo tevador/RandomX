@@ -42,9 +42,16 @@ namespace randomx {
 			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledVm));
 		}
 		void setDataset(randomx_dataset* dataset) override;
-		void execute() override;
-		void initialize() override;
+		void run(void* seed) override;
+
+		using VmBase<Allocator, softAes>::mem;
+		using VmBase<Allocator, softAes>::program;
+		using VmBase<Allocator, softAes>::config;
+		using VmBase<Allocator, softAes>::reg;
+		using VmBase<Allocator, softAes>::scratchpad;
 	protected:
+		void execute();
+
 		JitCompilerX86 compiler;
 		uint8_t* datasetBasePtr;
 	};

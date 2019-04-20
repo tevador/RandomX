@@ -48,12 +48,14 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::initialize() {
+	void InterpretedVm<Allocator, softAes>::run(void* seed) {
+		VmBase<Allocator, softAes>::generateProgram(seed);
 		randomx_vm::initialize();
 		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			program(i).src %= RegistersCount;
 			program(i).dst %= RegistersCount;
 		}
+		execute();
 	}
 
 	template<class Allocator, bool softAes>

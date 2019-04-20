@@ -19,32 +19,31 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include "CompiledVirtualMachine.hpp"
 #include "common.hpp"
-#include <stdexcept>
 
 namespace randomx {
 
 	static_assert(sizeof(MemoryRegisters) == 2 * sizeof(addr_t) + sizeof(uintptr_t), "Invalid alignment of struct randomx::MemoryRegisters");
 	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct randomx::RegisterFile");
 
-
 	template<class Allocator, bool softAes>
 	void CompiledVm<Allocator, softAes>::setDataset(randomx_dataset* dataset) {
-		this->mem.memory = dataset->memory;
-		//datasetRange = (size - RANDOMX_DATASET_SIZE + CacheLineSize) / CacheLineSize;
-		//datasetBasePtr = ds.dataset.memory;
+		mem.memory = dataset->memory;
+		//datasetBasePtr = dataset.memory;
 	}
 
 	template<class Allocator, bool softAes>
-	void CompiledVm<Allocator, softAes>::initialize() {
+	void CompiledVm<Allocator, softAes>::run(void* seed) {
+		VmBase<Allocator, softAes>::generateProgram(seed);
 		randomx_vm::initialize();
-		this->compiler.generateProgram(this->program, this->config);
-		//mem.ds.dataset.memory = datasetBasePtr + (datasetBase * CacheLineSize);
+		compiler.generateProgram(program, config);
+		//mem.memory = datasetBasePtr + (datasetBase * CacheLineSize);
+		execute();
 	}
 
 	template<class Allocator, bool softAes>
 	void CompiledVm<Allocator, softAes>::execute() {
 		//executeProgram(reg, mem, scratchpad, InstructionCount);
-		compiler.getProgramFunc()(this->reg, this->mem, this->scratchpad, RANDOMX_PROGRAM_ITERATIONS);
+		compiler.getProgramFunc()(reg, mem, scratchpad, RANDOMX_PROGRAM_ITERATIONS);
 	}
 
 	template class CompiledVm<AlignedAllocator<CacheLineSize>, false>;
