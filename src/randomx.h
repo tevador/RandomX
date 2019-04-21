@@ -27,10 +27,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 typedef enum {
   RANDOMX_FLAG_DEFAULT = 0,
-  RANDOMX_FLAG_FULL_MEM = 1,
-  RANDOMX_FLAG_JIT = 2,
-  RANDOMX_FLAG_HARD_AES = 4,
-  RANDOMX_FLAG_LARGE_PAGES = 8,
+  RANDOMX_FLAG_LARGE_PAGES = 1,
+  RANDOMX_FLAG_HARD_AES = 2,
+  RANDOMX_FLAG_FULL_MEM = 4,
+  RANDOMX_FLAG_JIT = 8,
 } randomx_flags;
 
 typedef struct randomx_dataset randomx_dataset;
@@ -49,7 +49,7 @@ randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
 void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startBlock, unsigned long blockCount);
 void randomx_release_dataset(randomx_dataset *dataset);
 
-randomx_vm *randomx_create_vm(randomx_flags flags);
+randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx_dataset *dataset);
 void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache);
 void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset);
 void randomx_destroy_vm(randomx_vm *machine);

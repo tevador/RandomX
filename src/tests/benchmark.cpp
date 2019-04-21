@@ -201,11 +201,11 @@ int main(int argc, char** argv) {
 		std::cout << "Memory initialized in " << sw.getElapsed() << " s" << std::endl;
 		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
-			randomx_vm *vm = randomx_create_vm(flags);
-			if (miningMode)
-				randomx_vm_set_dataset(vm, dataset);
-			else
-				randomx_vm_set_cache(vm, cache);
+			randomx_vm *vm = randomx_create_vm(flags, cache, dataset);
+			if (vm == nullptr) {
+				std::cout << "ERROR: Unsupported virtual machine options" << std::endl;
+				return 1;
+			}
 			vms.push_back(vm);
 		}
 		std::cout << "Running benchmark (" << noncesCount << " nonces) ..." << std::endl;

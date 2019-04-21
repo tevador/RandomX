@@ -26,8 +26,7 @@ int main() {
 	t2.join();
 	randomx_release_cache(myCache);
 
-	randomx_vm *myMachine = randomx_create_vm((randomx_flags)(RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES));
-	randomx_vm_set_dataset(myMachine, myDataset);
+	randomx_vm *myMachine = randomx_create_vm((randomx_flags)(RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES), nullptr, myDataset);
 
 	randomx_calculate_hash(myMachine, &myInput, sizeof myInput, hash);
 

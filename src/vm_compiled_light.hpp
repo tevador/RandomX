@@ -37,7 +37,7 @@ namespace randomx {
 			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledLightVm));
 		}
 		void setCache(randomx_cache* cache) override;
-		void setDataset(randomx_dataset* dataset) override {}
+		void setDataset(randomx_dataset* dataset) override { }
 		void run(void* seed) override;
 
 		using CompiledVm<Allocator, softAes>::mem;

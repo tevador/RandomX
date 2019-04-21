@@ -17,12 +17,13 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+#include <cstring>
+#include <iomanip>
+#include <stdexcept>
 #include "virtual_machine.hpp"
 #include "common.hpp"
 #include "aes_hash.hpp"
 #include "blake2/blake2.h"
-#include <cstring>
-#include <iomanip>
 #include "intrin_portable.h"
 #include "allocator.hpp"
 
@@ -93,6 +94,8 @@ std::ostream& operator<<(std::ostream& os, const randomx::RegisterFile& rf) {
 
 namespace randomx {
 
+	alignas(16) volatile static __m128i aesDummy;
+
 	template<class Allocator, bool softAes>
 	VmBase<Allocator, softAes>::~VmBase() {
 		Allocator::freeMemory(scratchpad, ScratchpadSize);
@@ -100,6 +103,13 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void VmBase<Allocator, softAes>::allocate() {
+		if (mem.memory == nullptr)
+			throw std::invalid_argument("Cache/Dataset not set");
+		if (!softAes) { //if hardware AES is not supported, it's better to fail now than to return a ticking bomb
+			__m128i tmp = _mm_load_si128((const __m128i*)&aesDummy);
+			tmp = _mm_aesenc_si128(tmp, tmp);
+			_mm_store_si128((__m128i*)&aesDummy, tmp);
+		}
 		scratchpad = (uint8_t*)Allocator::allocMemory(ScratchpadSize);
 	}
 

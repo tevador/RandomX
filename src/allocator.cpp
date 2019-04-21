@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
+#include <new>
 #include "allocator.hpp"
 #include "intrin_portable.h"
 #include "virtual_memory.hpp"
@@ -26,7 +27,10 @@ namespace randomx {
 
 	template<size_t alignment>
 	void* AlignedAllocator<alignment>::allocMemory(size_t count) {
-		return _mm_malloc(count, alignment);
+		void *mem = _mm_malloc(count, alignment);
+		if (mem == nullptr)
+			throw std::bad_alloc();
+		return mem;
 	}
 
 	template<size_t alignment>

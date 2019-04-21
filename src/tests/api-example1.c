@@ -8,8 +8,7 @@ int main() {
 
 	randomx_cache *myCache = randomx_alloc_cache(RANDOMX_FLAG_DEFAULT);
 	randomx_init_cache(myCache, mySeed, sizeof mySeed);
-	randomx_vm *myMachine = randomx_create_vm(RANDOMX_FLAG_DEFAULT);
-	randomx_vm_set_cache(myMachine, myCache);
+	randomx_vm *myMachine = randomx_create_vm(RANDOMX_FLAG_DEFAULT, myCache, NULL);
 
 	randomx_calculate_hash(myMachine, &myInput, sizeof myInput, hash);
 
