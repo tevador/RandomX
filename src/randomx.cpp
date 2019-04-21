@@ -29,29 +29,29 @@ extern "C" {
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
 		randomx_cache *cache;
-		switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES))
-		{
-		case RANDOMX_FLAG_DEFAULT:
-			cache = new randomx::CacheDefault();
-			break;
-
-		case RANDOMX_FLAG_JIT:
-			cache = new randomx::CacheWithJitDefault();
-			break;
-
-		case RANDOMX_FLAG_LARGE_PAGES:
-			cache = new randomx::CacheLargePage();
-			break;
-
-		case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES:
-			cache = new randomx::CacheWithJitLargePage();
-			break;
-
-		default:
-			UNREACHABLE;
-		}
 
 		try {
+			switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES)) {
+				case RANDOMX_FLAG_DEFAULT:
+					cache = new randomx::CacheDefault();
+					break;
+
+				case RANDOMX_FLAG_JIT:
+					cache = new randomx::CacheWithJitDefault();
+					break;
+
+				case RANDOMX_FLAG_LARGE_PAGES:
+					cache = new randomx::CacheLargePage();
+					break;
+
+				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES:
+					cache = new randomx::CacheWithJitLargePage();
+					break;
+
+				default:
+					UNREACHABLE;
+			}
+
 			cache->allocate();
 		}
 		catch (std::exception &ex) {
@@ -71,15 +71,15 @@ extern "C" {
 	}
 
 	randomx_dataset *randomx_alloc_dataset(randomx_flags flags) {
-		randomx_dataset *dataset;
-		if (flags & RANDOMX_FLAG_LARGE_PAGES) {
-			dataset = new randomx::DatasetLargePage();
-		}
-		else {
-			dataset = new randomx::DatasetDefault();
-		}
+		randomx_dataset *dataset = nullptr;
 
 		try {
+			if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+				dataset = new randomx::DatasetLargePage();
+			}
+			else {
+				dataset = new randomx::DatasetDefault();
+			}
 			dataset->allocate();
 		}
 		catch (std::exception &ex) {
@@ -100,77 +100,81 @@ extern "C" {
 	}
 
 	randomx_vm *randomx_create_vm(randomx_flags flags) {
-		randomx_vm *vm;
-		switch (flags & (RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES)) {
-		case RANDOMX_FLAG_DEFAULT: //0
-			vm = new randomx::InterpretedLightVmDefault();
-			break;
+		randomx_vm *vm = nullptr;
 
-		case RANDOMX_FLAG_FULL_MEM: //1
-			vm = new randomx::InterpretedVmDefault();
-			break;
+		try {
+			switch (flags & (RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES)) {
+				case RANDOMX_FLAG_DEFAULT: //0
+					vm = new randomx::InterpretedLightVmDefault();
+					break;
 
-		case RANDOMX_FLAG_JIT: //2
-			vm = new randomx::CompiledLightVmDefault();
-			break;
+				case RANDOMX_FLAG_FULL_MEM: //1
+					vm = new randomx::InterpretedVmDefault();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT: //3
-			vm = new randomx::CompiledVmDefault();
-			break;
+				case RANDOMX_FLAG_JIT: //2
+					vm = new randomx::CompiledLightVmDefault();
+					break;
 
-		case RANDOMX_FLAG_HARD_AES: //4
-			vm = new randomx::InterpretedLightVmHardAes();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT: //3
+					vm = new randomx::CompiledVmDefault();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_HARD_AES: //5
-			vm = new randomx::InterpretedVmHardAes();
-			break;
+				case RANDOMX_FLAG_HARD_AES: //4
+					vm = new randomx::InterpretedLightVmHardAes();
+					break;
 
-		case RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES: //6
-			vm = new randomx::CompiledLightVmHardAes();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_HARD_AES: //5
+					vm = new randomx::InterpretedVmHardAes();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES: //7
-			vm = new randomx::CompiledVmHardAes();
-			break;
+				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES: //6
+					vm = new randomx::CompiledLightVmHardAes();
+					break;
 
-		case RANDOMX_FLAG_LARGE_PAGES: //8
-			vm = new randomx::InterpretedLightVmLargePage();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES: //7
+					vm = new randomx::CompiledVmHardAes();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_LARGE_PAGES: //9
-			vm = new randomx::InterpretedVmLargePage();
-			break;
+				case RANDOMX_FLAG_LARGE_PAGES: //8
+					vm = new randomx::InterpretedLightVmLargePage();
+					break;
 
-		case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES: //10
-			vm = new randomx::CompiledLightVmLargePage();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_LARGE_PAGES: //9
+					vm = new randomx::InterpretedVmLargePage();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES: //11
-			vm = new randomx::CompiledVmLargePage();
-			break;
+				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES: //10
+					vm = new randomx::CompiledLightVmLargePage();
+					break;
 
-		case RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //12
-			vm = new randomx::InterpretedLightVmLargePageHardAes();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES: //11
+					vm = new randomx::CompiledVmLargePage();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //13
-			vm = new randomx::InterpretedVmLargePageHardAes();
-			break;
+				case RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //12
+					vm = new randomx::InterpretedLightVmLargePageHardAes();
+					break;
 
-		case RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //14
-			vm = new randomx::CompiledLightVmLargePageHardAes();
-			break;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //13
+					vm = new randomx::InterpretedVmLargePageHardAes();
+					break;
 
-		case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //15
-			vm = new randomx::CompiledVmLargePageHardAes();
-			break;
+				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //14
+					vm = new randomx::CompiledLightVmLargePageHardAes();
+					break;
 
-		default:
-			UNREACHABLE;
+				case RANDOMX_FLAG_FULL_MEM | RANDOMX_FLAG_JIT | RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_LARGE_PAGES: //15
+					vm = new randomx::CompiledVmLargePageHardAes();
+					break;
+
+				default:
+					UNREACHABLE;
+			}
+
+			vm->allocate();
 		}
-
-		if (!vm->allocate()) {
+		catch (std::exception &ex) {
 			delete vm;
 			vm = nullptr;
 		}
@@ -191,16 +195,15 @@ extern "C" {
 	}
 
 	void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output) {
-		alignas(16) uint64_t hash[8];
-		blake2b(hash, sizeof(hash), input, inputSize, nullptr, 0);
-		machine->initScratchpad(&hash);
-		//dump((char*)scratchpad, RANDOMX_SCRATCHPAD_L3, "spad-before.txt");
+		alignas(16) uint64_t tempHash[8];
+		blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
+		machine->initScratchpad(&tempHash);
 		machine->resetRoundingMode();
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
-			machine->run(&hash);
-			blake2b(hash, sizeof(hash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
+			machine->run(&tempHash);
+			blake2b(tempHash, sizeof(tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
 		}
-		machine->run(&hash);
+		machine->run(&tempHash);
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
 	}
 

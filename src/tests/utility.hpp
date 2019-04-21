@@ -22,6 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 inline void dump(const char* buffer, uint64_t count, const char* name) {
 	std::ofstream fout(name, std::ios::out | std::ios::binary);

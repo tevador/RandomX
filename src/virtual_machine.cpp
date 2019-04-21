@@ -99,9 +99,8 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	bool VmBase<Allocator, softAes>::allocate() {
+	void VmBase<Allocator, softAes>::allocate() {
 		scratchpad = (uint8_t*)Allocator::allocMemory(ScratchpadSize);
-		return scratchpad != nullptr;
 	}
 
 	template<class Allocator, bool softAes>

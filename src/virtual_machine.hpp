@@ -27,7 +27,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 class randomx_vm {
 public:
 	virtual ~randomx_vm() = 0;
-	virtual bool allocate() = 0;
+	virtual void allocate() = 0;
 	virtual void getFinalResult(void* out, size_t outSize) = 0;
 	virtual void setDataset(randomx_dataset* dataset) { }
 	virtual void setCache(randomx_cache* cache) { }
@@ -52,7 +52,7 @@ namespace randomx {
 	class VmBase : public randomx_vm {
 	public:
 		~VmBase() override;
-		bool allocate() override;
+		void allocate() override;
 		void initScratchpad(void* seed) override;
 		void getFinalResult(void* out, size_t outSize) override;
 	protected:
