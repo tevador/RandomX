@@ -105,7 +105,6 @@ namespace randomx {
 	const uint8_t* codeDatasetInit = (uint8_t*)&randomx_dataset_init;
 	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
 	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
-	const uint8_t* codeReadDatasetLightSub = (uint8_t*)&randomx_program_read_dataset_light_sub;
 	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
 	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
 	const uint8_t* codeShhLoad = (uint8_t*)&randomx_sshash_load;
@@ -120,7 +119,6 @@ namespace randomx {
 	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
 	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
 	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
-	const int32_t readDatasetLightSubSize = codeDatasetInit - codeReadDatasetLightSub;
 	const int32_t datasetInitSize = codeEpilogue - codeDatasetInit;
 	const int32_t epilogueSize = codeShhLoad - codeEpilogue;
 	const int32_t codeSshLoadSize = codeShhPrefetch - codeShhLoad;
@@ -128,7 +126,6 @@ namespace randomx {
 	const int32_t codeSshInitSize = codeProgramEnd - codeShhInit;
 
 	const int32_t epilogueOffset = CodeSize - epilogueSize;
-	const int32_t readDatasetLightSubOffset = epilogueOffset - readDatasetLightSubSize;
 	constexpr int32_t superScalarHashOffset = 32768;
 
 	static const uint8_t REX_ADD_RR[] = { 0x4d, 0x03 };
@@ -226,7 +223,6 @@ namespace randomx {
 		code = (uint8_t*)allocExecutableMemory(CodeSize);
 		memcpy(code, codePrologue, prologueSize);
 		memcpy(code + epilogueOffset, codeEpilogue, epilogueSize);
-		memcpy(code + readDatasetLightSubOffset, codeReadDatasetLightSub, readDatasetLightSubSize);
 	}
 
 	JitCompilerX86::~JitCompilerX86() {
@@ -241,10 +237,6 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg) {
-		if (RANDOMX_CACHE_ACCESSES != 8)
-			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_CACHE_ACCESSES");
-		if (RANDOMX_ARGON_GROWTH != 0)
-			throw std::runtime_error("JIT compiler: Unsupported value of RANDOMX_ARGON_GROWTH");
 		generateProgramPrologue(prog, pcfg);
 		//if (superscalar) {
 			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);

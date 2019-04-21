@@ -18,7 +18,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include "configuration.h"
-#include "Program.hpp"
+#include "program.hpp"
 #include "blake2/endian.h"
 #include <iostream>
 #include <vector>

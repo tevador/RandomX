@@ -34,11 +34,9 @@
 .global DECL(randomx_program_read_dataset_light)
 .global DECL(randomx_program_read_dataset_sshash_init)
 .global DECL(randomx_program_read_dataset_sshash_fin)
-.global DECL(randomx_program_read_dataset_light_sub)
-.global DECL(randomx_dataset_init)
 .global DECL(randomx_program_loop_store)
 .global DECL(randomx_program_loop_end)
-.global DECL(randomx_program_read_dataset_light_sub)
+.global DECL(randomx_dataset_init)
 .global DECL(randomx_program_epilogue)
 .global DECL(randomx_sshash_load)
 .global DECL(randomx_sshash_prefetch)
@@ -82,12 +80,6 @@ DECL(randomx_program_loop_store):
 
 DECL(randomx_program_loop_end):
 	nop
-
-.balign 64
-DECL(randomx_program_read_dataset_light_sub):
-	#include "asm/program_read_dataset_light_sub.inc"
-squareHashSub:
-	#include "asm/squareHash.inc"
 
 .balign 64
 DECL(randomx_dataset_init):

@@ -27,7 +27,6 @@ PUBLIC randomx_program_read_dataset
 PUBLIC randomx_program_read_dataset_light
 PUBLIC randomx_program_read_dataset_sshash_init
 PUBLIC randomx_program_read_dataset_sshash_fin
-PUBLIC randomx_program_read_dataset_light_sub
 PUBLIC randomx_dataset_init
 PUBLIC randomx_program_loop_store
 PUBLIC randomx_program_loop_end
@@ -82,13 +81,6 @@ randomx_program_loop_store ENDP
 randomx_program_loop_end PROC
 	nop
 randomx_program_loop_end ENDP
-
-ALIGN 64
-randomx_program_read_dataset_light_sub PROC
-	include asm/program_read_dataset_light_sub.inc
-	squareHashSub:
-		include asm/squareHash.inc
-randomx_program_read_dataset_light_sub ENDP
 
 ALIGN 64
 randomx_dataset_init PROC

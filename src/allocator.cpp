@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-
 #include "allocator.hpp"
 #include "intrin_portable.h"
 #include "virtual_memory.hpp"
@@ -36,10 +34,8 @@ namespace randomx {
 		_mm_free(ptr);
 	}
 
-	template void* AlignedAllocator<CacheLineSize>::allocMemory(size_t count);
-	template void AlignedAllocator<CacheLineSize>::freeMemory(void* ptr, size_t count);
-	template void* AlignedAllocator<sizeof(__m128i)>::allocMemory(size_t count);
-	template void AlignedAllocator<sizeof(__m128i)>::freeMemory(void* ptr, size_t count);
+	template class AlignedAllocator<CacheLineSize>;
+	template class AlignedAllocator<sizeof(__m128i)>;;
 
 	void* LargePageAllocator::allocMemory(size_t count) {
 		return allocLargePagesMemory(count);

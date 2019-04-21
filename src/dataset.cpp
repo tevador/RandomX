@@ -211,23 +211,4 @@ namespace randomx {
 		for (uint32_t blockNumber = startBlock; blockNumber < endBlock; ++blockNumber, dataset += CacheLineSize)
 			initDatasetBlock(cache, dataset, blockNumber);
 	}
-	
-	/*void datasetAlloc(dataset_t& ds, bool largePages) {
-		if (std::numeric_limits<size_t>::max() < RANDOMX_DATASET_SIZE)
-			throw std::runtime_error("Platform doesn't support enough memory for the dataset");
-		if (largePages) {
-			ds.dataset.memory = (uint8_t*)allocLargePagesMemory(ds.dataset.size);
-		}
-		else {
-			ds.dataset.memory = (uint8_t*)_mm_malloc(ds.dataset.size, 64);
-			if (ds.dataset.memory == nullptr) {
-				throw std::runtime_error("Dataset memory allocation failed. >4 GiB of free virtual memory is needed.");
-			}
-		}
-	}
-
-	void datasetInitCache(const void* seed, dataset_t& ds, bool largePages) {
-		ds.cache.memory = allocCache(ds.cache.size, largePages);
-		argonFill(ds.cache, seed, SeedSize);
-	}*/
 }

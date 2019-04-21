@@ -22,9 +22,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Cache size in KiB. Must be a power of 2.
 #define RANDOMX_ARGON_MEMORY       (256 * 1024)
 
-//Cache growth per epoch in KiB.
-#define RANDOMX_ARGON_GROWTH       0
-
 //Number of Argon2d iterations for Cache initialization
 #define RANDOMX_ARGON_ITERATIONS   3
 
@@ -42,9 +39,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 //Dataset size in bytes. Must be a power of 2.
 #define RANDOMX_DATASET_SIZE       (2ULL * 1024 * 1024 * 1024)
-
-//Dataset growth per epoch in bytes. Must be divisible by 64.
-#define RANDOMX_DS_GROWTH          0
 
 //Number of blocks per epoch
 #define RANDOMX_EPOCH_BLOCKS       2048

@@ -30,8 +30,6 @@ namespace randomx {
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
 	static_assert((RANDOMX_DATASET_SIZE & (RANDOMX_DATASET_SIZE - 1)) == 0, "RANDOMX_DATASET_SIZE must be a power of 2.");
 	static_assert(RANDOMX_DATASET_SIZE <= 4294967296ULL, "RANDOMX_DATASET_SIZE must not exceed 4294967296.");
-	static_assert(RANDOMX_DS_GROWTH % 64 == 0, "RANDOMX_DS_GROWTH must be divisible by 64.");
-	static_assert(RANDOMX_ARGON_GROWTH >= 0, "RANDOMX_ARGON_GROWTH must be greater than or equal to 0.");
 	static_assert(RANDOMX_PROGRAM_SIZE > 0, "RANDOMX_PROGRAM_SIZE must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_ITERATIONS > 0, "RANDOMX_PROGRAM_ITERATIONS must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_COUNT > 0, "RANDOMX_PROGRAM_COUNT must be greater than 0");
@@ -54,15 +52,14 @@ namespace randomx {
 
 	using addr_t = uint32_t;
 
-	constexpr int SeedSize = 32;
-	constexpr int ResultSize = 64;
 	constexpr int ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = 64;
 	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;
 	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
 	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
-	constexpr int CacheBlockCount = CacheSize / CacheLineSize;
+
+	static_assert(RANDOMX_DATASET_BLOCKS == RANDOMX_DATASET_SIZE / CacheLineSize, "Invalid value of RANDOMX_DATASET_BLOCKS");
 
 #ifdef TRACE
 	constexpr bool trace = true;
