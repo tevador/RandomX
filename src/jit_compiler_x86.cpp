@@ -29,11 +29,27 @@ namespace randomx {
 		throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
 	}
 
-	void JitCompilerX86::generateProgram(Program& p) {
+	JitCompilerX86::~JitCompilerX86() {
 
 	}
 
-	void JitCompilerX86::generateProgramLight(Program& p) {
+	void JitCompilerX86::generateProgram(Program& p, ProgramConfiguration& pcfg) {
+
+	}
+
+	void JitCompilerX86::generateProgramLight(Program& p, ProgramConfiguration& pcfg) {
+
+	}
+
+	template<size_t N>
+	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &reciprocalCache) {
+
+	}
+
+	template
+		void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
+
+	void JitCompilerX86::generateDatasetInitCode() {
 
 	}
 
@@ -239,10 +255,10 @@ namespace randomx {
 	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg) {
 		generateProgramPrologue(prog, pcfg);
 		//if (superscalar) {
-			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
-			emitByte(CALL);
-			emit32(superScalarHashOffset - (codePos + 4));
-			emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
+		emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
+		emitByte(CALL);
+		emit32(superScalarHashOffset - (codePos + 4));
+		emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
 		/*}
 		else {
 			memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
@@ -283,7 +299,7 @@ namespace randomx {
 	}
 
 	template
-	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
+		void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
 
 	void JitCompilerX86::generateDatasetInitCode() {
 		memcpy(code, codeDatasetInit, datasetInitSize);
@@ -713,7 +729,7 @@ namespace randomx {
 			emit(REX_XOR_RM);
 			emitByte(0x04 + 8 * instr.dst);
 			emitByte(0x06);
-	}
+		}
 		else {
 			emit(REX_XOR_RM);
 			emitByte(0x86 + 8 * instr.dst);
@@ -861,7 +877,7 @@ namespace randomx {
 
 	void JitCompilerX86::h_CFROUND(Instruction& instr, int i) {
 		emit(REX_MOV_RR64);
-		emitByte(0xc0 + instr.src);	
+		emitByte(0xc0 + instr.src);
 		int rotate = (13 - (instr.getImm32() & 63)) & 63;
 		if (rotate != 0) {
 			emit(ROL_RAX);
@@ -895,24 +911,24 @@ namespace randomx {
 	static inline uint8_t condition(Instruction& instr) {
 		switch (instr.getModCond())
 		{
-			case 0:
-				return 0x96; //setbe
-			case 1:
-				return 0x97; //seta
-			case 2:
-				return 0x98; //sets
-			case 3:
-				return 0x99; //setns
-			case 4:
-				return 0x90; //seto
-			case 5:
-				return 0x91; //setno
-			case 6:
-				return 0x9c; //setl
-			case 7:
-				return 0x9d; //setge
-			default:
-				UNREACHABLE;
+		case 0:
+			return 0x96; //setbe
+		case 1:
+			return 0x97; //seta
+		case 2:
+			return 0x98; //sets
+		case 3:
+			return 0x99; //setns
+		case 4:
+			return 0x90; //seto
+		case 5:
+			return 0x91; //setno
+		case 6:
+			return 0x9c; //setl
+		case 7:
+			return 0x9d; //setge
+		default:
+			UNREACHABLE;
 		}
 	}
 
@@ -993,7 +1009,7 @@ namespace randomx {
 	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr);
 		//if (instr.getModCond())
-			emit(REX_MOV_MR);
+		emit(REX_MOV_MR);
 		//else
 		//	emit(MOVNTI);
 		emitByte(0x04 + 8 * instr.src);
@@ -1050,6 +1066,5 @@ namespace randomx {
 		INST_HANDLE(NOP)
 	};
 
-
-#endif
 }
+#endif
