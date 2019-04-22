@@ -180,11 +180,11 @@ namespace randomx {
 		return memory + (registerValue & mask) * CacheLineSize;
 	}
 
-	void initDatasetBlock(randomx_cache* cache, uint8_t* out, uint64_t blockNumber) {
+	void initDatasetItem(randomx_cache* cache, uint8_t* out, uint64_t itemNumber) {
 		int_reg_t rl[8];
 		uint8_t* mixBlock;
-		uint64_t registerValue = blockNumber;
-		rl[0] = (blockNumber + 1) * superscalarMul0;
+		uint64_t registerValue = itemNumber;
+		rl[0] = (itemNumber + 1) * superscalarMul0;
 		rl[1] = rl[0] ^ superscalarAdd1;
 		rl[2] = rl[0] ^ superscalarAdd2;
 		rl[3] = rl[0] ^ superscalarAdd3;
@@ -207,8 +207,8 @@ namespace randomx {
 		memcpy(out, &rl, CacheLineSize);
 	}
 
-	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock) {
-		for (uint32_t blockNumber = startBlock; blockNumber < endBlock; ++blockNumber, dataset += CacheLineSize)
-			initDatasetBlock(cache, dataset, blockNumber);
+	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startItem, uint32_t endItem) {
+		for (uint32_t itemNumber = startItem; itemNumber < endItem; ++itemNumber, dataset += CacheLineSize)
+			initDatasetItem(cache, dataset, itemNumber);
 	}
 }

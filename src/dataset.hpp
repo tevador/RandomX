@@ -73,6 +73,6 @@ namespace randomx {
 	using CacheLargePage = Cache<LargePageAllocator>;
 	using CacheWithJitLargePage = CacheWithJit<LargePageAllocator>;
 
-	void initDatasetBlock(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);
+	void initDatasetItem(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);
 	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 }

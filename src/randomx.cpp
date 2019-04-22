@@ -90,9 +90,9 @@ extern "C" {
 		return dataset;
 	}
 
-	void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startBlock, unsigned long blockCount) {
+	void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount) {
 		randomx::DatasetInitFunc dsfunc = cache->getInitFunc();
-		dsfunc(cache, dataset->memory + startBlock * randomx::CacheLineSize, startBlock, startBlock + blockCount);
+		dsfunc(cache, dataset->memory + startItem * randomx::CacheLineSize, startItem, startItem + itemCount);
 	}
 
 	void randomx_release_dataset(randomx_dataset *dataset) {

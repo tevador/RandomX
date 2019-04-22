@@ -30,8 +30,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "../randomx.h"
 #include "../blake2/endian.h"
 
-const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 62, 162, 166, 61, 64, 123, 191, 227, 193, 118, 60, 188, 53, 223, 133, 175, 24, 123, 230, 55, 74 };
-
 const uint8_t blockTemplate_[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
 		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
@@ -82,6 +80,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
 	std::cout << "  --init Q      initialize dataset with Q threads (default: 1)" << std::endl;
 	std::cout << "  --nonces N    run N nonces (default: 1000)" << std::endl;
+	std::cout << "  --seed S      seed for cache initialization (default: 0)" << std::endl;
 }
 
 void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread) {
@@ -102,6 +101,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 int main(int argc, char** argv) {
 	bool softAes, miningMode, verificationMode, help, largePages, jit;
 	int noncesCount, threadCount, initThreadCount;
+	int32_t seed;
 
 	readOption("--softAes", argc, argv, softAes);
 	readOption("--mine", argc, argv, miningMode);
@@ -109,6 +109,7 @@ int main(int argc, char** argv) {
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, noncesCount, 1000);
 	readIntOption("--init", argc, argv, initThreadCount, 1);
+	readIntOption("--seed", argc, argv, seed, 0);
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--jit", argc, argv, jit);
 	readOption("--help", argc, argv, help);
@@ -172,7 +173,7 @@ int main(int argc, char** argv) {
 			std::cout << "ERROR: Cache allocation failed" << std::endl;
 			return 1;
 		}
-		randomx_init_cache(cache, seed, sizeof(seed));
+		randomx_init_cache(cache, &seed, sizeof(seed));
 		if (miningMode) {
 			dataset = randomx_alloc_dataset(flags);
 			if (dataset == nullptr) {
@@ -180,20 +181,20 @@ int main(int argc, char** argv) {
 				return 1;
 			}
 			if (initThreadCount > 1) {
-				auto perThread = RANDOMX_DATASET_BLOCKS / initThreadCount;
-				auto remainder = RANDOMX_DATASET_BLOCKS % initThreadCount;
-				uint32_t startBlock = 0;
+				auto perThread = RANDOMX_DATASET_ITEMS / initThreadCount;
+				auto remainder = RANDOMX_DATASET_ITEMS % initThreadCount;
+				uint32_t startItem = 0;
 				for (int i = 0; i < initThreadCount; ++i) {
 					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
-					threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startBlock, count));
-					startBlock += count;
+					threads.push_back(std::thread(&randomx_init_dataset, dataset, cache, startItem, count));
+					startItem += count;
 				}
 				for (unsigned i = 0; i < threads.size(); ++i) {
 					threads[i].join();
 				}
 			}
 			else {
-				randomx_init_dataset(dataset, cache, 0, RANDOMX_DATASET_BLOCKS);
+				randomx_init_dataset(dataset, cache, 0, RANDOMX_DATASET_ITEMS);
 			}
 			randomx_release_cache(cache);
 			threads.clear();
@@ -227,8 +228,8 @@ int main(int argc, char** argv) {
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
-		if (noncesCount == 1000)
-			std::cout << "Reference result:  dc34604eed2fbba0e8fae26b2270b90d8aad9466ba39950fd8904248442e850a" << std::endl;
+		if (noncesCount == 1000 && seed == 0)
+			std::cout << "Reference result:  b69741719152625854031c2337ceae68c3030f2b9581a73acebaa69fc9b555fc" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;
 		}

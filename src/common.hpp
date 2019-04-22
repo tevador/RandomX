@@ -59,7 +59,7 @@ namespace randomx {
 	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
 	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
 
-	static_assert(RANDOMX_DATASET_BLOCKS == RANDOMX_DATASET_SIZE / CacheLineSize, "Invalid value of RANDOMX_DATASET_BLOCKS");
+	static_assert(RANDOMX_DATASET_ITEMS == RANDOMX_DATASET_SIZE / CacheLineSize, "Invalid value of RANDOMX_DATASET_ITEMS");
 
 #ifdef TRACE
 	constexpr bool trace = true;
