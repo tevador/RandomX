@@ -40,13 +40,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "argon2.h"
 #include "argon2_core.h"
 
-#if defined(__SSE2__)
-#include <wmmintrin.h>
-#define PREFETCHNTA(x) _mm_prefetch((const char *)(x), _MM_HINT_NTA)
-#else
-#define PREFETCH(memory)
-#endif
-
 randomx_dataset::~randomx_dataset() {
 
 }

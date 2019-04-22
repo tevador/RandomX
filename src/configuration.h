@@ -40,12 +40,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Dataset size in bytes. Must be a power of 2.
 #define RANDOMX_DATASET_SIZE       (2ULL * 1024 * 1024 * 1024)
 
-//Number of blocks per epoch
-#define RANDOMX_EPOCH_BLOCKS       2048
-
-//Number of blocks between the seed block and the start of new epoch
-#define RANDOMX_EPOCH_LAG          64
-
 //Number of instructions in a RandomX program
 #define RANDOMX_PROGRAM_SIZE       256
 

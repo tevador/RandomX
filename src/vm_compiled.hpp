@@ -28,10 +28,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace randomx {
 
-	extern "C" {
-		void executeProgram(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
-	}
-
 	template<class Allocator, bool softAes>
 	class CompiledVm : public VmBase<Allocator, softAes> {
 	public:

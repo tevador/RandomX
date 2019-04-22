@@ -34,8 +34,6 @@ namespace randomx {
 	static const char* regE[4] = { "xmm4", "xmm5", "xmm6", "xmm7" };
 	static const char* regA[4] = { "xmm8", "xmm9", "xmm10", "xmm11" };
 
-	static const char* fsumInstr[4] = { "paddb", "paddw", "paddd", "paddq" };
-
 	static const char* regA4 = "xmm12";
 	static const char* dblMin = "xmm13";
 	static const char* absMask = "xmm14";
@@ -58,7 +56,6 @@ namespace randomx {
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
 			generateCode(instr, i);
-			//asmCode << std::endl;
 		}
 	}
 
@@ -494,7 +491,6 @@ namespace randomx {
 	//2 uOPs
 	void AssemblyGeneratorX86::h_ISWAP_R(Instruction& instr, int i) {
 		if (instr.src != instr.dst) {
-			//std::swap(registerUsage[instr.dst], registerUsage[instr.src]);
 			registerUsage[instr.dst] = i;
 			registerUsage[instr.src] = i;
 			asmCode << "\txchg " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
@@ -516,7 +512,6 @@ namespace randomx {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
-		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
 		traceflt(instr);
 	}
 
@@ -534,7 +529,6 @@ namespace randomx {
 		instr.dst %= 4;
 		instr.src %= 4;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
-		//asmCode << "\t" << fsumInstr[instr.mod % 4] << " " << signMask << ", " << regF[instr.dst] << std::endl;
 		traceflt(instr);
 	}
 

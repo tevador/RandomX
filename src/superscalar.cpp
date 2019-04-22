@@ -700,7 +700,7 @@ namespace randomx {
 				//calculate the earliest cycle when this macro-op (all of its uOPs) can be scheduled for execution
 				int scheduleCycle = scheduleMop<false>(mop, portBusy, cycle, depCycle);
 				if (scheduleCycle < 0) {
-					/*if (TRACE)*/ std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
+					if (TRACE) std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
 					//__debugbreak();
 					portsSaturated = true;
 					break;
@@ -725,7 +725,7 @@ namespace randomx {
 							continue;
 						}
 						//abort this decode buffer
-						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available for operation " << currentInstruction.getInfo().getName() << std::endl;
+						if (TRACE) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available for operation " << currentInstruction.getInfo().getName() << std::endl;
 						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}
@@ -748,7 +748,7 @@ namespace randomx {
 							continue;
 						}
 						//abort this decode buffer
-						/*if (TRACE)*/ std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
+						if (TRACE) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
 						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}

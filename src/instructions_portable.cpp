@@ -73,14 +73,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 		#define HAVE_SMULH
 	#endif
 
-	static void setRoundMode__(uint32_t mode) {
+	static void setRoundMode_(uint32_t mode) {
 		_controlfp(mode, _MCW_RC);
 	}
 	#define HAVE_SETROUNDMODE_IMPL
 #endif
 
 #ifndef HAVE_SETROUNDMODE_IMPL
-	static void setRoundMode__(uint32_t mode) {
+	static void setRoundMode_(uint32_t mode) {
 		fesetround(mode);
 	}
 #endif
@@ -135,7 +135,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_sub_overflow)
-	static inline bool subOverflow__(uint32_t a, uint32_t b) {
+	static inline bool subOverflow_(uint32_t a, uint32_t b) {
 		int32_t temp;
 		return __builtin_sub_overflow(unsigned32ToSigned2sCompl(a), unsigned32ToSigned2sCompl(b), &temp);
 	}
@@ -144,7 +144,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #endif
 
 #ifndef HAVE_SUB_OVERFLOW
-	static inline bool subOverflow__(uint32_t a, uint32_t b) {
+	static inline bool subOverflow_(uint32_t a, uint32_t b) {
 		auto c = unsigned32ToSigned2sCompl(a - b);
 		return (c < unsigned32ToSigned2sCompl(a)) != (unsigned32ToSigned2sCompl(b) > 0);
 	}
@@ -166,16 +166,16 @@ static inline double FlushNaN(double x) {
 void setRoundMode(uint32_t rcflag) {
 	switch (rcflag & 3) {
 		case RoundDown:
-			setRoundMode__(FE_DOWNWARD);
+			setRoundMode_(FE_DOWNWARD);
 			break;
 		case RoundUp:
-			setRoundMode__(FE_UPWARD);
+			setRoundMode_(FE_UPWARD);
 			break;
 		case RoundToZero:
-			setRoundMode__(FE_TOWARDZERO);
+			setRoundMode_(FE_TOWARDZERO);
 			break;
 		case RoundToNearest:
-			setRoundMode__(FE_TONEAREST);
+			setRoundMode_(FE_TONEAREST);
 			break;
 		default:
 			UNREACHABLE;
@@ -194,9 +194,9 @@ bool condition(uint32_t type, uint32_t value, uint32_t imm32) {
 		case 3:
 			return unsigned32ToSigned2sCompl(value - imm32) >= 0;
 		case 4:
-			return subOverflow__(value, imm32);
+			return subOverflow_(value, imm32);
 		case 5:
-			return !subOverflow__(value, imm32);
+			return !subOverflow_(value, imm32);
 		case 6:
 			return unsigned32ToSigned2sCompl(value) < unsigned32ToSigned2sCompl(imm32);
 		case 7:

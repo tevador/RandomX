@@ -42,7 +42,6 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void CompiledVm<Allocator, softAes>::execute() {
-		//executeProgram(reg, mem, scratchpad, InstructionCount);
 		compiler.getProgramFunc()(reg, mem, scratchpad, RANDOMX_PROGRAM_ITERATIONS);
 	}
 

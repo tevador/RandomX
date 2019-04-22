@@ -103,12 +103,10 @@ namespace randomx {
 	; xmm11 -> "a3"
 	; xmm12 -> temporary
 	; xmm13 -> mantissa mask    = 0x000fffffffffffff000fffffffffffff
-	; xmm14 -> exponent 2**-240 = 0x30f000000000000030f0000000000000
+	; xmm14 -> exponent 2**-240 = 0x30f00000000xxxxx30f00000000xxxxx
 	; xmm15 -> scale mask       = 0x81f000000000000081f0000000000000
 
 	*/
-
-#define NOP_TEST true
 
 	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
 	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_program_loop_begin;
@@ -254,18 +252,10 @@ namespace randomx {
 
 	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg) {
 		generateProgramPrologue(prog, pcfg);
-		//if (superscalar) {
 		emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
 		emitByte(CALL);
 		emit32(superScalarHashOffset - (codePos + 4));
 		emit(codeReadDatasetLightSshFin, readDatasetLightFinSize);
-		/*}
-		else {
-			memcpy(code + codePos, codeReadDatasetLight, readDatasetLightSize);
-			codePos += readDatasetLightSize;
-			emitByte(CALL);
-			emit32(readDatasetLightSubOffset - (codePos + 4));
-		}*/
 		generateProgramEpilogue(prog);
 	}
 
@@ -483,10 +473,6 @@ namespace randomx {
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
 		}*/
-		if (false && NOP_TEST) {
-			emit(NOP4);
-			return;
-		}
 		emit(REX_LEA);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emitByte(0xac);
@@ -527,18 +513,10 @@ namespace randomx {
 	void JitCompilerX86::h_ISUB_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			if (false && NOP_TEST) {
-				emit(NOP3);
-				return;
-			}
 			emit(REX_SUB_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			if (false && NOP_TEST) {
-				emit(NOP7);
-				return;
-			}
 			emit(REX_81);
 			emitByte(0xe8 + instr.dst);
 			emit32(instr.getImm32());
@@ -571,18 +549,10 @@ namespace randomx {
 	void JitCompilerX86::h_IMUL_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			if (false && NOP_TEST) {
-				emit(NOP4);
-				return;
-			}
 			emit(REX_IMUL_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			if (false && NOP_TEST) {
-				emit(NOP7);
-				return;
-			}
 			emit(REX_IMUL_RRI);
 			emitByte(0xc0 + 9 * instr.dst);
 			emit32(instr.getImm32());
@@ -606,12 +576,6 @@ namespace randomx {
 
 	void JitCompilerX86::h_IMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		if (false && NOP_TEST) {
-			emit(NOP3);
-			emit(NOP3);
-			emit(NOP3);
-			return;
-		}
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -641,12 +605,6 @@ namespace randomx {
 
 	void JitCompilerX86::h_ISMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		if (false && NOP_TEST) {
-			emit(NOP3);
-			emit(NOP3);
-			emit(NOP3);
-			return;
-		}
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -676,13 +634,6 @@ namespace randomx {
 
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
 		if (instr.getImm32() != 0) {
-			if (false && NOP_TEST) {
-				emitByte(0x66);
-				emitByte(0x66);
-				emit(NOP8);
-				emit(NOP4);
-				return;
-			}
 			registerUsage[instr.dst] = i;
 			emit(MOV_RAX_I);
 			emit64(randomx_reciprocal(instr.getImm32()));
@@ -704,18 +655,10 @@ namespace randomx {
 	void JitCompilerX86::h_IXOR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			if (false && NOP_TEST) {
-				emit(NOP3);
-				return;
-			}
 			emit(REX_XOR_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
 		}
 		else {
-			if (false && NOP_TEST) {
-				emit(NOP7);
-				return;
-			}
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
@@ -740,21 +683,12 @@ namespace randomx {
 	void JitCompilerX86::h_IROR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			if (false && NOP_TEST) {
-				emit(NOP3);
-				emit(NOP3);
-				return;
-			}
 			emit(REX_MOV_RR);
 			emitByte(0xc8 + instr.src);
 			emit(REX_ROT_CL);
 			emitByte(0xc8 + instr.dst);
 		}
 		else {
-			if (false && NOP_TEST) {
-				emit(NOP4);
-				return;
-			}
 			emit(REX_ROT_I8);
 			emitByte(0xc8 + instr.dst);
 			emitByte(instr.getImm32() & 63);
@@ -949,21 +883,14 @@ namespace randomx {
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
-		if (false && NOP_TEST) {
-			emit(NOP7);
-			emit(NOP7);
-			emit(NOP6);
-		}
-		else {
-			emit(REX_ADD_I);
-			emitByte(0xc0 + reg);
-			emit32(1 << shift);
-			emit(REX_TEST);
-			emitByte(0xc0 + reg);
-			emit32(conditionMask);
-			emit(JZ);
-			emit32(instructionOffsets[target] - (codePos + 4));
-		}
+		emit(REX_ADD_I);
+		emitByte(0xc0 + reg);
+		emit32(1 << shift);
+		emit(REX_TEST);
+		emitByte(0xc0 + reg);
+		emit32(conditionMask);
+		emit(JZ);
+		emit32(instructionOffsets[target] - (codePos + 4));
 		for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
 			registerUsage[j] = i;
 		}
@@ -973,13 +900,6 @@ namespace randomx {
 #ifdef RANDOMX_JUMP
 		handleCondition(instr, i);
 #endif
-		if (false && NOP_TEST) {
-			emit(NOP3);
-			emit(NOP7);
-			emit(NOP3);
-			emit(NOP3);
-			return;
-		}
 		emit(XOR_ECX_ECX);
 		emit(REX_CMP_R32I);
 		emitByte(0xf8 + instr.src);

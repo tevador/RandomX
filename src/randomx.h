@@ -50,8 +50,8 @@ extern "C" {
  *                           subsequent Dataset initialization faster
  *
  * @return Pointer to an allocated randomx_cache structure.
-           NULL is returned if memory allocation fails or if the RANDOMX_FLAG_JIT
-		   is set and JIT compilation is not supported on the current platform.
+ *         NULL is returned if memory allocation fails or if the RANDOMX_FLAG_JIT
+ *         is set and JIT compilation is not supported on the current platform.
  */
 randomx_cache *randomx_alloc_cache(randomx_flags flags);
 
@@ -76,9 +76,9 @@ void randomx_release_cache(randomx_cache* cache);
  *
  * @param flags is the initialization flags. Only one flag is supported (can be set or not set):
  *        RANDOMX_FLAG_LARGE_PAGES - allocate memory in large pages
-
+ *
  * @return Pointer to an allocated randomx_cache structure.
-		   NULL is returned if memory allocation fails.
+ *         NULL is returned if memory allocation fails.
  */
 randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
 

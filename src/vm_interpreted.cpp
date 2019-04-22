@@ -115,7 +115,6 @@ namespace randomx {
 	void InterpretedVm<Allocator, softAes>::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[ic];
 		if (trace) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
-		//if(trace) printState(r, f, e, a);
 		switch (ibc.type)
 		{
 			case InstructionType::IADD_RS: {
@@ -237,15 +236,9 @@ namespace randomx {
 				*ibc.creg += (1 << ibc.shift);
 				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
 				if ((*ibc.creg & conditionMask) == 0) {
-#ifdef STATS
-					count_JUMP_taken++;
-#endif
 					ic = ibc.target;
 					break;
 				}
-#ifdef STATS
-				count_JUMP_not_taken++;
-#endif
 #endif
 				*ibc.idst += condition(ibc.condition, *ibc.isrc, ibc.imm) ? 1 : 0;
 			} break;
@@ -255,15 +248,9 @@ namespace randomx {
 				*ibc.creg += (1uLL << ibc.shift);
 				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
 				if ((*ibc.creg & conditionMask) == 0) {
-#ifdef STATS
-					count_JUMP_taken++;
-#endif
 					ic = ibc.target;
 					break;
 				}
-#ifdef STATS
-				count_JUMP_not_taken++;
-#endif
 #endif
 				*ibc.idst += condition(ibc.condition, load64(getScratchpadAddress(ibc)), ibc.imm) ? 1 : 0;
 			} break;
@@ -328,7 +315,6 @@ namespace randomx {
 		}
 
 		for(unsigned ic = 0; ic < RANDOMX_PROGRAM_ITERATIONS; ++ic) {
-			//std::cout << "Iteration " << iter << std::endl;
 			uint64_t spMix = r[config.readReg0] ^ r[config.readReg1];
 			spAddr0 ^= spMix;
 			spAddr0 &= ScratchpadL3Mask64;
@@ -366,7 +352,6 @@ namespace randomx {
 			mem.mx ^= r[config.readReg2] ^ r[config.readReg3];
 			mem.mx &= CacheLineAlignMask;
 			datasetRead(mem.ma, r);
-			//executeSuperscalar(datasetBase + mem.ma / CacheLineSize, r);
 			std::swap(mem.mx, mem.ma);
 
 			if (trace) {
@@ -449,22 +434,6 @@ namespace randomx {
 		for (int i = 0; i < RegistersCount; ++i)
 			r[i] ^= datasetLine[i];
 	}
-
-	/*template<bool superscalar>
-	void InterpretedVirtualMachine<superscalar>::precompileSuperscalar(SuperscalarProgram* programs) {
-		memcpy(superScalarPrograms, programs, sizeof(superScalarPrograms));
-		reciprocals.clear();
-		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-			for (unsigned j = 0; j < superScalarPrograms[i].getSize(); ++j) {
-				Instruction& instr = superScalarPrograms[i](j);
-				if (instr.opcode == SuperscalarInstructionType::IMUL_RCP) {
-					auto rcp = reciprocal(instr.getImm32());
-					instr.setImm32(reciprocals.size());
-					reciprocals.push_back(rcp);
-				}	
-			}
-		}
-	}*/
 
 #include "instruction_weights.hpp"
 

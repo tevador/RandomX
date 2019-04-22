@@ -49,8 +49,6 @@ namespace randomx {
 		uint16_t shift;
 	};
 
-	constexpr int asedwfagdewsa = sizeof(InstructionByteCode);
-
 	template<class Allocator, bool softAes>
 	class InterpretedVm : public VmBase<Allocator, softAes> {
 	public:
