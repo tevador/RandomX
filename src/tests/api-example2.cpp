@@ -20,8 +20,9 @@ int main() {
 		std::cout << "Dataset allocation failed" << std::endl;
 		return 1;
 	}
-	std::thread t1(&randomx_init_dataset, myDataset, myCache, 0, RANDOMX_DATASET_ITEMS / 2);
-	std::thread t2(&randomx_init_dataset, myDataset, myCache, RANDOMX_DATASET_ITEMS / 2, RANDOMX_DATASET_ITEMS / 2);
+	auto datasetItemCount = randomx_dataset_item_count();
+	std::thread t1(&randomx_init_dataset, myDataset, myCache, 0, datasetItemCount / 2);
+	std::thread t2(&randomx_init_dataset, myDataset, myCache, datasetItemCount / 2, datasetItemCount / 2);
 	t1.join();
 	t2.join();
 	randomx_release_cache(myCache);

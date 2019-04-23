@@ -54,12 +54,10 @@ namespace randomx {
 
 	constexpr int ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
-	constexpr int CacheLineSize = 64;
+	constexpr int CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
 	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;
 	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
 	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
-
-	static_assert(RANDOMX_DATASET_ITEMS == RANDOMX_DATASET_SIZE / CacheLineSize, "Invalid value of RANDOMX_DATASET_ITEMS");
 
 #ifdef TRACE
 	constexpr bool trace = true;

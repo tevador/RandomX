@@ -23,7 +23,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stddef.h>
 
 #define RANDOMX_HASH_SIZE 32
-#define RANDOMX_DATASET_ITEMS 33554432UL
+#define RANDOMX_DATASET_ITEM_SIZE 64
 
 typedef enum {
   RANDOMX_FLAG_DEFAULT = 0,
@@ -83,9 +83,16 @@ void randomx_release_cache(randomx_cache* cache);
 randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
 
 /**
+ * Gets the number of items contained in the dataset.
+ *
+ * @return the number of items contained in the dataset.
+*/
+unsigned long randomx_dataset_item_count();
+
+/**
  * Initializes dataset items.
  *
- * Note: In order to use the Dataset, all items from 0 to (RANDOMX_DATASET_ITEMS - 1) must be initialized.
+ * Note: In order to use the Dataset, all items from 0 to (randomx_dataset_item_count() - 1) must be initialized.
  * This may be done by several calls to this function using non-overlapping item sequences.
  *
  * @param dataset is a pointer to a previously allocated randomx_dataset structure. Must not be NULL.
@@ -94,6 +101,16 @@ randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
  * @param itemCount is the number of items that should be initialized.
 */
 void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount);
+
+/**
+ * Returns a pointer to the internal memory buffer of the dataset structure. The size
+ * of the internal memory buffer is randomx_dataset_item_count() * RANDOMX_DATASET_ITEM_SIZE.
+ *
+ * @param dataset is dataset is a pointer to a previously allocated randomx_dataset structure. Must not be NULL.
+ *
+ * @return Pointer to the internal memory buffer of the dataset structure.
+*/
+void *randomx_get_dataset_memory(randomx_dataset *dataset);
 
 /**
  * Releases all memory occupied by the randomx_dataset structure.
