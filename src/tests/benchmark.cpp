@@ -180,9 +180,10 @@ int main(int argc, char** argv) {
 				std::cout << "ERROR: Dataset allocation failed" << std::endl;
 				return 1;
 			}
+			uint32_t datasetItemCount = randomx_dataset_item_count();
 			if (initThreadCount > 1) {
-				auto perThread = RANDOMX_DATASET_ITEMS / initThreadCount;
-				auto remainder = RANDOMX_DATASET_ITEMS % initThreadCount;
+				auto perThread = datasetItemCount / initThreadCount;
+				auto remainder = datasetItemCount % initThreadCount;
 				uint32_t startItem = 0;
 				for (int i = 0; i < initThreadCount; ++i) {
 					auto count = perThread + (i == initThreadCount - 1 ? remainder : 0);
@@ -194,7 +195,7 @@ int main(int argc, char** argv) {
 				}
 			}
 			else {
-				randomx_init_dataset(dataset, cache, 0, RANDOMX_DATASET_ITEMS);
+				randomx_init_dataset(dataset, cache, 0, datasetItemCount);
 			}
 			randomx_release_cache(cache);
 			threads.clear();
