@@ -114,7 +114,7 @@ namespace randomx {
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
 		auto& ibc = byteCode[ic];
-		if (trace) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
+		if (trace && ibc.type != InstructionType::NOP) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
 		switch (ibc.type)
 		{
 			case InstructionType::IADD_RS: {
@@ -270,7 +270,7 @@ namespace randomx {
 			default:
 				UNREACHABLE;
 		}
-		if (trace) {
+		if (trace && ibc.type != InstructionType::NOP) {
 			if(ibc.type < 20 || ibc.type == 31 || ibc.type == 32)
 				print(*ibc.idst);
 			else //if(ibc.type >= 20 && ibc.type <= 30)

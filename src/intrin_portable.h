@@ -295,7 +295,8 @@ inline __m128i _mm_slli_si128(__m128i _A, int _Imm) {
 
 inline __m128i _mm_loadl_epi64(__m128i const* mem_addr) {
 	__m128i x;
-	x.u64[0] = load64(mem_addr);
+	x.u32[0] = load32((uint8_t*)mem_addr + 0);
+	x.u32[1] = load32((uint8_t*)mem_addr + 4);
 	return x;
 }
 

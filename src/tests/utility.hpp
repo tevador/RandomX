@@ -24,6 +24,14 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <fstream>
 
+constexpr char hexmap[] = "0123456789abcdef";
+inline void outputHex(std::ostream& os, const char* data, int length) {
+	for (int i = 0; i < length; ++i) {
+		os << hexmap[(data[i] & 0xF0) >> 4];
+		os << hexmap[data[i] & 0x0F];
+	}
+}
+
 inline void dump(const char* buffer, uint64_t count, const char* name) {
 	std::ofstream fout(name, std::ios::out | std::ios::binary);
 	fout.write(buffer, count);

@@ -37,14 +37,6 @@ const uint8_t blockTemplate_[] = {
 		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
 };
 
-constexpr char hexmap[] = "0123456789abcdef";
-void outputHex(std::ostream& os, const char* data, int length) {
-	for (int i = 0; i < length; ++i) {
-		os << hexmap[(data[i] & 0xF0) >> 4];
-		os << hexmap[data[i] & 0x0F];
-	}
-}
-
 class AtomicHash {
 public:
 	AtomicHash() {
@@ -101,7 +93,8 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 int main(int argc, char** argv) {
 	bool softAes, miningMode, verificationMode, help, largePages, jit;
 	int noncesCount, threadCount, initThreadCount;
-	int32_t seed;
+	int32_t seedValue;
+	char seed[4];
 
 	readOption("--softAes", argc, argv, softAes);
 	readOption("--mine", argc, argv, miningMode);
@@ -109,10 +102,12 @@ int main(int argc, char** argv) {
 	readIntOption("--threads", argc, argv, threadCount, 1);
 	readIntOption("--nonces", argc, argv, noncesCount, 1000);
 	readIntOption("--init", argc, argv, initThreadCount, 1);
-	readIntOption("--seed", argc, argv, seed, 0);
+	readIntOption("--seed", argc, argv, seedValue, 0);
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--jit", argc, argv, jit);
 	readOption("--help", argc, argv, help);
+
+	store32(&seed, seedValue);
 
 	std::cout << "RandomX benchmark" << std::endl;
 
@@ -229,7 +224,7 @@ int main(int argc, char** argv) {
 		double elapsed = sw.getElapsed();
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
-		if (noncesCount == 1000 && seed == 0)
+		if (noncesCount == 1000 && seedValue == 0)
 			std::cout << "Reference result:  b69741719152625854031c2337ceae68c3030f2b9581a73acebaa69fc9b555fc" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;

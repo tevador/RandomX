@@ -573,14 +573,6 @@ namespace randomx {
 	constexpr int LOOK_FORWARD_CYCLES = 4;
 	constexpr int MAX_THROWAWAY_COUNT = 256;
 
-#ifndef _DEBUG
-	constexpr bool TRACE = false;
-	constexpr bool INFO = false;
-#else
-	constexpr bool TRACE = true;
-	constexpr bool INFO = true;
-#endif
-
 	template<bool commit>
 	static int scheduleUop(ExecutionPort::type uop, ExecutionPort::type(&portBusy)[CYCLE_MAP_SIZE][3], int cycle) {
 		//The scheduling here is done optimistically by checking port availability in order P5 -> P0 -> P1 to not overload
@@ -588,21 +580,21 @@ namespace randomx {
 		for (; cycle < CYCLE_MAP_SIZE; ++cycle) {
 			if ((uop & ExecutionPort::P5) != 0 && !portBusy[cycle][2]) {
 				if (commit) {
-					if (TRACE) std::cout << "; P5 at cycle " << cycle << std::endl;
+					if (trace) std::cout << "; P5 at cycle " << cycle << std::endl;
 					portBusy[cycle][2] = uop;
 				}
 				return cycle;
 			}
 			if ((uop & ExecutionPort::P0) != 0 && !portBusy[cycle][0]) {
 				if (commit) {
-					if (TRACE) std::cout << "; P0 at cycle " << cycle << std::endl;
+					if (trace) std::cout << "; P0 at cycle " << cycle << std::endl;
 					portBusy[cycle][0] = uop;
 				}
 				return cycle;
 			}
 			if ((uop & ExecutionPort::P1) != 0 && !portBusy[cycle][1]) {
 				if (commit) {
-					if (TRACE) std::cout << "; P1 at cycle " << cycle << std::endl;
+					if (trace) std::cout << "; P1 at cycle " << cycle << std::endl;
 					portBusy[cycle][1] = uop;
 				}
 				return cycle;
@@ -621,7 +613,7 @@ namespace randomx {
 		//move instructions are eliminated and don't need an execution unit
 		if (mop.isEliminated()) {
 			if (commit)
-				if (TRACE) std::cout << "; (eliminated)" << std::endl;
+				if (trace) std::cout << "; (eliminated)" << std::endl;
 			return cycle;
 		} 
 		else if (mop.isSimple()) {
@@ -677,7 +669,7 @@ namespace randomx {
 
 			//select a decode configuration
 			decodeBuffer = decodeBuffer->fetchNext(currentInstruction.getType(), decodeCycle, mulCount, gen);
-			if (TRACE) std::cout << "; ------------- fetch cycle " << cycle << " (" << decodeBuffer->getName() << ")" << std::endl;
+			if (trace) std::cout << "; ------------- fetch cycle " << cycle << " (" << decodeBuffer->getName() << ")" << std::endl;
 
 			int bufferIndex = 0;
 			
@@ -692,15 +684,15 @@ namespace randomx {
 					//select an instruction so that the first macro-op fits into the current slot
 					currentInstruction.createForSlot(gen, decodeBuffer->getCounts()[bufferIndex], decodeBuffer->getIndex(), decodeBuffer->getSize() == bufferIndex + 1, bufferIndex == 0);
 					macroOpIndex = 0;
-					if (TRACE) std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
+					if (trace) std::cout << "; " << currentInstruction.getInfo().getName() << std::endl;
 				}
 				const MacroOp& mop = currentInstruction.getInfo().getOp(macroOpIndex);
-				if (TRACE) std::cout << mop.getName() << " ";
+				if (trace) std::cout << mop.getName() << " ";
 
 				//calculate the earliest cycle when this macro-op (all of its uOPs) can be scheduled for execution
 				int scheduleCycle = scheduleMop<false>(mop, portBusy, cycle, depCycle);
 				if (scheduleCycle < 0) {
-					if (TRACE) std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
+					if (trace) std::cout << "Unable to map operation '" << mop.getName() << "' to execution port (cycle " << cycle << ")" << std::endl;
 					//__debugbreak();
 					portsSaturated = true;
 					break;
@@ -711,7 +703,7 @@ namespace randomx {
 					int forward;
 					//if no suitable operand is ready, look up to LOOK_FORWARD_CYCLES forward
 					for (forward = 0; forward < LOOK_FORWARD_CYCLES && !currentInstruction.selectSource(scheduleCycle, registers, gen); ++forward) {
-						if (TRACE) std::cout << "; src STALL at cycle " << cycle << std::endl;
+						if (trace) std::cout << "; src STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
 					}
@@ -720,22 +712,22 @@ namespace randomx {
 						if (throwAwayCount < MAX_THROWAWAY_COUNT) {
 							throwAwayCount++;
 							macroOpIndex = currentInstruction.getInfo().getSize();
-							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							if (trace) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
 							//cycle = topCycle;
 							continue;
 						}
 						//abort this decode buffer
-						if (TRACE) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available for operation " << currentInstruction.getInfo().getName() << std::endl;
+						if (trace) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - source registers not available for operation " << currentInstruction.getInfo().getName() << std::endl;
 						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}
-					if (TRACE) std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
+					if (trace) std::cout << "; src = r" << currentInstruction.getSource() << std::endl;
 				}
 				//find a destination register that will be ready when this instruction executes
 				if (macroOpIndex == currentInstruction.getInfo().getDstOp()) {
 					int forward;
 					for (forward = 0; forward < LOOK_FORWARD_CYCLES && !currentInstruction.selectDestination(scheduleCycle, throwAwayCount > 0, registers, gen); ++forward) {
-						if (TRACE) std::cout << "; dst STALL at cycle " << cycle << std::endl;
+						if (trace) std::cout << "; dst STALL at cycle " << cycle << std::endl;
 						++scheduleCycle;
 						++cycle;
 					}
@@ -743,16 +735,16 @@ namespace randomx {
 						if (throwAwayCount < MAX_THROWAWAY_COUNT) {
 							throwAwayCount++;
 							macroOpIndex = currentInstruction.getInfo().getSize();
-							if (TRACE) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
+							if (trace) std::cout << "; THROW away " << currentInstruction.getInfo().getName() << std::endl;
 							//cycle = topCycle;
 							continue;
 						}
 						//abort this decode buffer
-						if (TRACE) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
+						if (trace) std::cout << "Aborting at cycle " << cycle << " with decode buffer " << decodeBuffer->getName() << " - destination registers not available" << std::endl;
 						currentInstruction = SuperscalarInstruction::Null;
 						break;
 					}
-					if (TRACE) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
+					if (trace) std::cout << "; dst = r" << currentInstruction.getDestination() << std::endl;
 				}
 				throwAwayCount = 0;
 
@@ -773,7 +765,7 @@ namespace randomx {
 					ri.latency = retireCycle;
 					ri.lastOpGroup = currentInstruction.getGroup();
 					ri.lastOpPar = currentInstruction.getGroupPar();
-					if (TRACE) std::cout << "; RETIRED at cycle " << retireCycle << std::endl;
+					if (trace) std::cout << "; RETIRED at cycle " << retireCycle << std::endl;
 				}
 				codeSize += mop.getSize();
 				bufferIndex++;
