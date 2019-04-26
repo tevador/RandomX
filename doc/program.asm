@@ -80,7 +80,7 @@ randomx_isn_20:
 	add r8, 2
 	test r8, 254
 	jz randomx_isn_0
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r11d, 1593588996
 	seto cl
 	add r14, rcx
@@ -102,7 +102,7 @@ randomx_isn_24:
 	add r8, 64
 	test r8, 8128
 	jz randomx_isn_21
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r8d, 149087159
 	setno cl
 	add r14, rcx
@@ -197,7 +197,7 @@ randomx_isn_51:
 	add r12, 128
 	test r12, 16256
 	jz randomx_isn_25
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r11d, -1975981803
 	setbe cl
 	add r10, rcx
@@ -212,7 +212,7 @@ randomx_isn_54:
 	add r8, 64
 	test r8, 8128
 	jz randomx_isn_52
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r9d, 1917049931
 	setns cl
 	add r13, rcx
@@ -290,7 +290,7 @@ randomx_isn_74:
 	add r9, 4
 	test r9, 508
 	jz randomx_isn_55
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r11d, -1200328848
 	setns cl
 	add r14, rcx
@@ -352,7 +352,7 @@ randomx_isn_89:
 	add r8, 64
 	test r8, 8128
 	jz randomx_isn_75
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r8d, -122257389
 	setno cl
 	add r10, rcx
@@ -556,7 +556,7 @@ randomx_isn_143:
 	add r14, 4
 	test r14, 508
 	jz randomx_isn_110
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r9d, 880467599
 	setge cl
 	add r13, rcx
@@ -960,7 +960,7 @@ randomx_isn_247:
 	add r9, 4
 	test r9, 508
 	jz randomx_isn_223
-	xor rcx, rcx
+	xor ecx, ecx
 	cmp r13d, -8545330
 	setbe cl
 	add r10, rcx

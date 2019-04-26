@@ -50,10 +50,8 @@ namespace randomx {
 		void tracenop(Instruction&);
 		void  h_IADD_RS(Instruction&, int);
 		void  h_IADD_M(Instruction&, int);
-		void  h_IADD_RC(Instruction&, int);
 		void  h_ISUB_R(Instruction&, int);
 		void  h_ISUB_M(Instruction&, int);
-		void  h_IMUL_9C(Instruction&, int);
 		void  h_IMUL_R(Instruction&, int);
 		void  h_IMUL_M(Instruction&, int);
 		void  h_IMULH_R(Instruction&, int);
@@ -75,15 +73,11 @@ namespace randomx {
 		void  h_FSUB_M(Instruction&, int);
 		void  h_FSCAL_R(Instruction&, int);
 		void  h_FMUL_R(Instruction&, int);
-		void  h_FMUL_M(Instruction&, int);
-		void  h_FDIV_R(Instruction&, int);
 		void  h_FDIV_M(Instruction&, int);
 		void  h_FSQRT_R(Instruction&, int);
 		void  h_COND_R(Instruction&, int);
-		void  h_COND_M(Instruction&, int);
 		void  h_CFROUND(Instruction&, int);
 		void  h_ISTORE(Instruction&, int);
-		void  h_FSTORE(Instruction&, int);
 		void  h_NOP(Instruction&, int);
 
 		static InstructionGenerator engine[256];

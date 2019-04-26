@@ -125,20 +125,12 @@ namespace randomx {
 				*ibc.idst += load64(getScratchpadAddress(ibc));
 			} break;
 
-			case InstructionType::IADD_RC: {
-				*ibc.idst += *ibc.isrc + ibc.imm;
-			} break;
-
 			case InstructionType::ISUB_R: {
 				*ibc.idst -= *ibc.isrc;
 			} break;
 
 			case InstructionType::ISUB_M: {
 				*ibc.idst -= load64(getScratchpadAddress(ibc));
-			} break;
-
-			case InstructionType::IMUL_9C: {
-				*ibc.idst += 8 * *ibc.idst + ibc.imm;
 			} break;
 
 			case InstructionType::IMUL_R: { //also handles IMUL_RCP
@@ -241,18 +233,6 @@ namespace randomx {
 				}
 #endif
 				*ibc.idst += condition(ibc.condition, *ibc.isrc, ibc.imm) ? 1 : 0;
-			} break;
-
-			case InstructionType::COND_M: {
-#ifdef RANDOMX_JUMP
-				*ibc.creg += (1uLL << ibc.shift);
-				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
-				if ((*ibc.creg & conditionMask) == 0) {
-					ic = ibc.target;
-					break;
-				}
-#endif
-				*ibc.idst += condition(ibc.condition, load64(getScratchpadAddress(ibc)), ibc.imm) ? 1 : 0;
 			} break;
 
 			case InstructionType::CFROUND: {
@@ -482,16 +462,6 @@ namespace randomx {
 					registerUsage[instr.dst] = i;
 				} break;
 
-				CASE_REP(IADD_RC) {
-					auto dst = instr.dst % RegistersCount;
-					auto src = instr.src % RegistersCount;
-					ibc.type = InstructionType::IADD_RC;
-					ibc.idst = &r[dst];
-					ibc.isrc = &r[src];
-					ibc.imm = signExtend2sCompl(instr.getImm32());
-					registerUsage[instr.dst] = i;
-				} break;
-
 				CASE_REP(ISUB_R) {
 					auto dst = instr.dst % RegistersCount;
 					auto src = instr.src % RegistersCount;
@@ -521,14 +491,6 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
-				} break;
-
-				CASE_REP(IMUL_9C) {
-					auto dst = instr.dst % RegistersCount;
-					ibc.type = InstructionType::IMUL_9C;
-					ibc.idst = &r[dst];
-					ibc.imm = signExtend2sCompl(instr.getImm32());
 					registerUsage[instr.dst] = i;
 				} break;
 
@@ -798,25 +760,6 @@ namespace randomx {
 					ibc.isrc = &r[src];
 					ibc.condition = instr.getModCond();
 					ibc.imm = instr.getImm32();
-					//jump condition
-					int reg = getConditionRegister(registerUsage);
-					ibc.target = registerUsage[reg];
-					ibc.shift = instr.getModShift3();
-					ibc.creg = &r[reg];
-					for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
-						registerUsage[j] = i;
-					}
-				} break;
-
-				CASE_REP(COND_M) {
-					auto dst = instr.dst % RegistersCount;
-					auto src = instr.src % RegistersCount;
-					ibc.type = InstructionType::COND_M;
-					ibc.idst = &r[dst];
-					ibc.isrc = &r[src];
-					ibc.condition = instr.getModCond();
-					ibc.imm = instr.getImm32();
-					ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					//jump condition
 					int reg = getConditionRegister(registerUsage);
 					ibc.target = registerUsage[reg];

@@ -19,7 +19,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 //#define DEBUG
 
-#pragma STDC FENV_ACCESS on
+#pragma STDC FENV_ACCESS ON
 #include <cfenv>
 #include <cmath>
 #ifdef DEBUG

@@ -4,6 +4,7 @@ AR=gcc-ar
 PLATFORM=$(shell uname -m)
 CXXFLAGS=-std=c++11
 CCFLAGS=
+ARFLAGS=rcs
 BINDIR=bin
 SRCDIR=src
 TESTDIR=src/tests
@@ -21,13 +22,17 @@ ifeq ($(PLATFORM),x86_64)
     CXXFLAGS += -maes
 endif
 
-release: CXXFLAGS += -march=native -O3 -flto
-release: CCFLAGS += -march=native -O3 -flto
+release: CXXFLAGS += -O3 -flto
+release: CCFLAGS += -O3 -flto
 release: LDFLAGS += -flto
 release: $(BINARIES)
 
-nolto: CXXFLAGS += -march=native -O3
-nolto: CCFLAGS += -march=native -O3
+native: CXXFLAGS += -march=native -O3 -flto
+native: CCFLAGS += -march=native -O3 -flto
+native: $(BINARIES)
+
+nolto: CXXFLAGS += -O3
+nolto: CCFLAGS += -O3
 nolto: $(BINARIES)
 
 debug: CXXFLAGS += -g
@@ -42,10 +47,8 @@ profile: $(BINDIR)/benchmark
 
 test: CXXFLAGS += -O0
 
-$(RXA): $(RXOBJS)
-	$(AR) rcs $@ $(RXOBJS)
-$(OBJDIR)/%.o: | $(OBJDIR)
-$(BINDIR)/%: | $(BINDIR)
+$(RXA): $(RXOBJS) | $(BINDIR)
+	$(AR) $(ARFLAGS) $@ $(RXOBJS)
 $(OBJDIR):
 	mkdir $(OBJDIR)
 $(BINDIR):
@@ -65,7 +68,7 @@ $(OBJDIR)/code-generator.o: $(TESTDIR)/code-generator.cpp $(TESTDIR)/utility.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 $(BINDIR)/code-generator: $(OBJDIR)/code-generator.o $(RXA)
 	$(CXX) $(LDFLAGS) $< $(RXA) -o $@
-$(OBJDIR)/aes_hash.o: $(SRCDIR)/aes_hash.cpp $(SRCDIR)/soft_aes.h $(SRCDIR)/intrin_portable.h
+$(OBJDIR)/aes_hash.o: $(SRCDIR)/aes_hash.cpp $(SRCDIR)/soft_aes.h $(SRCDIR)/intrin_portable.h | $(OBJDIR)
 $(OBJDIR)/argon2_ref.o: $(SRCDIR)/argon2_ref.c $(SRCDIR)/argon2.h $(SRCDIR)/argon2_core.h \
  $(SRCDIR)/blake2/blamka-round-ref.h $(SRCDIR)/blake2/blake2.h \
  $(SRCDIR)/blake2/blake2-impl.h $(SRCDIR)/blake2/endian.h $(SRCDIR)/blake2/blake2-impl.h \

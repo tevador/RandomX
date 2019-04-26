@@ -40,7 +40,7 @@ namespace randomx {
 		void setDataset(randomx_dataset* dataset) override { }
 		void setCache(randomx_cache* cache) override;
 	protected:
-		virtual void datasetRead(uint32_t address, int_reg_t(&r)[8]);
+		void datasetRead(uint32_t address, int_reg_t(&r)[8]) override;
 	private:
 		randomx_cache* cachePtr;
 	};

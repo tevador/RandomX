@@ -65,10 +65,6 @@ namespace randomx {
 		}
 	}
 
-	void Instruction::h_IADD_RC(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src << ", " << (int32_t)getImm32() << std::endl;
-	}
-
 	//1 uOP
 	void Instruction::h_ISUB_R(std::ostream& os) const {
 		if (src != dst) {
@@ -90,10 +86,6 @@ namespace randomx {
 			genAddressImm(os);
 			os << std::endl;
 		}
-	}
-
-	void Instruction::h_IMUL_9C(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
 	}
 
 	void Instruction::h_IMUL_R(std::ostream& os) const {
@@ -200,10 +192,6 @@ namespace randomx {
 		os << "r" << (int)dst << ", " << getImm32() << std::endl;
 	}
 
-	void Instruction::h_ISDIV_C(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
-	}
-
 	void Instruction::h_ISWAP_R(std::ostream& os) const {
 		os << "r" << (int)dst << ", r" << (int)src << std::endl;
 	}
@@ -246,19 +234,6 @@ namespace randomx {
 	}
 
 	void Instruction::h_FMUL_R(std::ostream& os) const {
-		auto dstIndex = dst % 4;
-		auto srcIndex = src % 4;
-		os << "e" << dstIndex << ", a" << srcIndex << std::endl;
-	}
-
-	void Instruction::h_FMUL_M(std::ostream& os) const {
-		auto dstIndex = dst % 4;
-		os << "e" << dstIndex << ", ";
-		genAddressReg(os);
-		os << std::endl;
-	}
-
-	void Instruction::h_FDIV_R(std::ostream& os) const {
 		auto dstIndex = dst % 4;
 		auto srcIndex = src % 4;
 		os << "e" << dstIndex << ", a" << srcIndex << std::endl;
@@ -308,22 +283,9 @@ namespace randomx {
 		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(r" << (int)src << ", " << (int32_t)getImm32() << "), LSH " << (int)(mod >> 5) << std::endl;
 	}
 
-	void Instruction::h_COND_M(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition((mod >> 2) & 7) << "(";
-		genAddressReg(os);
-		os << ", " << (int32_t)getImm32() << "), LSH " << (int)(mod >> 5) << std::endl;
-	}
-
 	void  Instruction::h_ISTORE(std::ostream& os) const {
 		genAddressRegDst(os);
 		os << ", r" << (int)src << std::endl;
-	}
-
-	void  Instruction::h_FSTORE(std::ostream& os) const {
-		const char reg = (src >= 4) ? 'e' : 'f';
-		genAddressRegDst(os);
-		auto srcIndex = src % 4;
-		os << ", " << reg << srcIndex << std::endl;
 	}
 
 	void  Instruction::h_NOP(std::ostream& os) const {
@@ -338,10 +300,8 @@ namespace randomx {
 		//Integer
 		INST_NAME(IADD_RS)
 		INST_NAME(IADD_M)
-		INST_NAME(IADD_RC)
 		INST_NAME(ISUB_R)
 		INST_NAME(ISUB_M)
-		INST_NAME(IMUL_9C)
 		INST_NAME(IMUL_R)
 		INST_NAME(IMUL_M)
 		INST_NAME(IMULH_R)
@@ -372,7 +332,6 @@ namespace randomx {
 
 		//Control
 		INST_NAME(COND_R)
-		INST_NAME(COND_M)
 		INST_NAME(CFROUND)
 
 		INST_NAME(ISTORE)
@@ -384,10 +343,8 @@ namespace randomx {
 		//Integer
 		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
-		INST_HANDLE(IADD_RC)
 		INST_HANDLE(ISUB_R)
 		INST_HANDLE(ISUB_M)
-		INST_HANDLE(IMUL_9C)
 		INST_HANDLE(IMUL_R)
 		INST_HANDLE(IMUL_M)
 		INST_HANDLE(IMULH_R)
@@ -417,13 +374,9 @@ namespace randomx {
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
 
-		//Control
 		INST_HANDLE(COND_R)
-		INST_HANDLE(COND_M)
 		INST_HANDLE(CFROUND)
-
 		INST_HANDLE(ISTORE)
-
 		INST_HANDLE(NOP)
 	};
 
