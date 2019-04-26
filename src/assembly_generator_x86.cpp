@@ -535,8 +535,9 @@ namespace randomx {
 			asmCode << "\trol rax, " << rotate << std::endl;
 		asmCode << "\tand eax, 24576" << std::endl;
 		asmCode << "\tor eax, 40896" << std::endl;
-		asmCode << "\tmov dword ptr [rsp-8], eax" << std::endl;
-		asmCode << "\tldmxcsr dword ptr [rsp-8]" << std::endl;
+		asmCode << "\tpush rax" << std::endl;
+		asmCode << "\tldmxcsr dword ptr [rsp]" << std::endl;
+		asmCode << "\tpop rax" << std::endl;
 		tracenop(instr);
 	}
 

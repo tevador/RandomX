@@ -605,8 +605,9 @@ randomx_isn_155:
 	rol rax, 31
 	and eax, 24576
 	or eax, 40896
-	mov dword ptr [rsp-8], eax
-	ldmxcsr dword ptr [rsp-8]
+	push rax
+	ldmxcsr dword ptr [rsp]
+	pop rax
 randomx_isn_156:
 	; FSUB_R f3, a2
 	subpd xmm3, xmm10
