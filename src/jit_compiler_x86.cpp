@@ -37,7 +37,7 @@ namespace randomx {
 
 	}
 
-	void JitCompilerX86::generateProgramLight(Program& p, ProgramConfiguration& pcfg) {
+	void JitCompilerX86::generateProgramLight(Program& p, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
 
 	}
 
