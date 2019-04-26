@@ -91,7 +91,7 @@ extern "C" {
 	}
 
 	unsigned long randomx_dataset_item_count() {
-		return RANDOMX_DATASET_SIZE / RANDOMX_DATASET_ITEM_SIZE;
+		return randomx::DatasetSize / RANDOMX_DATASET_ITEM_SIZE;
 	}
 
 	void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount) {

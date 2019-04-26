@@ -44,6 +44,7 @@ namespace randomx {
 		using CompiledVm<Allocator, softAes>::compiler;
 		using CompiledVm<Allocator, softAes>::program;
 		using CompiledVm<Allocator, softAes>::config;
+		using CompiledVm<Allocator, softAes>::datasetOffset;
 	};
 
 	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;

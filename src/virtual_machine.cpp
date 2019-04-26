@@ -69,7 +69,7 @@ void randomx_vm::initialize() {
 	config.readReg2 = 4 + (addressRegisters & 1);
 	addressRegisters >>= 1;
 	config.readReg3 = 6 + (addressRegisters & 1);
-	//datasetBase = program.getEntropy(13) % datasetRange;
+	datasetOffset = (program.getEntropy(13) & randomx::DatasetExtraItems) * randomx::CacheLineSize;
 	constexpr uint64_t mask22bit = (1ULL << 22) - 1;
 	constexpr uint64_t maskExp240 = ieee_get_exponent_mask<-240>();
 	store64(&config.eMask[0], (program.getEntropy(14) & mask22bit) | maskExp240);

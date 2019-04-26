@@ -45,6 +45,7 @@ randomx_dataset::~randomx_dataset() {
 }
 
 static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
+static_assert(ARGON2_BLOCK_SIZE == randomx::ArgonBlockSize, "Unpexpected value of ARGON2_BLOCK_SIZE");
 
 void randomx_cache::initialize(const void *seed, size_t seedSize) {
 	uint32_t memory_blocks, segment_length;
@@ -117,22 +118,22 @@ namespace randomx {
 
 	template<class Allocator>
 	void Dataset<Allocator>::allocate() {
-		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_DATASET_SIZE);
+		memory = (uint8_t*)Allocator::allocMemory(DatasetSize);
 	}
 
 	template<class Allocator>
 	Dataset<Allocator>::~Dataset() {
-		Allocator::freeMemory(memory, RANDOMX_DATASET_SIZE);
+		Allocator::freeMemory(memory, DatasetSize);
 	}
 
 	template<class Allocator>
 	void Cache<Allocator>::allocate() {
-		memory = (uint8_t*)Allocator::allocMemory(RANDOMX_ARGON_MEMORY * ARGON2_BLOCK_SIZE);
+		memory = (uint8_t*)Allocator::allocMemory(CacheSize);
 	}
 
 	template<class Allocator>
 	Cache<Allocator>::~Cache() {
-		Allocator::freeMemory(memory, RANDOMX_ARGON_MEMORY * ARGON2_BLOCK_SIZE);
+		Allocator::freeMemory(memory, CacheSize);
 	}
 
 	template<class Allocator>
@@ -160,16 +161,16 @@ namespace randomx {
 	template class CacheWithJit<LargePageAllocator>;
 
 	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;
-	constexpr uint64_t superscalarAdd1 = 9298410992540426748ULL;
+	constexpr uint64_t superscalarAdd1 = 9298411001130361340ULL;
 	constexpr uint64_t superscalarAdd2 = 12065312585734608966ULL;
-	constexpr uint64_t superscalarAdd3 = 9306329213124610396ULL;
+	constexpr uint64_t superscalarAdd3 = 9306329213124626780ULL;
 	constexpr uint64_t superscalarAdd4 = 5281919268842080866ULL;
 	constexpr uint64_t superscalarAdd5 = 10536153434571861004ULL;
 	constexpr uint64_t superscalarAdd6 = 3398623926847679864ULL;
 	constexpr uint64_t superscalarAdd7 = 9549104520008361294ULL;
 
 	static inline uint8_t* getMixBlock(uint64_t registerValue, uint8_t *memory) {
-		constexpr uint32_t mask = (RANDOMX_ARGON_MEMORY * ArgonBlockSize / CacheLineSize - 1);
+		constexpr uint32_t mask = CacheSize / CacheLineSize - 1;
 		return memory + (registerValue & mask) * CacheLineSize;
 	}
 

@@ -28,8 +28,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 namespace randomx {
 
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
-	static_assert((RANDOMX_DATASET_SIZE & (RANDOMX_DATASET_SIZE - 1)) == 0, "RANDOMX_DATASET_SIZE must be a power of 2.");
-	static_assert(RANDOMX_DATASET_SIZE <= 4294967296ULL, "RANDOMX_DATASET_SIZE must not exceed 4294967296.");
+	static_assert((RANDOMX_DATASET_BASE_SIZE & (RANDOMX_DATASET_BASE_SIZE - 1)) == 0, "RANDOMX_DATASET_BASE_SIZE must be a power of 2.");
+	static_assert(RANDOMX_DATASET_BASE_SIZE <= 4294967296ULL, "RANDOMX_DATASET_BASE_SIZE must not exceed 4294967296.");
+	static_assert(RANDOMX_DATASET_EXTRA_SIZE % 64 == 0, "RANDOMX_DATASET_EXTRA_SIZE must be divisible by 64.");
 	static_assert(RANDOMX_PROGRAM_SIZE > 0, "RANDOMX_PROGRAM_SIZE must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_ITERATIONS > 0, "RANDOMX_PROGRAM_ITERATIONS must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_COUNT > 0, "RANDOMX_PROGRAM_COUNT must be greater than 0");
@@ -56,8 +57,10 @@ namespace randomx {
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
 	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;
-	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_SIZE - 1) & ~(CacheLineSize - 1);
-	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * 1024;
+	constexpr uint32_t CacheLineAlignMask = (RANDOMX_DATASET_BASE_SIZE - 1) & ~(CacheLineSize - 1);
+	constexpr uint32_t CacheSize = RANDOMX_ARGON_MEMORY * ArgonBlockSize;
+	constexpr uint64_t DatasetSize = RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE;
+	constexpr uint32_t DatasetExtraItems = RANDOMX_DATASET_EXTRA_SIZE / RANDOMX_DATASET_ITEM_SIZE;
 
 #ifdef TRACE
 	constexpr bool trace = true;

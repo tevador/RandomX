@@ -331,7 +331,7 @@ namespace randomx {
 
 			mem.mx ^= r[config.readReg2] ^ r[config.readReg3];
 			mem.mx &= CacheLineAlignMask;
-			datasetRead(mem.ma, r);
+			datasetRead(datasetOffset + mem.ma, r);
 			std::swap(mem.mx, mem.ma);
 
 			if (trace) {

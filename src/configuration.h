@@ -37,8 +37,11 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_SUPERSCALAR_LATENCY   170
 #define RANDOMX_SUPERSCALAR_MAX_SIZE  512
 
-//Dataset size in bytes. Must be a power of 2.
-#define RANDOMX_DATASET_SIZE       (2ULL * 1024 * 1024 * 1024)
+//Dataset base size in bytes. Must be a power of 2.
+#define RANDOMX_DATASET_BASE_SIZE  (2ULL * 1024 * 1024 * 1024)
+
+//Dataset extra size. Must be divisible by 64.
+#define RANDOMX_DATASET_EXTRA_SIZE 33554368
 
 //Number of instructions in a RandomX program
 #define RANDOMX_PROGRAM_SIZE       256

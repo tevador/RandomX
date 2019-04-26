@@ -57,6 +57,8 @@ namespace randomx {
 		using VmBase<Allocator, softAes>::program;
 		using VmBase<Allocator, softAes>::config;
 		using VmBase<Allocator, softAes>::reg;
+		using VmBase<Allocator, softAes>::datasetBasePtr;
+		using VmBase<Allocator, softAes>::datasetOffset;
 		void* operator new(size_t size) {
 			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
 			if (ptr == nullptr)

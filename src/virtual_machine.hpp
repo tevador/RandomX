@@ -44,6 +44,8 @@ protected:
 	alignas(16) randomx::ProgramConfiguration config;
 	randomx::MemoryRegisters mem;
 	uint8_t* scratchpad;
+	uint8_t* datasetBasePtr;
+	uint32_t datasetOffset;
 };
 
 namespace randomx {
