@@ -434,12 +434,12 @@ namespace randomx {
 					ibc.idst = &r[dst];
 					if (dst != RegisterNeedsDisplacement) {
 						ibc.isrc = &r[src];
-						ibc.shift = instr.getModShift2();
+						ibc.shift = instr.getModMem();
 						ibc.imm = 0;
 					}
 					else {
 						ibc.isrc = &r[src];
-						ibc.shift = instr.getModShift2();
+						ibc.shift = instr.getModMem();
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 					}
 					registerUsage[instr.dst] = i;
@@ -763,7 +763,7 @@ namespace randomx {
 					//jump condition
 					int reg = getConditionRegister(registerUsage);
 					ibc.target = registerUsage[reg];
-					ibc.shift = instr.getModShift3();
+					ibc.shift = instr.getModShift();
 					ibc.creg = &r[reg];
 					for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
 						registerUsage[j] = i;

@@ -357,7 +357,7 @@ namespace randomx {
 		case randomx::SuperscalarInstructionType::IADD_RS:
 			emit(REX_LEA);
 			emitByte(0x04 + 8 * instr.dst);
-			genSIB(instr.getModShift2(), instr.src, instr.dst);
+			genSIB(instr.getModMem(), instr.src, instr.dst);
 			break;
 		case randomx::SuperscalarInstructionType::IMUL_R:
 			emit(REX_IMUL_RR);
@@ -481,7 +481,7 @@ namespace randomx {
 			emitByte(0xac);
 		else
 			emitByte(0x04 + 8 * instr.dst);
-		genSIB(instr.getModShift2(), instr.src, instr.dst);
+		genSIB(instr.getModMem(), instr.src, instr.dst);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emit32(instr.getImm32());
 	}
@@ -882,7 +882,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::handleCondition(Instruction& instr, int i) {
-		const int shift = instr.getModShift3();
+		const int shift = instr.getModShift();
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;

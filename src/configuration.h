@@ -31,7 +31,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Argon2d salt
 #define RANDOMX_ARGON_SALT         "RandomX\x03"
 
-//Number of random Cache accesses per Dataset block. Minimum is 2.
+//Number of random Cache accesses per Dataset item. Minimum is 2.
 #define RANDOMX_CACHE_ACCESSES     8
 
 #define RANDOMX_SUPERSCALAR_LATENCY   170

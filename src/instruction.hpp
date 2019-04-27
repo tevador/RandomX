@@ -78,16 +78,13 @@ namespace randomx {
 			return os;
 		}
 		int getModMem() const {
-			return mod % 4;
+			return mod % 4; //bits 0-1
 		}
 		int getModCond() const {
-			return (mod >> 2) & 7;
+			return (mod >> 2) % 8; //bits 2-4
 		}
-		int getModShift3() const {
-			return mod >> 5;
-		}
-		int getModShift2() const {
-			return mod >> 6;
+		int getModShift() const {
+			return mod >> 5; //bits 5-7
 		}
 		void setMod(uint8_t val) {
 			mod = val;

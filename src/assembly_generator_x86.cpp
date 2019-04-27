@@ -71,7 +71,7 @@ namespace randomx {
 				asmCode << "xor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 				break;
 			case SuperscalarInstructionType::IADD_RS:
-				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << "]" << std::endl;
+				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << "]" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_R:
 				asmCode << "imul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
@@ -180,7 +180,7 @@ namespace randomx {
 				asmCode << regR[instr.dst] << " ^= " << regR[instr.src] << ";" << std::endl;
 				break;
 			case SuperscalarInstructionType::IADD_RS:
-				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << ";" << std::endl;
+				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.getModMem())) << ";" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_R:
 				asmCode << regR[instr.dst] << " *= " << regR[instr.src] << ";" << std::endl;
@@ -275,9 +275,9 @@ namespace randomx {
 	void AssemblyGeneratorX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if(instr.dst == RegisterNeedsDisplacement)
-			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		else
-			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift2())) << "]" << std::endl;
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << "]" << std::endl;
 		traceint(instr);
 	}
 
@@ -442,7 +442,6 @@ namespace randomx {
 	void AssemblyGeneratorX86::h_IMUL_RCP(Instruction& instr, int i) {
 		if (instr.getImm32() != 0) {
 			registerUsage[instr.dst] = i;
-			uint32_t divisor = instr.getImm32();
 			asmCode << "\tmov rax, " << randomx_reciprocal(instr.getImm32()) << std::endl;
 			asmCode << "\timul " << regR[instr.dst] << ", rax" << std::endl;
 			traceint(instr);
@@ -566,7 +565,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::handleCondition(Instruction& instr, int i) {
-		const int shift = instr.getModShift3();
+		const int shift = instr.getModShift();
 		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
