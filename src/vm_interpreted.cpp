@@ -45,6 +45,7 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::setDataset(randomx_dataset* dataset) {
+		datasetPtr = dataset;
 		mem.memory = dataset->memory;
 	}
 

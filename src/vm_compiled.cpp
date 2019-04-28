@@ -27,8 +27,7 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void CompiledVm<Allocator, softAes>::setDataset(randomx_dataset* dataset) {
-		mem.memory = dataset->memory;
-		datasetBasePtr = dataset->memory;
+		datasetPtr = dataset;
 	}
 
 	template<class Allocator, bool softAes>
@@ -36,7 +35,7 @@ namespace randomx {
 		VmBase<Allocator, softAes>::generateProgram(seed);
 		randomx_vm::initialize();
 		compiler.generateProgram(program, config);
-		mem.memory = datasetBasePtr + datasetOffset;
+		mem.memory = datasetPtr->memory + datasetOffset;
 		execute();
 	}
 

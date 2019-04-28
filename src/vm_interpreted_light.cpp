@@ -24,8 +24,8 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void InterpretedLightVm<Allocator, softAes>::setCache(randomx_cache* cache) {
-		mem.memory = cache->memory;
 		cachePtr = cache;
+		mem.memory = cache->memory;
 	}
 
 	template<class Allocator, bool softAes>

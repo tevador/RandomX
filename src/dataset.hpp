@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include <vector>
+#include <type_traits>
 #include "common.hpp"
 #include "superscalar_program.hpp"
 #include "jit_compiler_x86.hpp"
@@ -28,51 +29,45 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 /* Global scope for C binding */
 struct randomx_dataset {
-	virtual ~randomx_dataset() = 0;
-	virtual void allocate() = 0;
 	uint8_t* memory = nullptr;
+	randomx::DatasetDeallocFunc dealloc;
 };
 
 /* Global scope for C binding */
-struct randomx_cache : public randomx_dataset {
-	virtual randomx::DatasetInitFunc getInitFunc() = 0;
-	virtual void initialize(const void *seed, size_t seedSize);
+struct randomx_cache {
+	uint8_t* memory = nullptr;
+	randomx::CacheDeallocFunc dealloc;
+	randomx::JitCompilerX86* jit;
+	randomx::CacheInitializeFunc initialize;
+	randomx::DatasetInitFunc datasetInit;
 	randomx::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 	std::vector<uint64_t> reciprocalCache;
 };
 
+//A pointer to a standard-layout struct object points to its initial member
+static_assert(std::is_standard_layout<randomx_dataset>(), "randomx_dataset must be a standard-layout struct");
+static_assert(std::is_standard_layout<randomx_cache>(), "randomx_cache must be a standard-layout struct");
+
 namespace randomx {
 
-	template<class Allocator>
-	struct Dataset : public randomx_dataset {
-		~Dataset() override;
-		void allocate() override;
-	};
-
-	using DatasetDefault = Dataset<AlignedAllocator<CacheLineSize>>;
-	using DatasetLargePage = Dataset<LargePageAllocator>;
+	using DefaultAllocator = AlignedAllocator<CacheLineSize>;
 
 	template<class Allocator>
-	struct Cache : public randomx_cache {
-		~Cache() override;
-		void allocate() override;
-		DatasetInitFunc getInitFunc() override;
-	};
+	void deallocDataset(randomx_dataset* dataset) {
+		if (dataset->memory != nullptr)
+			Allocator::freeMemory(dataset->memory, DatasetSize);
+	}
 
 	template<class Allocator>
-	struct CacheWithJit : public Cache<Allocator> {
-		using Cache<Allocator>::programs;
-		using Cache<Allocator>::reciprocalCache;
-		void initialize(const void *seed, size_t seedSize) override;
-		DatasetInitFunc getInitFunc() override;
-		JitCompilerX86 jit;
-	};
+	void deallocCache(randomx_cache* cache) {
+		if(cache->memory != nullptr)
+			Allocator::freeMemory(cache->memory, CacheSize);
+		if (cache->jit != nullptr)
+			delete cache->jit;
+	}
 
-	using CacheDefault = Cache<AlignedAllocator<CacheLineSize>>;
-	using CacheWithJitDefault = CacheWithJit<AlignedAllocator<CacheLineSize>>;
-	using CacheLargePage = Cache<LargePageAllocator>;
-	using CacheWithJitLargePage = CacheWithJit<LargePageAllocator>;
-
+	void initCache(randomx_cache*, const void*, size_t);
+	void initCacheCompile(randomx_cache*, const void*, size_t);
 	void initDatasetItem(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);
 	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 }

@@ -103,7 +103,7 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void VmBase<Allocator, softAes>::allocate() {
-		if (mem.memory == nullptr)
+		if (datasetPtr == nullptr)
 			throw std::invalid_argument("Cache/Dataset not set");
 		if (!softAes) { //if hardware AES is not supported, it's better to fail now than to return a ticking bomb
 			__m128i tmp = _mm_load_si128((const __m128i*)&aesDummy);

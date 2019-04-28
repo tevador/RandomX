@@ -46,6 +46,10 @@ namespace randomx {
 		void setAddressRegister(uint32_t val) {
 			addrReg = val;
 		}
+
+		Instruction programBuffer[RANDOMX_SUPERSCALAR_MAX_SIZE];
+		uint32_t size;
+		int addrReg;
 		double ipc;
 		int codeSize;
 		int macroOps;
@@ -62,9 +66,6 @@ namespace randomx {
 				os << instr;
 			}
 		}
-		Instruction programBuffer[RANDOMX_SUPERSCALAR_MAX_SIZE];
-		uint32_t size;
-		int addrReg;
 	};
 
 }

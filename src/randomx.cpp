@@ -28,34 +28,48 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 extern "C" {
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
-		randomx_cache *cache = nullptr;
+		randomx_cache *cache = new randomx_cache();
 
 		try {
 			switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES)) {
 				case RANDOMX_FLAG_DEFAULT:
-					cache = new randomx::CacheDefault();
+					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
+					cache->jit = nullptr;
+					cache->initialize = &randomx::initCache;
+					cache->datasetInit = &randomx::initDataset;
+					cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
 					break;
 
 				case RANDOMX_FLAG_JIT:
-					cache = new randomx::CacheWithJitDefault();
+					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
+					cache->jit = new randomx::JitCompilerX86();
+					cache->initialize = &randomx::initCacheCompile;
+					cache->datasetInit = cache->jit->getDatasetInitFunc();
+					cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
 					break;
 
 				case RANDOMX_FLAG_LARGE_PAGES:
-					cache = new randomx::CacheLargePage();
+					cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
+					cache->jit = nullptr;
+					cache->initialize = &randomx::initCache;
+					cache->datasetInit = &randomx::initDataset;
+					cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
 					break;
 
 				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES:
-					cache = new randomx::CacheWithJitLargePage();
+					cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
+					cache->jit = new randomx::JitCompilerX86();
+					cache->initialize = &randomx::initCacheCompile;
+					cache->datasetInit = cache->jit->getDatasetInitFunc();
+					cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
 					break;
 
 				default:
 					UNREACHABLE;
 			}
-
-			cache->allocate();
 		}
 		catch (std::exception &ex) {
-			delete cache;
+			randomx_release_cache(cache);
 			cache = nullptr;
 		}
 
@@ -63,27 +77,29 @@ extern "C" {
 	}
 
 	void randomx_init_cache(randomx_cache *cache, const void *seed, size_t seedSize) {
-		cache->initialize(seed, seedSize);
+		cache->initialize(cache, seed, seedSize);
 	}
 
 	void randomx_release_cache(randomx_cache* cache) {
+		cache->dealloc(cache);
 		delete cache;
 	}
 
 	randomx_dataset *randomx_alloc_dataset(randomx_flags flags) {
-		randomx_dataset *dataset = nullptr;
+		randomx_dataset *dataset = new randomx_dataset();
 
 		try {
 			if (flags & RANDOMX_FLAG_LARGE_PAGES) {
-				dataset = new randomx::DatasetLargePage();
+				dataset->dealloc = &randomx::deallocDataset<randomx::LargePageAllocator>;
+				dataset->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::DatasetSize);
 			}
 			else {
-				dataset = new randomx::DatasetDefault();
+				dataset->dealloc = &randomx::deallocDataset<randomx::DefaultAllocator>;
+				dataset->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::DatasetSize);
 			}
-			dataset->allocate();
 		}
 		catch (std::exception &ex) {
-			delete dataset;
+			randomx_release_dataset(dataset);
 			dataset = nullptr;
 		}
 
@@ -95,8 +111,7 @@ extern "C" {
 	}
 
 	void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount) {
-		randomx::DatasetInitFunc dsfunc = cache->getInitFunc();
-		dsfunc(cache, dataset->memory + startItem * randomx::CacheLineSize, startItem, startItem + itemCount);
+		cache->datasetInit(cache, dataset->memory + startItem * randomx::CacheLineSize, startItem, startItem + itemCount);
 	}
 
 	void *randomx_get_dataset_memory(randomx_dataset *dataset) {
@@ -104,6 +119,7 @@ extern "C" {
 	}
 
 	void randomx_release_dataset(randomx_dataset *dataset) {
+		dataset->dealloc(dataset);
 		delete dataset;
 	}
 

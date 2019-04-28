@@ -28,6 +28,7 @@ namespace randomx {
 	class InterpretedLightVm : public InterpretedVm<Allocator, softAes> {
 	public:
 		using VmBase<Allocator, softAes>::mem;
+		using VmBase<Allocator, softAes>::cachePtr;
 		void* operator new(size_t size) {
 			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
 			if (ptr == nullptr)
@@ -41,8 +42,6 @@ namespace randomx {
 		void setCache(randomx_cache* cache) override;
 	protected:
 		void datasetRead(uint32_t address, int_reg_t(&r)[8]) override;
-	private:
-		randomx_cache* cachePtr;
 	};
 
 	using InterpretedLightVmDefault = InterpretedLightVm<AlignedAllocator<CacheLineSize>, true>;

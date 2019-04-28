@@ -89,7 +89,7 @@ DECL(randomx_dataset_init):
 	push r13
 	push r14
 	push r15
-	mov rdi, qword ptr [rdi+8] ;# after virtual method table pointer
+	mov rdi, qword ptr [rdi] ;# cache->memory
 	;# dataset in rsi
 	mov rbp, rdx  ;# block index
 	push rcx      ;# max. block index

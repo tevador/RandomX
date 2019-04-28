@@ -48,7 +48,7 @@ namespace randomx {
 		using VmBase<Allocator, softAes>::config;
 		using VmBase<Allocator, softAes>::reg;
 		using VmBase<Allocator, softAes>::scratchpad;
-		using VmBase<Allocator, softAes>::datasetBasePtr;
+		using VmBase<Allocator, softAes>::datasetPtr;
 		using VmBase<Allocator, softAes>::datasetOffset;
 	protected:
 		void execute();

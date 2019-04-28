@@ -40,125 +40,83 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "argon2.h"
 #include "argon2_core.h"
 
-randomx_dataset::~randomx_dataset() {
-
-}
-
 static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
 static_assert(ARGON2_BLOCK_SIZE == randomx::ArgonBlockSize, "Unpexpected value of ARGON2_BLOCK_SIZE");
 
-void randomx_cache::initialize(const void *seed, size_t seedSize) {
-	uint32_t memory_blocks, segment_length;
-	argon2_instance_t instance;
-	argon2_context context;
+namespace randomx {
 
-	context.out = nullptr;
-	context.outlen = 0;
-	context.pwd = CONST_CAST(uint8_t *)seed;
-	context.pwdlen = (uint32_t)seedSize;
-	context.salt = CONST_CAST(uint8_t *)RANDOMX_ARGON_SALT;
-	context.saltlen = (uint32_t)randomx::ArgonSaltSize;
-	context.secret = NULL;
-	context.secretlen = 0;
-	context.ad = NULL;
-	context.adlen = 0;
-	context.t_cost = RANDOMX_ARGON_ITERATIONS;
-	context.m_cost = RANDOMX_ARGON_MEMORY;
-	context.lanes = RANDOMX_ARGON_LANES;
-	context.threads = 1;
-	context.allocate_cbk = NULL;
-	context.free_cbk = NULL;
-	context.flags = ARGON2_DEFAULT_FLAGS;
-	context.version = ARGON2_VERSION_NUMBER;
+	void initCache(randomx_cache* cache, const void* seed, size_t seedSize) {
+		uint32_t memory_blocks, segment_length;
+		argon2_instance_t instance;
+		argon2_context context;
 
-	/* 2. Align memory size */
-	/* Minimum memory_blocks = 8L blocks, where L is the number of lanes */
-	memory_blocks = context.m_cost;
+		context.out = nullptr;
+		context.outlen = 0;
+		context.pwd = CONST_CAST(uint8_t *)seed;
+		context.pwdlen = (uint32_t)seedSize;
+		context.salt = CONST_CAST(uint8_t *)RANDOMX_ARGON_SALT;
+		context.saltlen = (uint32_t)randomx::ArgonSaltSize;
+		context.secret = NULL;
+		context.secretlen = 0;
+		context.ad = NULL;
+		context.adlen = 0;
+		context.t_cost = RANDOMX_ARGON_ITERATIONS;
+		context.m_cost = RANDOMX_ARGON_MEMORY;
+		context.lanes = RANDOMX_ARGON_LANES;
+		context.threads = 1;
+		context.allocate_cbk = NULL;
+		context.free_cbk = NULL;
+		context.flags = ARGON2_DEFAULT_FLAGS;
+		context.version = ARGON2_VERSION_NUMBER;
 
-	segment_length = memory_blocks / (context.lanes * ARGON2_SYNC_POINTS);
+		/* 2. Align memory size */
+		/* Minimum memory_blocks = 8L blocks, where L is the number of lanes */
+		memory_blocks = context.m_cost;
 
-	instance.version = context.version;
-	instance.memory = NULL;
-	instance.passes = context.t_cost;
-	instance.memory_blocks = memory_blocks;
-	instance.segment_length = segment_length;
-	instance.lane_length = segment_length * ARGON2_SYNC_POINTS;
-	instance.lanes = context.lanes;
-	instance.threads = context.threads;
-	instance.type = Argon2_d;
-	instance.memory = (block*)memory;
+		segment_length = memory_blocks / (context.lanes * ARGON2_SYNC_POINTS);
 
-	if (instance.threads > instance.lanes) {
-		instance.threads = instance.lanes;
-	}
+		instance.version = context.version;
+		instance.memory = NULL;
+		instance.passes = context.t_cost;
+		instance.memory_blocks = memory_blocks;
+		instance.segment_length = segment_length;
+		instance.lane_length = segment_length * ARGON2_SYNC_POINTS;
+		instance.lanes = context.lanes;
+		instance.threads = context.threads;
+		instance.type = Argon2_d;
+		instance.memory = (block*)cache->memory;
 
-	/* 3. Initialization: Hashing inputs, allocating memory, filling first
-	 * blocks
-	 */
-	argon_initialize(&instance, &context);
+		if (instance.threads > instance.lanes) {
+			instance.threads = instance.lanes;
+		}
 
-	fill_memory_blocks(&instance);
+		/* 3. Initialization: Hashing inputs, allocating memory, filling first
+		 * blocks
+		 */
+		argon_initialize(&instance, &context);
 
-	reciprocalCache.clear();
-	randomx::Blake2Generator gen(seed, seedSize);
-	for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
-		randomx::generateSuperscalar(programs[i], gen);
-		for (unsigned j = 0; j < programs[i].getSize(); ++j) {
-			auto& instr = programs[i](j);
-			if (instr.opcode == randomx::SuperscalarInstructionType::IMUL_RCP) {
-				auto rcp = randomx_reciprocal(instr.getImm32());
-				instr.setImm32(reciprocalCache.size());
-				reciprocalCache.push_back(rcp);
+		fill_memory_blocks(&instance);
+
+		cache->reciprocalCache.clear();
+		randomx::Blake2Generator gen(seed, seedSize);
+		for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
+			randomx::generateSuperscalar(cache->programs[i], gen);
+			for (unsigned j = 0; j < cache->programs[i].getSize(); ++j) {
+				auto& instr = cache->programs[i](j);
+				if (instr.opcode == randomx::SuperscalarInstructionType::IMUL_RCP) {
+					auto rcp = randomx_reciprocal(instr.getImm32());
+					instr.setImm32(cache->reciprocalCache.size());
+					cache->reciprocalCache.push_back(rcp);
+				}
 			}
 		}
 	}
-}
 
-namespace randomx {
-
-	template<class Allocator>
-	void Dataset<Allocator>::allocate() {
-		memory = (uint8_t*)Allocator::allocMemory(DatasetSize);
+	void initCacheCompile(randomx_cache* cache, const void* seed, size_t seedSize) {
+		initCache(cache, seed, seedSize);
+		cache->jit->generateSuperscalarHash(cache->programs, cache->reciprocalCache);
+		cache->jit->generateDatasetInitCode();
 	}
-
-	template<class Allocator>
-	Dataset<Allocator>::~Dataset() {
-		Allocator::freeMemory(memory, DatasetSize);
-	}
-
-	template<class Allocator>
-	void Cache<Allocator>::allocate() {
-		memory = (uint8_t*)Allocator::allocMemory(CacheSize);
-	}
-
-	template<class Allocator>
-	Cache<Allocator>::~Cache() {
-		Allocator::freeMemory(memory, CacheSize);
-	}
-
-	template<class Allocator>
-	DatasetInitFunc Cache<Allocator>::getInitFunc() {
-		return &initDataset;
-	}
-
-	template<class Allocator>
-	DatasetInitFunc CacheWithJit<Allocator>::getInitFunc() {
-		return jit.getDatasetInitFunc();
-	}
-
-	template<class Allocator>
-	void CacheWithJit<Allocator>::initialize(const void *seed, size_t seedSize) {
-		randomx_cache::initialize(seed, seedSize);
-		jit.generateSuperscalarHash(programs, reciprocalCache);
-		jit.generateDatasetInitCode();
-	}
-
-	template class Dataset<AlignedAllocator<CacheLineSize>>;
-	template class Dataset<LargePageAllocator>;
-	template class Cache<AlignedAllocator<CacheLineSize>>;
-	template class Cache<LargePageAllocator>;
-	template class CacheWithJit<AlignedAllocator<CacheLineSize>>;
-	template class CacheWithJit<LargePageAllocator>;
 
 	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;
 	constexpr uint64_t superscalarAdd1 = 9298411001130361340ULL;

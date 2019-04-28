@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include <iostream>
+#include <type_traits>
 #include "blake2/endian.h"
 
 namespace randomx {
@@ -93,10 +94,9 @@ namespace randomx {
 		uint8_t opcode;
 		uint8_t dst;
 		uint8_t src;
-	private:
 		uint8_t mod;
 		uint32_t imm32;
-
+	private:
 		void print(std::ostream&) const;
 		static const char* names[256];
 		static InstructionFormatter engine[256];
@@ -136,5 +136,5 @@ namespace randomx {
 	};
 
 	static_assert(sizeof(Instruction) == 8, "Invalid size of struct randomx::Instruction");
-
+	static_assert(std::is_standard_layout<Instruction>(), "randomx::Instruction must be a standard-layout struct");
 }
