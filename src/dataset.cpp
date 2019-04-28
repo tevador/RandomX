@@ -39,6 +39,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "blake2/endian.h"
 #include "argon2.h"
 #include "argon2_core.h"
+#include "jit_compiler_x86.hpp"
+#include "intrin_portable.h"
 
 static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");
 static_assert(ARGON2_BLOCK_SIZE == randomx::ArgonBlockSize, "Unpexpected value of ARGON2_BLOCK_SIZE");
@@ -146,6 +148,7 @@ namespace randomx {
 		rl[7] = rl[0] ^ superscalarAdd7;
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			mixBlock = getMixBlock(registerValue, cache->memory);
+			PREFETCHNTA(mixBlock);
 			SuperscalarProgram& prog = cache->programs[i];
 
 			executeSuperscalar(rl, prog, &cache->reciprocalCache);

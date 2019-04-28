@@ -20,8 +20,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include "jit_compiler_x86.hpp"
 
-#define RANDOMX_JUMP
-
 #if !defined(_M_X64) && !defined(__x86_64__)
 namespace randomx {
 
@@ -113,7 +111,6 @@ namespace randomx {
 	const uint8_t* codeLoopLoad = (uint8_t*)&randomx_program_loop_load;
 	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
 	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
-	const uint8_t* codeReadDatasetLight = (uint8_t*)&randomx_program_read_dataset_light;
 	const uint8_t* codeReadDatasetLightSshInit = (uint8_t*)&randomx_program_read_dataset_sshash_init;
 	const uint8_t* codeReadDatasetLightSshFin = (uint8_t*)&randomx_program_read_dataset_sshash_fin;
 	const uint8_t* codeDatasetInit = (uint8_t*)&randomx_dataset_init;
@@ -128,8 +125,7 @@ namespace randomx {
 
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
-	const int32_t readDatasetSize = codeReadDatasetLight - codeReadDataset;
-	const int32_t readDatasetLightSize = codeReadDatasetLightSshInit - codeReadDatasetLight;
+	const int32_t readDatasetSize = codeReadDatasetLightSshInit - codeReadDataset;
 	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
 	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
 	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
@@ -299,7 +295,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
-#ifdef RANDOMX_JUMP
+#if RANDOMX_JUMP
 		instructionOffsets.clear();
 		for (unsigned i = 0; i < 8; ++i) {
 			registerUsage[i] = -1;
@@ -336,7 +332,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
-#ifdef RANDOMX_JUMP
+#if RANDOMX_JUMP
 		instructionOffsets.push_back(codePos);
 #endif
 		auto generator = engine[instr.opcode];
@@ -467,15 +463,6 @@ namespace randomx {
 
 	void JitCompilerX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
-		/*if (instr.src != instr.dst) {
-			emit(REX_ADD_RR);
-			emitByte(0xc0 + 8 * instr.dst + instr.src);
-		}
-		else {
-			emit(REX_81);
-			emitByte(0xc0 + instr.dst);
-			emit32(instr.getImm32());
-		}*/
 		emit(REX_LEA);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emitByte(0xac);
@@ -505,14 +492,6 @@ namespace randomx {
 		emitByte((scale << 6) | (index << 3) | base);
 	}
 
-	void JitCompilerX86::h_IADD_RC(Instruction& instr, int i) {
-		registerUsage[instr.dst] = i;
-		emit(REX_LEA);
-		emitByte(0x84 + 8 * instr.dst);
-		genSIB(0, instr.src, instr.dst);
-		emit32(instr.getImm32());
-	}
-
 	void JitCompilerX86::h_ISUB_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
@@ -539,14 +518,6 @@ namespace randomx {
 			emitByte(0x86 + 8 * instr.dst);
 			genAddressImm(instr);
 		}
-	}
-
-	void JitCompilerX86::h_IMUL_9C(Instruction& instr, int i) {
-		registerUsage[instr.dst] = i;
-		emit(REX_LEA);
-		emitByte(0x84 + 8 * instr.dst);
-		genSIB(3, instr.dst, instr.dst);
-		emit32(instr.getImm32());
 	}
 
 	void JitCompilerX86::h_IMUL_R(Instruction& instr, int i) {
@@ -645,10 +616,6 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_ISDIV_C(Instruction& instr, int i) {
-
-	}
-
 	void JitCompilerX86::h_INEG_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		emit(REX_NEG);
@@ -729,17 +696,14 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_FADD_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		emit(REX_ADDPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
-		//emit(REX_PADD);
-		//emitByte(PADD_OPCODES[instr.mod % 4]);
-		//emitByte(0xf8 + instr.dst);
 	}
 
 	void JitCompilerX86::h_FADD_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_ADDPD);
@@ -747,17 +711,14 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_FSUB_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		emit(REX_SUBPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
-		//emit(REX_PADD);
-		//emitByte(PADD_OPCODES[instr.mod % 4]);
-		//emitByte(0xf8 + instr.dst);
 	}
 
 	void JitCompilerX86::h_FSUB_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_SUBPD);
@@ -765,40 +726,20 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_FSCAL_R(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		emit(REX_XORPS);
 		emitByte(0xc7 + 8 * instr.dst);
 	}
 
 	void JitCompilerX86::h_FMUL_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		emit(REX_MULPD);
 		emitByte(0xe0 + instr.src + 8 * instr.dst);
-	}
-
-	void JitCompilerX86::h_FMUL_M(Instruction& instr, int i) {
-		instr.dst %= 4;
-		genAddressReg(instr);
-		emit(REX_CVTDQ2PD_XMM12);
-		emit(REX_ANDPS_XMM12);
-		emit(REX_MULPD);
-		emitByte(0xe4 + 8 * instr.dst);
-		emit(REX_MAXPD);
-		emitByte(0xe5 + 8 * instr.dst);
-	}
-
-	void JitCompilerX86::h_FDIV_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
-		emit(REX_DIVPD);
-		emitByte(0xe0 + instr.src + 8 * instr.dst);
-		emit(REX_MAXPD);
-		emitByte(0xe5 + 8 * instr.dst);
 	}
 
 	void JitCompilerX86::h_FDIV_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_ANDPS_XMM12);
@@ -807,7 +748,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_FSQRT_R(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		emit(SQRTPD);
 		emitByte(0xe4 + 9 * instr.dst);
 	}
@@ -883,7 +824,7 @@ namespace randomx {
 
 	void JitCompilerX86::handleCondition(Instruction& instr, int i) {
 		const int shift = instr.getModShift();
-		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
+		const int conditionMask = ((1 << RANDOMX_JUMP_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
 		emit(REX_ADD_I);
@@ -900,7 +841,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_COND_R(Instruction& instr, int i) {
-#ifdef RANDOMX_JUMP
+#if RANDOMX_JUMP
 		handleCondition(instr, i);
 #endif
 		emit(XOR_ECX_ECX);
@@ -914,40 +855,15 @@ namespace randomx {
 		emitByte(0xc1 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_COND_M(Instruction& instr, int i) {
-#ifdef RANDOMX_JUMP
-		handleCondition(instr, i);
-#endif
-		emit(XOR_ECX_ECX);
-		genAddressReg(instr);
-		emit(REX_CMP_M32I);
-		emit32(instr.getImm32());
-		emitByte(0x0f);
-		emitByte(condition(instr));
-		emitByte(0xc1);
-		emit(REX_ADD_RM);
-		emitByte(0xc1 + 8 * instr.dst);
-	}
-
 	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr);
-		//if (instr.getModCond())
 		emit(REX_MOV_MR);
-		//else
-		//	emit(MOVNTI);
-		emitByte(0x04 + 8 * instr.src);
-		emitByte(0x06);
-	}
-
-	void JitCompilerX86::h_FSTORE(Instruction& instr, int i) {
-		genAddressRegDst(instr, true);
-		emit(MOVAPD);
 		emitByte(0x04 + 8 * instr.src);
 		emitByte(0x06);
 	}
 
 	void JitCompilerX86::h_NOP(Instruction& instr, int i) {
-		emitByte(0x90);
+		emit(NOP1);
 	}
 
 #include "instruction_weights.hpp"

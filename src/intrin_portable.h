@@ -318,18 +318,6 @@ constexpr uint64_t ieee_get_exponent_mask() {
 	return (uint64_t)(E + 1023U) << 52;
 }
 
-template<int E>
-__m128d ieee_set_exponent(__m128d x) {
-	static_assert(E > -1023, "Invalid exponent value");
-	constexpr uint64_t mantissaMask64 = (1ULL << 52) - 1;
-	const __m128d mantissaMask = _mm_castsi128_pd(_mm_set_epi64x(mantissaMask64, mantissaMask64));
-	constexpr uint64_t exponent64 = (uint64_t)(E + 1023U) << 52;
-	const __m128d exponentMask = _mm_castsi128_pd(_mm_set_epi64x(exponent64, exponent64));
-	x = _mm_and_pd(x, mantissaMask);
-	x = _mm_or_pd(x, exponentMask);
-	return x;
-}
-
 double loadDoublePortable(const void* addr);
 uint64_t mulh(uint64_t, uint64_t);
 int64_t smulh(int64_t, int64_t);

@@ -51,8 +51,6 @@ namespace randomx {
 
 	static_assert(wtSum == 256,	"Sum of instruction frequencies must be 256.");
 
-	using addr_t = uint32_t;
-
 	constexpr int ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof(RANDOMX_ARGON_SALT) - 1;
 	constexpr int CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
@@ -78,6 +76,10 @@ namespace randomx {
 #endif
 #endif
 
+#define RANDOMX_JUMP (RANDOMX_JUMP_BITS > 0)
+
+	using addr_t = uint32_t;
+
 	using int_reg_t = uint64_t;
 
 	struct fpu_reg_t {
@@ -95,6 +97,7 @@ namespace randomx {
 	constexpr int ScratchpadL3Mask = (ScratchpadL3 - 1) * 8;
 	constexpr int ScratchpadL3Mask64 = (ScratchpadL3 / 8 - 1) * 64;
 	constexpr int RegistersCount = 8;
+	constexpr int RegisterCountFlt = RegistersCount / 2;
 	constexpr int RegisterNeedsDisplacement = 5; //x86 r13 register
 	constexpr int RegisterNeedsSib = 4; //x86 r12 register
 
@@ -118,5 +121,3 @@ namespace randomx {
 	typedef void(*CacheDeallocFunc)(randomx_cache*);
 	typedef void(*CacheInitializeFunc)(randomx_cache*, const void*, size_t);
 }
-
-std::ostream& operator<<(std::ostream& os, const randomx::RegisterFile& rf);

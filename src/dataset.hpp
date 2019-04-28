@@ -24,7 +24,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <type_traits>
 #include "common.hpp"
 #include "superscalar_program.hpp"
-#include "jit_compiler_x86.hpp"
 #include "allocator.hpp"
 
 /* Global scope for C binding */
@@ -32,6 +31,10 @@ struct randomx_dataset {
 	uint8_t* memory = nullptr;
 	randomx::DatasetDeallocFunc dealloc;
 };
+
+namespace randomx {
+	class JitCompilerX86;
+}
 
 /* Global scope for C binding */
 struct randomx_cache {

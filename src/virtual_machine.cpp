@@ -76,22 +76,6 @@ void randomx_vm::initialize() {
 	store64(&config.eMask[1], (program.getEntropy(15) & mask22bit) | maskExp240);
 }
 
-//TODO
-std::ostream& operator<<(std::ostream& os, const randomx::RegisterFile& rf) {
-	for (int i = 0; i < randomx::RegistersCount; ++i)
-		os << std::hex << "r" << i << " = " << rf.r[i] << std::endl << std::dec;
-	for (int i = 0; i < 4; ++i)
-		os << std::hex << "f" << i << " = " << *(uint64_t*)&rf.f[i].hi << " (" << rf.f[i].hi << ")" << std::endl
-		<< "   = " << *(uint64_t*)&rf.f[i].lo << " (" << rf.f[i].lo << ")" << std::endl << std::dec;
-	for (int i = 0; i < 4; ++i)
-		os << std::hex << "e" << i << " = " << *(uint64_t*)&rf.e[i].hi << " (" << rf.e[i].hi << ")" << std::endl
-		<< "   = " << *(uint64_t*)&rf.e[i].lo << " (" << rf.e[i].lo << ")" << std::endl << std::dec;
-	for (int i = 0; i < 4; ++i)
-		os << std::hex << "a" << i << " = " << *(uint64_t*)&rf.a[i].hi << " (" << rf.a[i].hi << ")" << std::endl
-		<< "   = " << *(uint64_t*)&rf.a[i].lo << " (" << rf.a[i].lo << ")" << std::endl << std::dec;
-	return os;
-}
-
 namespace randomx {
 
 	alignas(16) volatile static __m128i aesDummy;

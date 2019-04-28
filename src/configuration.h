@@ -34,7 +34,10 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Number of random Cache accesses per Dataset item. Minimum is 2.
 #define RANDOMX_CACHE_ACCESSES     8
 
+//Target latency for SuperscalarHash (in cycles of the reference CPU).
 #define RANDOMX_SUPERSCALAR_LATENCY   170
+
+//The maximum size of a SuperscalarHash program (number of instructions).
 #define RANDOMX_SUPERSCALAR_MAX_SIZE  512
 
 //Dataset base size in bytes. Must be a power of 2.
@@ -61,8 +64,8 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Scratchpad L1 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L2.
 #define RANDOMX_SCRATCHPAD_L1      (16 * 1024)
 
-//How many register bits must be zero for a jump condition to be triggered
-#define RANDOMX_CONDITION_BITS     7
+//How many register bits must be zero for a jump condition to be triggered. If set to 0, jumps are disabled.
+#define RANDOMX_JUMP_BITS          7
 
 /*
 Instruction frequencies (per 256 opcodes)

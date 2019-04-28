@@ -27,12 +27,12 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 namespace randomx {
 
-	static const char* regR[8] = { "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
-	static const char* regR32[8] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
-	static const char* regFE[8] = { "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
-	static const char* regF[4] = { "xmm0", "xmm1", "xmm2", "xmm3" };
-	static const char* regE[4] = { "xmm4", "xmm5", "xmm6", "xmm7" };
-	static const char* regA[4] = { "xmm8", "xmm9", "xmm10", "xmm11" };
+	static const char* regR[] = { "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15" };
+	static const char* regR32[] = { "r8d", "r9d", "r10d", "r11d", "r12d", "r13d", "r14d", "r15d" };
+	static const char* regFE[] = { "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regF[] = { "xmm0", "xmm1", "xmm2", "xmm3" };
+	static const char* regE[] = { "xmm4", "xmm5", "xmm6", "xmm7" };
+	static const char* regA[] = { "xmm8", "xmm9", "xmm10", "xmm11" };
 
 	static const char* tempRegx = "xmm12";
 	static const char* mantissaMask = "xmm13";
@@ -49,7 +49,9 @@ namespace randomx {
 		}
 		asmCode.str(std::string()); //clear
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
+#if RANDOMX_JUMP
 			asmCode << "randomx_isn_" << i << ":" << std::endl;
+#endif
 			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
@@ -469,14 +471,14 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_FADD_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 		traceflt(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FADD_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd " << tempRegx << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
 		asmCode << "\taddpd " << regF[instr.dst] << ", " << tempRegx << std::endl;
@@ -484,14 +486,14 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_FSUB_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << regA[instr.src] << std::endl;
 		traceflt(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FSUB_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd " << tempRegx << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
 		asmCode << "\tsubpd " << regF[instr.dst] << ", " << tempRegx << std::endl;
@@ -499,20 +501,20 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_FSCAL_R(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		asmCode << "\txorps " << regF[instr.dst] << ", " << scaleMask << std::endl;
 		traceflt(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FMUL_R(Instruction& instr, int i) {
-		instr.dst %= 4;
-		instr.src %= 4;
+		instr.dst %= RegisterCountFlt;
+		instr.src %= RegisterCountFlt;
 		asmCode << "\tmulpd " << regE[instr.dst] << ", " << regA[instr.src] << std::endl;
 		traceflt(instr);
 	}
 
 	void AssemblyGeneratorX86::h_FDIV_M(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd " << tempRegx << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
 		asmCode << "\tandps " << tempRegx << ", " << mantissaMask << std::endl;
@@ -522,7 +524,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_FSQRT_R(Instruction& instr, int i) {
-		instr.dst %= 4;
+		instr.dst %= RegisterCountFlt;
 		asmCode << "\tsqrtpd " << regE[instr.dst] << ", " << regE[instr.dst] << std::endl;
 		traceflt(instr);
 	}	
@@ -566,7 +568,7 @@ namespace randomx {
 
 	void AssemblyGeneratorX86::handleCondition(Instruction& instr, int i) {
 		const int shift = instr.getModShift();
-		const int conditionMask = ((1 << RANDOMX_CONDITION_BITS) - 1) << shift;
+		const int conditionMask = ((1 << RANDOMX_JUMP_BITS) - 1) << shift;
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
 		registerUsage[reg] = i;
@@ -579,7 +581,9 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_COND_R(Instruction& instr, int i) {
+#if RANDOMX_JUMP
 		handleCondition(instr, i);
+#endif
 		asmCode << "\txor ecx, ecx" << std::endl;
 		asmCode << "\tcmp " << regR32[instr.src] << ", " << (int32_t)instr.getImm32() << std::endl;
 		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
@@ -602,7 +606,6 @@ namespace randomx {
 #define INST_HANDLE(x) REPN(&AssemblyGeneratorX86::h_##x, WT(x))
 
 	InstructionGenerator AssemblyGeneratorX86::engine[256] = {
-		//Integer
 		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
 		INST_HANDLE(ISUB_R)
@@ -620,27 +623,18 @@ namespace randomx {
 		INST_HANDLE(IROR_R)
 		INST_HANDLE(IROL_R)
 		INST_HANDLE(ISWAP_R)
-
-		//Common floating point
 		INST_HANDLE(FSWAP_R)
-
-		//Floating point group F
 		INST_HANDLE(FADD_R)
 		INST_HANDLE(FADD_M)
 		INST_HANDLE(FSUB_R)
 		INST_HANDLE(FSUB_M)
 		INST_HANDLE(FSCAL_R)
-
-		//Floating point group E
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
-
-		//Control
 		INST_HANDLE(COND_R)
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
-
 		INST_HANDLE(NOP)
 	};
 }

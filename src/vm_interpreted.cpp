@@ -17,10 +17,6 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-//#define TRACE
-//#define FPUCHECK
-#define RANDOMX_JUMP
-
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -32,12 +28,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "dataset.hpp"
 #include "intrin_portable.h"
 #include "reciprocal.h"
-
-#ifdef FPUCHECK
-constexpr bool fpuCheck = true;
-#else
-constexpr bool fpuCheck = false;
-#endif
 
 namespace randomx {
 
@@ -53,47 +43,14 @@ namespace randomx {
 	void InterpretedVm<Allocator, softAes>::run(void* seed) {
 		VmBase<Allocator, softAes>::generateProgram(seed);
 		randomx_vm::initialize();
-		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
-			program(i).src %= RegistersCount;
-			program(i).dst %= RegistersCount;
-		}
 		execute();
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		for (int ic = 0; ic < RANDOMX_PROGRAM_SIZE; ++ic) {
-			executeBytecode(ic, r, f, e, a);
+	void InterpretedVm<Allocator, softAes>::executeBytecode(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+		for (int pc = 0; pc < RANDOMX_PROGRAM_SIZE; ++pc) {
+			executeBytecode(pc, r, f, e, a);
 		}
-	}
-
-	static void print(int_reg_t r) {
-		std::cout << std::hex << std::setw(16) << std::setfill('0') << r << std::endl;
-	}
-
-	static void print(__m128d f) {
-		uint64_t lo = *(((uint64_t*)&f) + 0);
-		uint64_t hi = *(((uint64_t*)&f) + 1);
-		std::cout << std::hex << std::setw(16) << std::setfill('0') << hi << '-' << std::hex << std::setw(16) << std::setfill('0') << lo << std::endl;
-	}
-
-	static void printState(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		for (int i = 0; i < 8; ++i) {
-			std::cout << "r" << i << " = "; print(r[i]);
-		}
-		for (int i = 0; i < 4; ++i) {
-			std::cout << "f" << i << " = "; print(f[i]);
-		}
-		for (int i = 0; i < 4; ++i) {
-			std::cout << "e" << i << " = "; print(e[i]);
-		}
-		for (int i = 0; i < 4; ++i) {
-			std::cout << "a" << i << " = "; print(a[i]);
-		}
-	}
-
-	static bool isDenormal(double x) {
-		return std::fpclassify(x) == FP_SUBNORMAL;
 	}
 
 	template<class Allocator, bool softAes>
@@ -113,9 +70,8 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::executeBytecode(int& ic, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		auto& ibc = byteCode[ic];
-		if (trace && ibc.type != InstructionType::NOP) std::cout << std::dec << std::setw(3) << ic << " " << program(ic);
+	void InterpretedVm<Allocator, softAes>::executeBytecode(int& pc, int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+		auto& ibc = byteCode[pc];
 		switch (ibc.type)
 		{
 			case InstructionType::IADD_RS: {
@@ -225,11 +181,11 @@ namespace randomx {
 			} break;
 
 			case InstructionType::COND_R: {
-#ifdef RANDOMX_JUMP
+#if RANDOMX_JUMP
 				*ibc.creg += (1 << ibc.shift);
-				const uint64_t conditionMask = ((1ULL << RANDOMX_CONDITION_BITS) - 1) << ibc.shift;
+				const uint64_t conditionMask = ((1ULL << RANDOMX_JUMP_BITS) - 1) << ibc.shift;
 				if ((*ibc.creg & conditionMask) == 0) {
-					ic = ibc.target;
+					pc = ibc.target;
 					break;
 				}
 #endif
@@ -251,49 +207,22 @@ namespace randomx {
 			default:
 				UNREACHABLE;
 		}
-		if (trace && ibc.type != InstructionType::NOP) {
-			if(ibc.type < 20 || ibc.type == 31 || ibc.type == 32)
-				print(*ibc.idst);
-			else //if(ibc.type >= 20 && ibc.type <= 30)
-				print(0);
-		}
-#ifdef FPUCHECK
-		if (ibc.type >= 26 && ibc.type <= 30) {
-			double lo = *(((double*)ibc.fdst) + 0);
-			double hi = *(((double*)ibc.fdst) + 1);
-			if (lo <= 0 || hi <= 0) {
-				std::stringstream ss;
-				ss << "Underflow in operation " << ibc.type;
-				printState(r, f, e, a);
-				throw std::runtime_error(ss.str());
-			}
-		}
-#endif
 	}
 
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::execute() {
-		int_reg_t r[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-		__m128d f[4];
-		__m128d e[4];
-		__m128d a[4];
+		int_reg_t r[RegistersCount] = { 0 };
+		__m128d f[RegisterCountFlt];
+		__m128d e[RegisterCountFlt];
+		__m128d a[RegisterCountFlt];
 
-		a[0] = _mm_load_pd(&reg.a[0].lo);
-		a[1] = _mm_load_pd(&reg.a[1].lo);
-		a[2] = _mm_load_pd(&reg.a[2].lo);
-		a[3] = _mm_load_pd(&reg.a[3].lo);
+		for(unsigned i = 0; i < RegisterCountFlt; ++i)
+			a[i] = _mm_load_pd(&reg.a[i].lo);
 
 		precompileProgram(r, f, e, a);
 
 		uint32_t spAddr0 = mem.mx;
 		uint32_t spAddr1 = mem.ma;
-
-		if (trace) {
-			std::cout << "execute (reg: r" << config.readReg0 << ", r" << config.readReg1 << ", r" << config.readReg2 << ", r" << config.readReg3 << ")" << std::endl;
-			std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
-			std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
-			printState(r, f, e, a);
-		}
 
 		for(unsigned ic = 0; ic < RANDOMX_PROGRAM_ITERATIONS; ++ic) {
 			uint64_t spMix = r[config.readReg0] ^ r[config.readReg1];
@@ -302,31 +231,14 @@ namespace randomx {
 			spAddr1 ^= spMix >> 32;
 			spAddr1 &= ScratchpadL3Mask64;
 			
-			r[0] ^= load64(scratchpad + spAddr0 + 0);
-			r[1] ^= load64(scratchpad + spAddr0 + 8);
-			r[2] ^= load64(scratchpad + spAddr0 + 16);
-			r[3] ^= load64(scratchpad + spAddr0 + 24);
-			r[4] ^= load64(scratchpad + spAddr0 + 32);
-			r[5] ^= load64(scratchpad + spAddr0 + 40);
-			r[6] ^= load64(scratchpad + spAddr0 + 48);
-			r[7] ^= load64(scratchpad + spAddr0 + 56);
+			for (unsigned i = 0; i < RegistersCount; ++i)
+				r[i] ^= load64(scratchpad + spAddr0 + 8 * i);
 
-			f[0] = load_cvt_i32x2(scratchpad + spAddr1 + 0);
-			f[1] = load_cvt_i32x2(scratchpad + spAddr1 + 8);
-			f[2] = load_cvt_i32x2(scratchpad + spAddr1 + 16);
-			f[3] = load_cvt_i32x2(scratchpad + spAddr1 + 24);
-			e[0] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 32));
-			e[1] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 40));
-			e[2] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 48));
-			e[3] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 56));
+			for (unsigned i = 0; i < RegisterCountFlt; ++i)
+				f[i] = load_cvt_i32x2(scratchpad + spAddr1 + 8 * i);
 
-			if (trace) {
-				std::cout << "iteration " << std::dec << ic << std::endl;
-				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
-				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
-				printState(r, f, e, a);
-				std::cout << "-----------------------------------" << std::endl;
-			}
+			for (unsigned i = 0; i < RegisterCountFlt; ++i)
+				e[i] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 8 * (RegisterCountFlt + i)));
 
 			executeBytecode(r, f, e, a);
 
@@ -335,72 +247,33 @@ namespace randomx {
 			datasetRead(datasetOffset + mem.ma, r);
 			std::swap(mem.mx, mem.ma);
 
-			if (trace) {
-				std::cout << "iteration " << std::dec << ic << std::endl;
-				std::cout << "spAddr " << std::hex << std::setw(8) << std::setfill('0') << spAddr1 << " / " << std::setw(8) << std::setfill('0') << spAddr0 << std::endl;
-				std::cout << "ma/mx " << std::hex << std::setw(8) << std::setfill('0') << mem.ma << std::setw(8) << std::setfill('0') << mem.mx << std::endl;
-				printState(r, f, e, a);
-				std::cout << "===================================" << std::endl;
-			}
+			for (unsigned i = 0; i < RegistersCount; ++i)
+				store64(scratchpad + spAddr1 + 8 * i, r[i]);
 
-			store64(scratchpad + spAddr1 + 0, r[0]);
-			store64(scratchpad + spAddr1 + 8, r[1]);
-			store64(scratchpad + spAddr1 + 16, r[2]);
-			store64(scratchpad + spAddr1 + 24, r[3]);
-			store64(scratchpad + spAddr1 + 32, r[4]);
-			store64(scratchpad + spAddr1 + 40, r[5]);
-			store64(scratchpad + spAddr1 + 48, r[6]);
-			store64(scratchpad + spAddr1 + 56, r[7]);
+			for (unsigned i = 0; i < RegisterCountFlt; ++i)
+				f[i] = _mm_xor_pd(f[i], e[i]);
 
-			f[0] = _mm_xor_pd(f[0], e[0]);
-			f[1] = _mm_xor_pd(f[1], e[1]);
-			f[2] = _mm_xor_pd(f[2], e[2]);
-			f[3] = _mm_xor_pd(f[3], e[3]);
-
-#ifdef FPUCHECK
-			for(int i = 0; i < 4; ++i) {
-				double lo = *(((double*)&f[i]) + 0);
-				double hi = *(((double*)&f[i]) + 1);
-				if (isDenormal(lo) || isDenormal(hi)) {
-					std::stringstream ss;
-					ss << "Denormal f" << i;
-					throw std::runtime_error(ss.str());
-				}
-			}
-#endif
-
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 0), f[0]);
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 16), f[1]);
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 32), f[2]);
-			_mm_store_pd((double*)(scratchpad + spAddr0 + 48), f[3]);
+			for (unsigned i = 0; i < RegisterCountFlt; ++i)
+				_mm_store_pd((double*)(scratchpad + spAddr0 + 16 * i), f[i]);
 
 			spAddr0 = 0;
 			spAddr1 = 0;
 		}
 
-		store64(&reg.r[0], r[0]);
-		store64(&reg.r[1], r[1]);
-		store64(&reg.r[2], r[2]);
-		store64(&reg.r[3], r[3]);
-		store64(&reg.r[4], r[4]);
-		store64(&reg.r[5], r[5]);
-		store64(&reg.r[6], r[6]);
-		store64(&reg.r[7], r[7]);
+		for (unsigned i = 0; i < RegistersCount; ++i)
+			store64(&reg.r[i], r[i]);
 
-		_mm_store_pd(&reg.f[0].lo, f[0]);
-		_mm_store_pd(&reg.f[1].lo, f[1]);
-		_mm_store_pd(&reg.f[2].lo, f[2]);
-		_mm_store_pd(&reg.f[3].lo, f[3]);
-		_mm_store_pd(&reg.e[0].lo, e[0]);
-		_mm_store_pd(&reg.e[1].lo, e[1]);
-		_mm_store_pd(&reg.e[2].lo, e[2]);
-		_mm_store_pd(&reg.e[3].lo, e[3]);
+		for (unsigned i = 0; i < RegisterCountFlt; ++i)
+			_mm_store_pd(&reg.f[i].lo, f[i]);
+
+		for (unsigned i = 0; i < RegisterCountFlt; ++i)
+			_mm_store_pd(&reg.e[i].lo, e[i]);
 	}
 
-	static int getConditionRegister(int(&registerUsage)[8]) {
+	static int getConditionRegister(int(&registerUsage)[RegistersCount]) {
 		int min = INT_MAX;
 		int minIndex;
-		for (unsigned i = 0; i < 8; ++i) {
+		for (unsigned i = 0; i < RegistersCount; ++i) {
 			if (registerUsage[i] < min) {
 				min = registerUsage[i];
 				minIndex = i;
@@ -410,7 +283,7 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::datasetRead(uint32_t address, int_reg_t(&r)[8]) {
+	void InterpretedVm<Allocator, softAes>::datasetRead(uint32_t address, int_reg_t(&r)[RegistersCount]) {
 		uint64_t* datasetLine = (uint64_t*)(mem.memory + address);
 		for (int i = 0; i < RegistersCount; ++i)
 			r[i] ^= datasetLine[i];
@@ -419,9 +292,9 @@ namespace randomx {
 #include "instruction_weights.hpp"
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]) {
-		int registerUsage[8];
-		for (unsigned i = 0; i < 8; ++i) {
+	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+		int registerUsage[RegistersCount];
+		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i] = -1;
 		}
 		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
@@ -443,7 +316,7 @@ namespace randomx {
 						ibc.shift = instr.getModMem();
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IADD_M) {
@@ -452,7 +325,7 @@ namespace randomx {
 					ibc.type = InstructionType::IADD_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -460,7 +333,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(ISUB_R) {
@@ -475,7 +348,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(ISUB_M) {
@@ -484,7 +357,7 @@ namespace randomx {
 					ibc.type = InstructionType::ISUB_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -492,7 +365,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IMUL_R) {
@@ -507,7 +380,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IMUL_M) {
@@ -516,7 +389,7 @@ namespace randomx {
 					ibc.type = InstructionType::IMUL_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -524,7 +397,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IMULH_R) {
@@ -533,7 +406,7 @@ namespace randomx {
 					ibc.type = InstructionType::IMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IMULH_M) {
@@ -542,7 +415,7 @@ namespace randomx {
 					ibc.type = InstructionType::IMULH_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -550,7 +423,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(ISMULH_R) {
@@ -559,7 +432,7 @@ namespace randomx {
 					ibc.type = InstructionType::ISMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(ISMULH_M) {
@@ -568,7 +441,7 @@ namespace randomx {
 					ibc.type = InstructionType::ISMULH_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -576,7 +449,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IMUL_RCP) {
@@ -587,7 +460,7 @@ namespace randomx {
 						ibc.idst = &r[dst];
 						ibc.imm = randomx_reciprocal(divisor);
 						ibc.isrc = &ibc.imm;
-						registerUsage[instr.dst] = i;
+						registerUsage[dst] = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -598,7 +471,7 @@ namespace randomx {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::INEG_R;
 					ibc.idst = &r[dst];
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IXOR_R) {
@@ -613,7 +486,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IXOR_M) {
@@ -622,7 +495,7 @@ namespace randomx {
 					ibc.type = InstructionType::IXOR_M;
 					ibc.idst = &r[dst];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.src != instr.dst) {
+					if (src != dst) {
 						ibc.isrc = &r[src];
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					}
@@ -630,7 +503,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IROR_R) {
@@ -645,7 +518,7 @@ namespace randomx {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(IROL_R) {
@@ -660,7 +533,7 @@ namespace randomx {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[instr.dst] = i;
+					registerUsage[dst] = i;
 				} break;
 
 				CASE_REP(ISWAP_R) {
@@ -670,8 +543,8 @@ namespace randomx {
 						ibc.idst = &r[dst];
 						ibc.isrc = &r[src];
 						ibc.type = InstructionType::ISWAP_R;
-						registerUsage[instr.dst] = i;
-						registerUsage[instr.src] = i;
+						registerUsage[dst] = i;
+						registerUsage[src] = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -681,23 +554,23 @@ namespace randomx {
 				CASE_REP(FSWAP_R) {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::FSWAP_R;
-					if (dst < 4)
+					if (dst < RegisterCountFlt)
 						ibc.fdst = &f[dst];
 					else
-						ibc.fdst = &e[dst - 4];
+						ibc.fdst = &e[dst - RegisterCountFlt];
 				} break;
 
 				CASE_REP(FADD_R) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 4;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegisterCountFlt;
 					ibc.type = InstructionType::FADD_R;
 					ibc.fdst = &f[dst];
 					ibc.fsrc = &a[src];
 				} break;
 
 				CASE_REP(FADD_M) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 8;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegistersCount;
 					ibc.type = InstructionType::FADD_M;
 					ibc.fdst = &f[dst];
 					ibc.isrc = &r[src];
@@ -706,16 +579,16 @@ namespace randomx {
 				} break;
 
 				CASE_REP(FSUB_R) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 4;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegisterCountFlt;
 					ibc.type = InstructionType::FSUB_R;
 					ibc.fdst = &f[dst];
 					ibc.fsrc = &a[src];
 				} break;
 
 				CASE_REP(FSUB_M) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 8;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegistersCount;
 					ibc.type = InstructionType::FSUB_M;
 					ibc.fdst = &f[dst];
 					ibc.isrc = &r[src];
@@ -724,22 +597,22 @@ namespace randomx {
 				} break;
 
 				CASE_REP(FSCAL_R) {
-					auto dst = instr.dst % 4;
+					auto dst = instr.dst % RegisterCountFlt;
 					ibc.fdst = &f[dst];
 					ibc.type = InstructionType::FSCAL_R;
 				} break;
 
 				CASE_REP(FMUL_R) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 4;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegisterCountFlt;
 					ibc.type = InstructionType::FMUL_R;
 					ibc.fdst = &e[dst];
 					ibc.fsrc = &a[src];
 				} break;
 
 				CASE_REP(FDIV_M) {
-					auto dst = instr.dst % 4;
-					auto src = instr.src % 8;
+					auto dst = instr.dst % RegisterCountFlt;
+					auto src = instr.src % RegistersCount;
 					ibc.type = InstructionType::FDIV_M;
 					ibc.fdst = &e[dst];
 					ibc.isrc = &r[src];
@@ -748,7 +621,7 @@ namespace randomx {
 				} break;
 
 				CASE_REP(FSQRT_R) {
-					auto dst = instr.dst % 4;
+					auto dst = instr.dst % RegisterCountFlt;
 					ibc.type = InstructionType::FSQRT_R;
 					ibc.fdst = &e[dst];
 				} break;
@@ -766,13 +639,13 @@ namespace randomx {
 					ibc.target = registerUsage[reg];
 					ibc.shift = instr.getModShift();
 					ibc.creg = &r[reg];
-					for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
+					for (unsigned j = 0; j < RegistersCount; ++j) { //mark all registers as used
 						registerUsage[j] = i;
 					}
 				} break;
 
 				CASE_REP(CFROUND) {
-					auto src = instr.src % 8;
+					auto src = instr.src % RegistersCount;
 					ibc.isrc = &r[src];
 					ibc.type = InstructionType::CFROUND;
 					ibc.imm = instr.getImm32() & 63;

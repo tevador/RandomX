@@ -71,12 +71,12 @@ namespace randomx {
 		void run(void* seed) override;
 		void setDataset(randomx_dataset* dataset) override;
 	protected:
-		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[8]);
+		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[RegistersCount]);
 	private:
 		void execute();
-		void precompileProgram(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void executeBytecode(int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
-		void executeBytecode(int& i, int_reg_t(&r)[8], __m128d (&f)[4], __m128d (&e)[4], __m128d (&a)[4]);
+		void precompileProgram(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
+		void executeBytecode(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
+		void executeBytecode(int& i, int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
 		void* getScratchpadAddress(InstructionByteCode& ibc);
 		__m128d maskRegisterExponentMantissa(__m128d);
 

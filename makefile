@@ -3,7 +3,7 @@
 AR=gcc-ar
 PLATFORM=$(shell uname -m)
 CXXFLAGS=-std=c++11
-CCFLAGS=
+CCFLAGS=-std=c99
 ARFLAGS=rcs
 BINDIR=bin
 SRCDIR=src
@@ -80,7 +80,8 @@ $(OBJDIR)/dataset.o: $(SRCDIR)/dataset.cpp $(SRCDIR)/common.hpp $(SRCDIR)/blake2
  $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h $(SRCDIR)/dataset.hpp \
  $(SRCDIR)/superscalar_program.hpp $(SRCDIR)/instruction.hpp $(SRCDIR)/jit_compiler_x86.hpp \
  $(SRCDIR)/allocator.hpp $(SRCDIR)/virtual_memory.hpp $(SRCDIR)/superscalar.hpp \
- $(SRCDIR)/blake2_generator.hpp $(SRCDIR)/reciprocal.h $(SRCDIR)/argon2.h $(SRCDIR)/argon2_core.h
+ $(SRCDIR)/blake2_generator.hpp $(SRCDIR)/reciprocal.h $(SRCDIR)/argon2.h $(SRCDIR)/argon2_core.h \
+ $(SRCDIR)/intrin_portable.h
 $(OBJDIR)/jit_compiler_x86.o: $(SRCDIR)/jit_compiler_x86.cpp $(SRCDIR)/jit_compiler_x86.hpp \
  $(SRCDIR)/common.hpp $(SRCDIR)/blake2/endian.h $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h \
  $(SRCDIR)/jit_compiler_x86_static.hpp $(SRCDIR)/superscalar.hpp \
@@ -90,7 +91,6 @@ $(OBJDIR)/jit_compiler_x86.o: $(SRCDIR)/jit_compiler_x86.cpp $(SRCDIR)/jit_compi
 $(OBJDIR)/jit_compiler_x86_static.o: $(SRCDIR)/jit_compiler_x86_static.S \
  $(SRCDIR)/asm/program_prologue_linux.inc $(SRCDIR)/asm/program_xmm_constants.inc \
  $(SRCDIR)/asm/program_loop_load.inc $(SRCDIR)/asm/program_read_dataset.inc \
- $(SRCDIR)/asm/program_read_dataset_light.inc \
  $(SRCDIR)/asm/program_read_dataset_sshash_init.inc \
  $(SRCDIR)/asm/program_read_dataset_sshash_fin.inc \
  $(SRCDIR)/asm/program_loop_store.inc $(SRCDIR)/asm/program_epilogue_linux.inc \
