@@ -113,11 +113,11 @@ namespace randomx {
 		fpu_reg_t a[RegistersCount / 2];
 	};
 
-	typedef void(*DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
-	typedef void(*ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
-	typedef void(*DatasetInitFunc)(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
+	typedef void(DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
+	typedef void(ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
+	typedef void(DatasetInitFunc)(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 
-	typedef void(*DatasetDeallocFunc)(randomx_dataset*);
-	typedef void(*CacheDeallocFunc)(randomx_cache*);
-	typedef void(*CacheInitializeFunc)(randomx_cache*, const void*, size_t);
+	typedef void(DatasetDeallocFunc)(randomx_dataset*);
+	typedef void(CacheDeallocFunc)(randomx_cache*);
+	typedef void(CacheInitializeFunc)(randomx_cache*, const void*, size_t);
 }

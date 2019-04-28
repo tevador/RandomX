@@ -29,7 +29,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 /* Global scope for C binding */
 struct randomx_dataset {
 	uint8_t* memory = nullptr;
-	randomx::DatasetDeallocFunc dealloc;
+	randomx::DatasetDeallocFunc* dealloc;
 };
 
 namespace randomx {
@@ -39,10 +39,10 @@ namespace randomx {
 /* Global scope for C binding */
 struct randomx_cache {
 	uint8_t* memory = nullptr;
-	randomx::CacheDeallocFunc dealloc;
+	randomx::CacheDeallocFunc* dealloc;
 	randomx::JitCompilerX86* jit;
-	randomx::CacheInitializeFunc initialize;
-	randomx::DatasetInitFunc datasetInit;
+	randomx::CacheInitializeFunc* initialize;
+	randomx::DatasetInitFunc* datasetInit;
 	randomx::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 	std::vector<uint64_t> reciprocalCache;
 };

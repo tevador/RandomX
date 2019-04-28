@@ -45,11 +45,11 @@ namespace randomx {
 		template<size_t N>
 		void generateSuperscalarHash(SuperscalarProgram (&programs)[N], std::vector<uint64_t> &);
 		void generateDatasetInitCode();
-		ProgramFunc getProgramFunc() {
-			return (ProgramFunc)code;
+		ProgramFunc* getProgramFunc() {
+			return (ProgramFunc*)code;
 		}
-		DatasetInitFunc getDatasetInitFunc() {
-			return (DatasetInitFunc)code;
+		DatasetInitFunc* getDatasetInitFunc() {
+			return (DatasetInitFunc*)code;
 		}
 		uint8_t* getCode() {
 			return code;
