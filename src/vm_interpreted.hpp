@@ -41,12 +41,12 @@ namespace randomx {
 			uint64_t imm;
 			int64_t simm;
 		};
-		int_reg_t* creg;
-		uint16_t condition;
-		int16_t target;
-		uint32_t memMask;
 		uint16_t type;
-		uint16_t shift;
+		union {
+			int16_t target;
+			uint16_t shift;
+		};
+		uint32_t memMask;
 	};
 
 	template<class Allocator, bool softAes>

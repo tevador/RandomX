@@ -44,14 +44,12 @@ namespace randomx {
 	static const char* regScratchpadAddr = "rsi";
 
 	void AssemblyGeneratorX86::generateProgram(Program& prog) {
-		for (unsigned i = 0; i < 8; ++i) {
+		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i] = -1;
 		}
 		asmCode.str(std::string()); //clear
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
-#if RANDOMX_JUMP
 			asmCode << "randomx_isn_" << i << ":" << std::endl;
-#endif
 			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
@@ -261,7 +259,7 @@ namespace randomx {
 	void AssemblyGeneratorX86::genAddressRegDst(Instruction& instr, int maskAlign = 8) {
 		asmCode << "\tlea eax, [" << regR32[instr.dst] << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		int mask;
-		if (instr.getModCond()) {
+		if (instr.getModCond() < StoreL3Condition) {
 			mask = instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask;
 		}
 		else {
@@ -277,9 +275,9 @@ namespace randomx {
 	void AssemblyGeneratorX86::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if(instr.dst == RegisterNeedsDisplacement)
-			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift())) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		else
-			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << "]" << std::endl;
+			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift())) << "]" << std::endl;
 		traceint(instr);
 	}
 
@@ -542,53 +540,16 @@ namespace randomx {
 		tracenop(instr);
 	}
 
-	static inline const char* condition(Instruction& instr) {
-		switch (instr.getModCond())
-		{
-			case 0:
-				return "be";
-			case 1:
-				return "a";
-			case 2:
-				return "s";
-			case 3:
-				return "ns";
-			case 4:
-				return "o";
-			case 5:
-				return "no";
-			case 6:
-				return "l";
-			case 7:
-				return "ge";
-			default:
-				UNREACHABLE;
-		}
-	}
-
-	void AssemblyGeneratorX86::handleCondition(Instruction& instr, int i) {
-		const int shift = instr.getModShift();
-		const int conditionMask = ((1 << RANDOMX_JUMP_BITS) - 1) << shift;
+	void AssemblyGeneratorX86::h_CBRANCH(Instruction& instr, int i) {
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
-		registerUsage[reg] = i;
-		asmCode << "\tadd " << regR[reg] << ", " << (1 << shift) << std::endl;
-		asmCode << "\ttest " << regR[reg] << ", " << conditionMask << std::endl;
+		int shift = instr.getModCond();
+		asmCode << "\tadd " << regR[reg] << ", " << (int32_t)(instr.getImm32() | (1 << shift)) << std::endl;
+		asmCode << "\ttest " << regR[reg] << ", " << (ConditionMask << shift) << std::endl;
 		asmCode << "\tjz randomx_isn_" << target << std::endl;
-		for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
+		for (unsigned j = 0; j < RegistersCount; ++j) { //mark all registers as used
 			registerUsage[j] = i;
 		}
-	}
-
-	void AssemblyGeneratorX86::h_COND_R(Instruction& instr, int i) {
-#if RANDOMX_JUMP
-		handleCondition(instr, i);
-#endif
-		asmCode << "\txor ecx, ecx" << std::endl;
-		asmCode << "\tcmp " << regR32[instr.src] << ", " << (int32_t)instr.getImm32() << std::endl;
-		asmCode << "\tset" << condition(instr) << " cl" << std::endl;
-		asmCode << "\tadd " << regR[instr.dst] << ", rcx" << std::endl;
-		traceint(instr);
 	}
 
 	void AssemblyGeneratorX86::h_ISTORE(Instruction& instr, int i) {
@@ -632,7 +593,7 @@ namespace randomx {
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
-		INST_HANDLE(COND_R)
+		INST_HANDLE(CBRANCH)
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(NOP)

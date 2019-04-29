@@ -44,7 +44,6 @@ namespace randomx {
 		void genAddressRegDst(Instruction&, int);
 		int32_t genAddressImm(Instruction&);
 		int getConditionRegister();
-		void handleCondition(Instruction&, int);
 		void generateCode(Instruction&, int);
 		void traceint(Instruction&);
 		void traceflt(Instruction&);
@@ -76,7 +75,7 @@ namespace randomx {
 		void h_FMUL_R(Instruction&, int);
 		void h_FDIV_M(Instruction&, int);
 		void h_FSQRT_R(Instruction&, int);
-		void h_COND_R(Instruction&, int);
+		void h_CBRANCH(Instruction&, int);
 		void h_CFROUND(Instruction&, int);
 		void h_ISTORE(Instruction&, int);
 		void h_NOP(Instruction&, int);

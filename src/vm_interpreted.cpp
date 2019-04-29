@@ -180,16 +180,11 @@ namespace randomx {
 				*ibc.fdst = _mm_sqrt_pd(*ibc.fdst);
 			} break;
 
-			case InstructionType::COND_R: {
-#if RANDOMX_JUMP
-				*ibc.creg += (1 << ibc.shift);
-				const uint64_t conditionMask = ((1ULL << RANDOMX_JUMP_BITS) - 1) << ibc.shift;
-				if ((*ibc.creg & conditionMask) == 0) {
+			case InstructionType::CBRANCH: {
+				*ibc.isrc += ibc.imm;
+				if ((*ibc.isrc & ibc.memMask) == 0) {
 					pc = ibc.target;
-					break;
 				}
-#endif
-				*ibc.idst += condition(ibc.condition, *ibc.isrc, ibc.imm) ? 1 : 0;
 			} break;
 
 			case InstructionType::CFROUND: {
@@ -308,12 +303,12 @@ namespace randomx {
 					ibc.idst = &r[dst];
 					if (dst != RegisterNeedsDisplacement) {
 						ibc.isrc = &r[src];
-						ibc.shift = instr.getModMem();
+						ibc.shift = instr.getModShift();
 						ibc.imm = 0;
 					}
 					else {
 						ibc.isrc = &r[src];
-						ibc.shift = instr.getModMem();
+						ibc.shift = instr.getModShift();
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 					}
 					registerUsage[dst] = i;
@@ -626,19 +621,16 @@ namespace randomx {
 					ibc.fdst = &e[dst];
 				} break;
 
-				CASE_REP(COND_R) {
-					auto dst = instr.dst % RegistersCount;
-					auto src = instr.src % RegistersCount;
-					ibc.type = InstructionType::COND_R;
-					ibc.idst = &r[dst];
-					ibc.isrc = &r[src];
-					ibc.condition = instr.getModCond();
-					ibc.imm = instr.getImm32();
+				CASE_REP(CBRANCH) {
+					ibc.type = InstructionType::CBRANCH;
 					//jump condition
 					int reg = getConditionRegister(registerUsage);
+					ibc.isrc = &r[reg];
 					ibc.target = registerUsage[reg];
-					ibc.shift = instr.getModShift();
-					ibc.creg = &r[reg];
+					int shift = instr.getModCond();
+					const uint64_t conditionMask = ConditionMask << instr.getModCond();
+					ibc.imm = signExtend2sCompl(instr.getImm32()) | (1ULL << shift);
+					ibc.memMask = ConditionMask << shift;
 					for (unsigned j = 0; j < RegistersCount; ++j) { //mark all registers as used
 						registerUsage[j] = i;
 					}
@@ -658,7 +650,7 @@ namespace randomx {
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
 					ibc.imm = signExtend2sCompl(instr.getImm32());
-					if (instr.getModCond())
+					if (instr.getModCond() < StoreL3Condition)
 						ibc.memMask = (instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 					else
 						ibc.memMask = ScratchpadL3Mask;

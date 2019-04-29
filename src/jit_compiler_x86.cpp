@@ -297,12 +297,10 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
-#if RANDOMX_JUMP
 		instructionOffsets.clear();
 		for (unsigned i = 0; i < 8; ++i) {
 			registerUsage[i] = -1;
 		}
-#endif
 		codePos = prologueSize;
 		memcpy(code + codePos - 48, &pcfg.eMask, sizeof(pcfg.eMask));
 		emit(REX_XOR_RAX_R64);
@@ -334,9 +332,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateCode(Instruction& instr, int i) {
-#if RANDOMX_JUMP
 		instructionOffsets.push_back(codePos);
-#endif
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
@@ -457,7 +453,7 @@ namespace randomx {
 		}
 		emit32(instr.getImm32());
 		emitByte(AND_EAX_I);
-		if (instr.getModCond()) {
+		if (instr.getModCond() < StoreL3Condition) {
 			int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
 			int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
 			emit32(instr.getModMem() ? maskL1 : maskL2);
@@ -478,7 +474,7 @@ namespace randomx {
 			emitByte(0xac);
 		else
 			emitByte(0x04 + 8 * instr.dst);
-		genSIB(instr.getModMem(), instr.src, instr.dst);
+		genSIB(instr.getModShift(), instr.src, instr.dst);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emit32(instr.getImm32());
 	}
@@ -774,56 +770,10 @@ namespace randomx {
 		emit(AND_OR_MOV_LDMXCSR);
 	}
 
-	static inline uint8_t jumpCondition(Instruction& instr, bool invert = false) {
-		switch (instr.getModCond() ^ invert)
-		{
-		case 0:
-			return 0x76; //jbe
-		case 1:
-			return 0x77; //ja
-		case 2:
-			return 0x78; //js
-		case 3:
-			return 0x79; //jns
-		case 4:
-			return 0x70; //jo
-		case 5:
-			return 0x71; //jno
-		case 6:
-			return 0x7c; //jl
-		case 7:
-			return 0x7d; //jge
-		}
-	}
-
-	static inline uint8_t condition(Instruction& instr) {
-		switch (instr.getModCond())
-		{
-		case 0:
-			return 0x96; //setbe
-		case 1:
-			return 0x97; //seta
-		case 2:
-			return 0x98; //sets
-		case 3:
-			return 0x99; //setns
-		case 4:
-			return 0x90; //seto
-		case 5:
-			return 0x91; //setno
-		case 6:
-			return 0x9c; //setl
-		case 7:
-			return 0x9d; //setge
-		default:
-			UNREACHABLE;
-		}
-	}
-
 	int JitCompilerX86::getConditionRegister() {
 		int min = INT_MAX;
 		int minIndex;
-		for (unsigned i = 0; i < 8; ++i) {
+		for (unsigned i = 0; i < RegistersCount; ++i) {
 			if (registerUsage[i] < min) {
 				min = registerUsage[i];
 				minIndex = i;
@@ -832,38 +782,21 @@ namespace randomx {
 		return minIndex;
 	}
 
-	void JitCompilerX86::handleCondition(Instruction& instr, int i) {
-		const int shift = instr.getModShift();
-		const int conditionMask = ((1 << RANDOMX_JUMP_BITS) - 1) << shift;
+	void JitCompilerX86::h_CBRANCH(Instruction& instr, int i) {
 		int reg = getConditionRegister();
 		int target = registerUsage[reg] + 1;
+		int shift = instr.getModCond();
 		emit(REX_ADD_I);
 		emitByte(0xc0 + reg);
-		emit32(1 << shift);
+		emit32(instr.getImm32() | (1 << shift));
 		emit(REX_TEST);
 		emitByte(0xc0 + reg);
-		emit32(conditionMask);
+		emit32(ConditionMask << shift);
 		emit(JZ);
 		emit32(instructionOffsets[target] - (codePos + 4));
-		for (unsigned j = 0; j < 8; ++j) { //mark all registers as used
+		for (unsigned j = 0; j < RegistersCount; ++j) { //mark all registers as used
 			registerUsage[j] = i;
 		}
-	}
-
-	void JitCompilerX86::h_COND_R(Instruction& instr, int i) {
-#if RANDOMX_JUMP
-		handleCondition(instr, i);
-#endif
-		emit(XOR_ECX_ECX);
-		emit(REX_CMP_R32I);
-		emitByte(0xf8 + instr.src);
-		emit32(instr.getImm32());
-		emitByte(0x0f);
-		emitByte(condition(instr));
-		emitByte(0xc1);
-		emit(REX_ADD_RM);
-		emitByte(0xc1 + 8 * instr.dst);
-
 	}
 
 	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
@@ -907,7 +840,7 @@ namespace randomx {
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
-		INST_HANDLE(COND_R)
+		INST_HANDLE(CBRANCH)
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(NOP)

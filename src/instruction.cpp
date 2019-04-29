@@ -33,7 +33,7 @@ namespace randomx {
 	}
 
 	void Instruction::genAddressRegDst(std::ostream& os) const {
-		if (getModCond())
+		if (getModCond() < StoreL3Condition)
 			os << (getModMem() ? "L1" : "L2");
 		else
 			os << "L3";
@@ -49,7 +49,7 @@ namespace randomx {
 		if(dst == RegisterNeedsDisplacement) {
 			os << ", " << (int32_t)getImm32();
 		}
-		os << ", LSH " << (int)getModMem() << std::endl;
+		os << ", SHFT " << (int)getModShift() << std::endl;
 	}
 
 	void Instruction::h_IADD_M(std::ostream& os) const {
@@ -278,8 +278,8 @@ namespace randomx {
 		}
 	}
 
-	void Instruction::h_COND_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << condition(getModCond()) << "(r" << (int)src << ", " << (int32_t)getImm32() << "), LSH " << (int)(getModShift()) << std::endl;
+	void Instruction::h_CBRANCH(std::ostream& os) const {
+		os << (int32_t)getImm32() << ", COND " << (int)(getModCond()) << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {
@@ -321,7 +321,7 @@ namespace randomx {
 		INST_NAME(FMUL_R)
 		INST_NAME(FDIV_M)
 		INST_NAME(FSQRT_R)
-		INST_NAME(COND_R)
+		INST_NAME(CBRANCH)
 		INST_NAME(CFROUND)
 		INST_NAME(ISTORE)
 		INST_NAME(NOP)
@@ -354,7 +354,7 @@ namespace randomx {
 		INST_HANDLE(FMUL_R)
 		INST_HANDLE(FDIV_M)
 		INST_HANDLE(FSQRT_R)
-		INST_HANDLE(COND_R)
+		INST_HANDLE(CBRANCH)
 		INST_HANDLE(CFROUND)
 		INST_HANDLE(ISTORE)
 		INST_HANDLE(NOP)

@@ -64,7 +64,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 //Scratchpad L1 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L2.
 #define RANDOMX_SCRATCHPAD_L1      (16 * 1024)
 
-//How many register bits must be zero for a jump condition to be triggered. If set to 0, jumps are disabled.
+//How many register bits must be zero for CBRANCH instruction to jump. Must be an integer in the range 1-16.
 #define RANDOMX_JUMP_BITS          7
 
 /*
@@ -100,8 +100,9 @@ Total sum of frequencies must be 256
 #define RANDOMX_FREQ_FDIV_M         4
 #define RANDOMX_FREQ_FSQRT_R        6
 
-#define RANDOMX_FREQ_COND_R         8
+#define RANDOMX_FREQ_CBRANCH        8
 #define RANDOMX_FREQ_CFROUND        1
+
 #define RANDOMX_FREQ_ISTORE        16
 
 #define RANDOMX_FREQ_NOP            0

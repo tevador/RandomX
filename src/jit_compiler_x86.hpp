@@ -70,8 +70,6 @@ namespace randomx {
 		void genAddressImm(Instruction&);
 		void genSIB(int scale, int index, int base);
 
-		void handleCondition(Instruction&, int);
-
 		void generateCode(Instruction&, int);
 		void generateSuperscalarCode(Instruction &, std::vector<uint64_t> &);
 
@@ -136,7 +134,7 @@ namespace randomx {
 		void h_FMUL_R(Instruction&, int);
 		void h_FDIV_M(Instruction&, int);
 		void h_FSQRT_R(Instruction&, int);
-		void h_COND_R(Instruction&, int);
+		void h_CBRANCH(Instruction&, int);
 		void h_CFROUND(Instruction&, int);
 		void h_ISTORE(Instruction&, int);
 		void h_NOP(Instruction&, int);
