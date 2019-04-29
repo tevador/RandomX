@@ -275,6 +275,7 @@ namespace randomx {
 				emit(REX_MOV_RR64);
 				emitByte(0xd8 + prog.getAddressRegister());
 				emit(codeShhPrefetch, codeSshPrefetchSize);
+#ifdef RANDOMX_ALIGN
 				int align = (codePos % 16);
 				while (align != 0) {
 					int nopSize = 16 - align;
@@ -282,6 +283,7 @@ namespace randomx {
 					emit(NOPX[nopSize - 1], nopSize);
 					align = (codePos % 16);
 				}
+#endif
 			}
 		}
 		emitByte(RET);
@@ -378,25 +380,33 @@ namespace randomx {
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
+#ifdef RANDOMX_ALIGN
 			emit(NOP1);
+#endif
 			break;
 		case randomx::SuperscalarInstructionType::IXOR_C8:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
+#ifdef RANDOMX_ALIGN
 			emit(NOP1);
+#endif
 			break;
 		case randomx::SuperscalarInstructionType::IADD_C9:
 			emit(REX_81);
 			emitByte(0xc0 + instr.dst);
 			emit32(instr.getImm32());
+#ifdef RANDOMX_ALIGN
 			emit(NOP2);
+#endif
 			break;
 		case randomx::SuperscalarInstructionType::IXOR_C9:
 			emit(REX_XOR_RI);
 			emitByte(0xf0 + instr.dst);
 			emit32(instr.getImm32());
+#ifdef RANDOMX_ALIGN
 			emit(NOP2);
+#endif
 			break;
 		case randomx::SuperscalarInstructionType::IMULH_R:
 			emit(REX_MOV_RR64);
@@ -853,6 +863,7 @@ namespace randomx {
 		emitByte(0xc1);
 		emit(REX_ADD_RM);
 		emitByte(0xc1 + 8 * instr.dst);
+
 	}
 
 	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
