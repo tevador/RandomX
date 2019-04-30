@@ -325,4 +325,3 @@ uint64_t rotl(uint64_t, int);
 uint64_t rotr(uint64_t, int);
 void initFpu();
 void setRoundMode(uint32_t);
-bool condition(uint32_t, uint32_t, uint32_t);

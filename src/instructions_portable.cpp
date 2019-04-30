@@ -17,14 +17,9 @@ You should have received a copy of the GNU General Public License
 along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
-//#define DEBUG
-
 #pragma STDC FENV_ACCESS ON
 #include <cfenv>
 #include <cmath>
-#ifdef DEBUG
-#include <iostream>
-#endif
 #include "common.hpp"
 #include "intrin_portable.h"
 #include "blake2/endian.h"
@@ -128,41 +123,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	#define HAVE_SMULH
 #endif
 
-#if __GNUC__ >= 5
-#undef __has_builtin
-#define __has_builtin(x) 1
-#endif
-
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_sub_overflow)
-	static inline bool subOverflow_(uint32_t a, uint32_t b) {
-		int32_t temp;
-		return __builtin_sub_overflow(unsigned32ToSigned2sCompl(a), unsigned32ToSigned2sCompl(b), &temp);
-	}
-	#define HAVE_SUB_OVERFLOW
-#endif
-#endif
-
-#ifndef HAVE_SUB_OVERFLOW
-	static inline bool subOverflow_(uint32_t a, uint32_t b) {
-		auto c = unsigned32ToSigned2sCompl(a - b);
-		return (c < unsigned32ToSigned2sCompl(a)) != (unsigned32ToSigned2sCompl(b) > 0);
-	}
-	#define HAVE_SUB_OVERFLOW
-#endif
-
-static inline double FlushDenormalNaN(double x) {
-	int fpc = std::fpclassify(x);
-	if (fpc == FP_SUBNORMAL || fpc == FP_NAN) {
-		return 0.0;
-	}
-	return x;
-}
-
-static inline double FlushNaN(double x) {
-	return x != x ? 0.0 : x;
-}
-
 void setRoundMode(uint32_t rcflag) {
 	switch (rcflag & 3) {
 		case RoundDown:
@@ -177,30 +137,6 @@ void setRoundMode(uint32_t rcflag) {
 		case RoundToNearest:
 			setRoundMode_(FE_TONEAREST);
 			break;
-		default:
-			UNREACHABLE;
-	}
-}
-
-bool condition(uint32_t type, uint32_t value, uint32_t imm32) {
-	switch (type & 7)
-	{
-		case 0:
-			return value <= imm32;
-		case 1:
-			return value > imm32;
-		case 2:
-			return unsigned32ToSigned2sCompl(value - imm32) < 0;
-		case 3:
-			return unsigned32ToSigned2sCompl(value - imm32) >= 0;
-		case 4:
-			return subOverflow_(value, imm32);
-		case 5:
-			return !subOverflow_(value, imm32);
-		case 6:
-			return unsigned32ToSigned2sCompl(value) < unsigned32ToSigned2sCompl(imm32);
-		case 7:
-			return unsigned32ToSigned2sCompl(value) >= unsigned32ToSigned2sCompl(imm32);
 		default:
 			UNREACHABLE;
 	}
