@@ -65,16 +65,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_SCRATCHPAD_L1      (16 * 1024)
 
 //How many register bits must be zero for CBRANCH instruction to jump. Must be an integer in the range 1-16.
-#define RANDOMX_JUMP_BITS          7
+#define RANDOMX_JUMP_BITS          8
 
 /*
 Instruction frequencies (per 256 opcodes)
 Total sum of frequencies must be 256
 */
 
-#define RANDOMX_FREQ_IADD_RS       32
+#define RANDOMX_FREQ_IADD_RS       25
 #define RANDOMX_FREQ_IADD_M         7
-#define RANDOMX_FREQ_ISUB_R        17
+#define RANDOMX_FREQ_ISUB_R        16
 #define RANDOMX_FREQ_ISUB_M         7
 #define RANDOMX_FREQ_IMUL_R        16
 #define RANDOMX_FREQ_IMUL_M         4
@@ -100,7 +100,7 @@ Total sum of frequencies must be 256
 #define RANDOMX_FREQ_FDIV_M         4
 #define RANDOMX_FREQ_FSQRT_R        6
 
-#define RANDOMX_FREQ_CBRANCH        8
+#define RANDOMX_FREQ_CBRANCH       16
 #define RANDOMX_FREQ_CFROUND        1
 
 #define RANDOMX_FREQ_ISTORE        16

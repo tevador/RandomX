@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if (noncesCount == 1000 && seedValue == 0)
-			std::cout << "Reference result:  df0862de0bedf2da0432a5eeb097453f2b020d00eadc60c32ae27b8d9d10ee0c" << std::endl;
+			std::cout << "Reference result:  092868e4cee629a5b3848b97a52199d8a158e5b56ab9064764cda7ff656f3741" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;
 		}
