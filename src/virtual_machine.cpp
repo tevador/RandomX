@@ -35,30 +35,40 @@ void randomx_vm::resetRoundingMode() {
 	initFpu();
 }
 
-constexpr int mantissaSize = 52;
-constexpr int exponentSize = 11;
-constexpr uint64_t mantissaMask = (1ULL << mantissaSize) - 1;
-constexpr uint64_t exponentMask = (1ULL << exponentSize) - 1;
-constexpr int exponentBias = 1023;
+namespace randomx {
 
-static inline uint64_t getSmallPositiveFloatBits(uint64_t entropy) {
-	auto exponent = entropy >> 59; //0..31
-	auto mantissa = entropy & mantissaMask;
-	exponent += exponentBias;
-	exponent &= exponentMask;
-	exponent <<= mantissaSize;
-	return exponent | mantissa;
+	static inline uint64_t getSmallPositiveFloatBits(uint64_t entropy) {
+		auto exponent = entropy >> 59; //0..31
+		auto mantissa = entropy & mantissaMask;
+		exponent += exponentBias;
+		exponent &= exponentMask;
+		exponent <<= mantissaSize;
+		return exponent | mantissa;
+	}
+
+	static inline uint64_t getStaticExponent(uint64_t entropy) {
+		auto exponent = constExponentBits;
+		exponent |= (entropy >> (64 - staticExponentBits)) << dynamicExponentBits;
+		exponent <<= mantissaSize;
+		return exponent;
+	}
+
+	static inline uint64_t getFloatMask(uint64_t entropy) {
+		constexpr uint64_t mask22bit = (1ULL << 22) - 1;
+		return (entropy & mask22bit) | getStaticExponent(entropy);
+	}
+
 }
 
 void randomx_vm::initialize() {
-	store64(&reg.a[0].lo, getSmallPositiveFloatBits(program.getEntropy(0)));
-	store64(&reg.a[0].hi, getSmallPositiveFloatBits(program.getEntropy(1)));
-	store64(&reg.a[1].lo, getSmallPositiveFloatBits(program.getEntropy(2)));
-	store64(&reg.a[1].hi, getSmallPositiveFloatBits(program.getEntropy(3)));
-	store64(&reg.a[2].lo, getSmallPositiveFloatBits(program.getEntropy(4)));
-	store64(&reg.a[2].hi, getSmallPositiveFloatBits(program.getEntropy(5)));
-	store64(&reg.a[3].lo, getSmallPositiveFloatBits(program.getEntropy(6)));
-	store64(&reg.a[3].hi, getSmallPositiveFloatBits(program.getEntropy(7)));
+	store64(&reg.a[0].lo, randomx::getSmallPositiveFloatBits(program.getEntropy(0)));
+	store64(&reg.a[0].hi, randomx::getSmallPositiveFloatBits(program.getEntropy(1)));
+	store64(&reg.a[1].lo, randomx::getSmallPositiveFloatBits(program.getEntropy(2)));
+	store64(&reg.a[1].hi, randomx::getSmallPositiveFloatBits(program.getEntropy(3)));
+	store64(&reg.a[2].lo, randomx::getSmallPositiveFloatBits(program.getEntropy(4)));
+	store64(&reg.a[2].hi, randomx::getSmallPositiveFloatBits(program.getEntropy(5)));
+	store64(&reg.a[3].lo, randomx::getSmallPositiveFloatBits(program.getEntropy(6)));
+	store64(&reg.a[3].hi, randomx::getSmallPositiveFloatBits(program.getEntropy(7)));
 	mem.ma = program.getEntropy(8) & randomx::CacheLineAlignMask;
 	mem.mx = program.getEntropy(10);
 	auto addressRegisters = program.getEntropy(12);
@@ -70,10 +80,8 @@ void randomx_vm::initialize() {
 	addressRegisters >>= 1;
 	config.readReg3 = 6 + (addressRegisters & 1);
 	datasetOffset = (program.getEntropy(13) & randomx::DatasetExtraItems) * randomx::CacheLineSize;
-	constexpr uint64_t mask22bit = (1ULL << 22) - 1;
-	constexpr uint64_t maskExp240 = ieee_get_exponent_mask<-240>();
-	store64(&config.eMask[0], (program.getEntropy(14) & mask22bit) | maskExp240);
-	store64(&config.eMask[1], (program.getEntropy(15) & mask22bit) | maskExp240);
+	store64(&config.eMask[0], randomx::getFloatMask(program.getEntropy(14)));
+	store64(&config.eMask[1], randomx::getFloatMask(program.getEntropy(15)));
 }
 
 namespace randomx {

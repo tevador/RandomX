@@ -122,6 +122,16 @@ namespace randomx {
 		return minIndex;
 	}
 
+	constexpr int mantissaSize = 52;
+	constexpr int exponentSize = 11;
+	constexpr uint64_t mantissaMask = (1ULL << mantissaSize) - 1;
+	constexpr uint64_t exponentMask = (1ULL << exponentSize) - 1;
+	constexpr int exponentBias = 1023;
+	constexpr int dynamicExponentBits = 4;
+	constexpr int staticExponentBits = 4;
+	constexpr uint64_t constExponentBits = 0x300;
+	constexpr uint64_t dynamicMantissaMask = (1ULL << (mantissaSize + dynamicExponentBits)) - 1;
+
 	struct MemoryRegisters {
 		addr_t mx, ma;
 		uint8_t* memory = nullptr;

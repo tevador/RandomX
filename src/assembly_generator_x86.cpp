@@ -35,9 +35,9 @@ namespace randomx {
 	static const char* regA[] = { "xmm8", "xmm9", "xmm10", "xmm11" };
 
 	static const char* tempRegx = "xmm12";
-	static const char* mantissaMask = "xmm13";
-	static const char* exponentMask = "xmm14";
-	static const char* scaleMask = "xmm15";
+	static const char* mantissaMaskReg = "xmm13";
+	static const char* exponentMaskReg = "xmm14";
+	static const char* scaleMaskReg = "xmm15";
 	static const char* regIc = "rbx";
 	static const char* regIc32 = "ebx";
 	static const char* regIc8 = "bl";
@@ -328,7 +328,6 @@ namespace randomx {
 		traceint(instr);
 	}
 
-	//4 uOPs
 	void AssemblyGeneratorX86::h_IMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst].lastUsed = i;
 		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
@@ -489,7 +488,7 @@ namespace randomx {
 
 	void AssemblyGeneratorX86::h_FSCAL_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
-		asmCode << "\txorps " << regF[instr.dst] << ", " << scaleMask << std::endl;
+		asmCode << "\txorps " << regF[instr.dst] << ", " << scaleMaskReg << std::endl;
 		traceflt(instr);
 	}
 
@@ -504,8 +503,8 @@ namespace randomx {
 		instr.dst %= RegisterCountFlt;
 		genAddressReg(instr);
 		asmCode << "\tcvtdq2pd " << tempRegx << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
-		asmCode << "\tandps " << tempRegx << ", " << mantissaMask << std::endl;
-		asmCode << "\torps " << tempRegx << ", " << exponentMask << std::endl;
+		asmCode << "\tandps " << tempRegx << ", " << mantissaMaskReg << std::endl;
+		asmCode << "\torps " << tempRegx << ", " << exponentMaskReg << std::endl;
 		asmCode << "\tdivpd " << regE[instr.dst] << ", " << tempRegx << std::endl;
 		traceflt(instr);
 	}

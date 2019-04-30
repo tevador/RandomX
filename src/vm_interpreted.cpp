@@ -61,11 +61,10 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	FORCE_INLINE __m128d InterpretedVm<Allocator, softAes>::maskRegisterExponentMantissa(__m128d x) {
-		constexpr uint64_t mantissaMask64 = (1ULL << 52) - 1;
-		const __m128d mantissaMask = _mm_castsi128_pd(_mm_set_epi64x(mantissaMask64, mantissaMask64));
-		const __m128d exponentMask = _mm_load_pd((const double*)&config.eMask);
-		x = _mm_and_pd(x, mantissaMask);
-		x = _mm_or_pd(x, exponentMask);
+		const __m128d xmantissaMask = _mm_castsi128_pd(_mm_set_epi64x(dynamicMantissaMask, dynamicMantissaMask));
+		const __m128d xexponentMask = _mm_load_pd((const double*)&config.eMask);
+		x = _mm_and_pd(x, xmantissaMask);
+		x = _mm_or_pd(x, xexponentMask);
 		return x;
 	}
 
