@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 #include <cstdint>
 #include <iostream>
+#include <climits>
 #include "blake2/endian.h"
 #include "configuration.h"
 #include "randomx.h"
