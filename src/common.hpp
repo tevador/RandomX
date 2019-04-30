@@ -88,6 +88,11 @@ namespace randomx {
 		double hi;
 	};
 
+	struct RegisterUsage {
+		int32_t lastUsed;
+		int32_t count;
+	};
+
 	constexpr uint32_t ScratchpadL1 = RANDOMX_SCRATCHPAD_L1 / sizeof(int_reg_t);
 	constexpr uint32_t ScratchpadL2 = RANDOMX_SCRATCHPAD_L2 / sizeof(int_reg_t);
 	constexpr uint32_t ScratchpadL3 = RANDOMX_SCRATCHPAD_L3 / sizeof(int_reg_t);
@@ -101,6 +106,21 @@ namespace randomx {
 	constexpr int RegisterCountFlt = RegistersCount / 2;
 	constexpr int RegisterNeedsDisplacement = 5; //x86 r13 register
 	constexpr int RegisterNeedsSib = 4; //x86 r12 register
+
+	inline int getConditionRegister(RegisterUsage(&registerUsage)[RegistersCount]) {
+		int min = INT_MAX;
+		int minCount = 0;
+		int minIndex;
+		//prefer registers that have been used as a condition register fewer times
+		for (unsigned i = 0; i < RegistersCount; ++i) {
+			if (registerUsage[i].lastUsed < min || (registerUsage[i].lastUsed == min && registerUsage[i].count < minCount)) {
+				min = registerUsage[i].lastUsed;
+				minCount = registerUsage[i].count;
+				minIndex = i;
+			}
+		}
+		return minIndex;
+	}
 
 	struct MemoryRegisters {
 		addr_t mx, ma;

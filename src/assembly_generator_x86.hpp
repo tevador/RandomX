@@ -43,7 +43,6 @@ namespace randomx {
 		void genAddressReg(Instruction&, const char*);
 		void genAddressRegDst(Instruction&, int);
 		int32_t genAddressImm(Instruction&);
-		int getConditionRegister();
 		void generateCode(Instruction&, int);
 		void traceint(Instruction&);
 		void traceflt(Instruction&);
@@ -82,6 +81,6 @@ namespace randomx {
 
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
-		int registerUsage[RegistersCount];
+		RegisterUsage registerUsage[RegistersCount];
 	};
 }

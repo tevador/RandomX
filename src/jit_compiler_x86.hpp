@@ -58,13 +58,12 @@ namespace randomx {
 	private:
 		static InstructionGeneratorX86 engine[256];
 		std::vector<int32_t> instructionOffsets;
-		int registerUsage[8];
+		RegisterUsage registerUsage[RegistersCount];
 		uint8_t* code;
 		int32_t codePos;
 
 		void generateProgramPrologue(Program&, ProgramConfiguration&);
 		void generateProgramEpilogue(Program&);
-		int getConditionRegister();
 		void genAddressReg(Instruction&, bool);
 		void genAddressRegDst(Instruction&, bool);
 		void genAddressImm(Instruction&);

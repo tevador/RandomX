@@ -265,18 +265,6 @@ namespace randomx {
 			_mm_store_pd(&reg.e[i].lo, e[i]);
 	}
 
-	static int getConditionRegister(int(&registerUsage)[RegistersCount]) {
-		int min = INT_MAX;
-		int minIndex;
-		for (unsigned i = 0; i < RegistersCount; ++i) {
-			if (registerUsage[i] < min) {
-				min = registerUsage[i];
-				minIndex = i;
-			}
-		}
-		return minIndex;
-	}
-
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::datasetRead(uint32_t address, int_reg_t(&r)[RegistersCount]) {
 		uint64_t* datasetLine = (uint64_t*)(mem.memory + address);
@@ -288,9 +276,10 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
-		int registerUsage[RegistersCount];
+		RegisterUsage registerUsage[RegistersCount];
 		for (unsigned i = 0; i < RegistersCount; ++i) {
-			registerUsage[i] = -1;
+			registerUsage[i].lastUsed = -1;
+			registerUsage[i].count = 0;
 		}
 		for (unsigned i = 0; i < RANDOMX_PROGRAM_SIZE; ++i) {
 			auto& instr = program(i);
@@ -311,7 +300,7 @@ namespace randomx {
 						ibc.shift = instr.getModShift();
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IADD_M) {
@@ -328,7 +317,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(ISUB_R) {
@@ -343,7 +332,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(ISUB_M) {
@@ -360,7 +349,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IMUL_R) {
@@ -375,7 +364,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IMUL_M) {
@@ -392,7 +381,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IMULH_R) {
@@ -401,7 +390,7 @@ namespace randomx {
 					ibc.type = InstructionType::IMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IMULH_M) {
@@ -418,7 +407,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(ISMULH_R) {
@@ -427,7 +416,7 @@ namespace randomx {
 					ibc.type = InstructionType::ISMULH_R;
 					ibc.idst = &r[dst];
 					ibc.isrc = &r[src];
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(ISMULH_M) {
@@ -444,7 +433,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IMUL_RCP) {
@@ -455,7 +444,7 @@ namespace randomx {
 						ibc.idst = &r[dst];
 						ibc.imm = randomx_reciprocal(divisor);
 						ibc.isrc = &ibc.imm;
-						registerUsage[dst] = i;
+						registerUsage[dst].lastUsed = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -466,7 +455,7 @@ namespace randomx {
 					auto dst = instr.dst % RegistersCount;
 					ibc.type = InstructionType::INEG_R;
 					ibc.idst = &r[dst];
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IXOR_R) {
@@ -481,7 +470,7 @@ namespace randomx {
 						ibc.imm = signExtend2sCompl(instr.getImm32());
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IXOR_M) {
@@ -498,7 +487,7 @@ namespace randomx {
 						ibc.isrc = &Zero;
 						ibc.memMask = ScratchpadL3Mask;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IROR_R) {
@@ -513,7 +502,7 @@ namespace randomx {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(IROL_R) {
@@ -528,7 +517,7 @@ namespace randomx {
 						ibc.imm = instr.getImm32();
 						ibc.isrc = &ibc.imm;
 					}
-					registerUsage[dst] = i;
+					registerUsage[dst].lastUsed = i;
 				} break;
 
 				CASE_REP(ISWAP_R) {
@@ -538,8 +527,8 @@ namespace randomx {
 						ibc.idst = &r[dst];
 						ibc.isrc = &r[src];
 						ibc.type = InstructionType::ISWAP_R;
-						registerUsage[dst] = i;
-						registerUsage[src] = i;
+						registerUsage[dst].lastUsed = i;
+						registerUsage[src].lastUsed = i;
 					}
 					else {
 						ibc.type = InstructionType::NOP;
@@ -626,13 +615,15 @@ namespace randomx {
 					//jump condition
 					int reg = getConditionRegister(registerUsage);
 					ibc.isrc = &r[reg];
-					ibc.target = registerUsage[reg];
+					ibc.target = registerUsage[reg].lastUsed;
+					registerUsage[reg].count++;
 					int shift = instr.getModCond();
 					const uint64_t conditionMask = ConditionMask << instr.getModCond();
 					ibc.imm = signExtend2sCompl(instr.getImm32()) | (1ULL << shift);
 					ibc.memMask = ConditionMask << shift;
-					for (unsigned j = 0; j < RegistersCount; ++j) { //mark all registers as used
-						registerUsage[j] = i;
+					//mark all registers as used
+					for (unsigned j = 0; j < RegistersCount; ++j) {
+						registerUsage[j].lastUsed = i;
 					}
 				} break;
 

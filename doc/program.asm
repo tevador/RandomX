@@ -95,8 +95,8 @@ randomx_isn_23:
 	mulpd xmm6, xmm8
 randomx_isn_24:
 	; CBRANCH 149087159, COND 13
-	add r8, 149087159
-	test r8, 1040384
+	add r10, 149087159
+	test r10, 1040384
 	jz randomx_isn_21
 randomx_isn_25:
 	; FADD_R f3, a0
@@ -197,8 +197,8 @@ randomx_isn_53:
 	subpd xmm2, xmm8
 randomx_isn_54:
 	; CBRANCH 1917049931, COND 12
-	add r8, 1917049931
-	test r8, 520192
+	add r11, 1917049931
+	test r11, 520192
 	jz randomx_isn_52
 randomx_isn_55:
 	; IXOR_R r2, r3
@@ -329,8 +329,8 @@ randomx_isn_88:
 	imul r9, r11
 randomx_isn_89:
 	; CBRANCH -122257389, COND 13
-	add r8, -122249197
-	test r8, 1040384
+	add r13, -122249197
+	test r13, 1040384
 	jz randomx_isn_75
 randomx_isn_90:
 	; ISTORE L1[r5+228116180], r7
