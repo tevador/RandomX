@@ -352,7 +352,7 @@ namespace randomx {
 		case randomx::SuperscalarInstructionType::IADD_RS:
 			emit(REX_LEA);
 			emitByte(0x04 + 8 * instr.dst);
-			genSIB(instr.getModMem(), instr.src, instr.dst);
+			genSIB(instr.getModShift(), instr.src, instr.dst);
 			break;
 		case randomx::SuperscalarInstructionType::IMUL_R:
 			emit(REX_IMUL_RR);

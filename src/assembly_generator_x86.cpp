@@ -72,7 +72,7 @@ namespace randomx {
 				asmCode << "xor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 				break;
 			case SuperscalarInstructionType::IADD_RS:
-				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModMem())) << "]" << std::endl;
+				asmCode << "lea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift())) << "]" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_R:
 				asmCode << "imul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
@@ -181,7 +181,7 @@ namespace randomx {
 				asmCode << regR[instr.dst] << " ^= " << regR[instr.src] << ";" << std::endl;
 				break;
 			case SuperscalarInstructionType::IADD_RS:
-				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.getModMem())) << ";" << std::endl;
+				asmCode << regR[instr.dst] << " += " << regR[instr.src] << "*" << (1 << (instr.getModShift())) << ";" << std::endl;
 				break;
 			case SuperscalarInstructionType::IMUL_R:
 				asmCode << regR[instr.dst] << " *= " << regR[instr.src] << ";" << std::endl;

@@ -849,7 +849,7 @@ namespace randomx {
 				r[instr.dst] ^= r[instr.src];
 				break;
 			case randomx::SuperscalarInstructionType::IADD_RS:
-				r[instr.dst] += r[instr.src] << instr.getModMem();
+				r[instr.dst] += r[instr.src] << instr.getModShift();
 				break;
 			case randomx::SuperscalarInstructionType::IMUL_R:
 				r[instr.dst] *= r[instr.src];
