@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 
 	if (miningMode) {
 		flags = (randomx_flags)(flags | RANDOMX_FLAG_FULL_MEM);
-		std::cout << " - full memory mode (2 GiB)" << std::endl;
+		std::cout << " - full memory mode (2080 MiB)" << std::endl;
 	}
 	else {
 		std::cout << " - light memory mode (256 MiB)" << std::endl;

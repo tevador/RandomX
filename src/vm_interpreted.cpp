@@ -23,7 +23,6 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <cmath>
 #include <cfloat>
-#include <climits>
 #include "vm_interpreted.hpp"
 #include "dataset.hpp"
 #include "intrin_portable.h"

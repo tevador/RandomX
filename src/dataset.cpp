@@ -47,15 +47,15 @@ static_assert(ARGON2_BLOCK_SIZE == randomx::ArgonBlockSize, "Unpexpected value o
 
 namespace randomx {
 
-	void initCache(randomx_cache* cache, const void* seed, size_t seedSize) {
+	void initCache(randomx_cache* cache, const void* key, size_t keySize) {
 		uint32_t memory_blocks, segment_length;
 		argon2_instance_t instance;
 		argon2_context context;
 
 		context.out = nullptr;
 		context.outlen = 0;
-		context.pwd = CONST_CAST(uint8_t *)seed;
-		context.pwdlen = (uint32_t)seedSize;
+		context.pwd = CONST_CAST(uint8_t *)key;
+		context.pwdlen = (uint32_t)keySize;
 		context.salt = CONST_CAST(uint8_t *)RANDOMX_ARGON_SALT;
 		context.saltlen = (uint32_t)randomx::ArgonSaltSize;
 		context.secret = NULL;
@@ -100,7 +100,7 @@ namespace randomx {
 		fill_memory_blocks(&instance);
 
 		cache->reciprocalCache.clear();
-		randomx::Blake2Generator gen(seed, seedSize);
+		randomx::Blake2Generator gen(key, keySize);
 		for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			randomx::generateSuperscalar(cache->programs[i], gen);
 			for (unsigned j = 0; j < cache->programs[i].getSize(); ++j) {
@@ -114,8 +114,8 @@ namespace randomx {
 		}
 	}
 
-	void initCacheCompile(randomx_cache* cache, const void* seed, size_t seedSize) {
-		initCache(cache, seed, seedSize);
+	void initCacheCompile(randomx_cache* cache, const void* key, size_t keySize) {
+		initCache(cache, key, keySize);
 		cache->jit->generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		cache->jit->generateDatasetInitCode();
 	}

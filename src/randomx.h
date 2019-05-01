@@ -56,13 +56,13 @@ extern "C" {
 randomx_cache *randomx_alloc_cache(randomx_flags flags);
 
 /**
- * Initializes the cache memory and SuperscalarHash using the provided seed value.
+ * Initializes the cache memory and SuperscalarHash using the provided key value.
  *
  * @param cache is a pointer to a previously allocated randomx_cache structure. Must not be NULL.
- * @param seed is a pointer to memory which contains the seed value. Must not be NULL.
- * @param seedSize is the number of bytes of the seed.
+ * @param key is a pointer to memory which contains the key value. Must not be NULL.
+ * @param keySize is the number of bytes of the key.
 */
-void randomx_init_cache(randomx_cache *cache, const void *seed, size_t seedSize);
+void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize);
 
 /**
  * Releases all memory occupied by the randomx_cache structure.
@@ -146,7 +146,7 @@ randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx
 
 /**
  * Reinitializes a virtual machine with a new Cache. This function should be called anytime
- * the Cache is reinitialized with a new seed.
+ * the Cache is reinitialized with a new key.
  *
  * @param machine is a pointer to a randomx_vm structure that was initialized
  *        without RANDOMX_FLAG_FULL_MEM. Must not be NULL.

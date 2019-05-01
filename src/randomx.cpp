@@ -76,8 +76,8 @@ extern "C" {
 		return cache;
 	}
 
-	void randomx_init_cache(randomx_cache *cache, const void *seed, size_t seedSize) {
-		cache->initialize(cache, seed, seedSize);
+	void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize) {
+		cache->initialize(cache, key, keySize);
 	}
 
 	void randomx_release_cache(randomx_cache* cache) {
