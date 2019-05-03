@@ -37,6 +37,9 @@ public:
 	randomx::RegisterFile *getRegisterFile() {
 		return &reg;
 	}
+	const void* getScratchpad() {
+		return scratchpad;
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;
