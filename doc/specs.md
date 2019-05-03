@@ -55,7 +55,8 @@ RandomX has several configurable parameters that are listed in Table 1.2.1 with 
 |`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|`256`|
 |`RANDOMX_PROGRAM_ITERATIONS`|The number of iterations per program|`2048`|
 |`RANDOMX_PROGRAM_COUNT`|The number of programs per hash|`8`|
-|`RANDOMX_JUMP_BITS`|How many register bits must be zero for the CBRANCH instruction to jump|`8`|
+|`RANDOMX_JUMP_BITS`|Jump condition mask size in bits|`8`|
+|`RANDOMX_JUMP_OFFSET`|Jump condition mask offset in bits|`8`|
 |`RANDOMX_SCRATCHPAD_L3`|Scratchpad L3 size in bytes|`2097152`|
 |`RANDOMX_SCRATCHPAD_L2`|Scratchpad L2 size in bytes|`262144`|
 |`RANDOMX_SCRATCHPAD_L1`|Scratchpad L1 size in bytes|`16384`|
@@ -613,16 +614,28 @@ A register is considered as modified by an instruction in the following cases:
 There are 3 rules for the selection of the `creg` register, evaluated in this order:
 
 1. The register with the lowest value of `lastUsed` tag is selected.
-2. In case multiple registers have the same value of the `lastUsed` tag, the register with the lowest value of the `count` tag is selected.
-3. In case multiple registers have the same values of both `lastUsed` and `count` tags, a register with the lowest index is selected (`r0` before `r1` etc.).
+1. In case multiple registers have the same value of the `lastUsed` tag, the register with the lowest value of the `count` tag is selected.
+1. In case multiple registers have the same values of both `lastUsed` and `count` tags, a register with the lowest index is selected (`r0` before `r1` etc.).
 
 Whenever a register is selected as the operand of a CBRANCH instruction, its `count` tag is increased by 1.
 
-The CBRANCH instruction performs the following steps (`|` represents a bitwise OR operation, `&` is a bitwise AND operation):
+The CBRANCH instruction performs the following steps:
 
-1. A constant value of `imm32 | (1 << mod.cond)` is added to `creg`.
-2. `conditionMask` is constructed as `RANDOMX_JUMP_BITS` one-bits shifted left by `mod.cond`. 
-3. If `creg & conditionMask` is zero, execution jumps to instruction `creg.lastUsed + 1` (the instruction following the instruction where `creg` was last modified).
+1. A constant `b` is calculated as `mod.cond + RANDOMX_JUMP_OFFSET`.
+1. A constant `conditionImmediate` is constructed as sign-extended `imm32` with bit `b` set to 1 and bit `b-1` set to 0 (if `b > 0`).
+1. `conditionImmediate` is added to `creg`.
+1. If bits `b` to `b + RANDOMX_JUMP_BITS - 1` of `creg` are zero, execution jumps to instruction `creg.lastUsed + 1` (the instruction following the instruction where `creg` was last modified).
+
+Bits in immediate and register values are numbered from 0 to 63 with 0 being the least significant bit. For example, for `b = 10` and `RANDOMX_JUMP_BITS = 8`, the bits are arranged like this:
+
+```
+conditionImmediate = SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMMMMMMMMMMMMM10MMMMMMMMM
+              creg = ..............................................XXXXXXXX..........
+```
+
+`S` is a copied sign bit from `imm32`. `M` denotes bits of `imm32`. The 9th bit is set to 0 and the 10th bit is set to 1. This value would be added to `creg`.
+
+The second line uses `X` to mark bits of `creg` that would be checked by the condition. If all these bits are 0 after adding `conditionImmediate`, the jump is executed.
 
 The construction of the CBRANCH instruction ensures that no inifinite loops are possible in the program.
 

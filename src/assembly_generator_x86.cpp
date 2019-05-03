@@ -532,8 +532,11 @@ namespace randomx {
 		int reg = getConditionRegister(registerUsage);
 		int target = registerUsage[reg].lastUsed + 1;
 		registerUsage[reg].count++;
-		int shift = instr.getModCond();
-		asmCode << "\tadd " << regR[reg] << ", " << (int32_t)(instr.getImm32() | (1 << shift)) << std::endl;
+		int shift = instr.getModCond() + ConditionOffset;
+		int32_t imm = instr.getImm32() | (1L << shift);
+		if (ConditionOffset > 0 || shift > 0)
+			imm &= ~(1L << (shift - 1));
+		asmCode << "\tadd " << regR[reg] << ", " << imm << std::endl;
 		asmCode << "\ttest " << regR[reg] << ", " << (ConditionMask << shift) << std::endl;
 		asmCode << "\tjz randomx_isn_" << target << std::endl;
 		//mark all registers as used

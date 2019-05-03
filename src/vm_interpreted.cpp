@@ -615,9 +615,11 @@ namespace randomx {
 					ibc.isrc = &r[reg];
 					ibc.target = registerUsage[reg].lastUsed;
 					registerUsage[reg].count++;
-					int shift = instr.getModCond();
-					const uint64_t conditionMask = ConditionMask << instr.getModCond();
+					int shift = instr.getModCond() + ConditionOffset;
+					const uint64_t conditionMask = ConditionMask << shift;
 					ibc.imm = signExtend2sCompl(instr.getImm32()) | (1ULL << shift);
+					if (ConditionOffset > 0 || shift > 0) //clear the bit below the condition mask - this limits the number of successive jumps to 2
+						ibc.imm &= ~(1ULL << (shift - 1));
 					ibc.memMask = ConditionMask << shift;
 					//mark all registers as used
 					for (unsigned j = 0; j < RegistersCount; ++j) {

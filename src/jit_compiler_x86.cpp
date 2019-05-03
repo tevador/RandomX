@@ -775,10 +775,13 @@ namespace randomx {
 		int reg = getConditionRegister(registerUsage);
 		int target = registerUsage[reg].lastUsed + 1;
 		registerUsage[reg].count++;
-		int shift = instr.getModCond();
 		emit(REX_ADD_I);
 		emitByte(0xc0 + reg);
-		emit32(instr.getImm32() | (1 << shift));
+		int shift = instr.getModCond() + ConditionOffset;
+		uint32_t imm = instr.getImm32() | (1UL << shift);
+		if (ConditionOffset > 0 || shift > 0)
+			imm &= ~(1UL << (shift - 1));
+		emit32(imm);
 		emit(REX_TEST);
 		emitByte(0xc0 + reg);
 		emit32(ConditionMask << shift);
