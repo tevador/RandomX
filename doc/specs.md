@@ -622,20 +622,20 @@ Whenever a register is selected as the operand of a CBRANCH instruction, its `co
 The CBRANCH instruction performs the following steps:
 
 1. A constant `b` is calculated as `mod.cond + RANDOMX_JUMP_OFFSET`.
-1. A constant `conditionImmediate` is constructed as sign-extended `imm32` with bit `b` set to 1 and bit `b-1` set to 0 (if `b > 0`).
-1. `conditionImmediate` is added to `creg`.
+1. A constant `cimm` is constructed as sign-extended `imm32` with bit `b` set to 1 and bit `b-1` set to 0 (if `b > 0`).
+1. `cimm` is added to `creg`.
 1. If bits `b` to `b + RANDOMX_JUMP_BITS - 1` of `creg` are zero, execution jumps to instruction `creg.lastUsed + 1` (the instruction following the instruction where `creg` was last modified).
 
 Bits in immediate and register values are numbered from 0 to 63 with 0 being the least significant bit. For example, for `b = 10` and `RANDOMX_JUMP_BITS = 8`, the bits are arranged like this:
 
 ```
-conditionImmediate = SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMMMMMMMMMMMMM10MMMMMMMMM
-              creg = ..............................................XXXXXXXX..........
+cimm = SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMMMMMMMMMMMMM10MMMMMMMMM
+creg = ..............................................XXXXXXXX..........
 ```
 
 `S` is a copied sign bit from `imm32`. `M` denotes bits of `imm32`. The 9th bit is set to 0 and the 10th bit is set to 1. This value would be added to `creg`.
 
-The second line uses `X` to mark bits of `creg` that would be checked by the condition. If all these bits are 0 after adding `conditionImmediate`, the jump is executed.
+The second line uses `X` to mark bits of `creg` that would be checked by the condition. If all these bits are 0 after adding `cimm`, the jump is executed.
 
 The construction of the CBRANCH instruction ensures that no inifinite loops are possible in the program.
 
