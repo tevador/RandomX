@@ -519,7 +519,7 @@ This instructions adds the values of two registers (modulo 2<sup>64</sup>). The 
 These instructions output the high 64 bits of the whole 128-bit multiplication result. The result differs for signed and unsigned multiplication (IMULH is unsigned, ISMULH is signed). The variants with a register source operand perform a squaring operation if `dst` equals `src`.
 
 #### 5.2.6 IMUL_RCP
-This instruction multiplies the destination register by a reciprocal of `imm32` (the immediate value is zero-extended and treated as unsigned). The reciprocal is calculated as <code>rcp = 2<sup>x</sup> / imm32</code> by choosing the largest integer `x` such that <code>rcp < 2<sup>64</sup></code>. If `imm32` equals 0, IMUL_RCP is a no-op.
+If `imm32` equals 0 or is a power of 2, IMUL_RCP is a no-op. In other cases, the instruction multiplies the destination register by a reciprocal of `imm32` (the immediate value is zero-extended and treated as unsigned). The reciprocal is calculated as <code>rcp = 2<sup>x</sup> / imm32</code> by choosing the largest integer `x` such that <code>rcp < 2<sup>64</sup></code>.
 
 #### 5.2.7 INEG_R
 Performs two's complement negation of the destination register.
@@ -607,7 +607,7 @@ This instruction performs a conditional jump in the Program Buffer. It uses an i
 A register is considered as modified by an instruction in the following cases:
 
 * It is the destination register of an integer instruction except IMUL_RCP and ISWAP_R.
-* It is the destination register of IMUL_RCP and `imm32` is not zero.
+* It is the destination register of IMUL_RCP and `imm32` is not zero or a power of 2.
 * It is the source or the destination register of ISWAP_R and the destination and source registers are distinct.
 * The CBRANCH instruction is considered to modify all integer registers.
 

@@ -266,8 +266,6 @@ namespace randomx {
 			SuperscalarProgram& prog = programs[j];
 			for (unsigned i = 0; i < prog.getSize(); ++i) {
 				Instruction& instr = prog(i);
-				instr.src %= RegistersCount;
-				instr.dst %= RegistersCount;
 				generateSuperscalarCode(instr, reciprocalCache);
 			}
 			emit(codeShhLoad, codeSshLoadSize);
@@ -614,10 +612,11 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
-		if (instr.getImm32() != 0) {
+		uint64_t divisor = instr.getImm32();
+		if (!isPowerOf2(divisor)) {
 			registerUsage[instr.dst].lastUsed = i;
 			emit(MOV_RAX_I);
-			emit64(randomx_reciprocal(instr.getImm32()));
+			emit64(randomx_reciprocal(divisor));
 			emit(REX_IMUL_RM);
 			emitByte(0xc0 + 8 * instr.dst);
 		}

@@ -435,8 +435,8 @@ namespace randomx {
 				} break;
 
 				CASE_REP(IMUL_RCP) {
-					uint32_t divisor = instr.getImm32();
-					if (divisor != 0) {
+					uint64_t divisor = instr.getImm32();
+					if (!isPowerOf2(divisor)) {
 						auto dst = instr.dst % RegistersCount;
 						ibc.type = InstructionType::IMUL_R;
 						ibc.idst = &r[dst];

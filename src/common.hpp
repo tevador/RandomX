@@ -126,6 +126,10 @@ namespace randomx {
 		return minIndex;
 	}
 
+	inline bool isPowerOf2(uint64_t x) {
+		return (x & (x - 1)) == 0;
+	}
+
 	constexpr int mantissaSize = 52;
 	constexpr int exponentSize = 11;
 	constexpr uint64_t mantissaMask = (1ULL << mantissaSize) - 1;
