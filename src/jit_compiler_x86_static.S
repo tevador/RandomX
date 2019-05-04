@@ -42,6 +42,7 @@
 .global DECL(randomx_sshash_end)
 .global DECL(randomx_sshash_init)
 .global DECL(randomx_program_end)
+.global DECL(randomx_reciprocal_fast)
 
 #define db .byte
 
@@ -158,3 +159,7 @@ DECL(randomx_sshash_init):
 .balign 64
 DECL(randomx_program_end):
 	nop
+
+DECL(randomx_reciprocal_fast):
+	mov rcx, rdi
+	#include "asm/randomx_reciprocal.inc"

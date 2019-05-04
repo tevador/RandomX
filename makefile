@@ -95,7 +95,8 @@ $(OBJDIR)/jit_compiler_x86_static.o: $(SRCDIR)/jit_compiler_x86_static.S \
  $(SRCDIR)/asm/program_read_dataset_sshash_fin.inc \
  $(SRCDIR)/asm/program_loop_store.inc $(SRCDIR)/asm/program_epilogue_linux.inc \
  $(SRCDIR)/asm/program_epilogue_store.inc $(SRCDIR)/asm/program_sshash_load.inc \
- $(SRCDIR)/asm/program_sshash_prefetch.inc $(SRCDIR)/asm/program_sshash_constants.inc
+ $(SRCDIR)/asm/program_sshash_prefetch.inc $(SRCDIR)/asm/program_sshash_constants.inc \
+ $(SRCDIR)/asm/randomx_reciprocal.inc
 $(OBJDIR)/soft_aes.o: $(SRCDIR)/soft_aes.cpp $(SRCDIR)/soft_aes.h $(SRCDIR)/intrin_portable.h
 $(OBJDIR)/virtual_memory.o: $(SRCDIR)/virtual_memory.cpp $(SRCDIR)/virtual_memory.hpp
 $(OBJDIR)/vm_interpreted.o: $(SRCDIR)/vm_interpreted.cpp $(SRCDIR)/vm_interpreted.hpp \

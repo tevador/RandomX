@@ -78,23 +78,13 @@ namespace randomx {
 		}
 
 		void emit32(uint32_t val) {
-			code[codePos + 0] = val;
-			code[codePos + 1] = val >> 8;
-			code[codePos + 2] = val >> 16;
-			code[codePos + 3] = val >> 24;
-			codePos += 4;
+			memcpy(code + codePos, &val, sizeof val);
+			codePos += sizeof val;
 		}
 
 		void emit64(uint64_t val) {
-			code[codePos + 0] = val;
-			code[codePos + 1] = val >> 8;
-			code[codePos + 2] = val >> 16;
-			code[codePos + 3] = val >> 24;
-			code[codePos + 4] = val >> 32;
-			code[codePos + 5] = val >> 40;
-			code[codePos + 6] = val >> 48;
-			code[codePos + 7] = val >> 56;
-			codePos += 8;
+			memcpy(code + codePos, &val, sizeof val);
+			codePos += sizeof val;
 		}
 
 		template<size_t N>

@@ -35,6 +35,7 @@ PUBLIC randomx_sshash_prefetch
 PUBLIC randomx_sshash_end
 PUBLIC randomx_sshash_init
 PUBLIC randomx_program_end
+PUBLIC randomx_reciprocal_fast
 
 ALIGN 64
 randomx_program_prologue PROC
@@ -168,6 +169,10 @@ ALIGN 64
 randomx_program_end PROC
 	nop
 randomx_program_end ENDP
+
+randomx_reciprocal_fast PROC
+	include asm/randomx_reciprocal.inc
+randomx_reciprocal_fast ENDP
 
 _RANDOMX_JITX86_STATIC ENDS
 

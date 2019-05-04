@@ -616,7 +616,7 @@ namespace randomx {
 		if (!isPowerOf2(divisor)) {
 			registerUsage[instr.dst].lastUsed = i;
 			emit(MOV_RAX_I);
-			emit64(randomx_reciprocal(divisor));
+			emit64(randomx_reciprocal_fast(divisor));
 			emit(REX_IMUL_RM);
 			emitByte(0xc0 + 8 * instr.dst);
 		}
