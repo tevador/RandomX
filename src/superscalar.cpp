@@ -115,7 +115,7 @@ namespace randomx {
 	const MacroOp MacroOp::Sub_rr = MacroOp("sub r,r", 3, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Xor_rr = MacroOp("xor r,r", 3, 1, ExecutionPort::P015);
 	const MacroOp MacroOp::Imul_r = MacroOp("imul r", 3, 4, ExecutionPort::P1, ExecutionPort::P5);
-	const MacroOp MacroOp::Mul_r = MacroOp("mul r", 3, 3, ExecutionPort::P1, ExecutionPort::P5);
+	const MacroOp MacroOp::Mul_r = MacroOp("mul r", 3, 4, ExecutionPort::P1, ExecutionPort::P5);
 	const MacroOp MacroOp::Mov_rr = MacroOp("mov r,r", 3);
 
 	//Size: 4 bytes
