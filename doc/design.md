@@ -34,7 +34,9 @@ Modern CPUs include a sophisticated branch predictor unit [[3](https://en.wikipe
 
 The best way to maximize CPU efficiency is not to have any branches at all. However, CPUs invest a lot of die area and energy to handle branches. Without branches, CPU design can be significantly simplified because there is no need for commit/retire stages, which must be part of all speculative-execution designs to be able to recover from branch mispredictions.
 
-RandomX therefore uses random branches with a jump probability of 1/128. These branches will be predicted as "not taken" by the CPU. Such branches are "free" in most CPU designs unless they are taken. The branching conditions and jump targets are chosen in such way that infinite loops in RandomX code are impossible because the register controlling the branch will never be modified in the repeated code block. The additional instructions executed due to branches represent less than 1% of all instructions.
+RandomX therefore uses random branches with a jump probability of 1/256. These branches will be predicted as "not taken" by the CPU. Such branches are "free" in most CPU designs unless they are taken. The branching conditions and jump targets are chosen in such way that infinite loops in RandomX code are impossible because the register controlling the branch will never be modified in the repeated code block. Each CBRANCH instruction can jump at most twice in a row. The additional instructions executed due to branches represent less than 1% of all instructions.
+
+Additionally, branches in the code significantly reduce the possibilities of static optimizations. For example, the ISWAP_R instruction could be optimized away by renaming registers if it wasn't for branches.
 
 ### CPU Caches
 
@@ -67,7 +69,9 @@ The domains of floating point operations are separated into "additive" operation
 
 Because the limited range of group F registers allows more efficient fixed-point implementation (with 85-bit numbers), the FSCAL instruction manipulates the binary representation of the floating point format to make this optimization more difficult.
 
-Group E registers are restricted to positive values, which avoids `NaN` results (such as square root of a negative number or `0 * ∞`). Division uses only memory source operand to avoid being optimized into multiplication by constant reciprocal. The exponent of group E operands is set to -240 to avoid division and multiplication by 0 and to increase the range of numbers that can be obtained. The approximate range of possible group E register values is `6.0E-73` to `infinity`.
+Group E registers are restricted to positive values, which avoids `NaN` results (such as square root of a negative number or `0 * ∞`). Division uses only memory source operand to avoid being optimized into multiplication by constant reciprocal. The exponent of group E operands is set to a value between -255 and 0 to avoid division and multiplication by 0 and to increase the range of numbers that can be obtained. The approximate range of possible group E register values is `1.7E-77` to `infinity`.
+
+While all register-register operations use only 4 static source operands (registers `a0`-`a1`), the vast majority of operations cannot be optimized because floating point math is not associative (for example `x - a0 + a0` generally doesn't equal `x`). Additionally, optimizations are more difficult due to branches in the code (for example, the sequence of operations `x - a0; CBRANCH; x + a0` can produce a value close to `x` or `x - a0` depending on if the branch was taken or not).
 
 To maximize entropy and also to fit into one 64-byte cache line, floating point registers are combined using the XOR operation at the end of each iteration before being stored into the Scratchpad.
 
@@ -75,13 +79,9 @@ To maximize entropy and also to fit into one 64-byte cache line, floating point 
 
 RandomX uses all primitive integer operations that preserve entropy: addition, subtraction, multiplication, XOR and rotation.
 
-The IADD_RC and IMUL_9C instructions utilize the address calculation logic of CPUs and can be performed in a single instruction by most CPUs.
+The IADD_RS instruction utilizes the address calculation logic of CPUs and can be performed in a single hardware instruction by most CPUs.
 
 Because integer division is not fully pipelined in CPUs and can be made faster in ASICs, the IMUL_RCP instruction requires only one division per program to calculate the reciprocal. This forces an ASIC to include a hardware divider without giving them a performance advantage during program execution.
-
-The ISWAP_R instruction can be performed efficiently by CPUs that utilize register renaming.
-
-The COND instructions add branches to RandomX programs and also use the common condition flags that are supported by most CPU architectures.
 
 ### Memory access
 
@@ -91,9 +91,9 @@ All Dataset accesses read whole CPU cache line (64 bytes) and are fully prefetch
 
 #### Cache
 
-The Cache, which is used for light verification and Dataset construction, is 8 times smaller than the Dataset. To keep a constant area-time product, each Dataset item is constructed by 8 Cache accesses (8 * 256 MiB = 1 * 2 GiB).
+The Cache, which is used for light verification and Dataset construction, is about 8 times smaller than the Dataset. To keep a constant area-time product, each Dataset item is constructed from 8 random Cache accesses. The Dataset is 32 MiB larger than 8 times the Cache size. These additional 32 MiB compensate for chip area needed by SuperscalarHash.
 
-Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency mixing function (SquareHash) which defeats the benefits of using low-latency memory for mining in tradeoff mode.
+Because 256 MiB is small enough to be included on-chip, RandomX uses a high-latency, high-power mixing function (SuperscalarHash) which defeats the benefits of using low-latency memory and the energy required to calculate SuperscalarHash makes light mode very inefficient for mining.
 
 Using less than 256 MiB of memory is not possible due to the use of tradeoff-resistant Argon2d with 3 iterations. When using 3 iterations (passes), halving the memory usage increases computational cost 3423 times for the best tradeoff attack [[7](https://eprint.iacr.org/2015/430.pdf)].
 
@@ -103,32 +103,38 @@ The Scratchpad is used as read-write memory. Its size was selected to fit entire
 
 Additionally, Scratchpad operations require write-read coherency, because when a write to L1 Scratchpad is in progress, a read has a 1/2048 chance of being from the same address. This is handled by the load-store unit (LSU) inside the CPU and requires every read to be checked against the addresses of all pending writes. Hardware without these coherency checks will produce >99% of invalid results.
 
+While most writes to the Scratchpad are into L1 and L2, 144 bytes of data are written into L3 scratchpad per iteration, on average (64 bytes for integer registers, 64 bytes for floating point registers and 16 bytes by ISTORE instruction).
+
+The image below visualizes writes to the Scratchpad. Each pixel in this image represents 8 bytes of the Scratchpad. Red pixels represent portions of the Scratchpad that have been overwritten at least once during hash calculation. The L1 and L2 levels are on the left side (almost completely overwritten). The right side of the scratchpad represents the bottom 1792 KiB. Only about 66% of it are overwritten, but the writes are spread uniformly and randomly.
+
+![Imgur](https://i.imgur.com/pRz6aBG.png)
+
 ### Choice of hashing function
 RandomX uses Blake2b as its main cryptographically secure hashing function. Blake2b was specifically designed to be fast in software, especially on modern 64-bit processors, where it's around three times faster than SHA-3 and can run at a speed of around 3 clock cycles per byte of input.
 
 ### Custom functions
 
-#### SquareHash
+#### SuperscalarHash
 
-SquareHash was chosen for its relative simplicity (uses only two operations - multiplication and subtraction) and high latency. A single SquareHash calculation takes 40-80 ns on a CPU, which is about the same time as DRAM access latency. ASIC devices using low-latency memory will be bottlenecked by SquareHash when calculating Dataset items, while CPUs will finish the hash calculation in about the same time it takes to fetch data from RAM.
+SuperscalarHash was designed to burn as much power as possible while the CPU is waiting for data to be loaded from DRAM. The target latency of 170 cycles corresponds to the usual DRAM latency of 40-80 ns. ASIC devices designed for light-mode mining with low-latency memory will be bottlenecked by SuperscalarHash when calculating Dataset items and their efficiency will be destroyed by the high power usage of SuperscalarHash.
 
-From a cryptographic standpoint, SquareHash achieves full Avalanche effect [[8](https://en.wikipedia.org/wiki/Avalanche_effect)]. SquareHash was originally based on exponentiation by squaring [[9](https://en.wikipedia.org/wiki/Exponentiation_by_squaring)]. In the [x86 assembly implementation](https://github.com/tevador/RandomX/blob/master/src/asm/squareHash.inc), if `adc rax, 0` is added after each subtraction, SquareHash becomes the following operation:
-<code>
-(x+9507361525245169745)<sup>4398046511104</sup> mod 2<sup>64</sup>+1
-</code>,
-where <code>4398046511104 = 2<sup>42</sup></code>. The addition of the carry was removed to improve CPU performance. The constant `9507361525245169745` is added to make SquareHash sensitive to zero (see chapter 3.4 of Specification).
+The average SuperscalarHash function contains a total of 450 instructions, out of which 155 are 64-bit multiplications. On average, the longest dependency chain is 95 instructions long. An ASIC design for light-mode mining, with 256 MiB of on-die memory and the ability to execute 1 instruction per cycle, will need on average 760 cycles to construct a Dataset item, assuming unlimited parallelization. It will have to execute 1240 64-bit multiplications per item, which will consume energy comparable to loading data from DRAM.
 
-#### Generator
+#### AesGenerator
 
-Generator was designed for fastest possible generation of pseudorandom data. It takes advantage of hardware accelerated AES in modern CPUs. Only one AES round is performed per 16 bytes of output, which results in throughput exceeding 20 GB/s. The Scratchpad can be filled in under 100 μs. The Generator state is initialized from the output of Blake2b.
+AesGenerator was designed for fastest possible generation of pseudorandom data. It takes advantage of hardware accelerated AES in modern CPUs. Only one AES round is performed per 16 bytes of output, which results in throughput exceeding 20 GB/s. The Scratchpad can be filled in under 100 μs. The AesGenerator state is initialized from the output of Blake2b.
 
-#### Finalizer
+#### AesHash
 
-The Finalizer was designed for fastest possible calculation of the Scratchpad fingerprint. It interprets the Scratchpad as a set of AES round keys, so it's equivalent to AES encryption with 32768 rounds. Two extra rounds are performed at the end to ensure avalanche of all Scratchpad bits in each lane. The output of the Finalizer is fed into the Blake2b hashing function to calculate the final proof hash.
+AesHash was designed for fastest possible calculation of the Scratchpad fingerprint. It interprets the Scratchpad as a set of AES round keys, so it's equivalent to AES encryption with 32768 rounds. Two extra rounds are performed at the end to ensure avalanche of all Scratchpad bits in each lane. The output of the AesHash is fed into the Blake2b hashing function to calculate the final PoW hash.
 
 ### Chaining of VM executions
 
 RandomX chains 8 VM initializations and executions to prevent mining strategies that search for 'easy' programs.
+
+For example, let's calculate the cost of avoiding the CFROUND instruction (frequency 1/256). There is a chance <code>Q = (255/256)<sup>256</sup> = 0.368</code> that a generated RandomX program doesn't contain any CFROUND instructions. If we assume that program generation is 'free', we can easily find such program. However, after we execute the program, there is a chance `1-Q` that the next program *has* a CFROUND instruction and we have wasted one program execution.
+
+For 8 chained executions, the chance is only <code>Q<sup>7</sup> = 0.0009</code> that all programs in the chain contain no CFROUND instruction. However, during each attempt to find such chain, we will waste the execution of <code>(Q-1)*(1+2\*Q+3\*Q<sup>2</sup>+4\*Q<sup>3</sup>+5\*Q<sup>4</sup>+6\*Q<sup>5</sup>+7\*Q<sup>6</sup>) = 1.58</code> programs. In the end, we will have to execute, on average, 1734 programs to calculate a single hash! Compared to an honest miner that has to execute just 8 programs per hash, our hashrate is decreased more than 216 times, which is a lot more than the efficiency gain from avoiding 3 rounding modes.
 
 ## References
 

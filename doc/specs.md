@@ -2,6 +2,17 @@
 
 RandomX is a proof of work (PoW) algorithm which was designed to close the gap between general-purpose CPUs and specialized hardware. The core of the algorithm is a simulation of a virtual CPU.
 
+#### Table of contents
+
+1. [Definitions](#1-definitions)
+1. [Algorithm description](#2-algorithm-description)
+1. [Custom functions](#3-custom-functions)
+1. [Virtual Machine](#4-virtual-machine)
+1. [Instruction set](#5-instruction-set)
+1. [SuperscalarHash](#6-superscalarhash)
+1. [Dataset](#7-dataset)
+
+
 ## 1. Definitions
 
 ### 1.1 General definitions
@@ -18,7 +29,7 @@ RandomX is a proof of work (PoW) algorithm which was designed to close the gap b
 
 **BlakeGenerator** refers to a custom pseudo-random number generator described in chapter 3.4. It's based on the Blake2b hashing function.
 
-**SuperscalarHash** refers to a custom diffusion function designed to run efficiently on superscalar CPUs (see chapter 3.5). It transforms a 64-byte input value into a 64-byte output value.
+**SuperscalarHash** refers to a custom diffusion function designed to run efficiently on superscalar CPUs (see chapter 7). It transforms a 64-byte input value into a 64-byte output value.
 
 **Virtual Machine** or **VM** refers to the RandomX virtual machine as described in chapter 4.
 
@@ -32,9 +43,9 @@ RandomX is a proof of work (PoW) algorithm which was designed to close the gap b
 
 **Program Buffer** refers to the buffer from which the VM reads instructions.
 
-**Cache** refers to a read-only buffer initialized by Argon2d as described in chapter 6.2.
+**Cache** refers to a read-only buffer initialized by Argon2d as described in chapter 7.1.
 
-**Dataset** refers to a large read-only buffer described in chapter 6. It is constructed from the Cache using the SuperscalarHash function.
+**Dataset** refers to a large read-only buffer described in chapter 7. It is constructed from the Cache using the SuperscalarHash function.
 
 ### 1.2 Configurable parameters
 RandomX has several configurable parameters that are listed in Table 1.2.1 with their default values.
@@ -205,10 +216,6 @@ The internal state is initialized from a seed value `K` (0-60 bytes long). The s
 
 The generator can generate 1 byte or 4 bytes at a time by supplying data from its internal state `S`. If there are not enough unused bytes left, the internal state is reinitialized as `S = Hash512(S)`.
 
-### 3.5 SuperscalarHash
-
-TODO
-
 ## 4. Virtual Machine
 
 The components of the RandomX virtual machine are summarized in Fig. 4.1.
@@ -221,7 +228,7 @@ The VM is a complex instruction set computer ([CISC](https://en.wikipedia.org/wi
 
 ### 4.1 Dataset
 
-Dataset is described in detail in chapter 6. It's a large read-only buffer. Its size is equal to `RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE` bytes. Each program uses only a random subset of the Dataset of size `RANDOMX_DATASET_BASE_SIZE`. All Dataset accesses read an aligned 64-byte item.
+Dataset is described in detail in chapter 7. It's a large read-only buffer. Its size is equal to `RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE` bytes. Each program uses only a random subset of the Dataset of size `RANDOMX_DATASET_BASE_SIZE`. All Dataset accesses read an aligned 64-byte item.
 
 ### 4.2 Scratchpad
 
@@ -653,23 +660,182 @@ There is one explicit store instruction for integer values.
 #### 5.5.1 ISTORE
 This instruction stores the value of the source integer register to the memory at the address calculated from the value of the destination register. The `src` and `dst` can be the same register.
 
-## 6. Dataset
+## 6. SuperscalarHash
+
+SuperscalarHash is a custom diffusion function that was designed to burn as much power as possible using only the CPU's integer ALUs.
+
+The input and output of SuperscalarHash are 8 integer registers `r0`-`r7`, each 64 bits wide. The output of SuperscalarHash is used to construct the Dataset (see chapter 7.3).
+
+### 6.1 Instructions
+The body of SuperscalarHash is a random sequence of instructions that can run on the Virtual Machine. SuperscalarHash uses a reduced set of only integer register-register instructions listed in Table 6.1.1. `dst` refers to the destination register, `src` to the source register.
+
+*Table 6.1.1 - SuperscalarHash instructions*
+
+|freq. †|instruction|Macro-ops|operation|rules|
+|-|-|-|-|-|
+|0.11|ISUB_R|`sub_rr`|`dst = dst - src`|`dst != src`|
+|0.11|IXOR_R|`xor_rr`|`dst = dst ^ src`|`dst != src`|
+|0.11|IADD_RS|`lea_sib`|`dst = dst + (src << mod.shift)`|`dst != src`, `dst != r5`
+|0.22|IMUL_R|`imul_rr`|`dst = dst * src`|`dst != src`|
+|0.11|IROR_C|`ror_ri`|`dst = dst >>> imm32`|`imm32 % 64 != 0`
+|0.10|IADD_C|`add_ri`|`dst = dst + imm32`|
+|0.10|IXOR_C|`xor_ri`|`dst = dst ^ imm32`|
+|0.03|IMULH_R|`mov_rr`,`mul_r`,`mov_rr`|`dst = (dst * src) >> 64`|
+|0.03|ISMULH_R|`mov_rr`,`imul_r`,`mov_rr`|`dst = (dst * src) >> 64` (signed)|
+|0.06|IMUL_RCP|`mov_ri`,`imul_rr`|<code>dst = 2<sup>x</sup> / imm32 * dst</code>|`imm32 != 0`, <code>imm32 != 2<sup>N</sup></code>|
+
+† Frequencies are approximate. Instructions are generated based on complex rules.
+
+#### 6.1.1 ISUB_R
+See chapter 5.2.3. Source and destination are always distinct registers.
+
+#### 6.1.2 IXOR_R
+See chapter 5.2.8. Source and destination are always distinct registers.
+
+#### 6.1.3 IADD_RS
+See chapter 5.2.1. Source and destination are always distinct registers and register `r5` cannot be the destination.
+
+#### 6.1.4 IMUL_R
+See chapter 5.2.4. Source and destination are always distinct registers.
+
+#### 6.1.5 IROR_C
+The destination register is rotated right. The rotation count is given by `imm32` masked to 6 bits and cannot be 0.
+
+#### 6.1.6 IADD_C
+A sign-extended `imm32` is added to the destination register.
+
+#### 6.1.7 IXOR_C
+The destination register is XORed with a sign-extended `imm32`.
+
+#### 6.1.8 IMULH_R, ISMULH_R
+See chapter 5.2.5.
+
+#### 6.1.9 IMUL_RCP
+See chapter 5.2.6. `imm32` is never 0 or a power of 2.
+
+### 6.2 The reference CPU
+
+Unlike a standard RandomX program, a SuperscalarHash program is generated using a strict set of rules to achieve the maximum performance on a superscalar CPU. For this purpose, the generator runs a simulation of a reference CPU.
+
+The reference CPU is loosely based on the [Intel Ivy Bridge microarchitecture](https://en.wikipedia.org/wiki/Ivy_Bridge_(microarchitecture)). It has the following properties:
+
+* The CPU has 3 integer execution ports P0, P1 and P5 that can execute instructions in parallel. Multiplication can run only on port P1.
+* Each of the Superscalar instructions listed in Table 6.1.1 consist of one or more *Macro-ops*. Each Macro-op has certain execution latency (in cycles) and size (in bytes) as shown in Table 6.2.1.
+* Each of the Macro-ops listed in Table 6.2.1 consists of 0-2 *Micro-ops* that can go to a subset of the 3 execution ports. If a Macro-op consists of 2 Micro-ops, both must be executed together.
+* The CPU can decode at most 16 bytes of code per cycle and at most 4 Micro-ops per cycle.
+
+*Table 6.2.1 - Macro-ops*
+|Macro-op|latency|size|1st Micro-op|2nd Micro-op|
+|-|-|-|-|-|
+|`sub_rr`|1|3|P015|-|
+|`xor_rr`|1|3|P015|-|
+|`lea_sib`|1|4|P01|-|
+|`imul_rr`|3|4|P1|-|
+|`ror_ri`|1|4|P05|-|
+|`add_ri`|1|7, 8, 9|P015|-|
+|`xor_ri`|1|7, 8, 9|P015|-|
+|`mov_rr`|0|3|-|-|
+|`mul_r`|4|3|P1|P5|
+|`imul_r`|4|3|P1|P5|
+|`mov_ri`|1|10|P015|-|
+
+* P015 - Micro-op can be executed on any port
+* P01 - Micro-op can be executed on ports P0 or P1
+* P05 - Micro-op can be executed on ports P0 or P5
+* P1 - Micro-op can be executed only on port P1
+* P5 - Micro-op can be executed only on port P5
+
+Macro-ops `add_ri` and `xor_ri` can be optionally padded to a size of 8 or 9 bytes for code alignment purposes. `mov_rr` has 0 execution latency and doesn't use an execution port, but still occupies space during the decoding stage (see chapter 6.3.1).
+
+### 6.3 CPU simulation
+
+SuperscalarHash programs are generated to maximize the usage of all 3 execution ports of the reference CPU. The generation consists of 4 stages:
+
+* Decoding stage
+* Instruction selection
+* Port assignment
+* Operand assignment
+
+Program generation is complete when one of two conditions is met:
+
+1. An instruction is scheduled for execution on cycle that is equal to or greater than `RANDOMX_SUPERSCALAR_LATENCY`
+1. The number of generated instructions reaches `RANDOMX_SUPERSCALAR_MAX_SIZE`
+
+#### 6.3.1 Decoding stage
+
+The generator produces instructions in groups of 3 or 4 Macro-op slots such that the size of each group is exactly 16 bytes.
+
+*Table 6.3.1 - Decoder configurations*
+
+|decoder group|configuration|
+|-------------|-------------|
+|0|4-8-4|
+|1|7-3-3-3|
+|2|3-7-3-3|
+|3|4-9-3|
+|4|4-4-4-4|
+|5|3-3-10|
+
+The rules for the selection of the decoder group are following:
+
+* If the currently processed instruction is IMULH_R or ISMULH_R, the next decode group is group 5 (the only group that starts with a 3-byte slot and has only 3 slots).
+* If the total number of multiplications that have been generated is less than or equal to the current decoding cycle, the next decode group is group 4.
+* If the currently processed instruction is IMUL_RCP, the next decode group is group 0 or 3 (must begin with a 4-byte slot for multiplication).
+* Otherwise a random decode group is selected from groups 0-3.
+
+#### 6.3.2 Instruction selection
+
+Instructions are selected based on the size of the current decode group slot - see Table 6.3.2.
+
+*Table 6.3.2 - Decoder configurations*
+
+|slot size|note|instructions|
+|-------------|-------------|-----|
+|3|-|ISUB_R, IXOR_R
+|3|last slot in the group|ISUB_R, IXOR_R, IMULH_R, ISMULH_R|
+|4|decode group 4, not the last slot|IMUL_R|
+|4|-|IROR_C, IADD_RS|
+|7,8,9|-|IADD_C, IXOR_C|
+|10|-|IMUL_RCP|
+
+#### 6.3.3 Port assignment
+
+Micro-ops are issued to execution ports as soon as an available port is free. The scheduling is done optimistically by checking port availability in order P5 -> P0 -> P1 to not overload port P1 (multiplication) by instructions that can go to any port. The cycle when all Micro-ops of an instruction can be executed is called the 'scheduleCycle'.
+
+#### 6.3.4 Operand assignment
+
+The source operand (if needed) is selected first. is it selected from the group of registers that are available at the 'scheduleCycle' of the instruction. A register is available if the latency of its last operation has elapsed.
+
+The destination operand is selected with more strict rules (see column 'rules' in Table 6.1.1):
+
+* value must be ready at the required cycle 
+* cannot be the same as the source register unless the instruction allows it (see column 'rules' in Table 6.1.1)
+    * this avoids optimizable operations such as `reg ^ reg` or `reg - reg`
+    * it also increases intermixing of register values
+* register cannot be multiplied twice in a row unless `allowChainedMul` is true 
+    * this avoids accumulation of trailing zeroes in registers due to excessive multiplication
+    * `allowChainedMul` is set to true if an attempt to find source/destination registers failed (this is quite rare, but prevents a catastrophic failure of the generator)
+* either the last instruction applied to the register or its source must be different than the current instruction
+    * this avoids optimizable instruction sequences such as `r1 = r1 ^ r2; r1 = r1 ^ r2` (can be eliminated) or `reg = reg >>> C1; reg = reg >>> C2` (can be reduced to one rotation) or `reg = reg + C1; reg = reg + C2` (can be reduced to one addition)
+* register `r5` cannot be the destination of the IADD_RS instruction (limitation of the x86 lea instruction)
+
+## 7. Dataset
 
 The Dataset is a read-only memory structure that is used during program execution (chapter 4.6.2, steps 6 and 7). The size of the Dataset is `RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE` bytes and it's divided into 64-byte 'items'.
 
 In order to allow PoW verification with a lower amount of memory, the Dataset is constructed in two steps using an intermediate structure called the "Cache", which can be used to calculate Dataset items on the fly.
 
-The whole Dataset is constructed from the key value `K`, which is an input parameter of RandomX. The whole Dataset needs to be recalculated everytime the key value changes. Fig. 6.1 shows the process of Dataset construction.
+The whole Dataset is constructed from the key value `K`, which is an input parameter of RandomX. The whole Dataset needs to be recalculated everytime the key value changes. Fig. 7.1 shows the process of Dataset construction.
 
-*Figure 6.1 - Dataset construction*
+*Figure 7.1 - Dataset construction*
 
 ![Imgur](https://i.imgur.com/86h5SbW.png)
 
-### 6.2 Cache construction
+### 7.1 Cache construction
 
-The key `K` is expanded into the Cache using the "memory fill" function of Argon2d with parameters according to Table 6.2.1. The key is used as the "password" field.
+The key `K` is expanded into the Cache using the "memory fill" function of Argon2d with parameters according to Table 7.1.1. The key is used as the "password" field.
 
-*Table 6.2.1 - Argon2 parameters*
+*Table 7.1.1 - Argon2 parameters*
 
 |parameter|value|
 |------------|--|
@@ -686,12 +852,12 @@ The key `K` is expanded into the Cache using the "memory fill" function of Argon
 
 The finalizer and output calculation steps of Argon2 are omitted. The output is the filled memory array.
 
-### 6.3 SuperscalarHash initialization
+### 7.2 SuperscalarHash initialization
 
 The key value `K` is used to initialize a BlakeGenerator (see chapter 3.4), which is then used to generate 8 SuperscalarHash instances for Dataset initialization.
 
-### 6.4 Dataset block generation
-Dataset items are numbered sequentially with `itemNumber` starting from 0. Each 64-byte Dataset item is generated independently using 8 SuperscalarHash functions (generated according to chapter 6.3) and by XORing randomly selected data from the Cache (constructed according to chapter 6.2).
+### 7.3 Dataset block generation
+Dataset items are numbered sequentially with `itemNumber` starting from 0. Each 64-byte Dataset item is generated independently using 8 SuperscalarHash functions (generated according to chapter 7.2) and by XORing randomly selected data from the Cache (constructed according to chapter 7.1).
 
 The item data is represented by 8 64-bit integer registers: `r0`-`r7`.
 
