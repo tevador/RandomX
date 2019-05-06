@@ -11,7 +11,7 @@
 	xor rbp, rax                       ;# modify "mx"
 	ror rbp, 32                        ;# swap "ma" and "mx"
 	mov ebx, ebp                       ;# ecx = ma
-	and ebx, 2147483584                ;# align "ma" to the start of a cache line
+	and ebx, RANDOMX_DATASET_BASE_MASK
 	shr ebx, 6                         ;# ebx = Dataset block number
 	;# add ebx, datasetOffset / 64
 	;# call 32768

@@ -1,10 +1,10 @@
 	xor rbp, rax                       ;# modify "mx"
 	mov edx, ebp                       ;# edx = mx
-	and edx, 2147483584                ;# align "mx" to the start of a cache line
+	and edx, RANDOMX_DATASET_BASE_MASK
 	prefetchnta byte ptr [rdi+rdx]
 	ror rbp, 32                        ;# swap "ma" and "mx"
 	mov edx, ebp                       ;# edx = ma
-	and edx, 2147483584                ;# align "ma" to the start of a cache line
+	and edx, RANDOMX_DATASET_BASE_MASK
 	lea rcx, [rdi+rdx]                 ;# dataset cache line
 	xor r8,  qword ptr [rcx+0]
 	xor r9,  qword ptr [rcx+8]

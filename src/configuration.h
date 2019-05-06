@@ -20,7 +20,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #pragma once
 
 //Cache size in KiB. Must be a power of 2.
-#define RANDOMX_ARGON_MEMORY       (256 * 1024)
+#define RANDOMX_ARGON_MEMORY       262144
 
 //Number of Argon2d iterations for Cache initialization
 #define RANDOMX_ARGON_ITERATIONS   3
@@ -41,7 +41,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_SUPERSCALAR_MAX_SIZE  512
 
 //Dataset base size in bytes. Must be a power of 2.
-#define RANDOMX_DATASET_BASE_SIZE  (2ULL * 1024 * 1024 * 1024)
+#define RANDOMX_DATASET_BASE_SIZE  2147483648
 
 //Dataset extra size. Must be divisible by 64.
 #define RANDOMX_DATASET_EXTRA_SIZE 33554368
@@ -56,13 +56,13 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #define RANDOMX_PROGRAM_COUNT      8
 
 //Scratchpad L3 size in bytes. Must be a power of 2.
-#define RANDOMX_SCRATCHPAD_L3      (2 * 1024 * 1024)
+#define RANDOMX_SCRATCHPAD_L3      2097152
 
 //Scratchpad L2 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L3.
-#define RANDOMX_SCRATCHPAD_L2      (256 * 1024)
+#define RANDOMX_SCRATCHPAD_L2      262144
 
 //Scratchpad L1 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L2.
-#define RANDOMX_SCRATCHPAD_L1      (16 * 1024)
+#define RANDOMX_SCRATCHPAD_L1      16384
 
 //Jump condition mask size in bits.
 #define RANDOMX_JUMP_BITS          8

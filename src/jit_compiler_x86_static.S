@@ -44,6 +44,12 @@
 .global DECL(randomx_program_end)
 .global DECL(randomx_reciprocal_fast)
 
+#include "configuration.h"
+
+#define RANDOMX_SCRATCHPAD_MASK      (RANDOMX_SCRATCHPAD_L3-64)
+#define RANDOMX_DATASET_BASE_MASK    (RANDOMX_DATASET_BASE_SIZE-64)
+#define RANDOMX_CACHE_MASK           (RANDOMX_ARGON_MEMORY*16-1)
+
 #define db .byte
 
 .balign 64

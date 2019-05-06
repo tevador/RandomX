@@ -88,7 +88,7 @@ $(OBJDIR)/jit_compiler_x86.o: $(SRCDIR)/jit_compiler_x86.cpp $(SRCDIR)/jit_compi
  $(SRCDIR)/superscalar_program.hpp $(SRCDIR)/instruction.hpp $(SRCDIR)/blake2_generator.hpp \
  $(SRCDIR)/program.hpp $(SRCDIR)/reciprocal.h $(SRCDIR)/virtual_memory.hpp \
  $(SRCDIR)/instruction_weights.hpp
-$(OBJDIR)/jit_compiler_x86_static.o: $(SRCDIR)/jit_compiler_x86_static.S \
+$(OBJDIR)/jit_compiler_x86_static.o: $(SRCDIR)/jit_compiler_x86_static.S $(SRCDIR)/configuration.h \
  $(SRCDIR)/asm/program_prologue_linux.inc $(SRCDIR)/asm/program_xmm_constants.inc \
  $(SRCDIR)/asm/program_loop_load.inc $(SRCDIR)/asm/program_read_dataset.inc \
  $(SRCDIR)/asm/program_read_dataset_sshash_init.inc \

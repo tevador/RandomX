@@ -122,6 +122,10 @@
       </AdditionalOptions>
       <StackReserveSize>4194304</StackReserveSize>
     </Link>
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -File .\h2inc.ps1 ..\src\configuration.h &gt; ..\src\asm\configuration.asm
+SET ERRORLEVEL = 0</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\allocator.cpp" />

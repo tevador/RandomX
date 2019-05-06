@@ -37,6 +37,12 @@ PUBLIC randomx_sshash_init
 PUBLIC randomx_program_end
 PUBLIC randomx_reciprocal_fast
 
+include asm/configuration.asm
+
+RANDOMX_SCRATCHPAD_MASK     EQU (RANDOMX_SCRATCHPAD_L3-64)
+RANDOMX_DATASET_BASE_MASK   EQU (RANDOMX_DATASET_BASE_SIZE-64)
+RANDOMX_CACHE_MASK          EQU (RANDOMX_ARGON_MEMORY*16-1)
+
 ALIGN 64
 randomx_program_prologue PROC
 	include asm/program_prologue_win64.inc
