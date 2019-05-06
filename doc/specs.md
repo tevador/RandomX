@@ -725,6 +725,7 @@ The reference CPU is loosely based on the [Intel Ivy Bridge microarchitecture](h
 * The CPU can decode at most 16 bytes of code per cycle and at most 4 Micro-ops per cycle.
 
 *Table 6.2.1 - Macro-ops*
+
 |Macro-op|latency|size|1st Micro-op|2nd Micro-op|
 |-|-|-|-|-|
 |`sub_rr`|1|3|P015|-|
