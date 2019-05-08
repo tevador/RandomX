@@ -52,7 +52,7 @@ If you wish to use RandomX as a PoW algorithm for your cryptocurrency, we strong
 * Scratchpad size (`RANDOMX_SCRATCHPAD_L3`, `RANDOMX_SCRATCHPAD_L2` and `RANDOMX_SCRATCHPAD_L1`).
 * Instruction frequencies (parameters starting with `RANDOMX_FREQ_`).
 
-### Performance
+### CPU mining performance
 Preliminary performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s):
 
 |CPU|RAM|OS|AES|Fast mode|Light mode|
@@ -64,15 +64,13 @@ Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
 
 † Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
 
+### GPU mining performance
+
+SChernykh has developed a CUDA miner for NVIDIA GPUs. [Benchmarks are listed here](https://github.com/SChernykh/RandomX_CUDA).
+
+Note that GPUs are at a disadvantage when running RandomX since the algorithm was designed to be efficient on CPUs.
+
 # FAQ
-
-### Can RandomX run on a GPU?
-
-RandomX was designed to be efficient on CPUs. Designing an algorithm compatible with both CPUs and GPUs brings many limitations and ultimately decreases ASIC resistance.
-
-GPUs are expected to be at a disadvantage when running RandomX, but the exact performance has not been determined yet due to lack of a working GPU implementation.
-
-A rough estimate for AMD Vega 56 GPU gave an upper limit of 1200 H/s, comparable to a quad core CPU (details in issue [#24](https://github.com/tevador/RandomX/issues/24)).
 
 ### Does RandomX facilitate botnets/malware mining or web mining?
 Efficient mining requires more than 2 GiB of memory, which is difficult to hide in an infected computer and disqualifies many low-end machines such as IoT devices. Web mining is nearly impossible due to the large memory requirement and low performance in interpreted mode.
