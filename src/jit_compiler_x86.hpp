@@ -65,7 +65,7 @@ namespace randomx {
 		void generateProgramPrologue(Program&, ProgramConfiguration&);
 		void generateProgramEpilogue(Program&);
 		void genAddressReg(Instruction&, bool);
-		void genAddressRegDst(Instruction&, bool);
+		void genAddressRegDst(Instruction&);
 		void genAddressImm(Instruction&);
 		void genSIB(int scale, int index, int base);
 

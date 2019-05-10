@@ -72,7 +72,7 @@ namespace randomx {
 	REGISTER ALLOCATION:
 
 	; rax -> temporary
-	; rbx -> loop counter "lc"
+	; rbx -> iteration counter "ic"
 	; rcx -> temporary
 	; rdx -> temporary
 	; rsi -> scratchpad pointer
@@ -100,9 +100,9 @@ namespace randomx {
 	; xmm10 -> "a2"
 	; xmm11 -> "a3"
 	; xmm12 -> temporary
-	; xmm13 -> mantissa mask    = 0x000fffffffffffff000fffffffffffff
-	; xmm14 -> exponent 2**-240 = 0x30f00000000xxxxx30f00000000xxxxx
-	; xmm15 -> scale mask       = 0x81f000000000000081f0000000000000
+	; xmm13 -> E 'and' mask = 0x00ffffffffffffff00ffffffffffffff
+	; xmm14 -> E 'or' mask  = 0x3*00000000******3*00000000******
+	; xmm15 -> scale mask   = 0x81f000000000000081f0000000000000
 
 	*/
 
@@ -444,7 +444,7 @@ namespace randomx {
 		emit32(instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
-	void JitCompilerX86::genAddressRegDst(Instruction& instr, bool align16 = false) {
+	void JitCompilerX86::genAddressRegDst(Instruction& instr) {
 		emit(LEA_32);
 		emitByte(0x80 + instr.dst);
 		if (instr.dst == RegisterNeedsSib) {
@@ -453,9 +453,7 @@ namespace randomx {
 		emit32(instr.getImm32());
 		emitByte(AND_EAX_I);
 		if (instr.getModCond() < StoreL3Condition) {
-			int32_t maskL1 = align16 ? ScratchpadL1Mask16 : ScratchpadL1Mask;
-			int32_t maskL2 = align16 ? ScratchpadL2Mask16 : ScratchpadL2Mask;
-			emit32(instr.getModMem() ? maskL1 : maskL2);
+			emit32(instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 		}
 		else {
 			emit32(ScratchpadL3Mask);

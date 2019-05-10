@@ -86,7 +86,7 @@ and outputs a 256-bit result `R`.
 
 The algorithm consists of the following steps:
 
-1. The Dataset is initialized using the key value `K` (see chapter 6 for details).
+1. The Dataset is initialized using the key value `K` (see chapter 7 for details).
 1. 64-byte seed `S` is calculated as `S = Hash512(H)`.
 1. AesGenerator is initialized with state `S`.
 1. The Scratchpad is filled with `RANDOMX_SCRATCHPAD_L3` random bytes obtained from the AesGenerator.
@@ -383,8 +383,8 @@ The loop described below is repeated until the value of the `ic` register reache
 3. `spAddr1` is used to perform a 64-byte aligned read from Scratchpad level 3 (using mask from Table 4.2.1). Each floating point register `f0`-`f3` and `e0`-`e3` is initialized using an 8-byte value according to the conversion rules from chapters 4.3.1 and 4.3.2.
 4. The 256 instructions stored in the Program Buffer are executed.
 5. The `mx` register is XORed with the low 32 bits of registers `readReg2` and `readReg3` (see Table 4.5.3).
-6. A 64-byte memory block at address `datasetOffset + mx` is prefetched from the Dataset (this has no effect on the VM state).
-7. A 64-byte memory block at address `datasetOffset + ma` is loaded from the Dataset. The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
+6. A 64-byte Dataset item at address `datasetOffset + mx % RANDOMX_DATASET_BASE_SIZE` is prefetched from the Dataset (it will be used during the next iteration).
+7. A 64-byte Dataset item at address `datasetOffset + ma % RANDOMX_DATASET_BASE_SIZE` is loaded from the Dataset. The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
 8. The values of registers `mx` and `ma` are swapped.
 9. The values of all integer registers `r0`-`r7` are written to the Scratchpad (L3) at address `spAddr1` (64-byte aligned).
 10. Register `f0` is XORed with register `e0` and the result is stored in register `f0`. Register `f1` is XORed with register `e1` and the result is stored in register `f1`. Register `f2` is XORed with register `e2` and the result is stored in register `f2`. Register `f3` is XORed with register `e3` and the result is stored in register `f3`.
@@ -621,8 +621,8 @@ A register is considered as modified by an instruction in the following cases:
 There are 3 rules for the selection of the `creg` register, evaluated in this order:
 
 1. The register with the lowest value of `lastUsed` tag is selected.
-1. In case multiple registers have the same value of the `lastUsed` tag, the register with the lowest value of the `count` tag is selected.
-1. In case multiple registers have the same values of both `lastUsed` and `count` tags, a register with the lowest index is selected (`r0` before `r1` etc.).
+1. In case multiple registers have the same value of the `lastUsed` tag, the register with the lowest value of the `count` tag is selected from them.
+1. In case multiple registers have the same values of both `lastUsed` and `count` tags, the register with the lowest index is selected (`r0` before `r1` etc.) from them.
 
 Whenever a register is selected as the operand of a CBRANCH instruction, its `count` tag is increased by 1.
 

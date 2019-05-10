@@ -21,6 +21,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 /*
 	Calculates rcp = 2**x / divisor for highest integer x such that rcp < 2**64.
+	divisor must not be 0 or a power of 2
 
 	Equivalent x86 assembly (divisor in rcx):
 
