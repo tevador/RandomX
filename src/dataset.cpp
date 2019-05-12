@@ -39,7 +39,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include "blake2/endian.h"
 #include "argon2.h"
 #include "argon2_core.h"
-#include "jit_compiler_x86.hpp"
+#include "jit_compiler.hpp"
 #include "intrin_portable.h"
 
 static_assert(RANDOMX_ARGON_MEMORY % (RANDOMX_ARGON_LANES * ARGON2_SYNC_POINTS) == 0, "RANDOMX_ARGON_MEMORY - invalid value");

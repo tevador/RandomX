@@ -18,48 +18,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 */
 
 #include <stdexcept>
-#include "jit_compiler_x86.hpp"
-
-#if !defined(_M_X64) && !defined(__x86_64__)
-namespace randomx {
-
-	JitCompilerX86::JitCompilerX86() {
-		throw std::runtime_error("JIT compiler only supports x86-64 CPUs");
-	}
-
-	JitCompilerX86::~JitCompilerX86() {
-
-	}
-
-	void JitCompilerX86::generateProgram(Program& p, ProgramConfiguration& pcfg) {
-
-	}
-
-	void JitCompilerX86::generateProgramLight(Program& p, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
-
-	}
-
-	template<size_t N>
-	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &reciprocalCache) {
-
-	}
-
-	template
-		void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
-
-	void JitCompilerX86::generateDatasetInitCode() {
-
-	}
-
-	size_t JitCompilerX86::getCodeSize() {
-		return 0;
-	}
-
-}
-#else
-
 #include <cstring>
 #include <climits>
+#include "jit_compiler_x86.hpp"
 #include "jit_compiler_x86_static.hpp"
 #include "superscalar.hpp"
 #include "program.hpp"
@@ -838,4 +799,3 @@ namespace randomx {
 	};
 
 }
-#endif

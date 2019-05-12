@@ -22,7 +22,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <new>
 #include <cstdint>
 #include "virtual_machine.hpp"
-#include "jit_compiler_x86.hpp"
+#include "jit_compiler.hpp"
 #include "allocator.hpp"
 #include "dataset.hpp"
 
@@ -53,7 +53,7 @@ namespace randomx {
 	protected:
 		void execute();
 
-		JitCompilerX86 compiler;
+		JitCompiler compiler;
 	};
 
 	using CompiledVmDefault = CompiledVm<AlignedAllocator<CacheLineSize>, true>;

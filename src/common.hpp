@@ -83,6 +83,17 @@ namespace randomx {
 #endif
 #endif
 
+#if defined(_M_X64) || defined(__x86_64__)
+	class JitCompilerX86;
+	using JitCompiler = JitCompilerX86;
+#elif defined(__aarch64__)
+	class JitCompilerA64;
+	using JitCompiler = JitCompilerA64;
+#else
+	class JitCompilerFallback;
+	using JitCompiler = JitCompilerFallback;
+#endif
+
 	using addr_t = uint32_t;
 
 	using int_reg_t = uint64_t;
