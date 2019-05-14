@@ -318,38 +318,38 @@ alignas(16) const uint32_t lutDec3[256] = {
 	0x397101a8, 0x08deb30c, 0xd89ce4b4, 0x6490c156, 0x7b6184cb, 0xd570b632, 0x48745c6c, 0xd04257b8,
 };
 
-__m128i soft_aesenc(__m128i in, __m128i key) {
+rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key) {
 	uint32_t s0, s1, s2, s3;
 
-	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xff));
-	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xaa));
-	s2 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0x55));
-	s3 = _mm_cvtsi128_si32(in);
+	s0 = rx_vec_i128_w(in);
+	s1 = rx_vec_i128_z(in);
+	s2 = rx_vec_i128_y(in);
+	s3 = rx_vec_i128_x(in);
 
-	__m128i out = _mm_set_epi32(
+	rx_vec_i128 out = rx_set_int_vec_i128(
 		(lutEnc0[s0 & 0xff] ^ lutEnc1[(s3 >> 8) & 0xff] ^ lutEnc2[(s2 >> 16) & 0xff] ^ lutEnc3[s1 >> 24]),
 		(lutEnc0[s1 & 0xff] ^ lutEnc1[(s0 >> 8) & 0xff] ^ lutEnc2[(s3 >> 16) & 0xff] ^ lutEnc3[s2 >> 24]),
 		(lutEnc0[s2 & 0xff] ^ lutEnc1[(s1 >> 8) & 0xff] ^ lutEnc2[(s0 >> 16) & 0xff] ^ lutEnc3[s3 >> 24]),
 		(lutEnc0[s3 & 0xff] ^ lutEnc1[(s2 >> 8) & 0xff] ^ lutEnc2[(s1 >> 16) & 0xff] ^ lutEnc3[s0 >> 24])
 	);
 
-	return _mm_xor_si128(out, key);
+	return rx_xor_vec_i128(out, key);
 }
 
-__m128i soft_aesdec(__m128i in, __m128i key) {
+rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key) {
 	uint32_t s0, s1, s2, s3;
 
-	s0 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xff));
-	s1 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0xaa));
-	s2 = _mm_cvtsi128_si32(_mm_shuffle_epi32(in, 0x55));
-	s3 = _mm_cvtsi128_si32(in);
+	s0 = rx_vec_i128_w(in);
+	s1 = rx_vec_i128_z(in);
+	s2 = rx_vec_i128_y(in);
+	s3 = rx_vec_i128_x(in);
 
-	__m128i out = _mm_set_epi32(
+	rx_vec_i128 out = rx_set_int_vec_i128(
 		(lutDec0[s0 & 0xff] ^ lutDec1[(s1 >> 8) & 0xff] ^ lutDec2[(s2 >> 16) & 0xff] ^ lutDec3[s3 >> 24]),
 		(lutDec0[s1 & 0xff] ^ lutDec1[(s2 >> 8) & 0xff] ^ lutDec2[(s3 >> 16) & 0xff] ^ lutDec3[s0 >> 24]),
 		(lutDec0[s2 & 0xff] ^ lutDec1[(s3 >> 8) & 0xff] ^ lutDec2[(s0 >> 16) & 0xff] ^ lutDec3[s1 >> 24]),
 		(lutDec0[s3 & 0xff] ^ lutDec1[(s0 >> 8) & 0xff] ^ lutDec2[(s1 >> 16) & 0xff] ^ lutDec3[s2 >> 24])
 	);
 
-	return _mm_xor_si128(out, key);
+	return rx_xor_vec_i128(out, key);
 }

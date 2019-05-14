@@ -31,11 +31,11 @@ namespace randomx {
 	struct InstructionByteCode {
 		union {
 			int_reg_t* idst;
-			__m128d* fdst;
+			rx_vec_f128* fdst;
 		};
 		union {
 			int_reg_t* isrc;
-			__m128d* fsrc;
+			rx_vec_f128* fsrc;
 		};
 		union {
 			uint64_t imm;
@@ -74,11 +74,11 @@ namespace randomx {
 		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[RegistersCount]);
 	private:
 		void execute();
-		void precompileProgram(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
-		void executeBytecode(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
-		void executeBytecode(int& i, int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]);
+		void precompileProgram(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]);
+		void executeBytecode(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]);
+		void executeBytecode(int& i, int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]);
 		void* getScratchpadAddress(InstructionByteCode& ibc);
-		__m128d maskRegisterExponentMantissa(__m128d);
+		rx_vec_f128 maskRegisterExponentMantissa(rx_vec_f128);
 
 		InstructionByteCode byteCode[RANDOMX_PROGRAM_SIZE];
 	};

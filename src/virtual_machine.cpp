@@ -32,7 +32,7 @@ randomx_vm::~randomx_vm() {
 }
 
 void randomx_vm::resetRoundingMode() {
-	initFpu();
+	rx_reset_float_state();
 }
 
 namespace randomx {
@@ -86,7 +86,7 @@ void randomx_vm::initialize() {
 
 namespace randomx {
 
-	alignas(16) volatile static __m128i aesDummy;
+	alignas(16) volatile static rx_vec_i128 aesDummy;
 
 	template<class Allocator, bool softAes>
 	VmBase<Allocator, softAes>::~VmBase() {
@@ -98,9 +98,9 @@ namespace randomx {
 		if (datasetPtr == nullptr)
 			throw std::invalid_argument("Cache/Dataset not set");
 		if (!softAes) { //if hardware AES is not supported, it's better to fail now than to return a ticking bomb
-			__m128i tmp = _mm_load_si128((const __m128i*)&aesDummy);
-			tmp = _mm_aesenc_si128(tmp, tmp);
-			_mm_store_si128((__m128i*)&aesDummy, tmp);
+			rx_vec_i128 tmp = rx_load_vec_i128((const rx_vec_i128*)&aesDummy);
+			tmp = rx_aesenc_vec_i128(tmp, tmp);
+			rx_store_vec_i128((rx_vec_i128*)&aesDummy, tmp);
 		}
 		scratchpad = (uint8_t*)Allocator::allocMemory(ScratchpadSize);
 	}

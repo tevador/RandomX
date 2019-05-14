@@ -36,21 +36,21 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	const uint8_t* inptr = (uint8_t*)input;
 	const uint8_t* inputEnd = inptr + inputSize;
 
-	__m128i state0, state1, state2, state3;
-	__m128i in0, in1, in2, in3;
+	rx_vec_i128 state0, state1, state2, state3;
+	rx_vec_i128 in0, in1, in2, in3;
 
 	//intial state
-	state0 = _mm_set_epi32(0x8d3126fd, 0x1146d167, 0x887af5ab, 0xc4778e00);
-	state1 = _mm_set_epi32(0x19fe9fa1, 0x58da632b, 0x1b95af89, 0xb834ef4b);
-	state2 = _mm_set_epi32(0x1bb2cd74, 0xc35ad744, 0xab283a00, 0x7742dd3a);
-	state3 = _mm_set_epi32(0xbb30a58a, 0x49593c57, 0xdc5d97cc, 0xe18b449a);
+	state0 = rx_set_int_vec_i128(0x8d3126fd, 0x1146d167, 0x887af5ab, 0xc4778e00);
+	state1 = rx_set_int_vec_i128(0x19fe9fa1, 0x58da632b, 0x1b95af89, 0xb834ef4b);
+	state2 = rx_set_int_vec_i128(0x1bb2cd74, 0xc35ad744, 0xab283a00, 0x7742dd3a);
+	state3 = rx_set_int_vec_i128(0xbb30a58a, 0x49593c57, 0xdc5d97cc, 0xe18b449a);
 
 	//process 64 bytes at a time in 4 lanes
 	while (inptr < inputEnd) {
-		in0 = _mm_load_si128((__m128i*)inptr + 0);
-		in1 = _mm_load_si128((__m128i*)inptr + 1);
-		in2 = _mm_load_si128((__m128i*)inptr + 2);
-		in3 = _mm_load_si128((__m128i*)inptr + 3);
+		in0 = rx_load_vec_i128((rx_vec_i128*)inptr + 0);
+		in1 = rx_load_vec_i128((rx_vec_i128*)inptr + 1);
+		in2 = rx_load_vec_i128((rx_vec_i128*)inptr + 2);
+		in3 = rx_load_vec_i128((rx_vec_i128*)inptr + 3);
 
 		state0 = aesenc<softAes>(state0, in0);
 		state1 = aesdec<softAes>(state1, in1);
@@ -61,8 +61,8 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	}
 
 	//two extra rounds to achieve full diffusion
-	__m128i xkey0 = _mm_set_epi32(0x83951283, 0xe4c5593d, 0x2a5a929c, 0x11cbf247);
-	__m128i xkey1 = _mm_set_epi32(0xff215bb2, 0xabbc2523, 0x477bef0b, 0xce816c95);
+	rx_vec_i128 xkey0 = rx_set_int_vec_i128(0x83951283, 0xe4c5593d, 0x2a5a929c, 0x11cbf247);
+	rx_vec_i128 xkey1 = rx_set_int_vec_i128(0xff215bb2, 0xabbc2523, 0x477bef0b, 0xce816c95);
 
 	state0 = aesenc<softAes>(state0, xkey0);
 	state1 = aesdec<softAes>(state1, xkey0);
@@ -75,10 +75,10 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	state3 = aesdec<softAes>(state3, xkey1);
 
 	//output hash
-	_mm_store_si128((__m128i*)hash + 0, state0);
-	_mm_store_si128((__m128i*)hash + 1, state1);
-	_mm_store_si128((__m128i*)hash + 2, state2);
-	_mm_store_si128((__m128i*)hash + 3, state3);
+	rx_store_vec_i128((rx_vec_i128*)hash + 0, state0);
+	rx_store_vec_i128((rx_vec_i128*)hash + 1, state1);
+	rx_store_vec_i128((rx_vec_i128*)hash + 2, state2);
+	rx_store_vec_i128((rx_vec_i128*)hash + 3, state3);
 }
 
 template void hashAes1Rx4<false>(const void *input, size_t inputSize, void *hash);
@@ -99,18 +99,18 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 	const uint8_t* outptr = (uint8_t*)buffer;
 	const uint8_t* outputEnd = outptr + outputSize;
 
-	__m128i state0, state1, state2, state3;
-	__m128i key0, key1, key2, key3;
+	rx_vec_i128 state0, state1, state2, state3;
+	rx_vec_i128 key0, key1, key2, key3;
 
-	key0 = _mm_set_epi32(0xdf20a2e3, 0xca329132, 0x454ff6d5, 0x84eeec2d);
-	key1 = _mm_set_epi32(0x1deb5971, 0xfed0387f, 0xf10fc578, 0x017b63d0);
-	key2 = _mm_set_epi32(0xdfc926b3, 0xa517ceb4, 0x2f2c70a1, 0x327d7a52);
-	key3 = _mm_set_epi32(0x341cf31c, 0xa0ece0a9, 0x3d17da5e, 0x5c8d77d3);
+	key0 = rx_set_int_vec_i128(0xdf20a2e3, 0xca329132, 0x454ff6d5, 0x84eeec2d);
+	key1 = rx_set_int_vec_i128(0x1deb5971, 0xfed0387f, 0xf10fc578, 0x017b63d0);
+	key2 = rx_set_int_vec_i128(0xdfc926b3, 0xa517ceb4, 0x2f2c70a1, 0x327d7a52);
+	key3 = rx_set_int_vec_i128(0x341cf31c, 0xa0ece0a9, 0x3d17da5e, 0x5c8d77d3);
 
-	state0 = _mm_load_si128((__m128i*)state + 0);
-	state1 = _mm_load_si128((__m128i*)state + 1);
-	state2 = _mm_load_si128((__m128i*)state + 2);
-	state3 = _mm_load_si128((__m128i*)state + 3);
+	state0 = rx_load_vec_i128((rx_vec_i128*)state + 0);
+	state1 = rx_load_vec_i128((rx_vec_i128*)state + 1);
+	state2 = rx_load_vec_i128((rx_vec_i128*)state + 2);
+	state3 = rx_load_vec_i128((rx_vec_i128*)state + 3);
 
 	while (outptr < outputEnd) {
 		state0 = aesdec<softAes>(state0, key0);
@@ -118,18 +118,18 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 		state2 = aesdec<softAes>(state2, key2);
 		state3 = aesenc<softAes>(state3, key3);
 
-		_mm_store_si128((__m128i*)outptr + 0, state0);
-		_mm_store_si128((__m128i*)outptr + 1, state1);
-		_mm_store_si128((__m128i*)outptr + 2, state2);
-		_mm_store_si128((__m128i*)outptr + 3, state3);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 0, state0);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 1, state1);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 2, state2);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 3, state3);
 
 		outptr += 64;
 	}
 
-	_mm_store_si128((__m128i*)state + 0, state0);
-	_mm_store_si128((__m128i*)state + 1, state1);
-	_mm_store_si128((__m128i*)state + 2, state2);
-	_mm_store_si128((__m128i*)state + 3, state3);
+	rx_store_vec_i128((rx_vec_i128*)state + 0, state0);
+	rx_store_vec_i128((rx_vec_i128*)state + 1, state1);
+	rx_store_vec_i128((rx_vec_i128*)state + 2, state2);
+	rx_store_vec_i128((rx_vec_i128*)state + 3, state3);
 }
 
 template void fillAes1Rx4<true>(void *state, size_t outputSize, void *buffer);

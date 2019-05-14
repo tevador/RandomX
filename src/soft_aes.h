@@ -22,16 +22,16 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 #include <stdint.h>
 #include "intrin_portable.h"
 
-__m128i soft_aesenc(__m128i in, __m128i key);
+rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key);
 
-__m128i soft_aesdec(__m128i in, __m128i key);
+rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key);
 
 template<bool soft>
-inline __m128i aesenc(__m128i in, __m128i key) {
-	return soft ? soft_aesenc(in, key) : _mm_aesenc_si128(in, key);
+inline rx_vec_i128 aesenc(rx_vec_i128 in, rx_vec_i128 key) {
+	return soft ? soft_aesenc(in, key) : rx_aesenc_vec_i128(in, key);
 }
 
 template<bool soft>
-inline __m128i aesdec(__m128i in, __m128i key) {
-	return soft ? soft_aesdec(in, key) : _mm_aesdec_si128(in, key);
+inline rx_vec_i128 aesdec(rx_vec_i128 in, rx_vec_i128 key) {
+	return soft ? soft_aesdec(in, key) : rx_aesdec_vec_i128(in, key);
 }

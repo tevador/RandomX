@@ -46,7 +46,7 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::executeBytecode(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+	void InterpretedVm<Allocator, softAes>::executeBytecode(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]) {
 		for (int pc = 0; pc < RANDOMX_PROGRAM_SIZE; ++pc) {
 			executeBytecode(pc, r, f, e, a);
 		}
@@ -59,16 +59,16 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	FORCE_INLINE __m128d InterpretedVm<Allocator, softAes>::maskRegisterExponentMantissa(__m128d x) {
-		const __m128d xmantissaMask = _mm_castsi128_pd(_mm_set_epi64x(dynamicMantissaMask, dynamicMantissaMask));
-		const __m128d xexponentMask = _mm_load_pd((const double*)&config.eMask);
-		x = _mm_and_pd(x, xmantissaMask);
-		x = _mm_or_pd(x, xexponentMask);
+	FORCE_INLINE rx_vec_f128 InterpretedVm<Allocator, softAes>::maskRegisterExponentMantissa(rx_vec_f128 x) {
+		const rx_vec_f128 xmantissaMask = rx_set_vec_f128(dynamicMantissaMask, dynamicMantissaMask);
+		const rx_vec_f128 xexponentMask = rx_load_vec_f128((const double*)&config.eMask);
+		x = rx_and_vec_f128(x, xmantissaMask);
+		x = rx_or_vec_f128(x, xexponentMask);
 		return x;
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::executeBytecode(int& pc, int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+	void InterpretedVm<Allocator, softAes>::executeBytecode(int& pc, int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]) {
 		auto& ibc = byteCode[pc];
 		switch (ibc.type)
 		{
@@ -139,43 +139,43 @@ namespace randomx {
 			} break;
 
 			case InstructionType::FSWAP_R: {
-				*ibc.fdst = _mm_shuffle_pd(*ibc.fdst, *ibc.fdst, 1);
+				*ibc.fdst = rx_shuffle_vec_f128(*ibc.fdst, *ibc.fdst, 1);
 			} break;
 
 			case InstructionType::FADD_R: {
-				*ibc.fdst = _mm_add_pd(*ibc.fdst, *ibc.fsrc);
+				*ibc.fdst = rx_add_vec_f128(*ibc.fdst, *ibc.fsrc);
 			} break;
 
 			case InstructionType::FADD_M: {
-				__m128d fsrc = load_cvt_i32x2(getScratchpadAddress(ibc));
-				*ibc.fdst = _mm_add_pd(*ibc.fdst, fsrc);
+				rx_vec_f128 fsrc = rx_cvt_packed_int_vec_f128(getScratchpadAddress(ibc));
+				*ibc.fdst = rx_add_vec_f128(*ibc.fdst, fsrc);
 			} break;
 
 			case InstructionType::FSUB_R: {
-				*ibc.fdst = _mm_sub_pd(*ibc.fdst, *ibc.fsrc);
+				*ibc.fdst = rx_sub_vec_f128(*ibc.fdst, *ibc.fsrc);
 			} break;
 
 			case InstructionType::FSUB_M: {
-				__m128d fsrc = load_cvt_i32x2(getScratchpadAddress(ibc));
-				*ibc.fdst = _mm_sub_pd(*ibc.fdst, fsrc);
+				rx_vec_f128 fsrc = rx_cvt_packed_int_vec_f128(getScratchpadAddress(ibc));
+				*ibc.fdst = rx_sub_vec_f128(*ibc.fdst, fsrc);
 			} break;
 
 			case InstructionType::FSCAL_R: {
-				const __m128d mask = _mm_castsi128_pd(_mm_set1_epi64x(0x81F0000000000000));
-				*ibc.fdst = _mm_xor_pd(*ibc.fdst, mask);
+				const rx_vec_f128 mask = rx_set1_vec_f128(0x81F0000000000000);
+				*ibc.fdst = rx_xor_vec_f128(*ibc.fdst, mask);
 			} break;
 
 			case InstructionType::FMUL_R: {
-				*ibc.fdst = _mm_mul_pd(*ibc.fdst, *ibc.fsrc);
+				*ibc.fdst = rx_mul_vec_f128(*ibc.fdst, *ibc.fsrc);
 			} break;
 
 			case InstructionType::FDIV_M: {
-				__m128d fsrc = maskRegisterExponentMantissa(load_cvt_i32x2(getScratchpadAddress(ibc)));
-				*ibc.fdst = _mm_div_pd(*ibc.fdst, fsrc);
+				rx_vec_f128 fsrc = maskRegisterExponentMantissa(rx_cvt_packed_int_vec_f128(getScratchpadAddress(ibc)));
+				*ibc.fdst = rx_div_vec_f128(*ibc.fdst, fsrc);
 			} break;
 
 			case InstructionType::FSQRT_R: {
-				*ibc.fdst = _mm_sqrt_pd(*ibc.fdst);
+				*ibc.fdst = rx_sqrt_vec_f128(*ibc.fdst);
 			} break;
 
 			case InstructionType::CBRANCH: {
@@ -186,7 +186,7 @@ namespace randomx {
 			} break;
 
 			case InstructionType::CFROUND: {
-				setRoundMode(rotr(*ibc.isrc, ibc.imm) % 4);
+				rx_set_rounding_mode(rotr(*ibc.isrc, ibc.imm) % 4);
 			} break;
 
 			case InstructionType::ISTORE: {
@@ -205,12 +205,12 @@ namespace randomx {
 	template<class Allocator, bool softAes>
 	void InterpretedVm<Allocator, softAes>::execute() {
 		int_reg_t r[RegistersCount] = { 0 };
-		__m128d f[RegisterCountFlt];
-		__m128d e[RegisterCountFlt];
-		__m128d a[RegisterCountFlt];
+		rx_vec_f128 f[RegisterCountFlt];
+		rx_vec_f128 e[RegisterCountFlt];
+		rx_vec_f128 a[RegisterCountFlt];
 
 		for(unsigned i = 0; i < RegisterCountFlt; ++i)
-			a[i] = _mm_load_pd(&reg.a[i].lo);
+			a[i] = rx_load_vec_f128(&reg.a[i].lo);
 
 		precompileProgram(r, f, e, a);
 
@@ -228,10 +228,10 @@ namespace randomx {
 				r[i] ^= load64(scratchpad + spAddr0 + 8 * i);
 
 			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				f[i] = load_cvt_i32x2(scratchpad + spAddr1 + 8 * i);
+				f[i] = rx_cvt_packed_int_vec_f128(scratchpad + spAddr1 + 8 * i);
 
 			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				e[i] = maskRegisterExponentMantissa(load_cvt_i32x2(scratchpad + spAddr1 + 8 * (RegisterCountFlt + i)));
+				e[i] = maskRegisterExponentMantissa(rx_cvt_packed_int_vec_f128(scratchpad + spAddr1 + 8 * (RegisterCountFlt + i)));
 
 			executeBytecode(r, f, e, a);
 
@@ -244,10 +244,10 @@ namespace randomx {
 				store64(scratchpad + spAddr1 + 8 * i, r[i]);
 
 			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				f[i] = _mm_xor_pd(f[i], e[i]);
+				f[i] = rx_xor_vec_f128(f[i], e[i]);
 
 			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				_mm_store_pd((double*)(scratchpad + spAddr0 + 16 * i), f[i]);
+				rx_store_vec_f128((double*)(scratchpad + spAddr0 + 16 * i), f[i]);
 
 			spAddr0 = 0;
 			spAddr1 = 0;
@@ -257,10 +257,10 @@ namespace randomx {
 			store64(&reg.r[i], r[i]);
 
 		for (unsigned i = 0; i < RegisterCountFlt; ++i)
-			_mm_store_pd(&reg.f[i].lo, f[i]);
+			rx_store_vec_f128(&reg.f[i].lo, f[i]);
 
 		for (unsigned i = 0; i < RegisterCountFlt; ++i)
-			_mm_store_pd(&reg.e[i].lo, e[i]);
+			rx_store_vec_f128(&reg.e[i].lo, e[i]);
 	}
 
 	template<class Allocator, bool softAes>
@@ -273,7 +273,7 @@ namespace randomx {
 #include "instruction_weights.hpp"
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[RegistersCount], __m128d (&f)[RegisterCountFlt], __m128d (&e)[RegisterCountFlt], __m128d (&a)[RegisterCountFlt]) {
+	void InterpretedVm<Allocator, softAes>::precompileProgram(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]) {
 		RegisterUsage registerUsage[RegistersCount];
 		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i].lastUsed = -1;

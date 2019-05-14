@@ -123,32 +123,32 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 	#define HAVE_SMULH
 #endif
 
-void setRoundMode(uint32_t rcflag) {
-	switch (rcflag & 3) {
-		case RoundDown:
-			setRoundMode_(FE_DOWNWARD);
-			break;
-		case RoundUp:
-			setRoundMode_(FE_UPWARD);
-			break;
-		case RoundToZero:
-			setRoundMode_(FE_TOWARDZERO);
-			break;
-		case RoundToNearest:
-			setRoundMode_(FE_TONEAREST);
-			break;
-		default:
-			UNREACHABLE;
+#ifdef RANDOMX_DEFAULT_FENV
+
+void rx_reset_float_state() {
+	setRoundMode_(FE_TONEAREST);
+}
+
+void rx_set_rounding_mode(uint32_t mode) {
+	switch (mode & 3) {
+	case RoundDown:
+		setRoundMode_(FE_DOWNWARD);
+		break;
+	case RoundUp:
+		setRoundMode_(FE_UPWARD);
+		break;
+	case RoundToZero:
+		setRoundMode_(FE_TOWARDZERO);
+		break;
+	case RoundToNearest:
+		setRoundMode_(FE_TONEAREST);
+		break;
+	default:
+		UNREACHABLE;
 	}
 }
 
-void initFpu() {
-#ifdef __SSE2__
-	_mm_setcsr(0x9FC0); //Flush to zero, denormals are zero, default rounding mode, all exceptions disabled
-#else
-	setRoundMode(FE_TONEAREST);
 #endif
-}
 
 union double_ser_t {
 	double f;

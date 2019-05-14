@@ -148,7 +148,7 @@ namespace randomx {
 		rl[7] = rl[0] ^ superscalarAdd7;
 		for (unsigned i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			mixBlock = getMixBlock(registerValue, cache->memory);
-			PREFETCHNTA(mixBlock);
+			rx_prefetch_nta(mixBlock);
 			SuperscalarProgram& prog = cache->programs[i];
 
 			executeSuperscalar(rl, prog, &cache->reciprocalCache);
