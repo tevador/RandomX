@@ -1,8 +1,5 @@
 # RandomX
-RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose CPUs. RandomX uses random code execution (hence the name) together with several memory-hard techniques to achieve the following goals:
-
-* Prevent the development of a single-chip [ASIC](https://en.wikipedia.org/wiki/Application-specific_integrated_circuit)
-* Minimize the efficiency advantage of specialized hardware compared to a general-purpose CPU
+RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose CPUs. RandomX uses random code execution (hence the name) together with several memory-hard techniques to minimize the efficiency advantage of specialized hardware.
 
 ## Overview
 
@@ -23,7 +20,7 @@ Design notes available in [design.md](doc/design.md).
 
 RandomX is written in C++11 and builds a static library with a C API provided by header file [randomx.h](src/randomx.h). Minimal API usage example is provided in [api-example1.c](src/tests/api-example1.c). The reference code includes a `benchmark` executable for testing.
 
-### Ubuntu/Debian
+### Linux
 
 Build dependencies: `make` and `gcc` (minimum version 4.8, but version 7+ is recommended).
 
@@ -57,7 +54,7 @@ Preliminary performance of selected CPUs using the optimal number of threads (T)
 
 |CPU|RAM|OS|AES|Fast mode|Light mode|
 |---|---|--|---|---------|--------------|
-AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|4090 H/s (8T)|620 H/s (16T)|
+AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|4100 H/s (8T)|620 H/s (16T)|
 Intel Core i7-8550U|16 GB DDR4|Windows 10|hardware|1700 H/s (4T)|350 H/s (8T)|
 Intel Core i3-3220|2 GB DDR3|Ubuntu 16.04|software|-|145 H/s (4T)|
 Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
@@ -80,9 +77,9 @@ Efficient mining requires more than 2 GiB of memory, which is difficult to hide 
 RandomX uses only operations that are guaranteed to give correctly rounded results by the [IEEE 754](https://en.wikipedia.org/wiki/IEEE_754) standard: addition, subtraction, multiplication, division and square root. Special care is taken to avoid corner cases such as NaN values or denormals.
 
 The reference implementation has been validated on the following platforms:
-* x86+SSE2 (32-bit, little-endian)
+* x86 (32-bit, little-endian)
 * x86-64 (64-bit, little-endian)
-* ARMv7+NEON (32-bit, little-endian)
+* ARMv7+VFPv3 (32-bit, little-endian)
 * ARMv8 (64-bit, little-endian)
 * PPC64 (64-bit, big-endian)
 
