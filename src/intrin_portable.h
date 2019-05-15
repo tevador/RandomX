@@ -46,7 +46,8 @@ constexpr int RoundToZero = 3;
 
 //the library "sqrt" function provided by MSVC for x86 targets doesn't give
 //the correct results, so we have to use inline assembly to call x87 fsqrt directly
-#if defined(_M_IX86) && !defined(__SSE2__)
+#if !defined(__SSE2__)
+#if defined(_M_IX86)
 inline double __cdecl rx_sqrt(double x) {
 	__asm {
 		fld x
@@ -54,11 +55,24 @@ inline double __cdecl rx_sqrt(double x) {
 	}
 }
 #define rx_sqrt rx_sqrt
+
+void rx_set_double_precision();
 #define RANDOMX_USE_X87
+
+#elif defined(__i386)
+
+void rx_set_double_precision();
+#define RANDOMX_USE_X87
+
 #endif
+#endif //__SSE2__
 
 #if !defined(rx_sqrt)
 #define rx_sqrt sqrt
+#endif
+
+#if !defined(RANDOMX_USE_X87)
+#define rx_set_double_precision
 #endif
 
 #ifdef __SSE2__

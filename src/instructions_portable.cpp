@@ -127,9 +127,7 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 void rx_reset_float_state() {
 	setRoundMode_(FE_TONEAREST);
-#ifdef RANDOMX_USE_X87
-	_control87(_PC_53, _MCW_PC); //set x87 precision to 53 bits
-#endif
+	rx_set_double_precision(); //set precision to 53 bits if needed by the platform
 }
 
 void rx_set_rounding_mode(uint32_t mode) {
@@ -152,6 +150,28 @@ void rx_set_rounding_mode(uint32_t mode) {
 }
 
 #endif
+
+#ifdef RANDOMX_USE_X87
+
+#ifdef _M_IX86
+
+void rx_set_double_precision() {
+	_control87(_PC_53, _MCW_PC);
+}
+
+#elif defined(__i386)
+
+void rx_set_double_precision() {
+	uint16_t volatile x87cw;
+	asm volatile("fstcw %0" : "=m" (x87cw));
+	x87cw &= ~0x300;
+	x87cw |= 0x200;
+	asm volatile("fldcw %0" : : "m" (x87cw));
+}
+
+#endif
+
+#endif //RANDOMX_USE_X87
 
 union double_ser_t {
 	double f;
