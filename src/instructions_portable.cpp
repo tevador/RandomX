@@ -127,6 +127,9 @@ along with RandomX.  If not, see<http://www.gnu.org/licenses/>.
 
 void rx_reset_float_state() {
 	setRoundMode_(FE_TONEAREST);
+#ifdef RANDOMX_USE_X87
+	_control87(_PC_53, _MCW_PC); //set x87 precision to 53 bits
+#endif
 }
 
 void rx_set_rounding_mode(uint32_t mode) {

@@ -39,10 +39,26 @@ constexpr int RoundDown = 1;
 constexpr int RoundUp = 2;
 constexpr int RoundToZero = 3;
 
-#if defined(_MSC_VER)
-#if defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2)
+//MSVC doesn't define __SSE2__, so we have to define it manually if SSE2 is available
+#if !defined(__SSE2__) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP == 2))
 #define __SSE2__ 1
 #endif
+
+//the library "sqrt" function provided by MSVC for x86 targets doesn't give
+//the correct results, so we have to use inline assembly to call x87 fsqrt directly
+#if defined(_M_IX86) && !defined(__SSE2__)
+inline double __cdecl rx_sqrt(double x) {
+	__asm {
+		fld x
+		fsqrt
+	}
+}
+#define rx_sqrt rx_sqrt
+#define RANDOMX_USE_X87
+#endif
+
+#if !defined(rx_sqrt)
+#define rx_sqrt sqrt
 #endif
 
 #ifdef __SSE2__
@@ -61,14 +77,15 @@ typedef __m128d rx_vec_f128;
 
 #define rx_load_vec_f128 _mm_load_pd
 #define rx_store_vec_f128 _mm_store_pd
-#define rx_shuffle_vec_f128 _mm_shuffle_pd
 #define rx_add_vec_f128 _mm_add_pd
 #define rx_sub_vec_f128 _mm_sub_pd
 #define rx_mul_vec_f128 _mm_mul_pd
 #define rx_div_vec_f128 _mm_div_pd
 #define rx_sqrt_vec_f128 _mm_sqrt_pd
-#define rx_set1_long_vec_i128 _mm_set1_epi64x
-#define rx_vec_i128_vec_f128 _mm_castsi128_pd
+
+FORCE_INLINE rx_vec_f128 rx_swap_vec_f128(rx_vec_f128 a) {
+	return _mm_shuffle_pd(a, a, 1);
+}
 
 FORCE_INLINE rx_vec_f128 rx_set_vec_f128(uint64_t x1, uint64_t x0) {
 	return _mm_castsi128_pd(_mm_set_epi64x(x1, x0));
@@ -157,11 +174,11 @@ FORCE_INLINE void rx_store_vec_f128(double* mem_addr, rx_vec_f128 a) {
 	store64(mem_addr + 1, a.i.u64[1]);
 }
 
-FORCE_INLINE rx_vec_f128 rx_shuffle_vec_f128(rx_vec_f128 a, rx_vec_f128 b, int imm8) {
-	rx_vec_f128 x;
-	x.lo = (imm8 & 1) ? a.hi : a.lo;
-	x.hi = (imm8 & 2) ? b.hi : b.lo;
-	return x;
+FORCE_INLINE rx_vec_f128 rx_swap_vec_f128(rx_vec_f128 a) {
+	double temp = a.hi;
+	a.hi = a.lo;
+	a.lo = temp;
+	return a;
 }
 
 FORCE_INLINE rx_vec_f128 rx_add_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
@@ -194,8 +211,8 @@ FORCE_INLINE rx_vec_f128 rx_div_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 
 FORCE_INLINE rx_vec_f128 rx_sqrt_vec_f128(rx_vec_f128 a) {
 	rx_vec_f128 x;
-	x.lo = sqrt(a.lo);
-	x.hi = sqrt(a.hi);
+	x.lo = rx_sqrt(a.lo);
+	x.hi = rx_sqrt(a.hi);
 	return x;
 }
 

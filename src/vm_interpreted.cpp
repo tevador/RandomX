@@ -139,7 +139,7 @@ namespace randomx {
 			} break;
 
 			case InstructionType::FSWAP_R: {
-				*ibc.fdst = rx_shuffle_vec_f128(*ibc.fdst, *ibc.fdst, 1);
+				*ibc.fdst = rx_swap_vec_f128(*ibc.fdst);
 			} break;
 
 			case InstructionType::FADD_R: {
