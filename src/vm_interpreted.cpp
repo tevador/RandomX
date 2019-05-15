@@ -161,7 +161,7 @@ namespace randomx {
 			} break;
 
 			case InstructionType::FSCAL_R: {
-				const rx_vec_f128 mask = rx_set1_vec_f128(0x81F0000000000000);
+				const rx_vec_f128 mask = rx_set1_vec_f128(0x80F0000000000000);
 				*ibc.fdst = rx_xor_vec_f128(*ibc.fdst, mask);
 			} break;
 
