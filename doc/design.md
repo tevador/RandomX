@@ -65,9 +65,9 @@ RandomX uses double precision floating point operations, which are supported by 
 
 RandomX uses five operations that are guaranteed by the IEEE 754 standard to give correctly rounded results: addition, subtraction, multiplication, division and square root. All 4 rounding modes defined by the standard are used.
 
-The domains of floating point operations are separated into "additive" operations, which use register group F and "multiplicative" operations, which use register group E. This is done to prevent addition/subtraction from becoming no-op when a small number is added to a large number. Since the range of the F group registers is limited to around `±1.0E+12`, adding or subtracting a floating point number with absolute value larger than 1 always changes at least 12 mantissa bits.
+The domains of floating point operations are separated into "additive" operations, which use register group F and "multiplicative" operations, which use register group E. This is done to prevent addition/subtraction from becoming no-op when a small number is added to a large number. Since the range of the F group registers is limited to around `±3.0e+14`, adding or subtracting a floating point number with absolute value larger than 1 always changes at least 5 fraction bits.
 
-Because the limited range of group F registers allows more efficient fixed-point implementation (with 85-bit numbers), the FSCAL instruction manipulates the binary representation of the floating point format to make this optimization more difficult.
+Because the limited range of group F registers would allow the use of a more efficient fixed-point representation (with 80-bit numbers), the FSCAL instruction manipulates the binary representation of the floating point format to make this optimization more difficult.
 
 Group E registers are restricted to positive values, which avoids `NaN` results (such as square root of a negative number or `0 * ∞`). Division uses only memory source operand to avoid being optimized into multiplication by constant reciprocal. The exponent of group E operands is set to a value between -255 and 0 to avoid division and multiplication by 0 and to increase the range of numbers that can be obtained. The approximate range of possible group E register values is `1.7E-77` to `infinity`.
 

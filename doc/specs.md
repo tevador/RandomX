@@ -260,7 +260,7 @@ Integer registers `r0`-`r7` can be the source or the destination operands of int
 
 Floating point registers `a0`-`a3` are read-only and their value is fixed for a given VM program. They can be the source operand of any floating point instruction. The value of these registers is restricted to the interval `[1, 4294967296)`.
 
-Floating point registers `f0`-`f3` are the "additive" registers, which can be the destination of floating point addition and subtraction instructions. The absolute value of these registers will not exceed `1.0e+12`.
+Floating point registers `f0`-`f3` are the "additive" registers, which can be the destination of floating point addition and subtraction instructions. The absolute value of these registers will not exceed about `3.0e+14`.
 
 Floating point registers `e0`-`e3` are the "multiplicative" registers, which can be the destination of floating point multiplication, division and square root instructions. Their value is always positive.
 
@@ -574,9 +574,9 @@ Double precision floating point addition. FADD_R uses a group A register source 
 Double precision floating point subtraction. FSUB_R uses a group A register source operand, FSUB_M uses a memory operand.
 
 #### 5.3.4 FSCAL_R
-This instruction negates the number and multiplies it by <code>2<sup>x</sup></code>. `x` is calculated by taking the 5 least significant digits of the biased exponent and interpreting them as a binary number using the digit set `{+1, -1}` as opposed to the traditional `{0, 1}`. The possible values of `x` are all odd numbers from -31 to +31.
+This instruction negates the number and multiplies it by <code>2<sup>x</sup></code>. `x` is calculated by taking the 4 least significant digits of the biased exponent and interpreting them as a binary number using the digit set `{+1, -1}` as opposed to the traditional `{0, 1}`. The possible values of `x` are all odd numbers from -15 to +15.
 
-The mathematical operation described above is equivalent to a bitwise XOR of the binary representation with the value of `0x81F0000000000000`.
+The mathematical operation described above is equivalent to a bitwise XOR of the binary representation with the value of `0x80F0000000000000`.
 
 #### 5.3.5 FMUL_R
 

@@ -64,7 +64,7 @@ void printUsage(const char* executable) {
 	std::cout << "Usage: " << executable << " [OPTIONS]" << std::endl;
 	std::cout << "Supported options:" << std::endl;
 	std::cout << "  --help        shows this message" << std::endl;
-	std::cout << "  --mine        mining mode: 2 GiB" << std::endl;
+	std::cout << "  --mine        mining mode: 2080 MiB" << std::endl;
 	std::cout << "  --verify      verification mode: 256 MiB" << std::endl;
 	std::cout << "  --jit         x86-64 JIT compiled mode (default: interpreter)" << std::endl;
 	std::cout << "  --largePages  use large pages" << std::endl;
@@ -165,6 +165,9 @@ int main(int argc, char** argv) {
 		Stopwatch sw(true);
 		cache = randomx_alloc_cache(flags);
 		if (cache == nullptr) {
+			if (jit) {
+				throw std::runtime_error("JIT compilation is not supported or cache allocation failed");
+			}
 			throw std::runtime_error("Cache allocation failed");
 		}
 		randomx_init_cache(cache, &seed, sizeof(seed));
