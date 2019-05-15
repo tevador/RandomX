@@ -72,7 +72,7 @@ void rx_set_double_precision();
 #endif
 
 #if !defined(RANDOMX_USE_X87)
-#define rx_set_double_precision
+#define rx_set_double_precision(x)
 #endif
 
 #ifdef __SSE2__
