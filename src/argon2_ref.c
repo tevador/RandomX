@@ -48,13 +48,13 @@ static void fill_block(const block *prev_block, const block *ref_block,
 	block blockR, block_tmp;
 	unsigned i;
 
-	copy_block(&blockR, ref_block);
-	xor_block(&blockR, prev_block);
-	copy_block(&block_tmp, &blockR);
+	rxa2_copy_block(&blockR, ref_block);
+	rxa2_xor_block(&blockR, prev_block);
+	rxa2_copy_block(&block_tmp, &blockR);
 	/* Now blockR = ref_block + prev_block and block_tmp = ref_block + prev_block */
 	if (with_xor) {
 		/* Saving the next block contents for XOR over: */
-		xor_block(&block_tmp, next_block);
+		rxa2_xor_block(&block_tmp, next_block);
 		/* Now blockR = ref_block + prev_block and
 		   block_tmp = ref_block + prev_block + next_block */
 	}
@@ -83,8 +83,8 @@ static void fill_block(const block *prev_block, const block *ref_block,
 			blockR.v[2 * i + 113]);
 	}
 
-	copy_block(next_block, &block_tmp);
-	xor_block(next_block, &blockR);
+	rxa2_copy_block(next_block, &block_tmp);
+	rxa2_xor_block(next_block, &blockR);
 }
 
 static void next_addresses(block *address_block, block *input_block,
@@ -94,7 +94,7 @@ static void next_addresses(block *address_block, block *input_block,
 	fill_block(zero_block, address_block, address_block, 0);
 }
 
-void fill_segment(const argon2_instance_t *instance,
+void rxa2_fill_segment(const argon2_instance_t *instance,
 	argon2_position_t position) {
 	block *ref_block = NULL, *curr_block = NULL;
 	block address_block, input_block, zero_block;
@@ -114,8 +114,8 @@ void fill_segment(const argon2_instance_t *instance,
 		(position.slice < ARGON2_SYNC_POINTS / 2));
 
 	if (data_independent_addressing) {
-		init_block_value(&zero_block, 0);
-		init_block_value(&input_block, 0);
+		rxa2_init_block_value(&zero_block, 0);
+		rxa2_init_block_value(&input_block, 0);
 
 		input_block.v[0] = position.pass;
 		input_block.v[1] = position.lane;
@@ -180,7 +180,7 @@ void fill_segment(const argon2_instance_t *instance,
 		 * lane.
 		 */
 		position.index = i;
-		ref_index = index_alpha(instance, &position, pseudo_rand & 0xFFFFFFFF,
+		ref_index = rxa2_index_alpha(instance, &position, pseudo_rand & 0xFFFFFFFF,
 			ref_lane == position.lane);
 
 		/* 2 Creating a new block */

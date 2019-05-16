@@ -95,9 +95,9 @@ namespace randomx {
 		/* 3. Initialization: Hashing inputs, allocating memory, filling first
 		 * blocks
 		 */
-		argon_initialize(&instance, &context);
+		rxa2_argon_initialize(&instance, &context);
 
-		fill_memory_blocks(&instance);
+		rxa2_fill_memory_blocks(&instance);
 
 		cache->reciprocalCache.clear();
 		randomx::Blake2Generator gen(key, keySize);
