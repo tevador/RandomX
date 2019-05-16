@@ -87,7 +87,7 @@ randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
  *
  * @return the number of items contained in the dataset.
 */
-unsigned long randomx_dataset_item_count();
+unsigned long randomx_dataset_item_count(void);
 
 /**
  * Initializes dataset items.
