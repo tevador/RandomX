@@ -88,7 +88,7 @@ extern "C" {
 		const void *key, size_t keylen);
 
 	/* Argon2 Team - Begin Code */
-	int blake2b_long(void *out, size_t outlen, const void *in, size_t inlen);
+	int rxa2_blake2b_long(void *out, size_t outlen, const void *in, size_t inlen);
 	/* Argon2 Team - End Code */
 
 #if defined(__cplusplus)
