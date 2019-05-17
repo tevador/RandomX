@@ -63,3 +63,4 @@ add_library(randomx
 target_link_libraries(randomx
   PRIVATE
     ${CMAKE_THREAD_LIBS_INIT})
+set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
