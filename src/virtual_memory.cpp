@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdexcept>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
 #else
 #ifdef __APPLE__
@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 std::string getErrorMessage(const char* function) {
 	LPSTR messageBuffer = nullptr;
 	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -85,7 +85,7 @@ void setPrivilege(const char* pszPrivilege, BOOL bEnable) {
 
 void* allocExecutableMemory(std::size_t bytes) {
 	void* mem;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 	mem = VirtualAlloc(nullptr, bytes, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocExecutableMemory - VirtualAlloc"));
@@ -103,7 +103,7 @@ constexpr std::size_t align(std::size_t pos, std::size_t align) {
 
 void* allocLargePagesMemory(std::size_t bytes) {
 	void* mem;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 	setPrivilege("SeLockMemoryPrivilege", 1);
 	auto pageMinimum = GetLargePageMinimum();
 	if (pageMinimum > 0)
@@ -125,7 +125,7 @@ void* allocLargePagesMemory(std::size_t bytes) {
 }
 
 void freePagedMemory(void* ptr, std::size_t bytes) {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 	VirtualFree(ptr, 0, MEM_RELEASE);
 #else
 	munmap(ptr, bytes);

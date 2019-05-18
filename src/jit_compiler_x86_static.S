@@ -27,14 +27,12 @@
 .intel_syntax noprefix
 #if defined(__APPLE__)
 .text
-#else
-.section .text
-#endif
-#if defined(__WIN32__) || defined(__APPLE__)
 #define DECL(x) _##x
 #else
+.section .text
 #define DECL(x) x
 #endif
+
 .global DECL(randomx_program_prologue)
 .global DECL(randomx_program_loop_begin)
 .global DECL(randomx_program_loop_load)
@@ -63,7 +61,15 @@
 
 .balign 64
 DECL(randomx_program_prologue):
+#if defined(__CYGWIN__)
+	#include "asm/program_prologue_win64.inc"
+#else
 	#include "asm/program_prologue_linux.inc"
+#endif
+	movapd xmm13, xmmword ptr mantissaMask[rip]
+	movapd xmm14, xmmword ptr exp240[rip]
+	movapd xmm15, xmmword ptr scaleMask[rip]
+	jmp DECL(randomx_program_loop_begin)
 
 .balign 64
 	#include "asm/program_xmm_constants.inc"
@@ -101,10 +107,19 @@ DECL(randomx_dataset_init):
 	push r13
 	push r14
 	push r15
+#if defined(__CYGWIN__)
+	push rdi
+	push rsi
+	mov rdi, qword ptr [rcx] ;# cache->memory
+	mov rsi, rdx ;# dataset
+	mov rbp, r8  ;# block index
+	push r9      ;# max. block index
+#else
 	mov rdi, qword ptr [rdi] ;# cache->memory
 	;# dataset in rsi
 	mov rbp, rdx  ;# block index
 	push rcx      ;# max. block index
+#endif
 init_block_loop:
 	prefetchw byte ptr [rsi]
 	mov rbx, rbp
@@ -124,7 +139,11 @@ call_offset:
 	add rsi, 64
 	cmp rbp, qword ptr [rsp]
 	jb init_block_loop
-	pop rcx
+	pop rax
+#if defined(__CYGWIN__)
+	pop rsi
+	pop rdi
+#endif
 	pop r15
 	pop r14
 	pop r13
@@ -135,7 +154,12 @@ call_offset:
 
 .balign 64
 DECL(randomx_program_epilogue):
+	#include "asm/program_epilogue_store.inc"
+#if defined(__CYGWIN__)
+	#include "asm/program_epilogue_win64.inc"
+#else
 	#include "asm/program_epilogue_linux.inc"
+#endif
 
 .balign 64
 DECL(randomx_sshash_load):
@@ -176,5 +200,7 @@ DECL(randomx_program_end):
 	nop
 
 DECL(randomx_reciprocal_fast):
+#if !defined(__CYGWIN__)
 	mov rcx, rdi
+#endif
 	#include "asm/randomx_reciprocal.inc"

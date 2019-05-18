@@ -32,8 +32,3 @@
 	movapd xmm9, xmmword ptr [rcx+88]
 	movapd xmm10, xmmword ptr [rcx+104]
 	movapd xmm11, xmmword ptr [rcx+120]
-	movapd xmm13, xmmword ptr mantissaMask[rip]
-	movapd xmm14, xmmword ptr exp240[rip]
-	movapd xmm15, xmmword ptr scaleMask[rip]
-
-	jmp DECL(randomx_program_loop_begin)

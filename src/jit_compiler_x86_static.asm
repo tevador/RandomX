@@ -55,6 +55,10 @@ RANDOMX_CACHE_MASK          EQU (RANDOMX_ARGON_MEMORY*16-1)
 ALIGN 64
 randomx_program_prologue PROC
 	include asm/program_prologue_win64.inc
+	movapd xmm13, xmmword ptr [mantissaMask]
+	movapd xmm14, xmmword ptr [exp240]
+	movapd xmm15, xmmword ptr [scaleMask]
+	jmp randomx_program_loop_begin
 randomx_program_prologue ENDP
 
 ALIGN 64
@@ -139,6 +143,7 @@ randomx_dataset_init ENDP
 
 ALIGN 64
 randomx_program_epilogue PROC
+	include asm/program_epilogue_store.inc
 	include asm/program_epilogue_win64.inc
 randomx_program_epilogue ENDP
 

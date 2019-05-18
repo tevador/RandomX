@@ -45,8 +45,3 @@
 	movapd xmm9, xmmword ptr [rcx+88]
 	movapd xmm10, xmmword ptr [rcx+104]
 	movapd xmm11, xmmword ptr [rcx+120]
-	movapd xmm13, xmmword ptr [mantissaMask]
-	movapd xmm14, xmmword ptr [exp240]
-	movapd xmm15, xmmword ptr [scaleMask]
-
-	jmp randomx_program_loop_begin
