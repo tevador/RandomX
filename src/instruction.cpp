@@ -288,7 +288,7 @@ namespace randomx {
 	}
 
 	void Instruction::h_CBRANCH(std::ostream& os) const {
-		os << (int32_t)getImm32() << ", COND " << (int)(getModCond()) << std::endl;
+		os << "r" << (int)dst << ", " << (int32_t)getImm32() << ", COND " << (int)(getModCond()) << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {

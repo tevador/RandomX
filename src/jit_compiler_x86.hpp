@@ -67,7 +67,7 @@ namespace randomx {
 	private:
 		static InstructionGeneratorX86 engine[256];
 		std::vector<int32_t> instructionOffsets;
-		RegisterUsage registerUsage[RegistersCount];
+		int registerUsage[RegistersCount];
 		uint8_t* code;
 		int32_t codePos;
 

@@ -598,51 +598,42 @@ There are 2 control instructions.
 
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
-|1/256|CFROUND|`fprc`|R|`fprc = src >>> imm32`
-|16/256|CBRANCH|-|-|(conditional jump)
+|1/256|CFROUND|-|R|`fprc = src >>> imm32`
+|16/256|CBRANCH|R|-|`dst = dst + cimm`, conditional jump
 
 #### 5.4.1 CFROUND
 This instruction calculates a 2-bit value by rotating the source register right by `imm32` bits and taking the 2 least significant bits (the value of the source register is unaffected). The result is stored in the `fprc` register. This changes the rounding mode of all subsequent floating point instructions.
 
 #### 5.4.2 CBRANCH
 
-This instruction performs a conditional jump in the Program Buffer. It uses an implicit integer register operand `creg`. This register is determined based on preceding instructions. For this purpose, the VM assigns each integer register two tag values:
+This instruction adds an immediate value `cimm` (constructed from `imm32`, see below) to the destination register and then performs a conditional jump in the Program Buffer based on the value of the destination register. The target of the jump is the instruction following the instruction when register `dst` was last modified.
 
-* `lastUsed` - the index of the instruction when the register was last modified. The initial value at the start of each program iteration is `-1`, meaning the register is unmodified.
-* `count` - the number of times the register has been selected as the operand of a CBRANCH instruction. The initial value at the start of each program iteration is `0`.
-
-A register is considered as modified by an instruction in the following cases:
+At the beginning of each program iteration, all registers are considered to be unmodified. A register is considered as modified by an instruction in the following cases:
 
 * It is the destination register of an integer instruction except IMUL_RCP and ISWAP_R.
 * It is the destination register of IMUL_RCP and `imm32` is not zero or a power of 2.
 * It is the source or the destination register of ISWAP_R and the destination and source registers are distinct.
 * The CBRANCH instruction is considered to modify all integer registers.
 
-There are 3 rules for the selection of the `creg` register, evaluated in this order:
-
-1. The register with the lowest value of `lastUsed` tag is selected.
-1. In case multiple registers have the same value of the `lastUsed` tag, the register with the lowest value of the `count` tag is selected from them.
-1. In case multiple registers have the same values of both `lastUsed` and `count` tags, the register with the lowest index is selected (`r0` before `r1` etc.) from them.
-
-Whenever a register is selected as the operand of a CBRANCH instruction, its `count` tag is increased by 1.
+If register `dst` has not been modified yet, the jump target is the first instruction in the Program Buffer.
 
 The CBRANCH instruction performs the following steps:
 
 1. A constant `b` is calculated as `mod.cond + RANDOMX_JUMP_OFFSET`.
 1. A constant `cimm` is constructed as sign-extended `imm32` with bit `b` set to 1 and bit `b-1` set to 0 (if `b > 0`).
-1. `cimm` is added to `creg`.
-1. If bits `b` to `b + RANDOMX_JUMP_BITS - 1` of `creg` are zero, execution jumps to instruction `creg.lastUsed + 1` (the instruction following the instruction where `creg` was last modified).
+1. `cimm` is added to the destination register.
+1. If bits `b` to `b + RANDOMX_JUMP_BITS - 1` of the destination register are zero, the jump is executed (target is the instruction following the instruction where `dst` was last modified).
 
 Bits in immediate and register values are numbered from 0 to 63 with 0 being the least significant bit. For example, for `b = 10` and `RANDOMX_JUMP_BITS = 8`, the bits are arranged like this:
 
 ```
 cimm = SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMMMMMMMMMMMMM10MMMMMMMMM
-creg = ..............................................XXXXXXXX..........
+ dst = ..............................................XXXXXXXX..........
 ```
 
-`S` is a copied sign bit from `imm32`. `M` denotes bits of `imm32`. The 9th bit is set to 0 and the 10th bit is set to 1. This value would be added to `creg`.
+`S` is a copied sign bit from `imm32`. `M` denotes bits of `imm32`. The 9th bit is set to 0 and the 10th bit is set to 1. This value will be added to `dst`.
 
-The second line uses `X` to mark bits of `creg` that would be checked by the condition. If all these bits are 0 after adding `cimm`, the jump is executed.
+The second line uses `X` to mark bits of `dst` that will be checked by the condition. If all these bits are 0 after adding `cimm`, the jump is executed.
 
 The construction of the CBRANCH instruction ensures that no inifinite loops are possible in the program.
 

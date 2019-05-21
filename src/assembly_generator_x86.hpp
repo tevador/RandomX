@@ -89,6 +89,6 @@ namespace randomx {
 
 		static InstructionGenerator engine[256];
 		std::stringstream asmCode;
-		RegisterUsage registerUsage[RegistersCount];
+		int registerUsage[RegistersCount];
 	};
 }

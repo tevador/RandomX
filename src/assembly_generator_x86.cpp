@@ -53,8 +53,7 @@ namespace randomx {
 
 	void AssemblyGeneratorX86::generateProgram(Program& prog) {
 		for (unsigned i = 0; i < RegistersCount; ++i) {
-			registerUsage[i].lastUsed = -1;
-			registerUsage[i].count = 0;
+			registerUsage[i] = -1;
 		}
 		asmCode.str(std::string()); //clear
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
@@ -270,7 +269,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IADD_RS(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if(instr.dst == RegisterNeedsDisplacement)
 			asmCode << "\tlea " << regR[instr.dst] << ", [" << regR[instr.dst] << "+" << regR[instr.src] << "*" << (1 << (instr.getModShift())) << std::showpos << (int32_t)instr.getImm32() << std::noshowpos << "]" << std::endl;
 		else
@@ -279,7 +278,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IADD_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			asmCode << "\tadd " << regR[instr.dst] << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
@@ -291,7 +290,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_ISUB_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			asmCode << "\tsub " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
@@ -302,7 +301,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_ISUB_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			asmCode << "\tsub " << regR[instr.dst] << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
@@ -314,7 +313,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IMUL_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			asmCode << "\timul " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
@@ -325,7 +324,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IMUL_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			asmCode << "\timul " << regR[instr.dst] << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
@@ -337,7 +336,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IMULH_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
 		asmCode << "\tmul " << regR[instr.src] << std::endl;
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
@@ -345,7 +344,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IMULH_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, "ecx");
 			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
@@ -360,7 +359,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_ISMULH_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
 		asmCode << "\timul " << regR[instr.src] << std::endl;
 		asmCode << "\tmov " << regR[instr.dst] << ", rdx" << std::endl;
@@ -368,7 +367,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_ISMULH_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, "ecx");
 			asmCode << "\tmov rax, " << regR[instr.dst] << std::endl;
@@ -383,13 +382,13 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_INEG_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		asmCode << "\tneg " << regR[instr.dst] << std::endl;
 		traceint(instr);
 	}
 
 	void AssemblyGeneratorX86::h_IXOR_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			asmCode << "\txor " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 		}
@@ -400,7 +399,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IXOR_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			asmCode << "\txor " << regR[instr.dst] << ", qword ptr [" << regScratchpadAddr << "+rax]" << std::endl;
@@ -412,7 +411,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IROR_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			asmCode << "\tmov ecx, " << regR32[instr.src] << std::endl;
 			asmCode << "\tror " << regR[instr.dst] << ", cl" << std::endl;
@@ -424,7 +423,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IROL_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			asmCode << "\tmov ecx, " << regR32[instr.src] << std::endl;
 			asmCode << "\trol " << regR[instr.dst] << ", cl" << std::endl;
@@ -438,7 +437,7 @@ namespace randomx {
 	void AssemblyGeneratorX86::h_IMUL_RCP(Instruction& instr, int i) {
 		uint64_t divisor = instr.getImm32();
 		if (!isPowerOf2(divisor)) {
-			registerUsage[instr.dst].lastUsed = i;
+			registerUsage[instr.dst] = i;
 			asmCode << "\tmov rax, " << randomx_reciprocal(divisor) << std::endl;
 			asmCode << "\timul " << regR[instr.dst] << ", rax" << std::endl;
 			traceint(instr);
@@ -450,8 +449,8 @@ namespace randomx {
 
 	void AssemblyGeneratorX86::h_ISWAP_R(Instruction& instr, int i) {
 		if (instr.src != instr.dst) {
-			registerUsage[instr.dst].lastUsed = i;
-			registerUsage[instr.src].lastUsed = i;
+			registerUsage[instr.dst] = i;
+			registerUsage[instr.src] = i;
 			asmCode << "\txchg " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
 			traceint(instr);
 		}
@@ -538,9 +537,8 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_CBRANCH(Instruction& instr, int i) {
-		int reg = getConditionRegister(registerUsage);
-		int target = registerUsage[reg].lastUsed + 1;
-		registerUsage[reg].count++;
+		int reg = instr.dst;
+		int target = registerUsage[reg] + 1;
 		int shift = instr.getModCond() + ConditionOffset;
 		int32_t imm = instr.getImm32() | (1L << shift);
 		if (ConditionOffset > 0 || shift > 0)
@@ -550,7 +548,7 @@ namespace randomx {
 		asmCode << "\tjz randomx_isn_" << target << std::endl;
 		//mark all registers as used
 		for (unsigned j = 0; j < RegistersCount; ++j) {
-			registerUsage[j].lastUsed = i;
+			registerUsage[j] = i;
 		}
 	}
 

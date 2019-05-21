@@ -267,8 +267,7 @@ namespace randomx {
 	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
 		instructionOffsets.clear();
 		for (unsigned i = 0; i < 8; ++i) {
-			registerUsage[i].lastUsed = -1;
-			registerUsage[i].count = 0;
+			registerUsage[i] = -1;
 		}
 		codePos = prologueSize;
 		memcpy(code + codePos - 48, &pcfg.eMask, sizeof(pcfg.eMask));
@@ -435,7 +434,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IADD_RS(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		emit(REX_LEA);
 		if (instr.dst == RegisterNeedsDisplacement)
 			emitByte(0xac);
@@ -447,7 +446,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IADD_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			emit(REX_ADD_RM);
@@ -466,7 +465,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_ISUB_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_SUB_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
@@ -479,7 +478,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_ISUB_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			emit(REX_SUB_RM);
@@ -494,7 +493,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMUL_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_IMUL_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
@@ -507,7 +506,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMUL_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			emit(REX_IMUL_RM);
@@ -522,7 +521,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMULH_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -532,7 +531,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMULH_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, false);
 			emit(REX_MOV_RR64);
@@ -551,7 +550,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_ISMULH_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
 		emit(REX_MUL_R);
@@ -561,7 +560,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_ISMULH_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, false);
 			emit(REX_MOV_RR64);
@@ -582,7 +581,7 @@ namespace randomx {
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
 		uint64_t divisor = instr.getImm32();
 		if (!isPowerOf2(divisor)) {
-			registerUsage[instr.dst].lastUsed = i;
+			registerUsage[instr.dst] = i;
 			emit(MOV_RAX_I);
 			emit64(randomx_reciprocal_fast(divisor));
 			emit(REX_IMUL_RM);
@@ -591,13 +590,13 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_INEG_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		emit(REX_NEG);
 		emitByte(0xd8 + instr.dst);
 	}
 
 	void JitCompilerX86::h_IXOR_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_XOR_RR);
 			emitByte(0xc0 + 8 * instr.dst + instr.src);
@@ -610,7 +609,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IXOR_M(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr);
 			emit(REX_XOR_RM);
@@ -625,7 +624,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IROR_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_MOV_RR);
 			emitByte(0xc8 + instr.src);
@@ -640,7 +639,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IROL_R(Instruction& instr, int i) {
-		registerUsage[instr.dst].lastUsed = i;
+		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_MOV_RR);
 			emitByte(0xc8 + instr.src);
@@ -656,8 +655,8 @@ namespace randomx {
 
 	void JitCompilerX86::h_ISWAP_R(Instruction& instr, int i) {
 		if (instr.src != instr.dst) {
-			registerUsage[instr.dst].lastUsed = i;
-			registerUsage[instr.src].lastUsed = i;
+			registerUsage[instr.dst] = i;
+			registerUsage[instr.src] = i;
 			emit(REX_XCHG);
 			emitByte(0xc0 + instr.src + 8 * instr.dst);
 		}
@@ -739,9 +738,8 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_CBRANCH(Instruction& instr, int i) {
-		int reg = getConditionRegister(registerUsage);
-		int target = registerUsage[reg].lastUsed + 1;
-		registerUsage[reg].count++;
+		int reg = instr.dst;
+		int target = registerUsage[reg] + 1;
 		emit(REX_ADD_I);
 		emitByte(0xc0 + reg);
 		int shift = instr.getModCond() + ConditionOffset;
@@ -756,7 +754,7 @@ namespace randomx {
 		emit32(instructionOffsets[target] - (codePos + 4));
 		//mark all registers as used
 		for (unsigned j = 0; j < RegistersCount; ++j) {
-			registerUsage[j].lastUsed = i;
+			registerUsage[j] = i;
 		}
 	}
 

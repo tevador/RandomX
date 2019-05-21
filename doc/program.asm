@@ -19,9 +19,9 @@ randomx_isn_4:
 	mov ecx, r13d
 	ror r11, cl
 randomx_isn_5:
-	; CBRANCH -1891017657, COND 15
-	add r10, -1886823353
-	test r10, 2139095040
+	; CBRANCH r7, -1891017657, COND 15
+	add r15, -1886823353
+	test r15, 2139095040
 	jz randomx_isn_0
 randomx_isn_6:
 	; ISUB_M r3, L1[r7-1023302103]
@@ -41,10 +41,10 @@ randomx_isn_10:
 	; FADD_R f0, a3
 	addpd xmm0, xmm11
 randomx_isn_11:
-	; CBRANCH -1981570318, COND 4
-	add r8, -1981566222
-	test r8, 1044480
-	jz randomx_isn_6
+	; CBRANCH r3, -1981570318, COND 4
+	add r11, -1981566222
+	test r11, 1044480
+	jz randomx_isn_10
 randomx_isn_12:
 	; FSUB_R f0, a1
 	subpd xmm0, xmm9
@@ -55,9 +55,9 @@ randomx_isn_14:
 	; FSQRT_R e2
 	sqrtpd xmm6, xmm6
 randomx_isn_15:
-	; CBRANCH -1278791788, COND 14
-	add r11, -1278791788
-	test r11, 1069547520
+	; CBRANCH r5, -1278791788, COND 14
+	add r13, -1278791788
+	test r13, 1069547520
 	jz randomx_isn_12
 randomx_isn_16:
 	; ISUB_R r3, -1310797453
@@ -167,10 +167,10 @@ randomx_isn_42:
 	; ISUB_R r4, r3
 	sub r12, r11
 randomx_isn_43:
-	; CBRANCH 335851892, COND 5
-	add r13, 335847796
-	test r13, 2088960
-	jz randomx_isn_16
+	; CBRANCH r6, 335851892, COND 5
+	add r14, 335847796
+	test r14, 2088960
+	jz randomx_isn_25
 randomx_isn_44:
 	; IADD_RS r7, r5, SHFT 3
 	lea r15, [r15+r13*8]
@@ -194,10 +194,10 @@ randomx_isn_48:
 	; IMUL_R r0, r5
 	imul r8, r13
 randomx_isn_49:
-	; CBRANCH -272659465, COND 15
-	add r9, -272659465
-	test r9, 2139095040
-	jz randomx_isn_44
+	; CBRANCH r2, -272659465, COND 15
+	add r10, -272659465
+	test r10, 2139095040
+	jz randomx_isn_48
 randomx_isn_50:
 	; ISTORE L1[r6+1414933948], r5
 	lea eax, [r14d+1414933948]
@@ -212,9 +212,9 @@ randomx_isn_52:
 	; FSCAL_R f1
 	xorps xmm1, xmm15
 randomx_isn_53:
-	; CBRANCH -2143810604, COND 1
-	add r12, -2143810860
-	test r12, 130560
+	; CBRANCH r6, -2143810604, COND 1
+	add r14, -2143810860
+	test r14, 130560
 	jz randomx_isn_50
 randomx_isn_54:
 	; ISUB_M r3, L1[r1-649360673]
@@ -241,7 +241,7 @@ randomx_isn_58:
 	; IADD_RS r4, r2, SHFT 1
 	lea r12, [r12+r10*2]
 randomx_isn_59:
-	; CBRANCH -704407571, COND 10
+	; CBRANCH r6, -704407571, COND 10
 	add r14, -704276499
 	test r14, 66846720
 	jz randomx_isn_54
@@ -263,9 +263,9 @@ randomx_isn_64:
 	and eax, 2097144
 	mov qword ptr [rsi+rax], r8
 randomx_isn_65:
-	; CBRANCH -67701844, COND 5
-	add r15, -67705940
-	test r15, 2088960
+	; CBRANCH r1, -67701844, COND 5
+	add r9, -67705940
+	test r9, 2088960
 	jz randomx_isn_60
 randomx_isn_66:
 	; IROR_R r3, r1
@@ -345,10 +345,10 @@ randomx_isn_86:
 	mul r12
 	mov r11, rdx
 randomx_isn_87:
-	; CBRANCH -1821955951, COND 5
-	add r8, -1821955951
-	test r8, 2088960
-	jz randomx_isn_66
+	; CBRANCH r3, -1821955951, COND 5
+	add r11, -1821955951
+	test r11, 2088960
+	jz randomx_isn_87
 randomx_isn_88:
 	; FADD_R f2, a3
 	addpd xmm2, xmm11
@@ -356,9 +356,9 @@ randomx_isn_89:
 	; IXOR_R r6, r3
 	xor r14, r11
 randomx_isn_90:
-	; CBRANCH -1780348372, COND 15
-	add r9, -1784542676
-	test r9, 2139095040
+	; CBRANCH r4, -1780348372, COND 15
+	add r12, -1784542676
+	test r12, 2139095040
 	jz randomx_isn_88
 randomx_isn_91:
 	; IROR_R r4, 55
@@ -403,10 +403,10 @@ randomx_isn_102:
 	; IXOR_R r4, r7
 	xor r12, r15
 randomx_isn_103:
-	; CBRANCH -607792642, COND 4
-	add r11, -607792642
-	test r11, 1044480
-	jz randomx_isn_91
+	; CBRANCH r7, -607792642, COND 4
+	add r15, -607792642
+	test r15, 1044480
+	jz randomx_isn_99
 randomx_isn_104:
 	; FMUL_R e1, a1
 	mulpd xmm5, xmm9
@@ -484,10 +484,10 @@ randomx_isn_123:
 	; FSQRT_R e2
 	sqrtpd xmm6, xmm6
 randomx_isn_124:
-	; CBRANCH -1807592127, COND 12
-	add r15, -1806543551
-	test r15, 267386880
-	jz randomx_isn_104
+	; CBRANCH r1, -1807592127, COND 12
+	add r9, -1806543551
+	test r9, 267386880
+	jz randomx_isn_118
 randomx_isn_125:
 	; IADD_RS r4, r4, SHFT 0
 	lea r12, [r12+r12*1]
@@ -703,10 +703,10 @@ randomx_isn_180:
 	and eax, 16376
 	xor r15, qword ptr [rsi+rax]
 randomx_isn_181:
-	; CBRANCH -759703940, COND 2
-	add r14, -759704452
-	test r14, 261120
-	jz randomx_isn_144
+	; CBRANCH r2, -759703940, COND 2
+	add r10, -759704452
+	test r10, 261120
+	jz randomx_isn_175
 randomx_isn_182:
 	; FADD_R f1, a2
 	addpd xmm1, xmm10
@@ -781,9 +781,9 @@ randomx_isn_202:
 	; FSUB_R f0, a0
 	subpd xmm0, xmm8
 randomx_isn_203:
-	; CBRANCH -1282235504, COND 2
-	add r12, -1282234992
-	test r12, 261120
+	; CBRANCH r1, -1282235504, COND 2
+	add r9, -1282234992
+	test r9, 261120
 	jz randomx_isn_182
 randomx_isn_204:
 	; IMUL_M r1, L3[176744]
@@ -792,9 +792,9 @@ randomx_isn_205:
 	; FSWAP_R e1
 	shufpd xmm5, xmm5, 1
 randomx_isn_206:
-	; CBRANCH -1557284726, COND 14
-	add r10, -1555187574
-	test r10, 1069547520
+	; CBRANCH r0, -1557284726, COND 14
+	add r8, -1555187574
+	test r8, 1069547520
 	jz randomx_isn_204
 randomx_isn_207:
 	; IADD_M r3, L1[r0+72267507]
@@ -945,10 +945,10 @@ randomx_isn_246:
 	mov rax, 9887096364157721599
 	imul r12, rax
 randomx_isn_247:
-	; CBRANCH -722123512, COND 2
-	add r13, -722123512
-	test r13, 261120
-	jz randomx_isn_217
+	; CBRANCH r3, -722123512, COND 2
+	add r11, -722123512
+	test r11, 261120
+	jz randomx_isn_246
 randomx_isn_248:
 	; ISMULH_R r7, r6
 	mov rax, r15
@@ -977,7 +977,7 @@ randomx_isn_254:
 	; FMUL_R e3, a2
 	mulpd xmm7, xmm10
 randomx_isn_255:
-	; CBRANCH -2007380935, COND 9
-	add r9, -2007315399
-	test r9, 33423360
-	jz randomx_isn_248
+	; CBRANCH r7, -2007380935, COND 9
+	add r15, -2007315399
+	test r15, 33423360
+	jz randomx_isn_249
