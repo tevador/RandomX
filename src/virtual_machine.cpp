@@ -127,7 +127,7 @@ namespace randomx {
 
 	template<class Allocator, bool softAes>
 	void VmBase<Allocator, softAes>::generateProgram(void* seed) {
-		fillAes1Rx4<softAes>(seed, sizeof(program), &program);
+		fillAes4Rx4<softAes>(seed, sizeof(program), &program);
 	}
 
 	template class VmBase<AlignedAllocator<CacheLineSize>, false>;

@@ -93,6 +93,11 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 template void hashAes1Rx4<false>(const void *input, size_t inputSize, void *hash);
 template void hashAes1Rx4<true>(const void *input, size_t inputSize, void *hash);
 
+#define AES_FILL_KEY0 0xdf20a2e3, 0xca329132, 0x454ff6d5, 0x84eeec2d
+#define AES_FILL_KEY1 0x1deb5971, 0xfed0387f, 0xf10fc578, 0x017b63d0
+#define AES_FILL_KEY2 0xdfc926b3, 0xa517ceb4, 0x2f2c70a1, 0x327d7a52
+#define AES_FILL_KEY3 0x341cf31c, 0xa0ece0a9, 0x3d17da5e, 0x5c8d77d3
+
 /*
 	Fill 'buffer' with pseudorandom data based on 512-bit 'state'.
 	The state is encrypted using a single AES round per 16 bytes of output
@@ -111,10 +116,10 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 	rx_vec_i128 state0, state1, state2, state3;
 	rx_vec_i128 key0, key1, key2, key3;
 
-	key0 = rx_set_int_vec_i128(0xdf20a2e3, 0xca329132, 0x454ff6d5, 0x84eeec2d);
-	key1 = rx_set_int_vec_i128(0x1deb5971, 0xfed0387f, 0xf10fc578, 0x017b63d0);
-	key2 = rx_set_int_vec_i128(0xdfc926b3, 0xa517ceb4, 0x2f2c70a1, 0x327d7a52);
-	key3 = rx_set_int_vec_i128(0x341cf31c, 0xa0ece0a9, 0x3d17da5e, 0x5c8d77d3);
+	key0 = rx_set_int_vec_i128(AES_FILL_KEY0);
+	key1 = rx_set_int_vec_i128(AES_FILL_KEY1);
+	key2 = rx_set_int_vec_i128(AES_FILL_KEY2);
+	key3 = rx_set_int_vec_i128(AES_FILL_KEY3);
 
 	state0 = rx_load_vec_i128((rx_vec_i128*)state + 0);
 	state1 = rx_load_vec_i128((rx_vec_i128*)state + 1);
@@ -143,3 +148,54 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 
 template void fillAes1Rx4<true>(void *state, size_t outputSize, void *buffer);
 template void fillAes1Rx4<false>(void *state, size_t outputSize, void *buffer);
+
+template<bool softAes>
+void fillAes4Rx4(void *state, size_t outputSize, void *buffer) {
+	const uint8_t* outptr = (uint8_t*)buffer;
+	const uint8_t* outputEnd = outptr + outputSize;
+
+	rx_vec_i128 state0, state1, state2, state3;
+	rx_vec_i128 key0, key1, key2, key3;
+
+	key0 = rx_set_int_vec_i128(AES_FILL_KEY0);
+	key1 = rx_set_int_vec_i128(AES_FILL_KEY1);
+	key2 = rx_set_int_vec_i128(AES_FILL_KEY2);
+	key3 = rx_set_int_vec_i128(AES_FILL_KEY3);
+
+	state0 = rx_load_vec_i128((rx_vec_i128*)state + 0);
+	state1 = rx_load_vec_i128((rx_vec_i128*)state + 1);
+	state2 = rx_load_vec_i128((rx_vec_i128*)state + 2);
+	state3 = rx_load_vec_i128((rx_vec_i128*)state + 3);
+
+	while (outptr < outputEnd) {
+		state0 = aesdec<softAes>(state0, key0);
+		state1 = aesenc<softAes>(state1, key0);
+		state2 = aesdec<softAes>(state2, key0);
+		state3 = aesenc<softAes>(state3, key0);
+
+		state0 = aesdec<softAes>(state0, key1);
+		state1 = aesenc<softAes>(state1, key1);
+		state2 = aesdec<softAes>(state2, key1);
+		state3 = aesenc<softAes>(state3, key1);
+
+		state0 = aesdec<softAes>(state0, key2);
+		state1 = aesenc<softAes>(state1, key2);
+		state2 = aesdec<softAes>(state2, key2);
+		state3 = aesenc<softAes>(state3, key2);
+
+		state0 = aesdec<softAes>(state0, key3);
+		state1 = aesenc<softAes>(state1, key3);
+		state2 = aesdec<softAes>(state2, key3);
+		state3 = aesenc<softAes>(state3, key3);
+
+		rx_store_vec_i128((rx_vec_i128*)outptr + 0, state0);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 1, state1);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 2, state2);
+		rx_store_vec_i128((rx_vec_i128*)outptr + 3, state3);
+
+		outptr += 64;
+	}
+}
+
+template void fillAes4Rx4<true>(void *state, size_t outputSize, void *buffer);
+template void fillAes4Rx4<false>(void *state, size_t outputSize, void *buffer);
