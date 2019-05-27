@@ -23,9 +23,11 @@ RandomX is a proof of work (PoW) algorithm which was designed to close the gap b
 
 **Argon2d** is a tradeoff-resistant variant of [Argon2](https://github.com/P-H-C/phc-winner-argon2/blob/master/argon2-specs.pdf), a memory-hard password derivation function.
 
-**AesGenerator** refers to an AES-based pseudo-random number generator described in chapter 3.2. It's initialized with a 512-bit seed value and is capable of producing more than 10 bytes per clock cycle.
+**AesGenerator1R** refers to an AES-based pseudo-random number generator described in chapter 3.2. It's initialized with a 512-bit seed value and is capable of producing more than 10 bytes per clock cycle.
 
-**AesHash** refers to an AES-based fingerprinting function described in chapter 3.3. It's capable of processing more than 10 bytes per clock cycle and produces a 512-bit output.
+**AesGenerator4R** is a slower but more secure AES-based pseudo-random number generator described in chapter 3.3. It's initialized with a 512-bit seed value.
+
+**AesHash1R** refers to an AES-based fingerprinting function described in chapter 3.4. It's capable of processing more than 10 bytes per clock cycle and produces a 512-bit output.
 
 **BlakeGenerator** refers to a custom pseudo-random number generator described in chapter 3.4. It's based on the Blake2b hashing function.
 
@@ -88,15 +90,16 @@ The algorithm consists of the following steps:
 
 1. The Dataset is initialized using the key value `K` (see chapter 7 for details).
 1. 64-byte seed `S` is calculated as `S = Hash512(H)`.
-1. AesGenerator is initialized with state `S`.
-1. The Scratchpad is filled with `RANDOMX_SCRATCHPAD_L3` random bytes obtained from the AesGenerator.
+1. Let `gen1 = AesGenerator1R(S)`.
+1. The Scratchpad is filled with `RANDOMX_SCRATCHPAD_L3` random bytes using generator `gen1`.
+1. Let `gen4 = AesGenerator4R(gen1.state)` (use the final state of `gen1`).
 1. The value of the VM register `fprc` is set to 0 (default rounding mode - see chapter 4.3). 
-1. The VM is programmed using `128 + 8 * RANDOMX_PROGRAM_SIZE` random bytes from the AesGenerator (see chapter 4.5).
+1. The VM is programmed using `128 + 8 * RANDOMX_PROGRAM_SIZE` random bytes using generator `gen4` (see chapter 4.5).
 1. The VM is executed (see chapter 4.6).
 1. New 64-byte seed is calculated as `S = Hash512(RegisterFile)`.
-1. AesGenerator is reinitialized with seed `S`.
-1. Steps 6-9 are performed a total of `RANDOMX_PROGRAM_COUNT` times. The last iteration skips steps 8 and 9.
-1. Scratchpad fingerprint is calculated as `A = AesHash(Scratchpad)`.
+1. Set `gen4.state = S` (modify the state of the generator).
+1. Steps 7-10 are performed a total of `RANDOMX_PROGRAM_COUNT` times. The last iteration skips steps 9 and 10.
+1. Scratchpad fingerprint is calculated as `A = AesHash1R(Scratchpad)`.
 1. The binary values of the VM registers `a0`-`a3` (4×16 bytes) are set to the value of `A`.
 1. Result is calculated as `R = Hash256(RegisterFile)`.
 
@@ -110,11 +113,11 @@ Two of the custom functions are based on the [Advanced Encryption Standard](http
 
 **AES decryption round** refers to the application of inverse ShiftRows, inverse SubBytes and inverse MixColumns transformations followed by a XOR with the round key.
 
-### 3.2 AesGenerator
+### 3.2 AesGenerator1R
 
-AesGenerator produces a sequence of pseudo-random bytes.
+AesGenerator1R produces a sequence of pseudo-random bytes.
 
-The internal state of AesGenerator consists of 64 bytes arranged into four columns of 16 bytes each. During each output iteration, every column is decrypted (columns 0, 2) or encrypted (columns 1, 3) with one AES round using the following round keys (one key per column):
+The internal state of the generator consists of 64 bytes arranged into four columns of 16 bytes each. During each output iteration, every column is decrypted (columns 0, 2) or encrypted (columns 1, 3) with one AES round using the following round keys (one key per column):
 
 ```
 key0 = 2d ec ee 84 d5 f6 4f 45 32 91 32 ca e3 a2 20 df
@@ -142,11 +145,39 @@ state0 (16 B)    state1 (16 B)    state2 (16 B)    state3 (16 B)
   state0'          state1'          state2'          state3'
 ```
 
-### 3.3 AesHash
+### 3.3 AesGenerator4R
 
-AesHash calculates a 512-bit fingerprint of its input.
+AesGenerator4R works the same way as AesGenerator1R, except it uses 4 rounds per column:
 
-AesHash has a 64-byte internal state, which is arranged into four columns of 16 bytes each. The initial state is:
+```
+state0 (16 B)    state1 (16 B)    state2 (16 B)    state3 (16 B)
+     |                |                |                |
+ AES decrypt      AES encrypt      AES decrypt      AES encrypt
+   (key0)           (key0)           (key0)           (key0)
+     |                |                |                |
+     v                v                v                v
+ AES decrypt      AES encrypt      AES decrypt      AES encrypt
+   (key1)           (key1)           (key1)           (key1)
+     |                |                |                |
+     v                v                v                v
+ AES decrypt      AES encrypt      AES decrypt      AES encrypt
+   (key2)           (key2)           (key2)           (key2)
+     |                |                |                |
+     v                v                v                v
+ AES decrypt      AES encrypt      AES decrypt      AES encrypt
+   (key3)           (key3)           (key3)           (key3)
+     |                |                |                |
+     v                v                v                v
+  state0'          state1'          state2'          state3'
+```
+
+Round keys `key0`, `key1`, `key2` and `key3` are the same as the ones used by AesGenerator1R.
+
+### 3.4 AesHash1R
+
+AesHash1R calculates a 512-bit fingerprint of its input.
+
+AesHash1R has a 64-byte internal state, which is arranged into four columns of 16 bytes each. The initial state is:
 
 ```
 state0 = 00 8e 77 c4 ab f5 7a 88 67 d1 46 11 fd 26 31 8d
