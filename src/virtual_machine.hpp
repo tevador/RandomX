@@ -60,7 +60,7 @@ protected:
 		randomx_cache* cachePtr = nullptr;
 		randomx_dataset* datasetPtr;
 	};
-	uint32_t datasetOffset;
+	uint64_t datasetOffset;
 };
 
 namespace randomx {

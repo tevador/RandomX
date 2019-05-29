@@ -38,7 +38,7 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedLightVm<Allocator, softAes>::datasetRead(uint32_t address, int_reg_t(&r)[8]) {
+	void InterpretedLightVm<Allocator, softAes>::datasetRead(uint64_t address, int_reg_t(&r)[8]) {
 		uint32_t itemNumber = address / CacheLineSize;
 		int_reg_t rl[8];
 		
