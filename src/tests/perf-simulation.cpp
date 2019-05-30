@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 	readIntOption("--seed", argc, argv, seed, 0);
 	readIntOption("--executionPorts", argc, argv, executionPorts, 4);
 	readIntOption("--memoryPorts", argc, argv, memoryPorts, 2);
-	readIntOption("--pipeline", argc, argv, pipeline, 3 + speculate);
+	readIntOption("--pipeline", argc, argv, pipeline, 3);
 	randomx::Program p, original;
 	double totalCycles = 0.0;
 	double jumpCount = 0;
@@ -113,7 +113,6 @@ int executeInOrder(randomx::Program& p, randomx::Program& original, bool print, 
 	int flt_reg_ready[randomx::RegistersCount] = { 0 };
 	//each workgroup takes 1 or 2 cycles (2 cycles if any instruction has a memory operand)
 	while (index < RANDOMX_PROGRAM_SIZE) {
-		int memoryReads = 0;
 		int memoryAccesses = 0;
 		bool hasRound = false;
 		int workers = 0;
@@ -128,7 +127,10 @@ int executeInOrder(randomx::Program& p, randomx::Program& original, bool print, 
 			if (has(instr, MASK_SRC, SRC_INT) && int_reg_ready[instr.src] > cycle)
 				break;
 
-			if (has(instr, MASK_SRC, SRC_MEM) && int_reg_ready[instr.src] > cycle)
+			if (has(instr, MASK_SRC, SRC_MEM) && int_reg_ready[instr.src] > cycle - 1)
+				break;
+
+			if (has(instr, MASK_DST, DST_MEM) && int_reg_ready[instr.dst] > cycle - 1)
 				break;
 
 			if (has(instr, MASK_DST, DST_FLT) && flt_reg_ready[instr.dst] > cycle)
@@ -160,20 +162,12 @@ int executeInOrder(randomx::Program& p, randomx::Program& original, bool print, 
 			if (has(instr, MASK_EXT, OP_CFROUND))
 				hasRound = true;
 
-			if (has(instr, MASK_SRC, SRC_MEM)) {
-				memoryReads++;
+			if (has(instr, MASK_SRC, SRC_MEM) || has(instr, MASK_DST, DST_MEM)) {
 				memoryAccesses++;
-				if (print)
-					std::cout << std::setw(2) << (cycle + 2) << ": " << origi;
-			}
-			else {
-				if (print)
-					std::cout << std::setw(2) << (cycle + 1) << ": " << origi;
 			}
 
-			if (has(instr, MASK_DST, DST_MEM)) {
-				memoryAccesses++;
-			}
+			if (print)
+				std::cout << std::setw(2) << (cycle + 1) << ": " << origi;
 
 			//non-speculative execution must stall after branch
 			if (!speculate && has(instr, MASK_EXT, OP_BRANCH)) {
@@ -183,8 +177,6 @@ int executeInOrder(randomx::Program& p, randomx::Program& original, bool print, 
 		}
 		//std::cout << " workers: " << workers << std::endl;
 		cycle++;
-		if (memoryReads)
-			cycle++;
 	}
 	if (speculate) {
 		//account for mispredicted branches
@@ -201,8 +193,8 @@ int executeInOrder(randomx::Program& p, randomx::Program& original, bool print, 
 
 int executeOutOfOrder(randomx::Program& p, randomx::Program& original, bool print, int executionPorts, int memoryPorts, bool speculate, int pipeline) {
 	int index = 0;
-	int busyExecutionPorts[RANDOMX_PROGRAM_SIZE] = { 0 };
-	int busyMemoryPorts[RANDOMX_PROGRAM_SIZE] = { 0 };
+	int busyExecutionPorts[2 * RANDOMX_PROGRAM_SIZE] = { 0 };
+	int busyMemoryPorts[2 * RANDOMX_PROGRAM_SIZE] = { 0 };
 	int int_reg_ready[randomx::RegistersCount] = { 0 };
 	int flt_reg_ready[randomx::RegistersCount] = { 0 };
 	int fprcReady = 0;
@@ -219,14 +211,15 @@ int executeOutOfOrder(randomx::Program& p, randomx::Program& original, bool prin
 		//check dependencies
 		if (has(instr, MASK_SRC, SRC_INT)) {
 			retireCycle = std::max(retireCycle, int_reg_ready[instr.src]);
+			int_reg_ready[instr.src] = retireCycle;
 		}
 
 		if (has(instr, MASK_SRC, SRC_MEM)) {
-			retireCycle = std::max(retireCycle, int_reg_ready[instr.src]);
+			retireCycle = std::max(retireCycle, int_reg_ready[instr.src] + 1);
 			//find free memory port
-			do {
+			while (busyMemoryPorts[retireCycle - 1] >= memoryPorts) {
 				retireCycle++;
-			} while (busyMemoryPorts[retireCycle - 1] >= memoryPorts);
+			}
 			busyMemoryPorts[retireCycle - 1]++;
 		}
 
@@ -244,11 +237,13 @@ int executeOutOfOrder(randomx::Program& p, randomx::Program& original, bool prin
 
 		//execute
 		if (has(instr, MASK_DST, DST_MEM)) {
+			retireCycle = std::max(retireCycle, int_reg_ready[instr.dst] + 1);
 			//find free memory port
-			do {
+			while (busyMemoryPorts[retireCycle - 1] >= memoryPorts) {
 				retireCycle++;
-			} while (busyMemoryPorts[retireCycle - 1] >= memoryPorts);
+			}
 			busyMemoryPorts[retireCycle - 1]++;
+			retireCycle++;
 		}
 
 		if (has(instr, MASK_DST, DST_FLT)) {
@@ -625,7 +620,6 @@ int analyze(randomx::Program& p) {
 			CASE_REP(ISTORE) {
 				instr.dst = instr.dst % randomx::RegistersCount;
 				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_INT;
 				instr.opcode |= DST_MEM;
 				if (instr.getModCond() < randomx::StoreL3Condition)
 					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);

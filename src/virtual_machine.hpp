@@ -49,6 +49,10 @@ public:
 	const void* getScratchpad() {
 		return scratchpad;
 	}
+	const randomx::Program& getProgram()
+	{
+		return program;
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;

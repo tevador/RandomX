@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jit-performance", "vcxproj\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "perf-simulation", "vcxproj\perf-simulation.vcxproj", "{F1FC7AC0-2773-4A57-AFA7-56BB07216AA2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "runtime-distr", "vcxproj\runtime-distr.vcxproj", "{F207EC8C-C55F-46C0-8851-887A71574F54}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -123,6 +125,14 @@ Global
 		{F1FC7AC0-2773-4A57-AFA7-56BB07216AA2}.Release|x64.Build.0 = Release|x64
 		{F1FC7AC0-2773-4A57-AFA7-56BB07216AA2}.Release|x86.ActiveCfg = Release|Win32
 		{F1FC7AC0-2773-4A57-AFA7-56BB07216AA2}.Release|x86.Build.0 = Release|Win32
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Debug|x64.ActiveCfg = Debug|x64
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Debug|x64.Build.0 = Debug|x64
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Debug|x86.ActiveCfg = Debug|Win32
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Debug|x86.Build.0 = Debug|Win32
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Release|x64.ActiveCfg = Release|x64
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Release|x64.Build.0 = Release|x64
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Release|x86.ActiveCfg = Release|Win32
+		{F207EC8C-C55F-46C0-8851-887A71574F54}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -138,6 +148,7 @@ Global
 		{FF8BD408-AFD8-43C6-BE98-4D03B37E840B} = {4A4A689F-86AF-41C0-A974-1080506D0923}
 		{535F2111-FA81-4C76-A354-EDD2F9AA00E3} = {4A4A689F-86AF-41C0-A974-1080506D0923}
 		{F1FC7AC0-2773-4A57-AFA7-56BB07216AA2} = {4A4A689F-86AF-41C0-A974-1080506D0923}
+		{F207EC8C-C55F-46C0-8851-887A71574F54} = {4A4A689F-86AF-41C0-A974-1080506D0923}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4EBC03DB-AE37-4141-8147-692F16E0ED02}
