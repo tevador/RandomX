@@ -37,16 +37,16 @@ namespace randomx {
 		(this->*handler)(os);
 	}
 
-	void Instruction::genAddressReg(std::ostream& os) const {
-		os << (getModMem() ? "L1" : "L2") << "[r" << (int)src << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
+	void Instruction::genAddressReg(std::ostream& os, int srcIndex) const {
+		os << (getModMem() ? "L1" : "L2") << "[r" << srcIndex << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
 	}
 
-	void Instruction::genAddressRegDst(std::ostream& os) const {
+	void Instruction::genAddressRegDst(std::ostream& os, int dstIndex) const {
 		if (getModCond() < StoreL3Condition)
 			os << (getModMem() ? "L1" : "L2");
 		else
 			os << "L3";
-		os << "[r" << (int)dst << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
+		os << "[r" << dstIndex << std::showpos << (int32_t)getImm32() << std::noshowpos << "]";
 	}
 
 	void Instruction::genAddressImm(std::ostream& os) const {
@@ -54,159 +54,192 @@ namespace randomx {
 	}
 
 	void Instruction::h_IADD_RS(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src;
-		if(dst == RegisterNeedsDisplacement) {
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		os << "r" << dstIndex << ", r" << srcIndex;
+		if(dstIndex == RegisterNeedsDisplacement) {
 			os << ", " << (int32_t)getImm32();
 		}
-		os << ", SHFT " << (int)getModShift() << std::endl;
+		os << ", SHFT " << getModShift() << std::endl;
 	}
 
 	void Instruction::h_IADD_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_ISUB_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
+			os << "r" << dstIndex << ", " << (int32_t)getImm32() << std::endl;
 		}
 	}
 
 	void Instruction::h_ISUB_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_IMUL_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
+			os << "r" << dstIndex << ", " << (int32_t)getImm32() << std::endl;
 		}
 	}
 
 	void Instruction::h_IMUL_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_IMULH_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 	}
 
 	void Instruction::h_IMULH_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_ISMULH_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 	}
 
 	void Instruction::h_ISMULH_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_INEG_R(std::ostream& os) const {
-		os << "r" << (int)dst << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		os << "r" << dstIndex << std::endl;
 	}
 
 	void Instruction::h_IXOR_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << (int32_t)getImm32() << std::endl;
+			os << "r" << dstIndex << ", " << (int32_t)getImm32() << std::endl;
 		}
 	}
 
 	void Instruction::h_IXOR_M(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", ";
-			genAddressReg(os);
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", ";
+			genAddressReg(os, srcIndex);
 			os << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", ";
+			os << "r" << dstIndex << ", ";
 			genAddressImm(os);
 			os << std::endl;
 		}
 	}
 
 	void Instruction::h_IROR_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << (getImm32() & 63) << std::endl;
+			os << "r" << dstIndex << ", " << (getImm32() & 63) << std::endl;
 		}
 	}
 
 	void Instruction::h_IROL_R(std::ostream& os) const {
-		if (src != dst) {
-			os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		if (dstIndex != srcIndex) {
+			os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 		}
 		else {
-			os << "r" << (int)dst << ", " << (getImm32() & 63) << std::endl;
+			os << "r" << dstIndex << ", " << (getImm32() & 63) << std::endl;
 		}
 	}
 
 	void Instruction::h_IMUL_RCP(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << getImm32() << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		os << "r" << dstIndex << ", " << getImm32() << std::endl;
 	}
 
 	void Instruction::h_ISWAP_R(std::ostream& os) const {
-		os << "r" << (int)dst << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		os << "r" << dstIndex << ", r" << srcIndex << std::endl;
 	}
 
 	void Instruction::h_FSWAP_R(std::ostream& os) const {
-		const char reg = (dst >= RegisterCountFlt) ? 'e' : 'f';
-		auto dstIndex = dst % RegisterCountFlt;
+		auto dstIndex = dst % RegistersCount;
+		const char reg = (dstIndex >= RegisterCountFlt) ? 'e' : 'f';
+		dstIndex %= RegisterCountFlt;
 		os << reg << dstIndex << std::endl;
 	}
 
@@ -218,8 +251,9 @@ namespace randomx {
 
 	void Instruction::h_FADD_M(std::ostream& os) const {
 		auto dstIndex = dst % RegisterCountFlt;
+		auto srcIndex = src % RegistersCount;
 		os << "f" << dstIndex << ", ";
-		genAddressReg(os);
+		genAddressReg(os, srcIndex);
 		os << std::endl;
 	}
 
@@ -231,8 +265,9 @@ namespace randomx {
 
 	void Instruction::h_FSUB_M(std::ostream& os) const {
 		auto dstIndex = dst % RegisterCountFlt;
+		auto srcIndex = src % RegistersCount;
 		os << "f" << dstIndex << ", ";
-		genAddressReg(os);
+		genAddressReg(os, srcIndex);
 		os << std::endl;
 	}
 
@@ -249,8 +284,9 @@ namespace randomx {
 
 	void Instruction::h_FDIV_M(std::ostream& os) const {
 		auto dstIndex = dst % RegisterCountFlt;
+		auto srcIndex = src % RegistersCount;
 		os << "e" << dstIndex << ", ";
-		genAddressReg(os);
+		genAddressReg(os, srcIndex);
 		os << std::endl;
 	}
 
@@ -260,40 +296,21 @@ namespace randomx {
 	}
 
 	void Instruction::h_CFROUND(std::ostream& os) const {
-		os << "r" << (int)src << ", " << (getImm32() & 63) << std::endl;
-	}
-
-	static inline const char* condition(int index) {
-		switch (index)
-		{
-		case 0:
-			return "be";
-		case 1:
-			return "ab";
-		case 2:
-			return "sg";
-		case 3:
-			return "ns";
-		case 4:
-			return "of";
-		case 5:
-			return "no";
-		case 6:
-			return "lt";
-		case 7:
-			return "ge";
-		default:
-			UNREACHABLE;
-		}
+		auto srcIndex = src % RegistersCount;
+		os << "r" << srcIndex << ", " << (getImm32() & 63) << std::endl;
 	}
 
 	void Instruction::h_CBRANCH(std::ostream& os) const {
-		os << "r" << (int)dst << ", " << (int32_t)getImm32() << ", COND " << (int)(getModCond()) << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		os << "r" << dstIndex << ", " << (int32_t)getImm32() << ", COND " << (int)(getModCond()) << std::endl;
 	}
 
 	void  Instruction::h_ISTORE(std::ostream& os) const {
-		genAddressRegDst(os);
-		os << ", r" << (int)src << std::endl;
+		auto dstIndex = dst % RegistersCount;
+		auto srcIndex = src % RegistersCount;
+		genAddressRegDst(os, dstIndex);
+		os << ", r" << srcIndex << std::endl;
 	}
 
 	void  Instruction::h_NOP(std::ostream& os) const {

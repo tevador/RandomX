@@ -66,6 +66,15 @@ inline void readIntOption(const char* option, int argc, char** argv, int& out, i
 	out = defaultValue;
 }
 
+inline void readFloatOption(const char* option, int argc, char** argv, double& out, double defaultValue) {
+	for (int i = 0; i < argc - 1; ++i) {
+		if (strcmp(argv[i], option) == 0 && (out = atof(argv[i + 1])) > 0) {
+			return;
+		}
+	}
+	out = defaultValue;
+}
+
 inline void readInt(int argc, char** argv, int& out, int defaultValue) {
 	for (int i = 0; i < argc; ++i) {
 		if (*argv[i] != '-' && (out = atoi(argv[i])) > 0) {

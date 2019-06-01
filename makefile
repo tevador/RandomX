@@ -10,7 +10,7 @@ SRCDIR=src
 TESTDIR=src/tests
 OBJDIR=obj
 LDFLAGS=-lpthread
-RXA=$(BINDIR)/randomx.a
+RXA=$(BINDIR)/librandomx.a
 BINARIES=$(RXA) $(BINDIR)/benchmark $(BINDIR)/code-generator
 RXOBJS=$(addprefix $(OBJDIR)/,aes_hash.o argon2_ref.o dataset.o soft_aes.o virtual_memory.o vm_interpreted.o allocator.o assembly_generator_x86.o instruction.o randomx.o superscalar.o vm_compiled.o vm_interpreted_light.o argon2_core.o blake2_generator.o instructions_portable.o reciprocal.o virtual_machine.o vm_compiled_light.o blake2b.o)
 ifeq ($(PLATFORM),amd64)

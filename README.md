@@ -12,9 +12,9 @@ RandomX can operate in two main modes with different memory requirements:
 
 ## Documentation
 
-Full specification available in [specs.md](doc/specs.md).
+Full specification is available in [specs.md](doc/specs.md).
 
-Design notes available in [design.md](doc/design.md).
+Design description and analysis is available in [design.md](doc/design.md).
 
 ## Build
 
@@ -43,11 +43,7 @@ RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmo
 * The key `K` is selected to be the hash of a block in the blockchain - this block is called the 'key block'. For optimal mining and verification performance, the key should change every 2048 blocks (~2.8 days) and there should be a delay of 64 blocks (~2 hours) between the key block and the change of the key `K`. This can be achieved by changing the key when `blockHeight % 2048 == 64` and selecting key block such that `keyBlockHeight % 2048 == 0`.
 * The input `H` is the standard hashing blob.
 
-If you wish to use RandomX as a PoW algorithm for your cryptocurrency, we strongly recommend not using the [default parameters](src/configuration.h) and change at least the following:
-
-* Size of the Dataset (`RANDOMX_DATASET_BASE_SIZE` and `RANDOMX_DATASET_EXTRA_SIZE`).
-* Scratchpad size (`RANDOMX_SCRATCHPAD_L3`, `RANDOMX_SCRATCHPAD_L2` and `RANDOMX_SCRATCHPAD_L1`).
-* Instruction frequencies (parameters starting with `RANDOMX_FREQ_`).
+If you wish to use RandomX as a PoW algorithm for your cryptocurrency, we strongly recommend not using the [default parameters](src/configuration.h) to avoid compatibility with Monero.
 
 ### CPU mining performance
 Preliminary performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s):
@@ -56,7 +52,7 @@ Preliminary performance of selected CPUs using the optimal number of threads (T)
 |---|---|--|---|---------|--------------|
 AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|4100 H/s (8T)|620 H/s (16T)|
 Intel Core i7-8550U|16 GB DDR4|Windows 10|hardware|1700 H/s (4T)|350 H/s (8T)|
-Intel Core i3-3220|2 GB DDR3|Ubuntu 16.04|software|-|145 H/s (4T)|
+Intel Core i3-3220|4 GB DDR3|Ubuntu 16.04|software|510 H/s (4T)|150 H/s (4T)|
 Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
 
 † Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
@@ -69,8 +65,24 @@ Note that GPUs are at a disadvantage when running RandomX since the algorithm wa
 
 # FAQ
 
+### Which CPU is best for mining RandomX?
+
+Most Intel and AMD CPUs made since 2011 should be fairly efficient at RandomX. More specifically, efficient mining requires:
+
+* 64-bit architecture
+* IEEE 754 compliant floating point unit
+* Hardware AES support ([AES-NI](https://en.wikipedia.org/wiki/AES_instruction_set) extension for x86, Cryptography extensions for ARMv8)
+* 16 KiB of L1 cache, 256 KiB of L2 cache and 2 MiB of L3 cache per mining thread
+* Support for large memory pages
+* At least 2.5 GiB of free RAM per NUMA node
+* Multiple memory channels may be required:
+    * DDR3 memory is limited to about 1500 H/s per channel
+    * DDR4 memory is limited to about 4000 H/s per channel
+
+
+
 ### Does RandomX facilitate botnets/malware mining or web mining?
-Efficient mining requires more than 2 GiB of memory, which is difficult to hide in an infected computer and disqualifies many low-end machines such as IoT devices. Web mining is nearly impossible due to the large memory requirement and low performance in interpreted mode.
+Efficient mining requires more than 2 GiB of memory, which is difficult to hide in an infected computer and disqualifies many low-end machines such as IoT devices. Web mining is infeasible due to the large memory requirement and the lack of directed rounding support for floating point operations in both Javascript and WebAssembly.
 
 ### Since RandomX uses floating point math, does it give reproducible results on different platforms?
 

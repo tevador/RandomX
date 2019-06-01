@@ -109,9 +109,9 @@ namespace randomx {
 		void print(std::ostream&) const;
 		static const char* names[256];
 		static InstructionFormatter engine[256];
-		void genAddressReg(std::ostream& os) const;
+		void genAddressReg(std::ostream& os, int) const;
 		void genAddressImm(std::ostream& os) const;
-		void genAddressRegDst(std::ostream&) const;
+		void genAddressRegDst(std::ostream&, int) const;
 		void h_IADD_RS(std::ostream&) const;
 		void h_IADD_M(std::ostream&) const;
 		void h_ISUB_R(std::ostream&) const;
