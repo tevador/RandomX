@@ -80,7 +80,7 @@ namespace randomx {
 		void run(void* seed) override;
 		void setDataset(randomx_dataset* dataset) override;
 	protected:
-		virtual void datasetRead(uint32_t blockNumber, int_reg_t(&r)[RegistersCount]);
+		virtual void datasetRead(uint64_t blockNumber, int_reg_t(&r)[RegistersCount]);
 	private:
 		void execute();
 		void precompileProgram(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]);

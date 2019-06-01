@@ -50,7 +50,7 @@ namespace randomx {
 		void setDataset(randomx_dataset* dataset) override { }
 		void setCache(randomx_cache* cache) override;
 	protected:
-		void datasetRead(uint32_t address, int_reg_t(&r)[8]) override;
+		void datasetRead(uint64_t address, int_reg_t(&r)[8]) override;
 	};
 
 	using InterpretedLightVmDefault = InterpretedLightVm<AlignedAllocator<CacheLineSize>, true>;

@@ -273,7 +273,7 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void InterpretedVm<Allocator, softAes>::datasetRead(uint32_t address, int_reg_t(&r)[RegistersCount]) {
+	void InterpretedVm<Allocator, softAes>::datasetRead(uint64_t address, int_reg_t(&r)[RegistersCount]) {
 		uint64_t* datasetLine = (uint64_t*)(mem.memory + address);
 		for (int i = 0; i < RegistersCount; ++i)
 			r[i] ^= datasetLine[i];

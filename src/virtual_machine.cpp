@@ -88,7 +88,7 @@ void randomx_vm::initialize() {
 	config.readReg2 = 4 + (addressRegisters & 1);
 	addressRegisters >>= 1;
 	config.readReg3 = 6 + (addressRegisters & 1);
-	datasetOffset = (program.getEntropy(13) & randomx::DatasetExtraItems) * randomx::CacheLineSize;
+	datasetOffset = (program.getEntropy(13) % (randomx::DatasetExtraItems + 1)) * randomx::CacheLineSize;
 	store64(&config.eMask[0], randomx::getFloatMask(program.getEntropy(14)));
 	store64(&config.eMask[1], randomx::getFloatMask(program.getEntropy(15)));
 }
