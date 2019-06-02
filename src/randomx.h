@@ -34,6 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RANDOMX_HASH_SIZE 32
 #define RANDOMX_DATASET_ITEM_SIZE 64
 
+#ifndef RANDOMX_EXPORT
+#define RANDOMX_EXPORT
+#endif
+
 typedef enum {
   RANDOMX_FLAG_DEFAULT = 0,
   RANDOMX_FLAG_LARGE_PAGES = 1,
@@ -62,7 +66,7 @@ extern "C" {
  *         NULL is returned if memory allocation fails or if the RANDOMX_FLAG_JIT
  *         is set and JIT compilation is not supported on the current platform.
  */
-randomx_cache *randomx_alloc_cache(randomx_flags flags);
+RANDOMX_EXPORT randomx_cache *randomx_alloc_cache(randomx_flags flags);
 
 /**
  * Initializes the cache memory and SuperscalarHash using the provided key value.
@@ -71,14 +75,14 @@ randomx_cache *randomx_alloc_cache(randomx_flags flags);
  * @param key is a pointer to memory which contains the key value. Must not be NULL.
  * @param keySize is the number of bytes of the key.
 */
-void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize);
+RANDOMX_EXPORT void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize);
 
 /**
  * Releases all memory occupied by the randomx_cache structure.
  *
  * @param cache is a pointer to a previously allocated randomx_cache structure.
 */
-void randomx_release_cache(randomx_cache* cache);
+RANDOMX_EXPORT void randomx_release_cache(randomx_cache* cache);
 
 /**
  * Creates a randomx_dataset structure and allocates memory for RandomX Dataset.
@@ -89,14 +93,14 @@ void randomx_release_cache(randomx_cache* cache);
  * @return Pointer to an allocated randomx_dataset structure.
  *         NULL is returned if memory allocation fails.
  */
-randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
+RANDOMX_EXPORT randomx_dataset *randomx_alloc_dataset(randomx_flags flags);
 
 /**
  * Gets the number of items contained in the dataset.
  *
  * @return the number of items contained in the dataset.
 */
-unsigned long randomx_dataset_item_count(void);
+RANDOMX_EXPORT unsigned long randomx_dataset_item_count(void);
 
 /**
  * Initializes dataset items.
@@ -109,7 +113,7 @@ unsigned long randomx_dataset_item_count(void);
  * @param startItem is the item number where intialization should start.
  * @param itemCount is the number of items that should be initialized.
 */
-void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount);
+RANDOMX_EXPORT void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount);
 
 /**
  * Returns a pointer to the internal memory buffer of the dataset structure. The size
@@ -119,14 +123,14 @@ void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsign
  *
  * @return Pointer to the internal memory buffer of the dataset structure.
 */
-void *randomx_get_dataset_memory(randomx_dataset *dataset);
+RANDOMX_EXPORT void *randomx_get_dataset_memory(randomx_dataset *dataset);
 
 /**
  * Releases all memory occupied by the randomx_dataset structure.
  *
  * @param dataset is a pointer to a previously allocated randomx_dataset structure.
 */
-void randomx_release_dataset(randomx_dataset *dataset);
+RANDOMX_EXPORT void randomx_release_dataset(randomx_dataset *dataset);
 
 /**
  * Creates and initializes a RandomX virtual machine.
@@ -151,7 +155,7 @@ void randomx_release_dataset(randomx_dataset *dataset);
  *         (3) cache parameter is NULL and RANDOMX_FLAG_FULL_MEM is not set
  *         (4) dataset parameter is NULL and RANDOMX_FLAG_FULL_MEM is set
 */
-randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx_dataset *dataset);
+RANDOMX_EXPORT randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx_dataset *dataset);
 
 /**
  * Reinitializes a virtual machine with a new Cache. This function should be called anytime
@@ -161,7 +165,7 @@ randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx
  *        without RANDOMX_FLAG_FULL_MEM. Must not be NULL.
  * @param cache is a pointer to an initialized randomx_cache structure. Must not be NULL.
 */
-void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache);
+RANDOMX_EXPORT void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache);
 
 /**
  * Reinitializes a virtual machine with a new Dataset.
@@ -170,14 +174,14 @@ void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache);
  *        with RANDOMX_FLAG_FULL_MEM. Must not be NULL.
  * @param dataset is a pointer to an initialized randomx_dataset structure. Must not be NULL.
 */
-void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset);
+RANDOMX_EXPORT void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset);
 
 /**
  * Releases all memory occupied by the randomx_vm structure.
  *
  * @param machine is a pointer to a previously created randomx_vm structure.
 */
-void randomx_destroy_vm(randomx_vm *machine);
+RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
 
 /**
  * Calculates a RandomX hash value.
@@ -188,7 +192,7 @@ void randomx_destroy_vm(randomx_vm *machine);
  * @param output is a pointer to memory where the hash will be stored. Must not
  *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
 */
-void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
+RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
 
 #if defined(__cplusplus)
 }
