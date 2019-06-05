@@ -103,7 +103,7 @@ The reference implementation has been validated on the following platforms:
 RandomX uses some source code from the following 3rd party repositories:
 * Argon2d, Blake2b hashing functions: https://github.com/P-H-C/phc-winner-argon2
 
-The author of RandomX declares no competing financial interest in RandomX adoption, other than being a holder or Monero. The development of RandomX was funded from the author's own pocket with only the help listed above.
+The author of RandomX declares no competing financial interest in RandomX adoption, other than being a holder of Monero. The development of RandomX was funded from the author's own pocket with only the help listed above.
 
 ## Donations
 
