@@ -10,6 +10,8 @@ RandomX can operate in two main modes with different memory requirements:
 * **Fast mode** - requires 2080 MiB of shared memory.
 * **Light mode** - requires only 256 MiB of shared memory, but runs significantly slower
 
+Both modes are interchangeable as they give the same results. The fast mode is suitable for mining, while the light mode is expected to be used only for proof verification.
+
 ## Documentation
 
 Full specification is available in [specs.md](doc/specs.md).
