@@ -67,10 +67,12 @@ namespace randomx {
 
 	void AssemblyGeneratorX86::generateAsm(SuperscalarProgram& prog) {
 		asmCode.str(std::string()); //clear
+#ifdef RANDOMX_ALIGN
 		asmCode << "ALIGN 16" << std::endl;
+#endif
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
 			Instruction& instr = prog(i);
-			switch (instr.opcode)
+			switch ((SuperscalarInstructionType)instr.opcode)
 			{
 			case SuperscalarInstructionType::ISUB_R:
 				asmCode << "sub " << regR[instr.dst] << ", " << regR[instr.src] << std::endl;
@@ -95,19 +97,27 @@ namespace randomx {
 				break;
 			case SuperscalarInstructionType::IADD_C8:
 				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+#ifdef RANDOMX_ALIGN
 				asmCode << "nop" << std::endl;
+#endif
 				break;
 			case SuperscalarInstructionType::IXOR_C8:
 				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+#ifdef RANDOMX_ALIGN
 				asmCode << "nop" << std::endl;
+#endif
 				break;
 			case SuperscalarInstructionType::IADD_C9:
 				asmCode << "add " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+#ifdef RANDOMX_ALIGN
 				asmCode << "xchg ax, ax ;nop" << std::endl;
+#endif
 				break;
 			case SuperscalarInstructionType::IXOR_C9:
 				asmCode << "xor " << regR[instr.dst] << ", " << (int32_t)instr.getImm32() << std::endl;
+#ifdef RANDOMX_ALIGN
 				asmCode << "xchg ax, ax ;nop" << std::endl;
+#endif
 				break;
 			case SuperscalarInstructionType::IMULH_R:
 				asmCode << "mov rax, " << regR[instr.dst] << std::endl;
@@ -179,7 +189,7 @@ namespace randomx {
 		asmCode << "uint64_t r8 = r[0], r9 = r[1], r10 = r[2], r11 = r[3], r12 = r[4], r13 = r[5], r14 = r[6], r15 = r[7];" << std::endl;
 		for (unsigned i = 0; i < prog.getSize(); ++i) {
 			Instruction& instr = prog(i);
-			switch (instr.opcode)
+			switch ((SuperscalarInstructionType)instr.opcode)
 			{
 			case SuperscalarInstructionType::ISUB_R:
 				asmCode << regR[instr.dst] << " -= " << regR[instr.src] << ";" << std::endl;
