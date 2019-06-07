@@ -61,7 +61,10 @@ Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
 
 ### GPU mining performance
 
-SChernykh has developed a CUDA miner for NVIDIA GPUs. [Benchmarks are listed here](https://github.com/SChernykh/RandomX_CUDA).
+SChernykh is developing GPU mining code for RandomX. Benchmarks are included in the following repositories:
+
+* [CUDA miner](https://github.com/SChernykh/RandomX_CUDA) - NVIDIA GPUs.
+* [OpenCL miner](https://github.com/SChernykh/RandomX_OpenCL) - currently only for AMD Vega (uses GCN5 machine code).
 
 Note that GPUs are at a disadvantage when running RandomX since the algorithm was designed to be efficient on CPUs.
 
