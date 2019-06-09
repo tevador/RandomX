@@ -56,7 +56,7 @@ namespace randomx {
 			addrReg = val;
 		}
 
-		Instruction programBuffer[RANDOMX_SUPERSCALAR_MAX_SIZE];
+		Instruction programBuffer[SuperscalarMaxSize];
 		uint32_t size;
 		int addrReg;
 		double ipc;

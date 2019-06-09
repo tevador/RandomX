@@ -673,8 +673,8 @@ namespace randomx {
 		//Each decode cycle decodes 16 bytes of x86 code.
 		//Since a decode cycle produces on average 3.45 macro-ops and there are only 3 ALU ports, execution ports are always
 		//saturated first. The cycle limit is present only to guarantee loop termination.
-		//Program size is limited to RANDOMX_SUPERSCALAR_MAX_SIZE instructions.
-		for (decodeCycle = 0; decodeCycle < RANDOMX_SUPERSCALAR_LATENCY && !portsSaturated && programSize < RANDOMX_SUPERSCALAR_MAX_SIZE; ++decodeCycle) {
+		//Program size is limited to SuperscalarMaxSize instructions.
+		for (decodeCycle = 0; decodeCycle < RANDOMX_SUPERSCALAR_LATENCY && !portsSaturated && programSize < SuperscalarMaxSize; ++decodeCycle) {
 
 			//select a decode configuration
 			decodeBuffer = decodeBuffer->fetchNext(currentInstruction.getType(), decodeCycle, mulCount, gen);
@@ -688,7 +688,7 @@ namespace randomx {
 
 				//if we have issued all macro-ops for the current RandomX instruction, create a new instruction
 				if (macroOpIndex >= currentInstruction.getInfo().getSize()) {
-					if (portsSaturated || programSize >= RANDOMX_SUPERSCALAR_MAX_SIZE)
+					if (portsSaturated || programSize >= SuperscalarMaxSize)
 						break;
 					//select an instruction so that the first macro-op fits into the current slot
 					currentInstruction.createForSlot(gen, decodeBuffer->getCounts()[bufferIndex], decodeBuffer->getIndex(), decodeBuffer->getSize() == bufferIndex + 1, bufferIndex == 0);
