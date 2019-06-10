@@ -306,7 +306,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::generateSuperscalarCode(Instruction& instr, std::vector<uint64_t> &reciprocalCache) {
-		switch (instr.opcode)
+		switch ((SuperscalarInstructionType)instr.opcode)
 		{
 		case randomx::SuperscalarInstructionType::ISUB_R:
 			emit(REX_SUB_RR);

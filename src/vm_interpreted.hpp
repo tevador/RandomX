@@ -50,13 +50,15 @@ namespace randomx {
 			uint64_t imm;
 			int64_t simm;
 		};
-		uint16_t type;
+		InstructionType type;
 		union {
 			int16_t target;
 			uint16_t shift;
 		};
 		uint32_t memMask;
 	};
+
+	static_assert(sizeof(InstructionByteCode) == 32, "Invalid packing of struct InstructionByteCode");
 
 	template<class Allocator, bool softAes>
 	class InterpretedVm : public VmBase<Allocator, softAes> {

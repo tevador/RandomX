@@ -39,38 +39,38 @@ namespace randomx {
 
 	typedef void(Instruction::*InstructionFormatter)(std::ostream&) const;
 
-	namespace InstructionType {
-		constexpr int IADD_RS = 0;
-		constexpr int IADD_M = 1;
-		constexpr int ISUB_R = 2;
-		constexpr int ISUB_M = 3;
-		constexpr int IMUL_R = 4;
-		constexpr int IMUL_M = 5;
-		constexpr int IMULH_R = 6;
-		constexpr int IMULH_M = 7;
-		constexpr int ISMULH_R = 8;
-		constexpr int ISMULH_M = 9;
-		constexpr int IMUL_RCP = 10;
-		constexpr int INEG_R = 11;
-		constexpr int IXOR_R = 12;
-		constexpr int IXOR_M = 13;
-		constexpr int IROR_R = 14;
-		constexpr int IROL_R = 15;
-		constexpr int ISWAP_R = 16;
-		constexpr int FSWAP_R = 17;
-		constexpr int FADD_R = 18;
-		constexpr int FADD_M = 19;
-		constexpr int FSUB_R = 20;
-		constexpr int FSUB_M = 21;
-		constexpr int FSCAL_R = 22;
-		constexpr int FMUL_R = 23;
-		constexpr int FDIV_M = 24;
-		constexpr int FSQRT_R = 25;
-		constexpr int CBRANCH = 26;
-		constexpr int CFROUND = 27;
-		constexpr int ISTORE = 28;
-		constexpr int NOP = 29;
-	}
+	enum class InstructionType : uint16_t {
+		IADD_RS = 0,
+		IADD_M = 1,
+		ISUB_R = 2,
+		ISUB_M = 3,
+		IMUL_R = 4,
+		IMUL_M = 5,
+		IMULH_R = 6,
+		IMULH_M = 7,
+		ISMULH_R = 8,
+		ISMULH_M = 9,
+		IMUL_RCP = 10,
+		INEG_R = 11,
+		IXOR_R = 12,
+		IXOR_M = 13,
+		IROR_R = 14,
+		IROL_R = 15,
+		ISWAP_R = 16,
+		FSWAP_R = 17,
+		FADD_R = 18,
+		FADD_M = 19,
+		FSUB_R = 20,
+		FSUB_M = 21,
+		FSCAL_R = 22,
+		FMUL_R = 23,
+		FDIV_M = 24,
+		FSQRT_R = 25,
+		CBRANCH = 26,
+		CFROUND = 27,
+		ISTORE = 28,
+		NOP = 29,
+	};
 
 	class Instruction {
 	public:
