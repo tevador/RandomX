@@ -33,6 +33,10 @@
 #define DECL(x) x
 #endif
 
+#if defined(__WIN32__) || defined(__CYGWIN__)
+#define WINABI
+#endif
+
 .global DECL(randomx_program_prologue)
 .global DECL(randomx_program_loop_begin)
 .global DECL(randomx_program_loop_load)
@@ -61,7 +65,7 @@
 
 .balign 64
 DECL(randomx_program_prologue):
-#if defined(__CYGWIN__)
+#if defined(WINABI)
 	#include "asm/program_prologue_win64.inc"
 #else
 	#include "asm/program_prologue_linux.inc"
@@ -107,7 +111,7 @@ DECL(randomx_dataset_init):
 	push r13
 	push r14
 	push r15
-#if defined(__CYGWIN__)
+#if defined(WINABI)
 	push rdi
 	push rsi
 	mov rdi, qword ptr [rcx] ;# cache->memory
@@ -140,7 +144,7 @@ call_offset:
 	cmp rbp, qword ptr [rsp]
 	jb init_block_loop
 	pop rax
-#if defined(__CYGWIN__)
+#if defined(WINABI)
 	pop rsi
 	pop rdi
 #endif
@@ -155,7 +159,7 @@ call_offset:
 .balign 64
 DECL(randomx_program_epilogue):
 	#include "asm/program_epilogue_store.inc"
-#if defined(__CYGWIN__)
+#if defined(WINABI)
 	#include "asm/program_epilogue_win64.inc"
 #else
 	#include "asm/program_epilogue_linux.inc"
@@ -200,7 +204,7 @@ DECL(randomx_program_end):
 	nop
 
 DECL(randomx_reciprocal_fast):
-#if !defined(__CYGWIN__)
+#if !defined(WINABI)
 	mov rcx, rdi
 #endif
 	#include "asm/randomx_reciprocal.inc"
