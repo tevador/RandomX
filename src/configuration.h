@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //Cache size in KiB. Must be a power of 2.
 #define RANDOMX_ARGON_MEMORY       262144
 
-//Number of Argon2d iterations for Cache initialization
+//Number of Argon2d iterations for Cache initialization.
 #define RANDOMX_ARGON_ITERATIONS   3
 
-//Number of parallel lanes for Cache initialization
+//Number of parallel lanes for Cache initialization.
 #define RANDOMX_ARGON_LANES        1
 
 //Argon2d salt
@@ -46,22 +46,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //Target latency for SuperscalarHash (in cycles of the reference CPU).
 #define RANDOMX_SUPERSCALAR_LATENCY   170
 
-//The maximum size of a SuperscalarHash program (number of instructions).
-#define RANDOMX_SUPERSCALAR_MAX_SIZE  512
-
 //Dataset base size in bytes. Must be a power of 2.
 #define RANDOMX_DATASET_BASE_SIZE  2147483648
 
 //Dataset extra size. Must be divisible by 64.
 #define RANDOMX_DATASET_EXTRA_SIZE 33554368
 
-//Number of instructions in a RandomX program
+//Number of instructions in a RandomX program. Must be divisible by 8.
 #define RANDOMX_PROGRAM_SIZE       256
 
-//Number of iterations during VM execution
+//Number of iterations during VM execution.
 #define RANDOMX_PROGRAM_ITERATIONS 2048
 
-//Number of chained VM executions per hash
+//Number of chained VM executions per hash.
 #define RANDOMX_PROGRAM_COUNT      8
 
 //Scratchpad L3 size in bytes. Must be a power of 2.
@@ -70,13 +67,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //Scratchpad L2 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L3.
 #define RANDOMX_SCRATCHPAD_L2      262144
 
-//Scratchpad L1 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L2.
+//Scratchpad L1 size in bytes. Must be a power of two (minimum 64) and less than or equal to RANDOMX_SCRATCHPAD_L2.
 #define RANDOMX_SCRATCHPAD_L1      16384
 
 //Jump condition mask size in bits.
 #define RANDOMX_JUMP_BITS          8
 
-//Jump condition mask offset in bits.
+//Jump condition mask offset in bits. The sum of RANDOMX_JUMP_BITS and RANDOMX_JUMP_OFFSET must not exceed 16.
 #define RANDOMX_JUMP_OFFSET        8
 
 /*
@@ -84,6 +81,7 @@ Instruction frequencies (per 256 opcodes)
 Total sum of frequencies must be 256
 */
 
+//Integer instructions
 #define RANDOMX_FREQ_IADD_RS       25
 #define RANDOMX_FREQ_IADD_M         7
 #define RANDOMX_FREQ_ISUB_R        16
@@ -102,6 +100,7 @@ Total sum of frequencies must be 256
 #define RANDOMX_FREQ_IROL_R         0
 #define RANDOMX_FREQ_ISWAP_R        4
 
+//Floating point instructions
 #define RANDOMX_FREQ_FSWAP_R        8
 #define RANDOMX_FREQ_FADD_R        20
 #define RANDOMX_FREQ_FADD_M         5
@@ -112,11 +111,14 @@ Total sum of frequencies must be 256
 #define RANDOMX_FREQ_FDIV_M         4
 #define RANDOMX_FREQ_FSQRT_R        6
 
+//Control instructions
 #define RANDOMX_FREQ_CBRANCH       16
 #define RANDOMX_FREQ_CFROUND        1
 
+//Store instruction
 #define RANDOMX_FREQ_ISTORE        16
 
+//No-op instruction
 #define RANDOMX_FREQ_NOP            0
 /*                               ------
                                   256

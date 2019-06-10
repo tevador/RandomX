@@ -62,7 +62,6 @@ RandomX has several configurable parameters that are listed in Table 1.2.1 with 
 |`RANDOMX_ARGON_SALT`|Argon2 salt|`"RandomX\x03"`|
 |`RANDOMX_CACHE_ACCESSES`|The number of random Cache accesses per Dataset item|`8`|
 |`RANDOMX_SUPERSCALAR_LATENCY`|Target latency for SuperscalarHash (in cycles of the reference CPU)|`170`|
-|`RANDOMX_SUPERSCALAR_MAX_SIZE`|The maximum number of instructions of SuperscalarHash|`512`|
 |`RANDOMX_DATASET_BASE_SIZE`|Dataset base size in bytes|`2147483648`|
 |`RANDOMX_DATASET_EXTRA_SIZE`|Dataset extra size in bytes|`33554368`|
 |`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|`256`|
@@ -786,7 +785,7 @@ SuperscalarHash programs are generated to maximize the usage of all 3 execution 
 Program generation is complete when one of two conditions is met:
 
 1. An instruction is scheduled for execution on cycle that is equal to or greater than `RANDOMX_SUPERSCALAR_LATENCY`
-1. The number of generated instructions reaches `RANDOMX_SUPERSCALAR_MAX_SIZE`
+1. The number of generated instructions reaches `3 * RANDOMX_SUPERSCALAR_LATENCY + 2`.
 
 #### 6.3.1 Decoding stage
 
