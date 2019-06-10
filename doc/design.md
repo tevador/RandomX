@@ -9,7 +9,7 @@ There are two distinct classes of general processing devices: central processing
 
 ## 1. Design considerations
 
-The most basic idea of a CPU-bound proof of work is that the work must be dynamic. This takes advantage of the fact that CPUs accept two kinds of inputs: *data* (the main input) and *code* (which specifies what to perform with the data).
+The most basic idea of a CPU-bound proof of work is that the "work" must be dynamic. This takes advantage of the fact that CPUs accept two kinds of inputs: *data* (the main input) and *code* (which specifies what to perform with the data).
 
 Conversely, typical cryptographic hashing functions [[3](https://en.wikipedia.org/wiki/Cryptographic_hash_function)] do not represent suitable work for the CPU because their only input is *data*, while the sequence of operations is fixed and can be performed more efficiently by a specialized integrated circuit.
 
@@ -147,7 +147,7 @@ The VM uses 8 integer registers and 12 floating point registers. This is the max
 
 ### 2.4 Integer operations
 
-RandomX uses all primitive integer operations that preserve entropy: addition (IADD_RS, IADD_M), subtraction (ISUB_R, ISUB_M, INEG_R), multiplication (IMUL_R, IMUL_M, IMULH_R, IMULH_M, ISMULH_R, ISMULH_M, IMUL_RCP), exclusive or (IXOR_R, IXOR_M) and rotation (IROR_R, IROL_R).
+RandomX uses all primitive integer operations that have high output entropy: addition (IADD_RS, IADD_M), subtraction (ISUB_R, ISUB_M, INEG_R), multiplication (IMUL_R, IMUL_M, IMULH_R, IMULH_M, ISMULH_R, ISMULH_M, IMUL_RCP), exclusive or (IXOR_R, IXOR_M) and rotation (IROR_R, IROL_R).
 
 #### 2.4.1 IADD_RS
 
@@ -466,7 +466,7 @@ The following figure shows the sensitivity of SuperscalarHash to changing a sing
 
 This shows that SuperscalaHash has quite low sensitivity to high-order bits and somewhat decreased sensitivity to the lowest-order bits. Sensitivity is highest for bits 3-53 (inclusive).
 
-When calculating a Dataset item, the input of the first SuperscalarHash depends only on the item number. To ensure a good distribution of results, the initial set of register values must have unique values of bits 3-53 for *all* item numbers in the range 0-34078718 (the Dataset contains 34078719 items). The constants described in section 7.3 of the Specification were chosen to meet this requirement. All initial register values for all Dataset item numbers were checked to make sure bits 3-53 of each register are unique and there are no collisions (source code: [superscalar-init.cpp](../src/tests/superscalar-init.cpp)).
+When calculating a Dataset item, the input of the first SuperscalarHash depends only on the item number. To ensure a good distribution of results, the constants described in section 7.3 of the Specification were chosen to provide unique values of bits 3-53 for *all* item numbers in the range 0-34078718 (the Dataset contains 34078719 items). All initial register values for all Dataset item numbers were checked to make sure bits 3-53 of each register are unique and there are no collisions (source code: [superscalar-init.cpp](../src/tests/superscalar-init.cpp)). While this is not strictly necessary to get unique output from SuperscalarHash, it's a security precaution that mitigates the non-perfect avalanche properties of the randomly generated SuperscalarHash instances.
 
 ## References
 

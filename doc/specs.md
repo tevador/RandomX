@@ -88,20 +88,46 @@ and outputs a 256-bit result `R`.
 
 The algorithm consists of the following steps:
 
-1. The Dataset is initialized using the key value `K` (see chapter 7 for details).
+1. The Dataset is initialized using the key value `K` (described in chapter 7).
 1. 64-byte seed `S` is calculated as `S = Hash512(H)`.
 1. Let `gen1 = AesGenerator1R(S)`.
 1. The Scratchpad is filled with `RANDOMX_SCRATCHPAD_L3` random bytes using generator `gen1`.
 1. Let `gen4 = AesGenerator4R(gen1.state)` (use the final state of `gen1`).
-1. The value of the VM register `fprc` is set to 0 (default rounding mode - see chapter 4.3). 
-1. The VM is programmed using `128 + 8 * RANDOMX_PROGRAM_SIZE` random bytes using generator `gen4` (see chapter 4.5).
-1. The VM is executed (see chapter 4.6).
-1. New 64-byte seed is calculated as `S = Hash512(RegisterFile)`.
+1. The value of the VM register `fprc` is set to 0 (default rounding mode - chapter 4.3).
+1. The VM is programmed using `128 + 8 * RANDOMX_PROGRAM_SIZE` random bytes using generator `gen4` (chapter 4.5).
+1. The VM is executed (chapter 4.6).
+1. A new 64-byte seed is calculated as `S = Hash512(RegisterFile)`.
 1. Set `gen4.state = S` (modify the state of the generator).
 1. Steps 7-10 are performed a total of `RANDOMX_PROGRAM_COUNT` times. The last iteration skips steps 9 and 10.
 1. Scratchpad fingerprint is calculated as `A = AesHash1R(Scratchpad)`.
-1. The binary values of the VM registers `a0`-`a3` (4×16 bytes) are set to the value of `A`.
+1. Bytes 192-255 of the Register File are set to the value of `A`.
 1. Result is calculated as `R = Hash256(RegisterFile)`.
+
+The input of the `Hash512` function in step 9 is the following 256 bytes:
+```
+ +---------------------------------+
+ |         registers r0-r7         | (64 bytes)
+ +---------------------------------+
+ |         registers f0-f3         | (64 bytes)
+ +---------------------------------+
+ |         registers e0-e3         | (64 bytes)
+ +---------------------------------+
+ |         registers a0-a3         | (64 bytes)
+ +---------------------------------+
+```
+
+The input of the `Hash256` function in step 14 is the following 256 bytes:
+```
+ +---------------------------------+
+ |         registers r0-r7         | (64 bytes)
+ +---------------------------------+
+ |         registers f0-f3         | (64 bytes)
+ +---------------------------------+
+ |         registers e0-e3         | (64 bytes)
+ +---------------------------------+
+ |      AesHash1R(Scratchpad)      | (64 bytes)
+ +---------------------------------+
+```
 
 ## 3 Custom functions
 
@@ -909,5 +935,5 @@ The item data is represented by 8 64-bit integer registers: `r0`-`r7`.
 The constants used to initialize register values in step 1 were determined as follows:
 
 * Multiplier `6364136223846793005` was selected because it gives an excellent distribution for linear generators (D. Knuth: The Art of Computer Programming – Vol 2., also listed in [Commonly used LCG parameters](https://en.wikipedia.org/wiki/Linear_congruential_generator#Parameters_in_common_use))
-* XOR constants used to initialize registers `r1`-`r7` were determined by calculating a 512-bit Blake2b hash of the ASCII value `RandomX SuperScalarHash initialize` and taking bytes 8-63 as 7 little-endian unsigned 64-bit integers. Additionally, the constant for `r1` was increased by <code>2<sup>33</sup>+700</code> and the constant for `r3` was increased by <code>2<sup>14</sup></code> (these changes are necessary to ensure that all registers have unique initial values for all values of `itemNumber`).
+* XOR constants used to initialize registers `r1`-`r7` were determined by calculating `Hash512` of the ASCII value `"RandomX SuperScalarHash initialize"` and taking bytes 8-63 as 7 little-endian unsigned 64-bit integers. Additionally, the constant for `r1` was increased by <code>2<sup>33</sup>+700</code> and the constant for `r3` was increased by <code>2<sup>14</sup></code> (these changes are necessary to ensure that all registers have unique initial values for all values of `itemNumber`).
 

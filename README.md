@@ -3,14 +3,14 @@ RandomX is a proof-of-work (PoW) algorithm that is optimized for general-purpose
 
 ## Overview
 
-RandomX behaves like a keyed hashing function: it accepts a key `K` and arbitrary input `H` and produces a 256-bit result `R`. Under the hood, RandomX utilizes a virtual machine that executes programs in a special instruction set that consists of a mix of integer math, floating point math and branches. These programs can be translated into the CPU's native machine code on the fly. Example of a RandomX program translated into x86-64 assembly is [program.asm](doc/program.asm). A portable interpreter mode is also provided.
+RandomX utilizes a virtual machine that executes programs in a special instruction set that consists of integer math, floating point math and branches. These programs can be translated into the CPU's native machine code on the fly (example: [program.asm](doc/program.asm)). At the end, the outputs of the executed programs are consolidated into a 256-bit result using a cryptographic hashing function ([Blake2b](https://blake2.net/)).
 
 RandomX can operate in two main modes with different memory requirements:
 
 * **Fast mode** - requires 2080 MiB of shared memory.
 * **Light mode** - requires only 256 MiB of shared memory, but runs significantly slower
 
-Both modes are interchangeable as they give the same results. The fast mode is suitable for mining, while the light mode is expected to be used only for proof verification.
+Both modes are interchangeable as they give the same results. The fast mode is suitable for "mining", while the light mode is expected to be used only for proof verification.
 
 ## Documentation
 
@@ -43,11 +43,11 @@ Precompiled `benchmark` binaries are available on the [Releases page](https://gi
 RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmonero.org/). The recommended usage is following:
 
 * The key `K` is selected to be the hash of a block in the blockchain - this block is called the 'key block'. For optimal mining and verification performance, the key should change every 2048 blocks (~2.8 days) and there should be a delay of 64 blocks (~2 hours) between the key block and the change of the key `K`. This can be achieved by changing the key when `blockHeight % 2048 == 64` and selecting key block such that `keyBlockHeight % 2048 == 0`.
-* The input `H` is the standard hashing blob.
+* The input `H` is the standard hashing blob with a selected nonce value.
 
 If you wish to use RandomX as a PoW algorithm for your cryptocurrency, we strongly recommend not using the [default parameters](src/configuration.h) to avoid compatibility with Monero.
 
-### CPU mining performance
+### CPU performance
 Preliminary performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s):
 
 |CPU|RAM|OS|AES|Fast mode|Light mode|
@@ -59,7 +59,7 @@ Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
 
 † Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
 
-### GPU mining performance
+### GPU performance
 
 SChernykh is developing GPU mining code for RandomX. Benchmarks are included in the following repositories:
 
