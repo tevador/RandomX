@@ -45,7 +45,7 @@ RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmo
 * The key `K` is selected to be the hash of a block in the blockchain - this block is called the 'key block'. For optimal mining and verification performance, the key should change every 2048 blocks (~2.8 days) and there should be a delay of 64 blocks (~2 hours) between the key block and the change of the key `K`. This can be achieved by changing the key when `blockHeight % 2048 == 64` and selecting key block such that `keyBlockHeight % 2048 == 0`.
 * The input `H` is the standard hashing blob with a selected nonce value.
 
-If you wish to use RandomX as a PoW algorithm for your cryptocurrency, we strongly recommend not using the [default parameters](src/configuration.h) to avoid compatibility with Monero.
+If you wish to use RandomX as a PoW algorithm for your cryptocurrency, please follow the [configuration guidelines](doc/configuration.md).
 
 ### CPU performance
 Preliminary performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s):

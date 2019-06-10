@@ -50,13 +50,15 @@ namespace randomx {
 			uint64_t imm;
 			int64_t simm;
 		};
-		uint16_t type;
+		InstructionType type;
 		union {
 			int16_t target;
 			uint16_t shift;
 		};
 		uint32_t memMask;
 	};
+
+	static_assert(sizeof(InstructionByteCode) == 32, "Invalid packing of struct InstructionByteCode");
 
 	template<class Allocator, bool softAes>
 	class InterpretedVm : public VmBase<Allocator, softAes> {
@@ -81,6 +83,7 @@ namespace randomx {
 		void setDataset(randomx_dataset* dataset) override;
 	protected:
 		virtual void datasetRead(uint64_t blockNumber, int_reg_t(&r)[RegistersCount]);
+		virtual void datasetPrefetch(uint64_t blockNumber);
 	private:
 		void execute();
 		void precompileProgram(int_reg_t(&r)[RegistersCount], rx_vec_f128(&f)[RegisterCountFlt], rx_vec_f128(&e)[RegisterCountFlt], rx_vec_f128(&a)[RegisterCountFlt]);

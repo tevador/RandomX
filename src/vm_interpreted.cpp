@@ -246,6 +246,7 @@ namespace randomx {
 
 			mem.mx ^= r[config.readReg2] ^ r[config.readReg3];
 			mem.mx &= CacheLineAlignMask;
+			datasetPrefetch(datasetOffset + mem.mx);
 			datasetRead(datasetOffset + mem.ma, r);
 			std::swap(mem.mx, mem.ma);
 
@@ -277,6 +278,11 @@ namespace randomx {
 		uint64_t* datasetLine = (uint64_t*)(mem.memory + address);
 		for (int i = 0; i < RegistersCount; ++i)
 			r[i] ^= datasetLine[i];
+	}
+
+	template<class Allocator, bool softAes>
+	void InterpretedVm<Allocator, softAes>::datasetPrefetch(uint64_t address) {
+		rx_prefetch_nta(mem.memory + address);
 	}
 
 #include "instruction_weights.hpp"
