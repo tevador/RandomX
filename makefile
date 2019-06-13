@@ -2,6 +2,7 @@
 #CC=gcc-8
 AR=gcc-ar
 PLATFORM=$(shell uname -m)
+OS=$(shell uname -s)
 CXXFLAGS=-std=c++11
 CCFLAGS=-std=c99
 ARFLAGS=rcs
@@ -20,6 +21,9 @@ endif
 ifeq ($(PLATFORM),x86_64)
     RXOBJS += $(addprefix $(OBJDIR)/,jit_compiler_x86_static.o jit_compiler_x86.o)
     CXXFLAGS += -maes
+endif
+ifeq ($(OS),Darwin)
+    AR=ar
 endif
 
 release: CXXFLAGS += -O3 -flto
@@ -54,10 +58,10 @@ $(OBJDIR):
 $(BINDIR):
 	mkdir $(BINDIR)
 $(OBJDIR)/benchmark.o: $(TESTDIR)/benchmark.cpp $(TESTDIR)/stopwatch.hpp \
- $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h
+ $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h $(SRCDIR)/affinity.hpp
 	$(CXX) $(CXXFLAGS) -pthread -c $< -o $@
-$(BINDIR)/benchmark: $(OBJDIR)/benchmark.o $(RXA)
-	$(CXX) $(LDFLAGS) -pthread $< $(RXA) -o $@
+$(BINDIR)/benchmark: $(OBJDIR)/benchmark.o $(OBJDIR)/affinity.o $(RXA)
+	$(CXX) $(LDFLAGS) -pthread $< $(OBJDIR)/affinity.o $(RXA) -o $@
 $(OBJDIR)/code-generator.o: $(TESTDIR)/code-generator.cpp $(TESTDIR)/utility.hpp \
  $(SRCDIR)/common.hpp $(SRCDIR)/blake2/endian.h \
  $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h \
@@ -105,6 +109,7 @@ $(OBJDIR)/vm_interpreted.o: $(SRCDIR)/vm_interpreted.cpp $(SRCDIR)/vm_interprete
  $(SRCDIR)/intrin_portable.h $(SRCDIR)/allocator.hpp $(SRCDIR)/dataset.hpp \
  $(SRCDIR)/superscalar_program.hpp $(SRCDIR)/jit_compiler_x86.hpp $(SRCDIR)/reciprocal.h \
  $(SRCDIR)/instruction_weights.hpp
+$(OBJDIR/affinity.o: $(SRCDIR)/affinity.cpp $(SRCDIR)/affinity.hpp
 $(OBJDIR)/allocator.o: $(SRCDIR)/allocator.cpp $(SRCDIR)/allocator.hpp $(SRCDIR)/intrin_portable.h \
  $(SRCDIR)/virtual_memory.hpp $(SRCDIR)/common.hpp $(SRCDIR)/blake2/endian.h \
  $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h

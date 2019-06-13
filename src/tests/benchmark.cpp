@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utility.hpp"
 #include "../randomx.h"
 #include "../blake2/endian.h"
+#include "../affinity.hpp"
 
 const uint8_t blockTemplate_[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
@@ -79,12 +80,19 @@ void printUsage(const char* executable) {
 	std::cout << "  --largePages  use large pages" << std::endl;
 	std::cout << "  --softAes     use software AES (default: x86 AES-NI)" << std::endl;
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
+	std::cout << "  --affinity A  thread affinity bitmask (default: 0)" << std::endl;
 	std::cout << "  --init Q      initialize dataset with Q threads (default: 1)" << std::endl;
 	std::cout << "  --nonces N    run N nonces (default: 1000)" << std::endl;
 	std::cout << "  --seed S      seed for cache initialization (default: 0)" << std::endl;
 }
 
-void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread) {
+void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid=-1) {
+	if (cpuid >= 0) {
+		int rc = set_thread_affinity(cpuid);
+		if (rc) {
+			std::cerr << "Failed to set thread affinity for thread " << thread << " (error=" << rc << ")" <<  std::endl;
+		}
+	}
 	uint64_t hash[RANDOMX_HASH_SIZE / sizeof(uint64_t)];
 	uint8_t blockTemplate[sizeof(blockTemplate_)];
 	memcpy(blockTemplate, blockTemplate_, sizeof(blockTemplate));
@@ -102,6 +110,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 int main(int argc, char** argv) {
 	bool softAes, miningMode, verificationMode, help, largePages, jit;
 	int noncesCount, threadCount, initThreadCount;
+	uint64_t threadAffinity;
 	int32_t seedValue;
 	char seed[4];
 
@@ -109,6 +118,7 @@ int main(int argc, char** argv) {
 	readOption("--mine", argc, argv, miningMode);
 	readOption("--verify", argc, argv, verificationMode);
 	readIntOption("--threads", argc, argv, threadCount, 1);
+	readUInt64Option("--affinity", argc, argv, threadAffinity, 0);
 	readIntOption("--nonces", argc, argv, noncesCount, 1000);
 	readIntOption("--init", argc, argv, initThreadCount, 1);
 	readIntOption("--seed", argc, argv, seedValue, 0);
@@ -165,6 +175,10 @@ int main(int argc, char** argv) {
 		std::cout << " - small pages mode" << std::endl;
 	}
 
+	if (threadAffinity) {
+		std::cout << " - thread affinity (" << mask_to_string(threadAffinity) << ")" << std::endl;
+	}
+
 	std::cout << "Initializing";
 	if (miningMode)
 		std::cout << " (" << initThreadCount << " thread" << (initThreadCount > 1 ? "s)" : ")");
@@ -218,10 +232,13 @@ int main(int argc, char** argv) {
 		sw.restart();
 		if (threadCount > 1) {
 			for (unsigned i = 0; i < vms.size(); ++i) {
+				int cpuid = -1;
+				if (threadAffinity)
+					cpuid = cpuid_from_mask(threadAffinity, i);
 				if (softAes)
-					threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i));
+					threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid));
 				else
-					threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i));
+					threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid));
 			}
 			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
