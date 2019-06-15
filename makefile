@@ -22,6 +22,14 @@ ifeq ($(PLATFORM),x86_64)
     CXXFLAGS += -maes
 endif
 
+ifeq ($(PLATFORM),ppc64)
+    CXXFLAGS += -mcpu=native
+endif
+
+ifeq ($(PLATFORM),ppc64le)
+    CXXFLAGS += -mcpu=native
+endif
+
 release: CXXFLAGS += -O3 -flto
 release: CCFLAGS += -O3 -flto
 release: LDFLAGS += -flto

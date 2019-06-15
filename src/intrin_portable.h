@@ -151,7 +151,225 @@ FORCE_INLINE void rx_set_rounding_mode(uint32_t mode) {
 	_mm_setcsr(rx_mxcsr_default | (mode << 13));
 }
 
+#elif defined(__PPC64__) && defined(__ALTIVEC__) && defined(__VSX__) //sadly only POWER7 and newer will be able to use SIMD acceleration. Earlier processors cant use doubles or 64 bit integers with SIMD
+#include <cstdint>
+#include <stdexcept>
+#include <cstdlib>
+#include<altivec.h>
+#undef vector
+#undef pixel
+#undef bool
+
+typedef __vector uint8_t __m128i;
+typedef __vector uint32_t __m128l;
+typedef __vector int      __m128li;
+typedef __vector uint64_t __m128ll;
+typedef __vector double __m128d;
+
+typedef __m128i rx_vec_i128;
+typedef __m128d rx_vec_f128;
+typedef union{
+	rx_vec_i128 i;
+  rx_vec_f128 d;
+  uint64_t u64[2];
+  double   d64[2];
+  uint32_t u32[4];
+	int i32[4];
+} vec_u;
+
+#define rx_aligned_alloc(a, b) malloc(a)
+#define rx_aligned_free(a) free(a)
+#define rx_prefetch_nta(x)
+
+
+/* Splat 64-bit long long to 2 64-bit long longs */
+FORCE_INLINE __m128i vec_splat2sd (int64_t scalar)
+{ return (__m128i) vec_splats (scalar); }
+
+FORCE_INLINE rx_vec_f128 rx_load_vec_f128(const double* pd) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	return (rx_vec_f128)vec_vsx_ld(0,pd);
 #else
+	vec_u t;
+	t.u64[0] = load64(pd + 0);
+	t.u64[1] = load64(pd + 1);
+	return (rx_vec_f128)t.d;
+#endif
+}
+
+FORCE_INLINE void rx_store_vec_f128(double* mem_addr, rx_vec_f128 a) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	vec_vsx_st(a,0,(rx_vec_f128*)mem_addr);
+#else
+	vec_u _a;
+	_a.d = a;
+	store64(mem_addr + 0, _a.u64[0]);
+	store64(mem_addr + 1, _a.u64[1]);
+#endif
+}
+
+FORCE_INLINE rx_vec_f128 rx_swap_vec_f128(rx_vec_f128 a) {
+	return (rx_vec_f128)vec_perm((__m128i)a,(__m128i)a,(__m128i){8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7});
+}
+
+FORCE_INLINE rx_vec_f128 rx_add_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_add(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_sub_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_sub(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_mul_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_mul(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_div_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_div(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_sqrt_vec_f128(rx_vec_f128 a) {
+	return (rx_vec_f128)vec_sqrt(a);
+}
+
+FORCE_INLINE rx_vec_i128 rx_set1_long_vec_i128(uint64_t a) {
+	return (rx_vec_i128)vec_splat2sd(a);
+}
+
+FORCE_INLINE rx_vec_f128 rx_vec_i128_vec_f128(rx_vec_i128 a) {
+	return (rx_vec_f128)a;
+}
+
+FORCE_INLINE rx_vec_f128 rx_set_vec_f128(uint64_t x1, uint64_t x0) {
+	return (rx_vec_f128)(__m128ll){x0,x1};
+}
+
+FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
+	return (rx_vec_f128)vec_splat2sd(x);
+}
+
+FORCE_INLINE rx_vec_f128 rx_xor_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_xor(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_and_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_and(a,b);
+}
+
+FORCE_INLINE rx_vec_f128 rx_or_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
+	return (rx_vec_f128)vec_or(a,b);
+}
+#if defined(__CRYPTO__)
+
+FORCE_INLINE __m128ll vrev(__m128i v){
+#if defined(NATIVE_LITTLE_ENDIAN)
+	return (__m128ll)vec_perm((__m128i)v,(__m128i){0},(__m128i){15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0});
+#else
+	return (__m128ll)vec_perm((__m128i)v,(__m128i){0},(__m128i){3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12});
+#endif
+}
+
+FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	__m128ll _v = vrev(v);
+	__m128ll _rkey = vrev(rkey);
+	__m128ll result = vrev((__m128i)__builtin_crypto_vcipher(_v,_rkey));
+	return (rx_vec_i128)result;
+}
+
+FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	__m128ll _v = vrev(v);
+	__m128ll zero = (__m128ll){0};
+	__m128ll out = vrev((__m128i)__builtin_crypto_vncipher(_v,zero));
+	return (rx_vec_i128)vec_xor((__m128i)out,rkey);
+}
+#else
+static const char* platformError = "Platform doesn't support hardware AES";
+
+FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	throw std::runtime_error(platformError);
+}
+
+FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	throw std::runtime_error(platformError);
+}
+#endif
+
+
+FORCE_INLINE int rx_vec_i128_x(rx_vec_i128 a) {
+	vec_u _a;
+	_a.i = a;
+  return _a.i32[0];
+}
+
+FORCE_INLINE int rx_vec_i128_y(rx_vec_i128 a) {
+	vec_u _a;
+	_a.i = a;
+	return _a.i32[1];
+}
+
+FORCE_INLINE int rx_vec_i128_z(rx_vec_i128 a) {
+	vec_u _a;
+	_a.i = a;
+	return _a.i32[2];
+}
+
+FORCE_INLINE int rx_vec_i128_w(rx_vec_i128 a) {
+	vec_u _a;
+	_a.i = a;
+	return _a.i32[3];
+}
+
+FORCE_INLINE rx_vec_i128 rx_set_int_vec_i128(int _I3, int _I2, int _I1, int _I0) {
+	return (rx_vec_i128)((__m128li){_I0,_I1,_I2,_I3});
+};
+
+FORCE_INLINE rx_vec_i128 rx_xor_vec_i128(rx_vec_i128 _A, rx_vec_i128 _B) {
+	return (rx_vec_i128)vec_xor(_A,_B);
+}
+
+FORCE_INLINE rx_vec_i128 rx_load_vec_i128(rx_vec_i128 const *_P) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	return *_P;
+#else
+	uint32_t* ptr = (uint32_t*)_P;
+	vec_u c;
+	c.u32[0] = load32(ptr + 0);
+	c.u32[1] = load32(ptr + 1);
+	c.u32[2] = load32(ptr + 2);
+	c.u32[3] = load32(ptr + 3);
+	return (rx_vec_i128)c.i;
+#endif
+}
+
+FORCE_INLINE void rx_store_vec_i128(rx_vec_i128 *_P, rx_vec_i128 _B) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	*_P = _B;
+#else
+	uint32_t* ptr = (uint32_t*)_P;
+	vec_u B;
+	B.i = _B;
+	store32(ptr + 0, B.u32[0]);
+	store32(ptr + 1, B.u32[1]);
+	store32(ptr + 2, B.u32[2]);
+	store32(ptr + 3, B.u32[3]);
+#endif
+}
+
+FORCE_INLINE rx_vec_f128 rx_cvt_packed_int_vec_f128(const void* addr) {
+	vec_u x;
+	x.d64[0] = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 0));
+	x.d64[1] = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 4));
+	return (rx_vec_f128)x.d;
+}
+
+#define RANDOMX_DEFAULT_FENV
+
+void rx_reset_float_state();
+
+void rx_set_rounding_mode(uint32_t mode);
+
+#else //end altivec
+
 #include <cstdint>
 #include <stdexcept>
 #include <cstdlib>

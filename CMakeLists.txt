@@ -26,6 +26,8 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+cmake_minimum_required(VERSION 2.8.7)
+
 set (randomx_sources
 src/aes_hash.cpp
 src/argon2_ref.c
@@ -47,6 +49,14 @@ src/reciprocal.c
 src/virtual_machine.cpp
 src/vm_compiled_light.cpp
 src/blake2/blake2b.c)
+
+if (NOT ARCH_ID)
+  set(ARCH_ID ${CMAKE_HOST_SYSTEM_PROCESSOR})
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64")
   list(APPEND randomx_sources
