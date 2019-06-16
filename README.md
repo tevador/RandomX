@@ -48,14 +48,14 @@ RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmo
 If you wish to use RandomX as a PoW algorithm for your cryptocurrency, please follow the [configuration guidelines](doc/configuration.md).
 
 ### CPU performance
-Preliminary performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s):
+The table below lists the performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s). "CNv4" refers to the CryptoNight variant 4 (CN/R) hashrate measured using [xmrig](https://github.com/xmrig/xmrig) v2.14.1. "Fast mode" and "Light mode" are the two modes of RandomX.
 
-|CPU|RAM|OS|AES|Fast mode|Light mode|
-|---|---|--|---|---------|--------------|
-AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|4100 H/s (8T)|620 H/s (16T)|
-Intel Core i7-8550U|16 GB DDR4|Windows 10|hardware|1700 H/s (4T)|350 H/s (8T)|
-Intel Core i3-3220|4 GB DDR3|Ubuntu 16.04|software|510 H/s (4T)|150 H/s (4T)|
-Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|-|2.0 H/s (4T) †|
+|CPU|RAM|OS|AES|CNv4|Fast mode|Light mode|
+|---|---|--|---|-----|------|--------------|
+AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|520 (8T)|4100 (8T)|620 (16T)|
+Intel Core i7-8550U|16 GB DDR4|Windows 10|hardware|200 (4T)|1700  (4T)|350 (8T)|
+Intel Core i3-3220|4 GB DDR3|Ubuntu 16.04|software|42 (4T)|510 (4T)|150 (4T)|
+Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|3.5 (4T)|-|2.0 (4T) †|
 
 † Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
 
