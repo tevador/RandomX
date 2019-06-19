@@ -30,6 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdint.h>
 
+#if defined(_M_X64) || defined(__x86_64__)
+#define RANDOMX_HAVE_FAST_RECIPROCAL 1
+#else
+#define RANDOMX_HAVE_FAST_RECIPROCAL 0
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

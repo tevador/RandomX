@@ -31,6 +31,7 @@ cmake_minimum_required(VERSION 2.8.7)
 set (randomx_sources
 src/aes_hash.cpp
 src/argon2_ref.c
+src/bytecode_machine.cpp
 src/dataset.cpp
 src/soft_aes.cpp
 src/virtual_memory.cpp

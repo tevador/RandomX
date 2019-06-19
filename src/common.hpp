@@ -69,7 +69,7 @@ namespace randomx {
 	static_assert(wtSum == 256,	"Sum of instruction frequencies must be 256.");
 
 
-	constexpr int ArgonBlockSize = 1024;
+	constexpr uint32_t ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof("" RANDOMX_ARGON_SALT) - 1;
 	constexpr int SuperscalarMaxSize = 3 * RANDOMX_SUPERSCALAR_LATENCY + 2;
 	constexpr int CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
@@ -84,7 +84,7 @@ namespace randomx {
 
 	//Prevent some unsafe configurations.
 #ifndef RANDOMX_UNSAFE
-	static_assert(RANDOMX_CACHE_ACCESSES * RANDOMX_ARGON_MEMORY * ArgonBlockSize + 33554432 >= RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE, "Unsafe configuration: Memory-time tradeoffs");
+	static_assert((uint64_t)ArgonBlockSize * RANDOMX_CACHE_ACCESSES * RANDOMX_ARGON_MEMORY + 33554432 >= (uint64_t)RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE, "Unsafe configuration: Memory-time tradeoffs");
 	static_assert((128 + RANDOMX_PROGRAM_SIZE * RANDOMX_FREQ_ISTORE / 256) * (RANDOMX_PROGRAM_COUNT * RANDOMX_PROGRAM_ITERATIONS) >= RANDOMX_SCRATCHPAD_L3, "Unsafe configuration: Insufficient Scratchpad writes");
 	static_assert(RANDOMX_PROGRAM_COUNT > 1, "Unsafe configuration: Program filtering strategies");
 	static_assert(RANDOMX_PROGRAM_SIZE >= 64, "Unsafe configuration: Low program entropy");
@@ -108,12 +108,15 @@ namespace randomx {
 #endif
 
 #if defined(_M_X64) || defined(__x86_64__)
+	#define RANDOMX_HAVE_COMPILER 1
 	class JitCompilerX86;
 	using JitCompiler = JitCompilerX86;
 #elif defined(__aarch64__)
+	#define RANDOMX_HAVE_COMPILER 0
 	class JitCompilerA64;
 	using JitCompiler = JitCompilerA64;
 #else
+	#define RANDOMX_HAVE_COMPILER 0
 	class JitCompilerFallback;
 	using JitCompiler = JitCompilerFallback;
 #endif
@@ -160,14 +163,14 @@ namespace randomx {
 		uint8_t* memory = nullptr;
 	};
 
+	//register file in little-endian byte order
 	struct RegisterFile {
 		int_reg_t r[RegistersCount];
-		fpu_reg_t f[RegistersCount / 2];
-		fpu_reg_t e[RegistersCount / 2];
-		fpu_reg_t a[RegistersCount / 2];
+		fpu_reg_t f[RegisterCountFlt];
+		fpu_reg_t e[RegisterCountFlt];
+		fpu_reg_t a[RegisterCountFlt];
 	};
 
-	typedef void(DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
 	typedef void(ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
 	typedef void(DatasetInitFunc)(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 
