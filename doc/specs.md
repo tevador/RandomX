@@ -169,41 +169,46 @@ state0 (16 B)    state1 (16 B)    state2 (16 B)    state3 (16 B)
 
 ### 3.3 AesGenerator4R
 
-AesGenerator4R works the same way as AesGenerator1R, except it uses 4 rounds per column:
+AesGenerator4R works similar way as AesGenerator1R, except it uses 4 rounds per column. Columns 0 and 1 use a different set of keys than columns 2 and 3.
 
 ```
 state0 (16 B)    state1 (16 B)    state2 (16 B)    state3 (16 B)
      |                |                |                |
  AES decrypt      AES encrypt      AES decrypt      AES encrypt
-   (key0)           (key0)           (key0)           (key0)
+   (key0)           (key0)           (key4)           (key4)
      |                |                |                |
      v                v                v                v
  AES decrypt      AES encrypt      AES decrypt      AES encrypt
-   (key1)           (key1)           (key1)           (key1)
+   (key1)           (key1)           (key5)           (key5)
      |                |                |                |
      v                v                v                v
  AES decrypt      AES encrypt      AES decrypt      AES encrypt
-   (key2)           (key2)           (key2)           (key2)
+   (key2)           (key2)           (key6)           (key6)
      |                |                |                |
      v                v                v                v
  AES decrypt      AES encrypt      AES decrypt      AES encrypt
-   (key3)           (key3)           (key3)           (key3)
+   (key3)           (key3)           (key7)           (key7)
      |                |                |                |
      v                v                v                v
   state0'          state1'          state2'          state3'
 ```
 
-AesGenerator4R uses the following 4 round keys:
+AesGenerator4R uses the following 8 round keys:
 
 ```
-key0 = 5d 46 90 f8 a6 e4 fb 7f b7 82 1f 14 95 9e 35 cf
-key1 = 50 c4 55 6a 8a 27 e8 fe c3 5a 5c bd dc ff 41 67
-key2 = a4 47 4c 11 e4 fd 24 d5 d2 9a 27 a7 ac 4a 32 3d
-key3 = 2a 3a 0c 81 ff ae a9 99 d9 db d3 42 08 db f6 76
+key0 = dd aa 21 64 db 3d 83 d1 2b 6d 54 2f 3f d2 e5 99
+key1 = 50 34 0e b2 55 3f 91 b6 53 9d f7 06 e5 cd df a5
+key2 = 04 d9 3e 5c af 7b 5e 51 9f 67 a4 0a bf 02 1c 17
+key3 = 63 37 62 85 08 5d 8f e7 85 37 67 cd 91 d2 de d8
+key4 = 73 6f 82 b5 a6 a7 d6 e3 6d 8b 51 3d b4 ff 9e 22
+key5 = f3 6b 56 c7 d9 b3 10 9c 4e 4d 02 e9 d2 b7 72 b2
+key6 = e7 c9 73 f2 8b a3 65 f7 0a 66 a9 2b a7 ef 3b f6
+key7 = 09 d6 7c 7a de 39 58 91 fd d1 06 0c 2d 76 b0 c0
 ```
 These keys were generated as:
 ```
-key0, key1, key2, key3 = Hash512("RandomX AesGenerator4R keys")
+key0, key1, key2, key3 = Hash512("RandomX AesGenerator4R keys 0-3")
+key4, key5, key6, key7 = Hash512("RandomX AesGenerator4R keys 4-7")
 ```
 
 ### 3.4 AesHash1R
