@@ -108,12 +108,15 @@ namespace randomx {
 #endif
 
 #if defined(_M_X64) || defined(__x86_64__)
+	#define RANDOMX_HAVE_COMPILER 1
 	class JitCompilerX86;
 	using JitCompiler = JitCompilerX86;
 #elif defined(__aarch64__)
+	#define RANDOMX_HAVE_COMPILER 0
 	class JitCompilerA64;
 	using JitCompiler = JitCompilerA64;
 #else
+	#define RANDOMX_HAVE_COMPILER 0
 	class JitCompilerFallback;
 	using JitCompiler = JitCompilerFallback;
 #endif
@@ -160,14 +163,14 @@ namespace randomx {
 		uint8_t* memory = nullptr;
 	};
 
+	//register file in little-endian byte order
 	struct RegisterFile {
 		int_reg_t r[RegistersCount];
-		fpu_reg_t f[RegistersCount / 2];
-		fpu_reg_t e[RegistersCount / 2];
-		fpu_reg_t a[RegistersCount / 2];
+		fpu_reg_t f[RegisterCountFlt];
+		fpu_reg_t e[RegisterCountFlt];
+		fpu_reg_t a[RegisterCountFlt];
 	};
 
-	typedef void(DatasetReadFunc)(addr_t, MemoryRegisters&, int_reg_t(&reg)[RegistersCount]);
 	typedef void(ProgramFunc)(RegisterFile&, MemoryRegisters&, uint8_t* /* scratchpad */, uint64_t);
 	typedef void(DatasetInitFunc)(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 

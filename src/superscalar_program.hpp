@@ -52,7 +52,7 @@ namespace randomx {
 		int getAddressRegister() {
 			return addrReg;
 		}
-		void setAddressRegister(uint32_t val) {
+		void setAddressRegister(int val) {
 			addrReg = val;
 		}
 

@@ -106,13 +106,14 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AssemblerOutput>AssemblyCode</AssemblerOutput>
+      <PreprocessorDefinitions>_MBCS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -135,6 +136,7 @@ SET ERRORLEVEL = 0</Command>
     <ClCompile Include="..\src\assembly_generator_x86.cpp" />
     <ClCompile Include="..\src\blake2_generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
+    <ClCompile Include="..\src\bytecode_machine.cpp" />
     <ClCompile Include="..\src\vm_compiled_light.cpp" />
     <ClCompile Include="..\src\vm_compiled.cpp" />
     <ClCompile Include="..\src\dataset.cpp" />
@@ -164,6 +166,7 @@ SET ERRORLEVEL = 0</Command>
     <ClInclude Include="..\src\blake2\blamka-round-ref.h" />
     <ClInclude Include="..\src\blake2\endian.h" />
     <ClInclude Include="..\src\blake2_generator.hpp" />
+    <ClInclude Include="..\src\bytecode_machine.hpp" />
     <ClInclude Include="..\src\common.hpp" />
     <ClInclude Include="..\src\jit_compiler.hpp" />
     <ClInclude Include="..\src\jit_compiler_a64.hpp" />

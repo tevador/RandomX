@@ -67,3 +67,11 @@ uint64_t randomx_reciprocal(uint64_t divisor) {
 
 	return quotient;
 }
+
+#if !RANDOMX_HAVE_FAST_RECIPROCAL
+
+uint64_t randomx_reciprocal_fast(uint64_t divisor) {
+	return randomx_reciprocal(divisor);
+}
+
+#endif
