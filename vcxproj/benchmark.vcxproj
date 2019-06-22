@@ -115,6 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\tests\affinity.cpp" />
     <ClCompile Include="..\src\tests\benchmark.cpp" />
   </ItemGroup>
   <ItemGroup>

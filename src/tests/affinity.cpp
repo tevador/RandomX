@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2019, jtgrassie
+Copyright (c) 2019, tevador <tevador@gmail.com>
 
 All rights reserved.
 
@@ -25,6 +26,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+#include <sstream>
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   #include <windows.h>
@@ -95,20 +98,20 @@ cpuid_from_mask(uint64_t mask, const unsigned &thread_index)
 std::string
 mask_to_string(uint64_t mask)
 {
-    std::string r(65, '\0');
+	std::ostringstream ss;
     unsigned len = 0;
     unsigned v = 0;
     unsigned i = 64;
     while (i--)
     {
         v = mask >> i;
-        if (1ULL & v)
-        {
-            if (len == 0) len = i+1;
-            r[len-i] = '1';
-        }
-        else
-            if (len > 0) r[len-i] = '0';
+		if (1ULL & v)
+		{
+			if (len == 0) len = i + 1;
+			ss << '1';
+		}
+		else
+			if (len > 0) ss << '0';
     }
-    return r;
+    return ss.str();
 }

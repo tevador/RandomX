@@ -57,8 +57,10 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 $(BINDIR):
 	mkdir $(BINDIR)
+$(OBJDIR)/affinity.o: $(TESTDIR)/affinity.cpp $(TESTDIR)/affinity.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 $(OBJDIR)/benchmark.o: $(TESTDIR)/benchmark.cpp $(TESTDIR)/stopwatch.hpp \
- $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h $(SRCDIR)/affinity.hpp
+ $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h $(TESTDIR)/affinity.hpp
 	$(CXX) $(CXXFLAGS) -pthread -c $< -o $@
 $(BINDIR)/benchmark: $(OBJDIR)/benchmark.o $(OBJDIR)/affinity.o $(RXA)
 	$(CXX) $(LDFLAGS) -pthread $< $(OBJDIR)/affinity.o $(RXA) -o $@
@@ -109,7 +111,6 @@ $(OBJDIR)/vm_interpreted.o: $(SRCDIR)/vm_interpreted.cpp $(SRCDIR)/vm_interprete
  $(SRCDIR)/intrin_portable.h $(SRCDIR)/allocator.hpp $(SRCDIR)/dataset.hpp \
  $(SRCDIR)/superscalar_program.hpp $(SRCDIR)/jit_compiler_x86.hpp $(SRCDIR)/reciprocal.h \
  $(SRCDIR)/instruction_weights.hpp
-$(OBJDIR/affinity.o: $(SRCDIR)/affinity.cpp $(SRCDIR)/affinity.hpp
 $(OBJDIR)/allocator.o: $(SRCDIR)/allocator.cpp $(SRCDIR)/allocator.hpp $(SRCDIR)/intrin_portable.h \
  $(SRCDIR)/virtual_memory.hpp $(SRCDIR)/common.hpp $(SRCDIR)/blake2/endian.h \
  $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h
