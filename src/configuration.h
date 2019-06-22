@@ -96,18 +96,18 @@ Total sum of frequencies must be 256
 #define RANDOMX_FREQ_INEG_R         2
 #define RANDOMX_FREQ_IXOR_R        15
 #define RANDOMX_FREQ_IXOR_M         5
-#define RANDOMX_FREQ_IROR_R        10
-#define RANDOMX_FREQ_IROL_R         0
+#define RANDOMX_FREQ_IROR_R         8
+#define RANDOMX_FREQ_IROL_R         2
 #define RANDOMX_FREQ_ISWAP_R        4
 
 //Floating point instructions
-#define RANDOMX_FREQ_FSWAP_R        8
-#define RANDOMX_FREQ_FADD_R        20
+#define RANDOMX_FREQ_FSWAP_R        4
+#define RANDOMX_FREQ_FADD_R        16
 #define RANDOMX_FREQ_FADD_M         5
-#define RANDOMX_FREQ_FSUB_R        20
+#define RANDOMX_FREQ_FSUB_R        16
 #define RANDOMX_FREQ_FSUB_M         5
 #define RANDOMX_FREQ_FSCAL_R        6
-#define RANDOMX_FREQ_FMUL_R        20
+#define RANDOMX_FREQ_FMUL_R        32
 #define RANDOMX_FREQ_FDIV_M         4
 #define RANDOMX_FREQ_FSQRT_R        6
 
