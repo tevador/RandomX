@@ -96,6 +96,15 @@ inline void readIntOption(const char* option, int argc, char** argv, int& out, i
 	out = defaultValue;
 }
 
+inline void readUInt64Option(const char* option, int argc, char** argv, uint64_t& out, uint64_t defaultValue) {
+	for (int i = 0; i < argc - 1; ++i) {
+		if (strcmp(argv[i], option) == 0 && (out = std::strtoull(argv[i + 1], NULL, 0)) > 0) {
+			return;
+		}
+	}
+	out = defaultValue;
+}
+
 inline void readFloatOption(const char* option, int argc, char** argv, double& out, double defaultValue) {
 	for (int i = 0; i < argc - 1; ++i) {
 		if (strcmp(argv[i], option) == 0 && (out = atof(argv[i + 1])) > 0) {

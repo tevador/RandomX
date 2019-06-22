@@ -2,6 +2,7 @@
 #CC=gcc-8
 AR=gcc-ar
 PLATFORM=$(shell uname -m)
+OS=$(shell uname -s)
 CXXFLAGS=-std=c++11
 CCFLAGS=-std=c99
 ARFLAGS=rcs
@@ -20,6 +21,9 @@ endif
 ifeq ($(PLATFORM),x86_64)
     RXOBJS += $(addprefix $(OBJDIR)/,jit_compiler_x86_static.o jit_compiler_x86.o)
     CXXFLAGS += -maes
+endif
+ifeq ($(OS),Darwin)
+    AR=ar
 endif
 
 ifeq ($(PLATFORM),ppc64)
@@ -61,11 +65,13 @@ $(OBJDIR):
 	mkdir $(OBJDIR)
 $(BINDIR):
 	mkdir $(BINDIR)
+$(OBJDIR)/affinity.o: $(TESTDIR)/affinity.cpp $(TESTDIR)/affinity.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 $(OBJDIR)/benchmark.o: $(TESTDIR)/benchmark.cpp $(TESTDIR)/stopwatch.hpp \
- $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h
+ $(TESTDIR)/utility.hpp $(SRCDIR)/randomx.h $(SRCDIR)/blake2/endian.h $(TESTDIR)/affinity.hpp
 	$(CXX) $(CXXFLAGS) -pthread -c $< -o $@
-$(BINDIR)/randomx-benchmark: $(OBJDIR)/benchmark.o $(RXA)
-	$(CXX) $(LDFLAGS) -pthread $< $(RXA) -o $@
+$(BINDIR)/randomx-benchmark: $(OBJDIR)/benchmark.o $(OBJDIR)/affinity.o $(RXA)
+	$(CXX) $(LDFLAGS) -pthread $< $(OBJDIR)/affinity.o $(RXA) -o $@
 $(OBJDIR)/code-generator.o: $(TESTDIR)/code-generator.cpp $(TESTDIR)/utility.hpp \
  $(SRCDIR)/common.hpp $(SRCDIR)/blake2/endian.h \
  $(SRCDIR)/configuration.h $(SRCDIR)/randomx.h \
