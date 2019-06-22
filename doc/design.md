@@ -157,7 +157,11 @@ The IADD_RS instruction utilizes the address calculation logic of CPUs and can b
 
 Because integer division is not fully pipelined in CPUs and can be made faster in ASICs, the IMUL_RCP instruction requires only one division per program to calculate the reciprocal. This forces an ASIC to include a hardware divider without giving them a performance advantage during program execution.
 
-#### 2.4.3 ISWAP_R
+#### 2.4.3 IROR_R/IROL_R
+
+Rotation instructions are split between rotate right and rotate left with a 4:1 ratio. Rotate right has a higher frequency because some architecures (like ARM) don't support rotate left natively (it must be emulated using rotate right).
+
+#### 2.4.4 ISWAP_R
 
 This instruction can be executed efficiently by CPUs that support register renaming/move elimination.
 

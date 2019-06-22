@@ -567,8 +567,8 @@ For integer instructions, the destination is always an integer register (registe
 |2/256|INEG_R|R|-|-|`dst = -dst`|
 |15/256|IXOR_R|R|R|`src = imm32`|`dst = dst ^ src`|
 |5/256|IXOR_M|R|R|`src = 0`|`dst = dst ^ [mem]`|
-|10/256|IROR_R|R|R|`src = imm32`|`dst = dst >>> src`|
-|0/256|IROL_R|R|R|`src = imm32`|`dst = dst <<< src`|
+|8/256|IROR_R|R|R|`src = imm32`|`dst = dst >>> src`|
+|2/256|IROL_R|R|R|`src = imm32`|`dst = dst <<< src`|
 |4/256|ISWAP_R|R|R|`src = dst`|`temp = src; src = dst; dst = temp`|
 
 #### 5.2.1 IADD_RS
@@ -616,13 +616,13 @@ All floating point operations are rounded according to the current value of the 
 
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
-|8/256|FSWAP_R|F+E|-|`(dst0, dst1) = (dst1, dst0)`|
-|20/256|FADD_R|F|A|`(dst0, dst1) = (dst0 + src0, dst1 + src1)`|
+|4/256|FSWAP_R|F+E|-|`(dst0, dst1) = (dst1, dst0)`|
+|16/256|FADD_R|F|A|`(dst0, dst1) = (dst0 + src0, dst1 + src1)`|
 |5/256|FADD_M|F|R|`(dst0, dst1) = (dst0 + [mem][0], dst1 + [mem][1])`|
-|20/256|FSUB_R|F|A|`(dst0, dst1) = (dst0 - src0, dst1 - src1)`|
+|16/256|FSUB_R|F|A|`(dst0, dst1) = (dst0 - src0, dst1 - src1)`|
 |5/256|FSUB_M|F|R|`(dst0, dst1) = (dst0 - [mem][0], dst1 - [mem][1])`|
 |6/256|FSCAL_R|F|-|<code>(dst0, dst1) = (-2<sup>x0</sup> * dst0, -2<sup>x1</sup> * dst1)</code>|
-|20/256|FMUL_R|E|A|`(dst0, dst1) = (dst0 * src0, dst1 * src1)`|
+|32/256|FMUL_R|E|A|`(dst0, dst1) = (dst0 * src0, dst1 * src1)`|
 |4/256|FDIV_M|E|R|`(dst0, dst1) = (dst0 / [mem][0], dst1 / [mem][1])`|
 |6/256|FSQRT_R|E|-|`(dst0, dst1) = (√dst0, √dst1)`|
 

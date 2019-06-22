@@ -52,7 +52,7 @@ char parseNibble(char hex) {
 	return hex;
 }
 
-void hex2bin(char *in, int length, char *out) {
+void hex2bin(const char *in, int length, char *out) {
 	for (int i = 0; i < length; i += 2) {
 		char nibble1 = parseNibble(*in++);
 		char nibble2 = parseNibble(*in++);
@@ -67,7 +67,7 @@ constexpr bool stringsEqual(char const * a, char const * b) {
 template<size_t N>
 bool equalsHex(const void* hash, const char (&hex)[N]) {
 	char reference[N / 2];
-	hex2bin((char*)hex, N - 1, reference);
+	hex2bin(hex, N - 1, reference);
 	return memcmp(hash, reference, sizeof(reference)) == 0;
 }
 

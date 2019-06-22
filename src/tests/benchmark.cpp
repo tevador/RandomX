@@ -38,6 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utility.hpp"
 #include "../randomx.h"
 #include "../blake2/endian.h"
+#include "../common.hpp"
+#ifdef _WIN32
+#include <windows.h>
+#include <VersionHelpers.h>
+#endif
 
 const uint8_t blockTemplate_[] = {
 		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
@@ -84,6 +89,19 @@ void printUsage(const char* executable) {
 	std::cout << "  --seed S      seed for cache initialization (default: 0)" << std::endl;
 }
 
+struct MemoryException : public std::exception {
+};
+struct CacheAllocException : public MemoryException {
+	const char * what() const throw () {
+		return "Cache allocation failed";
+	}
+};
+struct DatasetAllocException : public MemoryException {
+	const char * what() const throw () {
+		return "Dataset allocation failed";
+	}
+};
+
 void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread) {
 	uint64_t hash[RANDOMX_HASH_SIZE / sizeof(uint64_t)];
 	uint8_t blockTemplate[sizeof(blockTemplate_)];
@@ -118,7 +136,7 @@ int main(int argc, char** argv) {
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark" << std::endl;
+	std::cout << "RandomX benchmark v1.0.4" << std::endl;
 
 	if (help || (!miningMode && !verificationMode)) {
 		printUsage(argv[0]);
@@ -171,19 +189,20 @@ int main(int argc, char** argv) {
 	std::cout << " ..." << std::endl;
 
 	try {
+		if (jit && !RANDOMX_HAVE_COMPILER) {
+			throw std::runtime_error("JIT compilation is not supported on this platform");
+		}
+
 		Stopwatch sw(true);
 		cache = randomx_alloc_cache(flags);
 		if (cache == nullptr) {
-			if (jit) {
-				throw std::runtime_error("JIT compilation is not supported or cache allocation failed");
-			}
-			throw std::runtime_error("Cache allocation failed");
+			throw CacheAllocException();
 		}
 		randomx_init_cache(cache, &seed, sizeof(seed));
 		if (miningMode) {
 			dataset = randomx_alloc_dataset(flags);
 			if (dataset == nullptr) {
-				throw std::runtime_error("Dataset allocation failed");
+				throw DatasetAllocException();
 			}
 			uint32_t datasetItemCount = randomx_dataset_item_count();
 			if (initThreadCount > 1) {
@@ -241,13 +260,27 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if (noncesCount == 1000 && seedValue == 0)
-			std::cout << "Reference result:  a925d346195ef38048e714709e0b24a88fef565fa02fa97127e00fac08ee6eb8" << std::endl;
+			std::cout << "Reference result:  38d47ea494480bff8d621189e8e92747288bb1da6c75dc401f2ab4b6807b6010" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;
 		}
 		else {
 			std::cout << "Performance: " << noncesCount / elapsed << " hashes per second" << std::endl;
 		}
+	}
+	catch (MemoryException& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		if (largePages) {
+#ifdef _WIN32
+			std::cout << "To use large pages, please enable the \"Lock Pages in Memory\" policy and reboot." << std::endl;
+			if (!IsWindows8OrGreater()) {
+				std::cout << "Additionally, you have to run the benchmark from elevated command prompt." << std::endl;
+			}
+#else
+			std::cout << "To use large pages, please run: sudo sysctl -w vm.nr_hugepages=1250" << std::endl;
+#endif
+		}
+		return 1;
 	}
 	catch (std::exception& e) {
 		std::cout << "ERROR: " << e.what() << std::endl;

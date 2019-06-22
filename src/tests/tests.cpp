@@ -14,6 +14,7 @@
 #include "../reciprocal.h"
 #include "../intrin_portable.h"
 #include "../jit_compiler.hpp"
+#include "../aes_hash.hpp"
 
 struct CacheKey {
 	void* key;
@@ -144,6 +145,13 @@ int main() {
 		assert(datasetItem[0] == 0x9035244d718095e1);
 		jit.getDatasetInitFunc()(cache, (uint8_t*)&datasetItem, 30000000, 30000001);
 		assert(datasetItem[0] == 0x145a5091f7853099);
+	});
+
+	runTest("AesGenerator1R", true, []() {
+		char state[64] = { 0 };
+		hex2bin("6c19536eb2de31b6c0065f7f116e86f960d8af0c57210a6584c3237b9d064dc7", 64, state);
+		fillAes1Rx4<true>(state, sizeof(state), state);
+		assert(equalsHex(state, "fa89397dd6ca422513aeadba3f124b5540324c4ad4b6db434394307a17c833ab"));
 	});
 
 	runTest("randomx_reciprocal", true, []() {
@@ -959,35 +967,34 @@ int main() {
 	auto test_a = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, "207d7cedf2a16590bd33d758e413ad129ce9888e05417984f46296252a7ba3d0"));
+		assert(equalsHex(hash, "b33f8d10a8655d6f1925e3754adeb0a6da4c2f48a81cd4c220a412f1ef016a15"));
 	};
 
 	auto test_b = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
-		assert(equalsHex(hash, "76dd2da840d56d38153e0beaca33e7f862c5ead91a052380d99f3a62bf84579b"));
+		assert(equalsHex(hash, "62ac336786ad3a7aff990beb2f643bd748d81dba585a52149d0baebdea0e9823"));
 	};
 
 	auto test_c = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, "109f6a405efe09d302336dce4389127e33aa62d4c782aca7797a628e87839a61"));
+		assert(equalsHex(hash, "6c550ebe765f7b784d2c183552fbb6048b58f17a3f115baf2b968724eb2f7a23"));
 	};
 
 	auto test_d = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 001", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, "3cbb82edf9541ab80233cdc47384cea719c8567a8bbaca8f3ff038488ce9c16c"));
+		assert(equalsHex(hash, "cb602b9c498b67e31e519fbdc07e288de46f949b14ad620380df6250eaffbd4e"));
 	};
 
 	auto test_e = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcHexHash("test key 001", "0b0b98bea7e805e0010a2126d287a2a0cc833d312cb786385a7c2f9de69d25537f584a9bc9977b00000000666fd8753bf61a8631f12984e3fd44f4014eca629276817b56f32e9b68bd82f416", &hash);
-
+		//std::cout << std::endl;
 		//outputHex(std::cout, (const char*)hash, sizeof(hash));
 		//std::cout << std::endl;
-
-		assert(equalsHex(hash, "e003ef128b1f96d99d4a0490e03253ef11186002a8ec018cbd4e07b8ec8c82e8"));
+		assert(equalsHex(hash, "f60caf300917760337e8ce51487484e6a33d4aaa15aa79c985efb4ea00390918"));
 	};
 
 	runTest("Hash test 1a (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
