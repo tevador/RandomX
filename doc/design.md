@@ -133,6 +133,10 @@ This section describes the design of the RandomX virtual machine (VM).
 
 RandomX uses a fixed-length instruction encoding with 8 bytes per instruction. This allows a 32-bit immediate value to be included in the instruction word. The interpretation of the instruction word bits was chosen so that any 8-byte word is a valid instruction. This allows for very efficient random program generation (see chapter 1.1.1).
 
+#### 2.1.1 Instruction complexity
+
+The VM is a complex instruction set machine that allows both register and memory addressed operands. However, each RandomX instructions translates to only 1-7 x86 instructions (1.8 on average). It is important to keep the instruction complexity relatively low to minimize the efficiency advantage of specialized hardware with a tailored instruction set.
+
 ### 2.2 Program
 
 The program executed by the VM has the form of a loop consisting of 256 random instructions.

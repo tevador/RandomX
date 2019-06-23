@@ -54,7 +54,7 @@ void generateAsm(uint32_t nonce) {
 	fillAes1Rx4<softAes>((void*)hash, randomx::ScratchpadSize, scratchpad);
 	randomx::AssemblyGeneratorX86 asmX86;
 	randomx::Program p;
-	fillAes1Rx4<softAes>(hash, sizeof(p), &p);
+	fillAes4Rx4<softAes>(hash, sizeof(p), &p);
 	asmX86.generateProgram(p);
 	asmX86.printCode(std::cout);
 }
