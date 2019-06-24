@@ -594,5 +594,5 @@ void rx_set_rounding_mode(uint32_t mode);
 double loadDoublePortable(const void* addr);
 uint64_t mulh(uint64_t, uint64_t);
 int64_t smulh(int64_t, int64_t);
-uint64_t rotl(uint64_t, int);
-uint64_t rotr(uint64_t, int);
+uint64_t rotl(uint64_t, unsigned int);
+uint64_t rotr(uint64_t, unsigned int);

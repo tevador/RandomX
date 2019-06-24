@@ -51,10 +51,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <intrin.h>
 	#include <stdlib.h>
 
-	uint64_t rotl(uint64_t x, int c) {
+	uint64_t rotl(uint64_t x, unsigned int c) {
 		return _rotl64(x, c);
 	}
-	uint64_t rotr(uint64_t x , int c) {
+	uint64_t rotr(uint64_t x, unsigned int c) {
 		return _rotr64(x, c);
 	}
 	#define HAVE_ROTL
@@ -89,15 +89,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifndef HAVE_ROTR
-	uint64_t rotr(uint64_t a, int b) {
-		return (a >> b) | (a << (64 - b));
+	uint64_t rotr(uint64_t a, unsigned int b) {
+		return (a >> b) | (a << (-b & 63));
 	}
 	#define HAVE_ROTR
 #endif
 
 #ifndef HAVE_ROTL
-	uint64_t rotl(uint64_t a, int b) {
-		return (a << b) | (a >> (64 - b));
+	uint64_t rotl(uint64_t a, unsigned int b) {
+		return (a << b) | (a >> (-b & 63));
 	}
 	#define HAVE_ROTL
 #endif
