@@ -321,7 +321,7 @@ int executeOutOfOrder(randomx::Program& p, randomx::Program& original, bool prin
 	return cycle;
 }
 
-#include "../instruction_weights.hpp"
+#include "../bytecode_machine.hpp"
 
 //old register selection
 struct RegisterUsage {
@@ -355,284 +355,307 @@ int analyze(randomx::Program& p) {
 		auto& instr = p(i);
 		int opcode = instr.opcode;
 		instr.opcode = 0;
-		switch (opcode) {
-			CASE_REP(IADD_RS) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_INT;
-				instr.opcode |= DST_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
 
-			CASE_REP(IADD_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
+		if (opcode < randomx::ceil_IADD_RS) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_INT;
+			instr.opcode |= DST_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(ISUB_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(ISUB_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IMUL_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IMUL_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IMULH_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IMULH_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(ISMULH_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(ISMULH_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IMUL_RCP) {
-				uint64_t divisor = instr.getImm32();
-				if (!randomx::isPowerOf2(divisor)) {
-					instr.dst = instr.dst % randomx::RegistersCount;
-					instr.opcode |= DST_INT;
-					registerUsage[instr.dst].lastUsed = i;
-				}
-			} break;
-
-			CASE_REP(INEG_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IXOR_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IXOR_M) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= DST_INT;
-				if (instr.src != instr.dst) {
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				}
-				else {
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-				}
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IROR_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(IROL_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_INT;
-				instr.opcode |= SRC_INT;
-				registerUsage[instr.dst].lastUsed = i;
-			} break;
-
-			CASE_REP(ISWAP_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				if (instr.src != instr.dst) {
-					instr.opcode |= DST_INT;
-					instr.opcode |= SRC_INT;
-					instr.opcode |= OP_SWAP;
-					registerUsage[instr.dst].lastUsed = i;
-					registerUsage[instr.src].lastUsed = i;
-				}
-			} break;
-
-			CASE_REP(FSWAP_R) {
-				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.opcode |= DST_FLT;
-			} break;
-
-			CASE_REP(FADD_R) {
-				instr.dst = instr.dst % randomx::RegisterCountFlt;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= OP_FLOAT;
-			} break;
-
-			CASE_REP(FADD_M) {
-				instr.dst = instr.dst % randomx::RegisterCountFlt;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= OP_FLOAT;
+		if (opcode < randomx::ceil_IADD_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
 				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-			} break;
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(FSUB_R) {
-				instr.dst = instr.dst % randomx::RegisterCountFlt;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= OP_FLOAT;
-			} break;
+		if (opcode < randomx::ceil_ISUB_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(FSUB_M) {
-				instr.dst = instr.dst % randomx::RegisterCountFlt;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= OP_FLOAT;
+		if (opcode < randomx::ceil_ISUB_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
 				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-			} break;
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(FSCAL_R) {
-				instr.dst = instr.dst % randomx::RegisterCountFlt;
-				instr.opcode |= DST_FLT;
-			} break;
+		if (opcode < randomx::ceil_IMUL_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(FMUL_R) {
-				instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= OP_FLOAT;
-			} break;
-
-			CASE_REP(FDIV_M) {
-				instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= SRC_MEM;
-				instr.opcode |= OP_FLOAT;
+		if (opcode < randomx::ceil_IMUL_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
 				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-			} break;
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(FSQRT_R) {
-				instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
-				instr.opcode |= DST_FLT;
-				instr.opcode |= OP_FLOAT;
-			} break;
+		if (opcode < randomx::ceil_IMULH_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(CBRANCH) {
-				instr.opcode |= OP_BRANCH;
-				instr.opcode |= DST_INT;
-				//jump condition
-				//int reg = getConditionRegister(registerUsage);
-				int reg = instr.dst % randomx::RegistersCount;
-				int target = registerUsage[reg].lastUsed;
-				int offset = (i - target);
-				instr.mod = offset;
-				jumpCount += offset;
-				p(target + 1).opcode |= BRANCH_TARGET;
-				registerUsage[reg].count++;
-				instr.dst = reg;
-				//mark all registers as used
-				for (unsigned j = 0; j < randomx::RegistersCount; ++j) {
-					registerUsage[j].lastUsed = i;
-				}
-			} break;
+		if (opcode < randomx::ceil_IMULH_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
+				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(CFROUND) {
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= SRC_INT;
-				instr.opcode |= OP_CFROUND;
-			} break;
+		if (opcode < randomx::ceil_ISMULH_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			CASE_REP(ISTORE) {
+		if (opcode < randomx::ceil_ISMULH_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
+				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_IMUL_RCP) {
+			uint64_t divisor = instr.getImm32();
+			if (!randomx::isPowerOf2(divisor)) {
 				instr.dst = instr.dst % randomx::RegistersCount;
-				instr.src = instr.src % randomx::RegistersCount;
-				instr.opcode |= DST_MEM;
-				if (instr.getModCond() < randomx::StoreL3Condition)
-					instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
-				else
-					instr.imm32 &= randomx::ScratchpadL3Mask;
-			} break;
+				instr.opcode |= DST_INT;
+				registerUsage[instr.dst].lastUsed = i;
+			}
+			continue;
+		}
 
-			CASE_REP(NOP) {
+		if (opcode < randomx::ceil_INEG_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-			} break;
+		if (opcode < randomx::ceil_IXOR_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
 
-		default:
-			UNREACHABLE;
+		if (opcode < randomx::ceil_IXOR_M) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= DST_INT;
+			if (instr.src != instr.dst) {
+				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			}
+			else {
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			}
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_IROR_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_IROL_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_INT;
+			instr.opcode |= SRC_INT;
+			registerUsage[instr.dst].lastUsed = i;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_ISWAP_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			if (instr.src != instr.dst) {
+				instr.opcode |= DST_INT;
+				instr.opcode |= SRC_INT;
+				instr.opcode |= OP_SWAP;
+				registerUsage[instr.dst].lastUsed = i;
+				registerUsage[instr.src].lastUsed = i;
+			}
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FSWAP_R) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.opcode |= DST_FLT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FADD_R) {
+			instr.dst = instr.dst % randomx::RegisterCountFlt;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= OP_FLOAT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FADD_M) {
+			instr.dst = instr.dst % randomx::RegisterCountFlt;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= OP_FLOAT;
+			instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FSUB_R) {
+			instr.dst = instr.dst % randomx::RegisterCountFlt;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= OP_FLOAT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FSUB_M) {
+			instr.dst = instr.dst % randomx::RegisterCountFlt;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= OP_FLOAT;
+			instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FSCAL_R) {
+			instr.dst = instr.dst % randomx::RegisterCountFlt;
+			instr.opcode |= DST_FLT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FMUL_R) {
+			instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= OP_FLOAT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FDIV_M) {
+			instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= SRC_MEM;
+			instr.opcode |= OP_FLOAT;
+			instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			continue;
+		}
+
+		if (opcode < randomx::ceil_FSQRT_R) {
+			instr.dst = 4 + instr.dst % randomx::RegisterCountFlt;
+			instr.opcode |= DST_FLT;
+			instr.opcode |= OP_FLOAT;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_CBRANCH) {
+			instr.opcode |= OP_BRANCH;
+			instr.opcode |= DST_INT;
+			int reg = instr.dst % randomx::RegistersCount;
+			int target = registerUsage[reg].lastUsed;
+			int offset = (i - target);
+			instr.mod = offset;
+			jumpCount += offset;
+			p(target + 1).opcode |= BRANCH_TARGET;
+			registerUsage[reg].count++;
+			instr.dst = reg;
+			//mark all registers as used
+			for (unsigned j = 0; j < randomx::RegistersCount; ++j) {
+				registerUsage[j].lastUsed = i;
+			}
+			continue;
+		}
+
+		if (opcode < randomx::ceil_CFROUND) {
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= SRC_INT;
+			instr.opcode |= OP_CFROUND;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_ISTORE) {
+			instr.dst = instr.dst % randomx::RegistersCount;
+			instr.src = instr.src % randomx::RegistersCount;
+			instr.opcode |= DST_MEM;
+			if (instr.getModCond() < randomx::StoreL3Condition)
+				instr.imm32 = (instr.getModMem() ? randomx::ScratchpadL1Mask : randomx::ScratchpadL2Mask);
+			else
+				instr.imm32 &= randomx::ScratchpadL3Mask;
+			continue;
+		}
+
+		if (opcode < randomx::ceil_NOP) {
+
 		}
 	}
 	return jumpCount;

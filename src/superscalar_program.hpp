@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstdint>
 #include "instruction.hpp"
-#include "configuration.h"
+#include "common.hpp"
 
 namespace randomx {
 

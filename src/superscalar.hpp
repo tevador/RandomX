@@ -51,6 +51,7 @@ namespace randomx {
 		ISMULH_R = 12,                            //1+2+1           0+(p1,p5)+0             3               3+3+3 (mov+imul+mov)
 		IMUL_RCP = 13,                            //1+1             p015+p1                 4              10+4   (mov+imul)
 
+		COUNT = 14,
 		INVALID = -1
 	};
 

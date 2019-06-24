@@ -426,7 +426,7 @@ The following 10 designs were simulated and the average number of clock cycles t
 |-------|-----------|----------|---------------|-----------------------|---|
 |#1|1 EXU + 1 MEM|in-order|non-speculative|293|0.87|
 |#2|1 EXU + 1 MEM|in-order|speculative|262|0.98|
-|#3|1 EXU + 1 MEM|in-order|non-speculative|197|1.3|
+|#3|2 EXU + 1 MEM|in-order|non-speculative|197|1.3|
 |#4|2 EXU + 1 MEM|in-order|speculative|161|1.6|
 |#5|2 EXU + 1 MEM|out-of-order|non-speculative|144|1.8|
 |#6|2 EXU + 1 MEM|out-of-order|speculative|122|2.1|

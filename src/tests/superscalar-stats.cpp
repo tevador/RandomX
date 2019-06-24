@@ -8,7 +8,7 @@ const uint8_t seed[32] = { 191, 182, 222, 175, 249, 89, 134, 104, 241, 68, 191, 
 int main() {
 
 	constexpr int count = 1000000;
-	int isnCounts[randomx::SuperscalarInstructionType::COUNT] = { 0 };
+	int isnCounts[(int)randomx::SuperscalarInstructionType::COUNT] = { 0 };
 	int64_t asicLatency = 0;
 	int64_t codesize = 0;
 	int64_t cpuLatency = 0;
@@ -44,7 +44,7 @@ int main() {
 	std::cout << "Avg. RandomX ops: " << (size / (double)count) << std::endl;
 
 	std::cout << "Frequencies: " << std::endl;
-	for (unsigned j = 0; j < randomx::SuperscalarInstructionType::COUNT; ++j) {
+	for (unsigned j = 0; j < (int)randomx::SuperscalarInstructionType::COUNT; ++j) {
 		std::cout << j << " " << isnCounts[j] << " " << isnCounts[j] / (double)size << std::endl;
 	}
 
