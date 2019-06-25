@@ -57,7 +57,11 @@ namespace randomx {
 		}
 
 		Instruction programBuffer[SuperscalarMaxSize];
-		uint32_t size;
+		uint32_t size
+#ifndef NDEBUG
+			= 0
+#endif
+			;
 		int addrReg;
 		double ipc;
 		int codeSize;

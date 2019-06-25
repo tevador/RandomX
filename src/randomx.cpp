@@ -33,13 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm_compiled.hpp"
 #include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
+#include <cassert>
 
 extern "C" {
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
-		randomx_cache *cache = new randomx_cache();
+		randomx_cache *cache;
 
 		try {
+			cache = new randomx_cache();
 			switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES)) {
 				case RANDOMX_FLAG_DEFAULT:
 					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
@@ -78,26 +80,32 @@ extern "C" {
 			}
 		}
 		catch (std::exception &ex) {
-			randomx_release_cache(cache);
-			cache = nullptr;
+			if (cache != nullptr) {
+				randomx_release_cache(cache);
+				cache = nullptr;
+			}
 		}
 
 		return cache;
 	}
 
 	void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize) {
+		assert(cache != nullptr);
+		assert(keySize == 0 || key != nullptr);
 		cache->initialize(cache, key, keySize);
 	}
 
 	void randomx_release_cache(randomx_cache* cache) {
+		assert(cache != nullptr);
 		cache->dealloc(cache);
 		delete cache;
 	}
 
 	randomx_dataset *randomx_alloc_dataset(randomx_flags flags) {
-		randomx_dataset *dataset = new randomx_dataset();
+		randomx_dataset *dataset;
 
 		try {
+			dataset = new randomx_dataset();
 			if (flags & RANDOMX_FLAG_LARGE_PAGES) {
 				dataset->dealloc = &randomx::deallocDataset<randomx::LargePageAllocator>;
 				dataset->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::DatasetSize);
@@ -108,31 +116,45 @@ extern "C" {
 			}
 		}
 		catch (std::exception &ex) {
-			randomx_release_dataset(dataset);
-			dataset = nullptr;
+			if (dataset != nullptr) {
+				randomx_release_dataset(dataset);
+				dataset = nullptr;
+			}
 		}
 
 		return dataset;
 	}
 
+	constexpr unsigned long DatasetItemCount = randomx::DatasetSize / RANDOMX_DATASET_ITEM_SIZE;
+
 	unsigned long randomx_dataset_item_count() {
-		return randomx::DatasetSize / RANDOMX_DATASET_ITEM_SIZE;
+		return DatasetItemCount;
 	}
 
 	void randomx_init_dataset(randomx_dataset *dataset, randomx_cache *cache, unsigned long startItem, unsigned long itemCount) {
+		assert(dataset != nullptr);
+		assert(cache != nullptr);
+		assert(startItem < DatasetItemCount && itemCount <= DatasetItemCount);
+		assert(startItem + itemCount <= DatasetItemCount);
 		cache->datasetInit(cache, dataset->memory + startItem * randomx::CacheLineSize, startItem, startItem + itemCount);
 	}
 
 	void *randomx_get_dataset_memory(randomx_dataset *dataset) {
+		assert(dataset != nullptr);
 		return dataset->memory;
 	}
 
 	void randomx_release_dataset(randomx_dataset *dataset) {
+		assert(dataset != nullptr);
 		dataset->dealloc(dataset);
 		delete dataset;
 	}
 
 	randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache *cache, randomx_dataset *dataset) {
+		assert(cache != nullptr || (flags & RANDOMX_FLAG_FULL_MEM));
+		assert(cache == nullptr || cache->isInitialized());
+		assert(dataset != nullptr || !(flags & RANDOMX_FLAG_FULL_MEM));
+
 		randomx_vm *vm = nullptr;
 
 		try {
@@ -222,25 +244,35 @@ extern "C" {
 	}
 
 	void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache) {
+		assert(machine != nullptr);
+		assert(cache != nullptr && cache->isInitialized());
 		machine->setCache(cache);
 	}
 
 	void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset) {
+		assert(machine != nullptr);
+		assert(dataset != nullptr);
 		machine->setDataset(dataset);
 	}
 
 	void randomx_destroy_vm(randomx_vm *machine) {
+		assert(machine != nullptr);
 		delete machine;
 	}
 
 	void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output) {
+		assert(machine != nullptr);
+		assert(inputSize == 0 || input != nullptr);
+		assert(output != nullptr);
 		alignas(16) uint64_t tempHash[8];
-		blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
+		int blakeResult = blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
+		assert(blakeResult == 0);
 		machine->initScratchpad(&tempHash);
 		machine->resetRoundingMode();
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			machine->run(&tempHash);
-			blake2b(tempHash, sizeof(tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
+			blakeResult = blake2b(tempHash, sizeof(tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
+			assert(blakeResult == 0);
 		}
 		machine->run(&tempHash);
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
