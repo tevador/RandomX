@@ -169,5 +169,8 @@
     <ClCompile Include="..\src\blake2\blake2b.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\bytecode_machine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

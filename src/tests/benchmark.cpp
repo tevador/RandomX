@@ -204,7 +204,10 @@ int main(int argc, char** argv) {
 
 	try {
 		if (jit && !RANDOMX_HAVE_COMPILER) {
-			throw std::runtime_error("JIT compilation is not supported on this platform");
+			throw std::runtime_error("JIT compilation is not supported on this platform. Try without --jit");
+		}
+		if (!jit && RANDOMX_HAVE_COMPILER) {
+			std::cout << "WARNING: You are using the interpreter mode. Use --jit for optimal performance." << std::endl;
 		}
 
 		Stopwatch sw(true);
@@ -243,7 +246,13 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < threadCount; ++i) {
 			randomx_vm *vm = randomx_create_vm(flags, cache, dataset);
 			if (vm == nullptr) {
-				throw std::runtime_error("Unsupported virtual machine options");
+				if (!softAes) {
+					throw std::runtime_error("Cannot create VM with the selected options. Try using --softAes");
+				}
+				if (largePages) {
+					throw std::runtime_error("Cannot create VM with the selected options. Try without --largePages");
+				}
+				throw std::runtime_error("Cannot create VM");
 			}
 			vms.push_back(vm);
 		}

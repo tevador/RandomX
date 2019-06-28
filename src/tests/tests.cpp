@@ -118,6 +118,26 @@ int main() {
 		}
 	});
 
+	runTest("randomx_reciprocal", true, []() {
+		assert(randomx_reciprocal(3) == 12297829382473034410U);
+		assert(randomx_reciprocal(13) == 11351842506898185609U);
+		assert(randomx_reciprocal(33) == 17887751829051686415U);
+		assert(randomx_reciprocal(65537) == 18446462603027742720U);
+		assert(randomx_reciprocal(15000001) == 10316166306300415204U);
+		assert(randomx_reciprocal(3845182035) == 10302264209224146340U);
+		assert(randomx_reciprocal(0xffffffff) == 9223372039002259456U);
+	});
+
+	runTest("randomx_reciprocal_fast", RANDOMX_HAVE_FAST_RECIPROCAL, []() {
+		assert(randomx_reciprocal_fast(3) == 12297829382473034410U);
+		assert(randomx_reciprocal_fast(13) == 11351842506898185609U);
+		assert(randomx_reciprocal_fast(33) == 17887751829051686415U);
+		assert(randomx_reciprocal_fast(65537) == 18446462603027742720U);
+		assert(randomx_reciprocal_fast(15000001) == 10316166306300415204U);
+		assert(randomx_reciprocal_fast(3845182035) == 10302264209224146340U);
+		assert(randomx_reciprocal_fast(0xffffffff) == 9223372039002259456U);
+	});
+
 	runTest("Dataset initialization (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		initCache("test key 000");
 		uint64_t datasetItem[8];
@@ -152,26 +172,6 @@ int main() {
 		hex2bin("6c19536eb2de31b6c0065f7f116e86f960d8af0c57210a6584c3237b9d064dc7", 64, state);
 		fillAes1Rx4<true>(state, sizeof(state), state);
 		assert(equalsHex(state, "fa89397dd6ca422513aeadba3f124b5540324c4ad4b6db434394307a17c833ab"));
-	});
-
-	runTest("randomx_reciprocal", true, []() {
-		assert(randomx_reciprocal(3) == 12297829382473034410U);
-		assert(randomx_reciprocal(13) == 11351842506898185609U);
-		assert(randomx_reciprocal(33) == 17887751829051686415U);
-		assert(randomx_reciprocal(65537) == 18446462603027742720U);
-		assert(randomx_reciprocal(15000001) == 10316166306300415204U);
-		assert(randomx_reciprocal(3845182035) == 10302264209224146340U);
-		assert(randomx_reciprocal(0xffffffff) == 9223372039002259456U);
-	});
-
-	runTest("randomx_reciprocal_fast", RANDOMX_HAVE_FAST_RECIPROCAL, []() {
-		assert(randomx_reciprocal_fast(3) == 12297829382473034410U);
-		assert(randomx_reciprocal_fast(13) == 11351842506898185609U);
-		assert(randomx_reciprocal_fast(33) == 17887751829051686415U);
-		assert(randomx_reciprocal_fast(65537) == 18446462603027742720U);
-		assert(randomx_reciprocal_fast(15000001) == 10316166306300415204U);
-		assert(randomx_reciprocal_fast(3845182035) == 10302264209224146340U);
-		assert(randomx_reciprocal_fast(0xffffffff) == 9223372039002259456U);
 	});
 
 	randomx::NativeRegisterFile reg;

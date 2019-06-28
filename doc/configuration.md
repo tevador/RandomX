@@ -192,13 +192,29 @@ There is a total of 29 different instructions. The sum of frequencies must be eq
 
 #### Notes
 
-Making large changes to the default values is not recommended. The only exceptions are the instruction pairs IROR_R/IROL_R, FADD_R/FSUB_R and FADD_M/FSUB_M, which are functionally equivalent.
+Making changes to the default values is not recommended. The only exceptions are the instruction pairs IROR_R/IROL_R, FADD_R/FSUB_R and FADD_M/FSUB_M, which are functionally equivalent. Example of a safe custom configuration:
+
+||default|custom|
+|-|------|------|-|
+|`RANDOMX_FREQ_IROR_R`|8|5|
+|`RANDOMX_FREQ_IROL_R`|2|5|
+
+||default|custom|
+|-|------|------|
+|`RANDOMX_FREQ_FADD_R`|16|17|
+|`RANDOMX_FREQ_FSUB_R`|16|15|
+
+||default|custom|
+|-|------|------|
+|`RANDOMX_FREQ_FADD_M`|5|4|
+|`RANDOMX_FREQ_FSUB_M`|5|6|
 
 ## Unsafe configurations
 
 There are some configurations that are considered 'unsafe' because they affect the security of the algorithm against attacks. If the conditions listed below are not satisfied, the configuration is unsafe and a compilation error is emitted when building the RandomX library.
 
 These checks can be disabled by definining `RANDOMX_UNSAFE` when building RandomX, e.g. by using `-DRANDOMX_UNSAFE` command line switch in GCC or MSVC. It is not recommended to disable these checks except for testing purposes.
+
 
 ### 1. Memory-time tradeoffs
 
