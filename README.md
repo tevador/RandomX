@@ -20,23 +20,28 @@ Design description and analysis is available in [design.md](doc/design.md).
 
 ## Build
 
-RandomX is written in C++11 and builds a static library with a C API provided by header file [randomx.h](src/randomx.h). Minimal API usage example is provided in [api-example1.c](src/tests/api-example1.c). The reference code includes a `benchmark` executable for testing.
+RandomX is written in C++11 and builds a static library with a C API provided by header file [randomx.h](src/randomx.h). Minimal API usage example is provided in [api-example1.c](src/tests/api-example1.c). The reference code includes a `randomx-benchmark` and `randomx-tests` executables for testing.
 
 ### Linux
 
-Build dependencies: `make` and `gcc` (minimum version 4.8, but version 7+ is recommended).
+Build dependencies: `cmake` (minimum 2.8.7) and `gcc` (minimum version 4.8, but version 7+ is recommended).
 
-Build using the provided makefile.
+To build optimized binaries for your machine, run:
+```
+git clone https://github.com/tevador/RandomX.git
+cd RandomX
+mkdir build && cd build
+cmake -DARCH=native ..
+make
+```
 
 ### Windows
 
-Build dependencies: Visual Studio 2017.
-
-A solution file is provided.
+On Windows, it is possible to build using MinGW (same procedure as on Linux) or using Visual Studio 2017 (solution file is provided).
 
 ### Precompiled binaries
 
-Precompiled `benchmark` binaries are available on the [Releases page](https://github.com/tevador/RandomX/releases).
+Precompiled `randomx-benchmark` binaries are available on the [Releases page](https://github.com/tevador/RandomX/releases).
 
 ## Proof of work
 

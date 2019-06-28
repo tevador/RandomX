@@ -53,6 +53,11 @@ constexpr int RoundToZero = 3;
 #define __SSE2__ 1
 #endif
 
+//MSVC doesn't define __AES__
+#if defined(_MSC_VER) && defined(__SSE2__)
+#define __AES__
+#endif
+
 //the library "sqrt" function provided by MSVC for x86 targets doesn't give
 //the correct results, so we have to use inline assembly to call x87 fsqrt directly
 #if !defined(__SSE2__)
@@ -121,8 +126,15 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 #define rx_xor_vec_f128 _mm_xor_pd
 #define rx_and_vec_f128 _mm_and_pd
 #define rx_or_vec_f128 _mm_or_pd
+
+#ifdef __AES__
+
 #define rx_aesenc_vec_i128 _mm_aesenc_si128
 #define rx_aesdec_vec_i128 _mm_aesdec_si128
+
+#define HAVE_AES
+
+#endif //__AES__
 
 FORCE_INLINE int rx_vec_i128_x(rx_vec_i128 a) {
 	return _mm_cvtsi128_si32(a);
@@ -164,7 +176,7 @@ FORCE_INLINE void rx_set_rounding_mode(uint32_t mode) {
 #include <cstdint>
 #include <stdexcept>
 #include <cstdlib>
-#include<altivec.h>
+#include <altivec.h>
 #undef vector
 #undef pixel
 #undef bool
@@ -189,7 +201,6 @@ typedef union{
 #define rx_aligned_alloc(a, b) malloc(a)
 #define rx_aligned_free(a) free(a)
 #define rx_prefetch_nta(x)
-
 
 /* Splat 64-bit long long to 2 64-bit long longs */
 FORCE_INLINE __m128i vec_splat2sd (int64_t scalar)
@@ -268,6 +279,7 @@ FORCE_INLINE rx_vec_f128 rx_and_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 FORCE_INLINE rx_vec_f128 rx_or_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 	return (rx_vec_f128)vec_or(a,b);
 }
+
 #if defined(__CRYPTO__)
 
 FORCE_INLINE __m128ll vrev(__m128i v){
@@ -291,18 +303,9 @@ FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
 	__m128ll out = vrev((__m128i)__builtin_crypto_vncipher(_v,zero));
 	return (rx_vec_i128)vec_xor((__m128i)out,rkey);
 }
-#else
-static const char* platformError = "Platform doesn't support hardware AES";
+#define HAVE_AES
 
-FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
-	throw std::runtime_error(platformError);
-}
-
-FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
-	throw std::runtime_error(platformError);
-}
-#endif
-
+#endif //__CRYPTO__
 
 FORCE_INLINE int rx_vec_i128_x(rx_vec_i128 a) {
 	vec_u _a;
@@ -506,16 +509,6 @@ FORCE_INLINE rx_vec_f128 rx_or_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 	return x;
 }
 
-static const char* platformError = "Platform doesn't support hardware AES";
-
-FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
-	throw std::runtime_error(platformError);
-}
-
-FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
-	throw std::runtime_error(platformError);
-}
-
 FORCE_INLINE int rx_vec_i128_x(rx_vec_i128 a) {
 	return a.u32[0];
 }
@@ -589,6 +582,20 @@ void rx_reset_float_state();
 
 void rx_set_rounding_mode(uint32_t mode);
 
+#endif
+
+#ifndef HAVE_AES
+static const char* platformError = "Platform doesn't support hardware AES";
+
+#include <stdexcept>
+
+FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	throw std::runtime_error(platformError);
+}
+
+FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
+	throw std::runtime_error(platformError);
+}
 #endif
 
 double loadDoublePortable(const void* addr);
