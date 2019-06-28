@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 #include "blake2/endian.h"
 
 constexpr int32_t unsigned32ToSigned2sCompl(uint32_t x) {
