@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "soft_aes.h"
+#include <cassert>
 
 #define AES_HASH_1R_STATE0 0xd7983aad, 0xcc82db47, 0x9fa856de, 0x92b52c0d
 #define AES_HASH_1R_STATE1 0xace78057, 0xf59e125a, 0x15c7b798, 0x338d996e
@@ -50,6 +51,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 template<bool softAes>
 void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
+	assert(inputSize % 64 == 0);
 	const uint8_t* inptr = (uint8_t*)input;
 	const uint8_t* inputEnd = inptr + inputSize;
 
@@ -118,6 +120,7 @@ template void hashAes1Rx4<true>(const void *input, size_t inputSize, void *hash)
 */
 template<bool softAes>
 void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
+	assert(outputSize % 64 == 0);
 	const uint8_t* outptr = (uint8_t*)buffer;
 	const uint8_t* outputEnd = outptr + outputSize;
 
@@ -168,6 +171,7 @@ template void fillAes1Rx4<false>(void *state, size_t outputSize, void *buffer);
 
 template<bool softAes>
 void fillAes4Rx4(void *state, size_t outputSize, void *buffer) {
+	assert(outputSize % 64 == 0);
 	const uint8_t* outptr = (uint8_t*)buffer;
 	const uint8_t* outputEnd = outptr + outputSize;
 
