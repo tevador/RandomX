@@ -64,7 +64,7 @@ set_thread_affinity(std::thread::native_handle_type thread,
     rc = thread_policy_set(mach_thread, THREAD_AFFINITY_POLICY,
             (thread_policy_t)&policy, 1);
 #elif defined(_WIN32) || defined(__CYGWIN__)
-    rc = SetThreadAffinityMask(thread, 1ULL << cpuid) == 0 ? -2 : 0;
+    rc = SetThreadAffinityMask(static_cast<HANDLE>(thread), 1ULL << cpuid) == 0 ? -2 : 0;
 #else
     cpu_set_t cs;
     CPU_ZERO(&cs);
@@ -98,20 +98,20 @@ cpuid_from_mask(uint64_t mask, const unsigned &thread_index)
 std::string
 mask_to_string(uint64_t mask)
 {
-	std::ostringstream ss;
+    std::ostringstream ss;
     unsigned len = 0;
     unsigned v = 0;
     unsigned i = 64;
     while (i--)
     {
         v = mask >> i;
-		if (1ULL & v)
-		{
-			if (len == 0) len = i + 1;
-			ss << '1';
-		}
-		else
-			if (len > 0) ss << '0';
+        if (1ULL & v)
+        {
+            if (len == 0) len = i + 1;
+            ss << '1';
+        }
+        else
+            if (len > 0) ss << '0';
     }
     return ss.str();
 }
