@@ -39,6 +39,6 @@ int main(int argc, char** argv) {
 
 	std::cout << "Elapsed: " << sw.getElapsed() << " s" << std::endl;
 
-	dump((const char*)jit.getProgramFunc(), randomx::CodeSize, "program.bin");
+	dump((const char*)jit.getProgramFunc(), jit.getCodeSize(), "program.bin");
 	return 0;
 }

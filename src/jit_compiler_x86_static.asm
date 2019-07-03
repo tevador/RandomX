@@ -51,6 +51,8 @@ include asm/configuration.asm
 RANDOMX_SCRATCHPAD_MASK     EQU (RANDOMX_SCRATCHPAD_L3-64)
 RANDOMX_DATASET_BASE_MASK   EQU (RANDOMX_DATASET_BASE_SIZE-64)
 RANDOMX_CACHE_MASK          EQU (RANDOMX_ARGON_MEMORY*16-1)
+RANDOMX_ALIGN               EQU 4096
+SUPERSCALAR_OFFSET          EQU ((((RANDOMX_ALIGN + 32 * RANDOMX_PROGRAM_SIZE) - 1) / (RANDOMX_ALIGN) + 1) * (RANDOMX_ALIGN))
 
 ALIGN 64
 randomx_program_prologue PROC
@@ -115,7 +117,7 @@ init_block_loop:
 	prefetchw byte ptr [rsi]
 	mov rbx, rbp
 	db 232 ;# 0xE8 = call
-	dd 32768 - distance
+	dd SUPERSCALAR_OFFSET - distance
 	distance equ $ - offset randomx_dataset_init
 	mov qword ptr [rsi+0], r8
 	mov qword ptr [rsi+8], r9

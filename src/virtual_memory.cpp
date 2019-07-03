@@ -97,17 +97,13 @@ void* allocExecutableMemory(std::size_t bytes) {
 	return mem;
 }
 
-constexpr std::size_t align(std::size_t pos, std::size_t align) {
-	return ((pos - 1) / align + 1) * align;
-}
-
 void* allocLargePagesMemory(std::size_t bytes) {
 	void* mem;
 #if defined(_WIN32) || defined(__CYGWIN__)
 	setPrivilege("SeLockMemoryPrivilege", 1);
 	auto pageMinimum = GetLargePageMinimum();
 	if (pageMinimum > 0)
-		mem = VirtualAlloc(NULL, align(bytes, pageMinimum), MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
+		mem = VirtualAlloc(NULL, alignSize(bytes, pageMinimum), MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE);
 	else
 		throw std::runtime_error("allocLargePagesMemory - Large pages are not supported");
 	if (mem == nullptr)
