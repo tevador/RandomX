@@ -30,6 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstddef>
 
+constexpr std::size_t alignSize(std::size_t pos, std::size_t align) {
+	return ((pos - 1) / align + 1) * align;
+}
+
 void* allocExecutableMemory(std::size_t);
 void* allocLargePagesMemory(std::size_t);
 void freePagedMemory(void*, std::size_t);

@@ -60,6 +60,8 @@
 #define RANDOMX_SCRATCHPAD_MASK      (RANDOMX_SCRATCHPAD_L3-64)
 #define RANDOMX_DATASET_BASE_MASK    (RANDOMX_DATASET_BASE_SIZE-64)
 #define RANDOMX_CACHE_MASK           (RANDOMX_ARGON_MEMORY*16-1)
+#define RANDOMX_ALIGN                4096
+#define SUPERSCALAR_OFFSET           ((((RANDOMX_ALIGN + 32 * RANDOMX_PROGRAM_SIZE) - 1) / (RANDOMX_ALIGN) + 1) * (RANDOMX_ALIGN))
 
 #define db .byte
 
@@ -128,8 +130,7 @@ init_block_loop:
 	prefetchw byte ptr [rsi]
 	mov rbx, rbp
 	.byte 232 ;# 0xE8 = call
-	;# .set CALL_LOC, 
-	.int 32768 - (call_offset - DECL(randomx_dataset_init))
+	.int SUPERSCALAR_OFFSET - (call_offset - DECL(randomx_dataset_init))
 call_offset:
 	mov qword ptr [rsi+0], r8
 	mov qword ptr [rsi+8], r9

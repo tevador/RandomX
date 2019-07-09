@@ -24,7 +24,9 @@ These parameters can be modified in source file [configuration.h](../src/configu
 |`RANDOMX_SCRATCHPAD_L1`|Scratchpad L1 size in bytes|`16384`|
 |`RANDOMX_FREQ_*` (29x)|Instruction frequencies|multiple values|
 
-Not all of the parameters can be changed safely and most parameters have some contraints on what values can be selected. Follow the guidelines below.
+Not all of the parameters can be changed safely and most parameters have some contraints on what values can be selected (checked at compile-time).
+
+**Disclaimer: The compile-time checks only prevent obviously broken configurations. Passing the checks does not imply that the configuration is safe and will not cause crashes or other issues. We recommend that each non-standard configuration is thoroughly tested before being deployed.**
 
 ### RANDOMX_ARGON_MEMORY
 
@@ -80,7 +82,7 @@ This value directly determines the performance ratio between the 'fast' and 'lig
 Target latency for SuperscalarHash, in cycles of the reference CPU.
 
 #### Permitted values
-Any positive integer.
+Integers in the range 1 - 10000.
 
 #### Notes
 The default value was tuned so that a high-performance superscalar CPU running at 2-4 GHz will execute SuperscalarHash in similar time it takes to load data from RAM (40-80 ns). Using a lower value will make Dataset generation (and light mode) more memory bound, while increasing this value will make Dataset generation (and light mode) more compute bound.
@@ -110,7 +112,7 @@ This constant affects the memory requirements in fast mode. Some values are unsa
 The number of instructions in a RandomX program.
 
 #### Permitted values
-Any positive integer divisible by 8.
+Positive integers divisible by 8 in the range 8 - 32768 (inclusive).
 
 #### Notes
 Smaller values will make RandomX more DRAM-latency bound, while higher values will make RandomX more compute-bound. Some values are unsafe. See [Unsafe configurations](#unsafe-configurations).
