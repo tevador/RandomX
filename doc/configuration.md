@@ -31,7 +31,7 @@ Not all of the parameters can be changed safely and most parameters have some co
 This parameter determines the amount of memory needed in the light mode. Memory is specified in KiB (1 KiB = 1024 bytes).
 
 #### Permitted values
-Any integer power of 2.
+Integer powers of 2 in the range 1 - 2097152.
 
 #### Notes
 Lower sizes will reduce the memory-hardness of the algorithm.

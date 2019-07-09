@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
 #include <cassert>
+#include <limits>
 
 extern "C" {
 
@@ -102,6 +103,12 @@ extern "C" {
 	}
 
 	randomx_dataset *randomx_alloc_dataset(randomx_flags flags) {
+
+		//fail on 32-bit systems if DatasetSize is >= 4 GiB
+		if (randomx::DatasetSize > std::numeric_limits<size_t>::max()) {
+			return nullptr;
+		}
+
 		randomx_dataset *dataset;
 
 		try {
