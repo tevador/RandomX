@@ -57,10 +57,11 @@ The table below lists the performance of selected CPUs using the optimal number 
 
 |CPU|RAM|OS|AES|CNv4|Fast mode|Light mode|
 |---|---|--|---|-----|------|--------------|
-AMD Ryzen 7 1700|16 GB DDR4|Ubuntu 16.04|hardware|520 (8T)|4100 (8T)|620 (16T)|
-Intel Core i7-8550U|16 GB DDR4|Windows 10|hardware|200 (4T)|1700  (4T)|350 (8T)|
-Intel Core i3-3220|4 GB DDR3|Ubuntu 16.04|software|42 (4T)|510 (4T)|150 (4T)|
-Raspberry Pi 3|1 GB DDR2|Ubuntu 16.04|software|3.5 (4T)|-|2.0 (4T) †|
+Intel Core i9-9900K|32G DDR4-3200|Windows 10|hw|660 (8T)|5770 (8T)|1160 (16T)|
+AMD Ryzen 7 1700|16G DDR4-2666|Ubuntu 16.04|hw|520 (8T)|4100 (8T)|620 (16T)|
+Intel Core i7-8550U|16G DDR4-2400|Windows 10|hw|200 (4T)|1700  (4T)|350 (8T)|
+Intel Core i3-3220|4G DDR3-1333|Ubuntu 16.04|soft|42 (4T)|510 (4T)|150 (4T)|
+Raspberry Pi 3|1G LPDDR2|Ubuntu 16.04|soft|3.5 (4T)|-|2.0 (4T) †|
 
 † Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
 
@@ -86,8 +87,8 @@ Most Intel and AMD CPUs made since 2011 should be fairly efficient at RandomX. M
 * Support for large memory pages
 * At least 2.5 GiB of free RAM per NUMA node
 * Multiple memory channels may be required:
-    * DDR3 memory is limited to about 1500 H/s per channel
-    * DDR4 memory is limited to about 4000 H/s per channel
+    * DDR3 memory is limited to about 1500-2000 H/s per channel (depending on frequency and timings)
+    * DDR4 memory is limited to about 4000-6000 H/s per channel  (depending on frequency and timings)
 
 
 
@@ -108,7 +109,7 @@ The reference implementation has been validated on the following platforms:
 ## Acknowledgements
 * [SChernykh](https://github.com/SChernykh) - contributed significantly to the design of RandomX
 * [hyc](https://github.com/hyc) - original idea of using random code execution for PoW
-* [nioroso-x3](https://github.com/nioroso-x3) - provided access to PowerPC for testing purposes
+* Other contributors: [nioroso-x3](https://github.com/nioroso-x3), [jtgrassie](https://github.com/jtgrassie)
 
 RandomX uses some source code from the following 3rd party repositories:
 * Argon2d, Blake2b hashing functions: https://github.com/P-H-C/phc-winner-argon2
@@ -123,3 +124,4 @@ Author's XMR address:
 ```
 845xHUh5GvfHwc2R8DVJCE7BT2sd4YEcmjG8GNSdmeNsP5DTEjXd1CNgxTcjHjiFuthRHAoVEJjM7GyKzQKLJtbd56xbh7V
 ```
+Total donations received: ~3.74 XMR (as of 9th July 2019). Thanks to all contributors.
