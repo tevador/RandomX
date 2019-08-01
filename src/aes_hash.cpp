@@ -29,6 +29,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "soft_aes.h"
 #include <cassert>
 
+//NOTE: The functions below were tuned for maximum performance
+//and are not cryptographically secure outside of the scope of RandomX.
+//It's not recommended to use them as general hash functions and PRNGs.
+
+//AesHash1R:
+//state0, state1, state2, state3 = Blake2b-512("RandomX AesHash1R state")
+//xkey0, xkey1 = Blake2b-256("RandomX AesHash1R xkeys")
+
 #define AES_HASH_1R_STATE0 0xd7983aad, 0xcc82db47, 0x9fa856de, 0x92b52c0d
 #define AES_HASH_1R_STATE1 0xace78057, 0xf59e125a, 0x15c7b798, 0x338d996e
 #define AES_HASH_1R_STATE2 0xe8a07ce4, 0x5079506b, 0xae62c7d0, 0x6a770017
@@ -103,6 +111,9 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 template void hashAes1Rx4<false>(const void *input, size_t inputSize, void *hash);
 template void hashAes1Rx4<true>(const void *input, size_t inputSize, void *hash);
 
+//AesGenerator1R:
+//key0, key1, key2, key3 = Blake2b-512("RandomX AesGenerator1R keys")
+
 #define AES_GEN_1R_KEY0 0xb4f44917, 0xdbb5552b, 0x62716609, 0x6daca553
 #define AES_GEN_1R_KEY1 0x0da1dc4e, 0x1725d378, 0x846a710d, 0x6d7caf07
 #define AES_GEN_1R_KEY2 0x3e20e345, 0xf4c0794f, 0x9f947ec6, 0x3f1262f1
@@ -159,6 +170,10 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 
 template void fillAes1Rx4<true>(void *state, size_t outputSize, void *buffer);
 template void fillAes1Rx4<false>(void *state, size_t outputSize, void *buffer);
+
+//AesGenerator4R:
+//key0, key1, key2, key3 = Blake2b-512("RandomX AesGenerator4R keys 0-3")
+//key4, key5, key6, key7 = Blake2b-512("RandomX AesGenerator4R keys 4-7")
 
 #define AES_GEN_4R_KEY0 0x99e5d23f, 0x2f546d2b, 0xd1833ddb, 0x6421aadd
 #define AES_GEN_4R_KEY1 0xa5dfcde5, 0x06f79d53, 0xb6913f55, 0xb20e3450

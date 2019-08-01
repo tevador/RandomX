@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <limits>
 #include <cstring>
+#include <cassert>
 
 #include "common.hpp"
 #include "dataset.hpp"
@@ -90,6 +91,9 @@ namespace randomx {
 		context.free_cbk = NULL;
 		context.flags = ARGON2_DEFAULT_FLAGS;
 		context.version = ARGON2_VERSION_NUMBER;
+
+		int inputsValid = rxa2_validate_inputs(&context);
+		assert(inputsValid == ARGON2_OK);
 
 		/* 2. Align memory size */
 		/* Minimum memory_blocks = 8L blocks, where L is the number of lanes */
