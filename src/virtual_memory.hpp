@@ -34,6 +34,9 @@ constexpr std::size_t alignSize(std::size_t pos, std::size_t align) {
 	return ((pos - 1) / align + 1) * align;
 }
 
-void* allocExecutableMemory(std::size_t);
+void* allocMemoryPages(std::size_t);
+void setPagesRW(void*, std::size_t);
+void setPagesRX(void*, std::size_t);
+void setPagesRWX(void*, std::size_t);
 void* allocLargePagesMemory(std::size_t);
 void freePagedMemory(void*, std::size_t);

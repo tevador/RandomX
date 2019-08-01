@@ -41,6 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
 #endif
+#define PAGE_READONLY PROT_READ
+#define PAGE_READWRITE (PROT_READ | PROT_WRITE)
+#define PAGE_EXECUTE_READ (PROT_READ | PROT_EXEC)
+#define PAGE_EXECUTE_READWRITE (PROT_READ | PROT_WRITE | PROT_EXEC)
 #endif
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -83,18 +87,42 @@ void setPrivilege(const char* pszPrivilege, BOOL bEnable) {
 }
 #endif
 
-void* allocExecutableMemory(std::size_t bytes) {
+void* allocMemoryPages(std::size_t bytes) {
 	void* mem;
 #if defined(_WIN32) || defined(__CYGWIN__)
-	mem = VirtualAlloc(nullptr, bytes, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	mem = VirtualAlloc(nullptr, bytes, MEM_COMMIT, PAGE_READWRITE);
 	if (mem == nullptr)
-		throw std::runtime_error(getErrorMessage("allocExecutableMemory - VirtualAlloc"));
+		throw std::runtime_error(getErrorMessage("allocMemoryPages - VirtualAlloc"));
 #else
-	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	mem = mmap(nullptr, bytes, PAGE_READWRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (mem == MAP_FAILED)
-		throw std::runtime_error("allocExecutableMemory - mmap failed");
+		throw std::runtime_error("allocMemoryPages - mmap failed");
 #endif
 	return mem;
+}
+
+static inline void pageProtect(void* ptr, std::size_t bytes, int rules) {
+#if defined(_WIN32) || defined(__CYGWIN__)
+	DWORD oldp;
+	if (!VirtualProtect(ptr, bytes, (DWORD)rules, &oldp)) {
+		throw std::runtime_error(getErrorMessage("VirtualProtect"));
+	}
+#else
+	if (-1 == mprotect(ptr, bytes, rules))
+		throw std::runtime_error("mprotect failed");
+#endif
+}
+
+void setPagesRW(void* ptr, std::size_t bytes) {
+	pageProtect(ptr, bytes, PAGE_READWRITE);
+}
+
+void setPagesRX(void* ptr, std::size_t bytes) {
+	pageProtect(ptr, bytes, PAGE_EXECUTE_READ);
+}
+
+void setPagesRWX(void* ptr, std::size_t bytes) {
+	pageProtect(ptr, bytes, PAGE_EXECUTE_READWRITE);
 }
 
 void* allocLargePagesMemory(std::size_t bytes) {

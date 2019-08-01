@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace randomx {
 
-	template<class Allocator, bool softAes>
-	class CompiledLightVm : public CompiledVm<Allocator, softAes> {
+	template<class Allocator, bool softAes, bool secureJit>
+	class CompiledLightVm : public CompiledVm<Allocator, softAes, secureJit> {
 	public:
 		void* operator new(size_t size) {
 			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
@@ -49,16 +49,20 @@ namespace randomx {
 		void setDataset(randomx_dataset* dataset) override { }
 		void run(void* seed) override;
 
-		using CompiledVm<Allocator, softAes>::mem;
-		using CompiledVm<Allocator, softAes>::compiler;
-		using CompiledVm<Allocator, softAes>::program;
-		using CompiledVm<Allocator, softAes>::config;
-		using CompiledVm<Allocator, softAes>::cachePtr;
-		using CompiledVm<Allocator, softAes>::datasetOffset;
+		using CompiledVm<Allocator, softAes, secureJit>::mem;
+		using CompiledVm<Allocator, softAes, secureJit>::compiler;
+		using CompiledVm<Allocator, softAes, secureJit>::program;
+		using CompiledVm<Allocator, softAes, secureJit>::config;
+		using CompiledVm<Allocator, softAes, secureJit>::cachePtr;
+		using CompiledVm<Allocator, softAes, secureJit>::datasetOffset;
 	};
 
-	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true>;
-	using CompiledLightVmHardAes = CompiledLightVm<AlignedAllocator<CacheLineSize>, false>;
-	using CompiledLightVmLargePage = CompiledLightVm<LargePageAllocator, true>;
-	using CompiledLightVmLargePageHardAes = CompiledLightVm<LargePageAllocator, false>;
+	using CompiledLightVmDefault = CompiledLightVm<AlignedAllocator<CacheLineSize>, true, false>;
+	using CompiledLightVmHardAes = CompiledLightVm<AlignedAllocator<CacheLineSize>, false, false>;
+	using CompiledLightVmLargePage = CompiledLightVm<LargePageAllocator, true, false>;
+	using CompiledLightVmLargePageHardAes = CompiledLightVm<LargePageAllocator, false, false>;
+	using CompiledLightVmDefaultSecure = CompiledLightVm<AlignedAllocator<CacheLineSize>, true, true>;
+	using CompiledLightVmHardAesSecure = CompiledLightVm<AlignedAllocator<CacheLineSize>, false, true>;
+	using CompiledLightVmLargePageSecure = CompiledLightVm<LargePageAllocator, true, true>;
+	using CompiledLightVmLargePageHardAesSecure = CompiledLightVm<LargePageAllocator, false, true>;
 }
