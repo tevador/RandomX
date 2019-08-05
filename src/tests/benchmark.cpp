@@ -239,6 +239,7 @@ int main(int argc, char** argv) {
 				randomx_init_dataset(dataset, cache, 0, datasetItemCount);
 			}
 			randomx_release_cache(cache);
+			cache = nullptr;
 			threads.clear();
 		}
 		std::cout << "Memory initialized in " << sw.getElapsed() << " s" << std::endl;
