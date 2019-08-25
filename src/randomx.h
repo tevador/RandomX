@@ -44,6 +44,7 @@ typedef enum {
   RANDOMX_FLAG_HARD_AES = 2,
   RANDOMX_FLAG_FULL_MEM = 4,
   RANDOMX_FLAG_JIT = 8,
+  RANDOMX_FLAG_SECURE = 16
 } randomx_flags;
 
 typedef struct randomx_dataset randomx_dataset;
@@ -135,12 +136,14 @@ RANDOMX_EXPORT void randomx_release_dataset(randomx_dataset *dataset);
 /**
  * Creates and initializes a RandomX virtual machine.
  *
- * @param flags is any combination of these 4 flags (each flag can be set or not set):
+ * @param flags is any combination of these 5 flags (each flag can be set or not set):
  *        RANDOMX_FLAG_LARGE_PAGES - allocate scratchpad memory in large pages
  *        RANDOMX_FLAG_HARD_AES - virtual machine will use hardware accelerated AES
  *        RANDOMX_FLAG_FULL_MEM - virtual machine will use the full dataset
  *        RANDOMX_FLAG_JIT - virtual machine will use a JIT compiler
- *        The numeric values of the flags are ordered so that a higher value will provide
+ *        RANDOMX_FLAG_SECURE - when combined with RANDOMX_FLAG_JIT, the JIT pages are never
+ *                              writable and executable at the same time (W^X policy)
+ *        The numeric values of the first 4 flags are ordered so that a higher value will provide
  *        faster hash calculation and a lower numeric value will provide higher portability.
  *        Using RANDOMX_FLAG_DEFAULT (all flags not set) works on all platforms, but is the slowest.
  * @param cache is a pointer to an initialized randomx_cache structure. Can be

@@ -82,6 +82,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --mine        mining mode: 2080 MiB" << std::endl;
 	std::cout << "  --verify      verification mode: 256 MiB" << std::endl;
 	std::cout << "  --jit         x86-64 JIT compiled mode (default: interpreter)" << std::endl;
+	std::cout << "  --secure      W^X policy for JIT pages (default: off)" << std::endl;
 	std::cout << "  --largePages  use large pages" << std::endl;
 	std::cout << "  --softAes     use software AES (default: x86 AES-NI)" << std::endl;
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
@@ -126,7 +127,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -143,6 +144,7 @@ int main(int argc, char** argv) {
 	readOption("--largePages", argc, argv, largePages);
 	readOption("--jit", argc, argv, jit);
 	readOption("--help", argc, argv, help);
+	readOption("--secure", argc, argv, secure);
 
 	store32(&seed, seedValue);
 
@@ -171,7 +173,12 @@ int main(int argc, char** argv) {
 
 	if (jit) {
 		flags = (randomx_flags)(flags | RANDOMX_FLAG_JIT);
-		std::cout << " - JIT compiled mode" << std::endl;
+		std::cout << " - JIT compiled mode ";
+		if (secure) {
+			flags = (randomx_flags)(flags | RANDOMX_FLAG_SECURE);
+			std::cout << "(secure)";
+		}
+		std::cout << std::endl;
 	}
 	else {
 		std::cout << " - interpreted mode" << std::endl;
