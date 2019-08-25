@@ -37,9 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace randomx {
 
-	static_assert(RANDOMX_ARGON_MEMORY > 0, "RANDOMX_ARGON_MEMORY must be greater than 0.");
+	static_assert(RANDOMX_ARGON_MEMORY >= 8, "RANDOMX_ARGON_MEMORY must be at least 8.");
 	static_assert(RANDOMX_ARGON_MEMORY <= 2097152, "RANDOMX_ARGON_MEMORY must not exceed 2097152.");
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
+	static_assert(RANDOMX_ARGON_ITERATIONS > 0 && RANDOMX_ARGON_ITERATIONS < UINT32_MAX, "RANDOMX_ARGON_ITERATIONS must be a positive 32-bit integer.");
+	static_assert(RANDOMX_ARGON_LANES > 0 && RANDOMX_ARGON_LANES <= 16777215, "RANDOMX_ARGON_LANES out of range");
 	static_assert(RANDOMX_DATASET_BASE_SIZE >= 64, "RANDOMX_DATASET_BASE_SIZE must be at least 64.");
 	static_assert((RANDOMX_DATASET_BASE_SIZE & (RANDOMX_DATASET_BASE_SIZE - 1)) == 0, "RANDOMX_DATASET_BASE_SIZE must be a power of 2.");
 	static_assert(RANDOMX_DATASET_BASE_SIZE <= 4294967296ULL, "RANDOMX_DATASET_BASE_SIZE must not exceed 4294967296.");
@@ -75,6 +77,7 @@ namespace randomx {
 
 	constexpr uint32_t ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof("" RANDOMX_ARGON_SALT) - 1;
+	static_assert(ArgonSaltSize >= 8, "RANDOMX_ARGON_SALT must be at least 8 characters long");
 	constexpr int SuperscalarMaxSize = 3 * RANDOMX_SUPERSCALAR_LATENCY + 2;
 	constexpr size_t CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
 	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;

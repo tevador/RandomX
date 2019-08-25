@@ -329,7 +329,7 @@ Floating point registers `f0`-`f3` are the "additive" registers, which can be th
 
 Floating point registers `e0`-`e3` are the "multiplicative" registers, which can be the destination of floating point multiplication, division and square root instructions. Their value is always positive.
 
-`ma` and `mx` are the memory registers. Both are 32 bits wide. `ma` contains the memory address of the next Dataset read and `mx` contains the address of the next Dataset prefetch.
+`ma` and `mx` are the memory registers. Both are 32 bits wide. `ma` contains the memory address of the next Dataset read and `mx` contains the address of the next Dataset prefetch. The values of `ma` and `mx` registers are always aligned to be a multiple of 64.
 
 The 2-bit `fprc` register determines the rounding mode of all floating point operations according to Table 4.3.1. The four rounding modes are defined by the IEEE 754 standard.
 
@@ -422,7 +422,7 @@ Bits 0-3 of quadword 12 are used to select 4 address registers for program execu
 
 #### 4.5.5 Dataset offset
 
-The `datasetOffset` is calculated by bitwise AND of quadword 13 and the value `RANDOMX_DATASET_EXTRA_SIZE / 64`. The result is multiplied by `64`. This offset is used when reading values from the Dataset.
+The `datasetOffset` is calculated as the remainder of dividing quadword 13 by `RANDOMX_DATASET_EXTRA_SIZE / 64 + 1`. The result is multiplied by `64`. This offset is used when reading values from the Dataset.
 
 #### 4.5.6 Group E register masks
 
@@ -882,7 +882,7 @@ The Dataset is a read-only memory structure that is used during program executio
 
 In order to allow PoW verification with a lower amount of memory, the Dataset is constructed in two steps using an intermediate structure called the "Cache", which can be used to calculate Dataset items on the fly.
 
-The whole Dataset is constructed from the key value `K`, which is an input parameter of RandomX. The whole Dataset needs to be recalculated everytime the key value changes. Fig. 7.1 shows the process of Dataset construction.
+The whole Dataset is constructed from the key value `K`, which is an input parameter of RandomX. The whole Dataset needs to be recalculated everytime the key value changes. Fig. 7.1 shows the process of Dataset construction. Note: the maximum supported length of `K` is 60 bytes. Using a longer key results in implementation-defined behavior.
 
 *Figure 7.1 - Dataset construction*
 

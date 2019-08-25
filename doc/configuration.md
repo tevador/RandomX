@@ -33,7 +33,7 @@ Not all of the parameters can be changed safely and most parameters have some co
 This parameter determines the amount of memory needed in the light mode. Memory is specified in KiB (1 KiB = 1024 bytes).
 
 #### Permitted values
-Integer powers of 2 in the range 1 - 2097152.
+Integer powers of 2 in the range 8 - 2097152.
 
 #### Notes
 Lower sizes will reduce the memory-hardness of the algorithm.
@@ -43,7 +43,7 @@ Lower sizes will reduce the memory-hardness of the algorithm.
 Determines the number of passes of Argon2 that are used to generate the Cache.
 
 #### Permitted values
-Any positive integer.
+Any positive 32-bit integer.
 
 #### Notes
 The time needed to initialize the Cache is proportional to the value of this constant.
@@ -53,7 +53,7 @@ The time needed to initialize the Cache is proportional to the value of this con
 The number of parallel lanes for Cache initialization.
 
 #### Permitted values
-Any positive integer.
+Integers in the range 1 - 16777215.
 
 #### Notes
 This parameter determines how many threads can be used for Cache initialization. 
@@ -63,7 +63,7 @@ This parameter determines how many threads can be used for Cache initialization.
 Salt value for Cache initialization.
 
 #### Permitted values
-Any string of byte values.
+A string of at least 8 characters.
 
 #### Note
 Every implementation should choose a unique salt value.
