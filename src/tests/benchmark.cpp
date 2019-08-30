@@ -83,8 +83,8 @@ void printUsage(const char* executable) {
 	std::cout << "  --verify      verification mode: 256 MiB" << std::endl;
 	std::cout << "  --jit         x86-64 JIT compiled mode (default: interpreter)" << std::endl;
 	std::cout << "  --secure      W^X policy for JIT pages (default: off)" << std::endl;
-	std::cout << "  --largePages  use large pages" << std::endl;
-	std::cout << "  --softAes     use software AES (default: x86 AES-NI)" << std::endl;
+	std::cout << "  --largePages  use large pages (default: small pages)" << std::endl;
+	std::cout << "  --softAes     use software AES (default: hardware AES)" << std::endl;
 	std::cout << "  --threads T   use T threads (default: 1)" << std::endl;
 	std::cout << "  --affinity A  thread affinity bitmask (default: 0)" << std::endl;
 	std::cout << "  --init Q      initialize dataset with Q threads (default: 1)" << std::endl;
@@ -142,13 +142,16 @@ int main(int argc, char** argv) {
 	readIntOption("--init", argc, argv, initThreadCount, 1);
 	readIntOption("--seed", argc, argv, seedValue, 0);
 	readOption("--largePages", argc, argv, largePages);
+	if (!largePages) {
+		readOption("--largepages", argc, argv, largePages);
+	}
 	readOption("--jit", argc, argv, jit);
 	readOption("--help", argc, argv, help);
 	readOption("--secure", argc, argv, secure);
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.0.4" << std::endl;
+	std::cout << "RandomX benchmark v1.1.0" << std::endl;
 
 	if (help || (!miningMode && !verificationMode)) {
 		printUsage(argv[0]);
@@ -294,7 +297,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if (noncesCount == 1000 && seedValue == 0)
-			std::cout << "Reference result:  38d47ea494480bff8d621189e8e92747288bb1da6c75dc401f2ab4b6807b6010" << std::endl;
+			std::cout << "Reference result:  10b649a3f15c7c7f88277812f2e74b337a0f20ce909af09199cccb960771cfa1" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;
 		}
