@@ -69,5 +69,8 @@ namespace randomx {
 		size_t getCodeSize() {
 			return 0;
 		}
+		void enableWriting() {}
+		void enableExecution() {}
+		void enableAll() {}
 	};
 }
