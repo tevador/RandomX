@@ -553,7 +553,7 @@ For integer instructions, the destination is always an integer register (registe
 
 |frequency|instruction|dst|src|`src == dst ?`|operation|
 |-|-|-|-|-|-|
-|25/256|IADD_RS|R|R|`src = dst`|`dst = dst + (src << mod.shift) (+ imm32)`|
+|16/256|IADD_RS|R|R|`src = dst`|`dst = dst + (src << mod.shift) (+ imm32)`|
 |7/256|IADD_M|R|R|`src = 0`|`dst = dst + [mem]`|
 |16/256|ISUB_R|R|R|`src = imm32`|`dst = dst - src`|
 |7/256|ISUB_M|R|R|`src = 0`|`dst = dst - [mem]`|
@@ -664,7 +664,7 @@ There are 2 control instructions.
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
 |1/256|CFROUND|-|R|`fprc = src >>> imm32`
-|16/256|CBRANCH|R|-|`dst = dst + cimm`, conditional jump
+|25/256|CBRANCH|R|-|`dst = dst + cimm`, conditional jump
 
 #### 5.4.1 CFROUND
 This instruction calculates a 2-bit value by rotating the source register right by `imm32` bits and taking the 2 least significant bits (the value of the source register is unaffected). The result is stored in the `fprc` register. This changes the rounding mode of all subsequent floating point instructions.

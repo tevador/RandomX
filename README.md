@@ -107,14 +107,15 @@ The reference implementation has been validated on the following platforms:
 * PPC64 (64-bit, big-endian)
 
 ## Acknowledgements
+* [tevador](https://github.com/tevador) - author
 * [SChernykh](https://github.com/SChernykh) - contributed significantly to the design of RandomX
 * [hyc](https://github.com/hyc) - original idea of using random code execution for PoW
-* Other contributors: [nioroso-x3](https://github.com/nioroso-x3), [jtgrassie](https://github.com/jtgrassie)
+* [Other contributors](https://github.com/tevador/RandomX/graphs/contributors)
 
 RandomX uses some source code from the following 3rd party repositories:
 * Argon2d, Blake2b hashing functions: https://github.com/P-H-C/phc-winner-argon2
 
-The author of RandomX declares no competing financial interest in RandomX adoption, other than being a holder of Monero. The development of RandomX was funded from the author's own pocket with only the help listed above.
+The author of RandomX declares no competing financial interest.
 
 ## Donations
 
@@ -124,4 +125,4 @@ Author's XMR address:
 ```
 845xHUh5GvfHwc2R8DVJCE7BT2sd4YEcmjG8GNSdmeNsP5DTEjXd1CNgxTcjHjiFuthRHAoVEJjM7GyKzQKLJtbd56xbh7V
 ```
-Total donations received: ~3.74 XMR (as of 9th July 2019). Thanks to all contributors.
+Total donations received: ~3.86 XMR (as of 30th August 2019). Thanks to all contributors.
