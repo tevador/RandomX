@@ -29,7 +29,7 @@ RandomX is a proof of work (PoW) algorithm which was designed to close the gap b
 
 **AesHash1R** refers to an AES-based fingerprinting function described in chapter 3.4. It's capable of processing more than 10 bytes per clock cycle and produces a 512-bit output.
 
-**BlakeGenerator** refers to a custom pseudo-random number generator described in chapter 3.4. It's based on the Blake2b hashing function.
+**BlakeGenerator** refers to a custom pseudo-random number generator described in chapter 3.5. It's based on the Blake2b hashing function.
 
 **SuperscalarHash** refers to a custom diffusion function designed to run efficiently on superscalar CPUs (see chapter 7). It transforms a 64-byte input value into a 64-byte output value.
 
@@ -269,15 +269,15 @@ finalState0      finalState1      finalState2      finalState3
 
 The final state is the output of the function.
 
-### 3.4 BlakeGenerator
+### 3.5 BlakeGenerator
 
 BlakeGenerator is a simple pseudo-random number generator based on the Blake2b hashing function. It has a 64-byte internal state `S`.
 
-#### 3.4.1 Initialization
+#### 3.5.1 Initialization
 
 The internal state is initialized from a seed value `K` (0-60 bytes long). The seed value is written into the internal state and padded with zeroes. Then the internal state is initialized as `S = Hash512(S)`.
 
-#### 3.4.2 Random number generation
+#### 3.5.2 Random number generation
 
 The generator can generate 1 byte or 4 bytes at a time by supplying data from its internal state `S`. If there are not enough unused bytes left, the internal state is reinitialized as `S = Hash512(S)`.
 
@@ -911,7 +911,7 @@ The finalizer and output calculation steps of Argon2 are omitted. The output is 
 
 ### 7.2 SuperscalarHash initialization
 
-The key value `K` is used to initialize a BlakeGenerator (see chapter 3.4), which is then used to generate 8 SuperscalarHash instances for Dataset initialization.
+The key value `K` is used to initialize a BlakeGenerator (see chapter 3.5), which is then used to generate 8 SuperscalarHash instances for Dataset initialization.
 
 ### 7.3 Dataset block generation
 Dataset items are numbered sequentially with `itemNumber` starting from 0. Each 64-byte Dataset item is generated independently using 8 SuperscalarHash functions (generated according to chapter 7.2) and by XORing randomly selected data from the Cache (constructed according to chapter 7.1).
