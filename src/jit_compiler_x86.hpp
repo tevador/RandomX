@@ -73,7 +73,7 @@ namespace randomx {
 		int32_t codePos;
 
 		void generateProgramPrologue(Program&, ProgramConfiguration&);
-		void generateProgramEpilogue(Program&);
+		void generateProgramEpilogue(Program&, ProgramConfiguration&);
 		void genAddressReg(Instruction&, bool);
 		void genAddressRegDst(Instruction&);
 		void genAddressImm(Instruction&);
