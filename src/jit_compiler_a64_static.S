@@ -46,6 +46,8 @@
 	.global randomx_calc_dataset_item_aarch64_store_result
 	.global randomx_calc_dataset_item_aarch64_end
 
+#include "configuration.h"
+
 # Register allocation
 
 # x0  -> pointer to reg buffer and then literal for IMUL_RCP
@@ -261,8 +263,9 @@ randomx_program_aarch64_main_loop:
 	# Execute VM instructions
 randomx_program_aarch64_vm_instructions:
 
-	# 12 KB buffer for generated instructions
-	.fill 3072,4,0
+	# buffer for generated instructions
+	# FDIV_M is the largest instruction taking up to 12 ARMv8 instructions
+	.fill RANDOMX_PROGRAM_SIZE*12,4,0
 
 literal_x0:  .fill 1,8,0
 literal_x11: .fill 1,8,0
