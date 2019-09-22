@@ -477,10 +477,10 @@ There are 256 opcodes, which are distributed between 29 distinct instructions. E
 
 |group|# instructions|# opcodes||
 |---------|-----------------|----|-|
-|integer |17|129|50.4%|
+|integer |17|120|46.9%|
 |floating point |9|94|36.7%|
-|control |2|17|6.6%|
-|store |1|16|6.3%|
+|control |2|26|10.2%|
+|store |1|16|6.2%|
 ||**29**|**256**|**100%**
 
 All instructions are described below in chapters 5.2 - 5.5.

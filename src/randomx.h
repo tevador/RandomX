@@ -120,7 +120,7 @@ RANDOMX_EXPORT void randomx_init_dataset(randomx_dataset *dataset, randomx_cache
  * Returns a pointer to the internal memory buffer of the dataset structure. The size
  * of the internal memory buffer is randomx_dataset_item_count() * RANDOMX_DATASET_ITEM_SIZE.
  *
- * @param dataset is dataset is a pointer to a previously allocated randomx_dataset structure. Must not be NULL.
+ * @param dataset is a pointer to a previously allocated randomx_dataset structure. Must not be NULL.
  *
  * @return Pointer to the internal memory buffer of the dataset structure.
 */

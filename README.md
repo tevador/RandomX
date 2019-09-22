@@ -37,7 +37,7 @@ make
 
 ### Windows
 
-On Windows, it is possible to build using MinGW (same procedure as on Linux) or using Visual Studio 2017 (solution file is provided).
+On Windows, it is possible to build using MinGW (same procedure as on Linux) or using Visual Studio (solution file is provided).
 
 ### Precompiled binaries
 
@@ -53,7 +53,7 @@ RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmo
 If you wish to use RandomX as a PoW algorithm for your cryptocurrency, please follow the [configuration guidelines](doc/configuration.md).
 
 ### CPU performance
-The table below lists the performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s). "CNv4" refers to the CryptoNight variant 4 (CN/R) hashrate measured using [xmrig](https://github.com/xmrig/xmrig) v2.14.1. "Fast mode" and "Light mode" are the two modes of RandomX.
+The table below lists the performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s). "CNv4" refers to the CryptoNight variant 4 (CN/R) hashrate measured using [XMRig](https://github.com/xmrig/xmrig) v2.14.1. "Fast mode" and "Light mode" are the two modes of RandomX.
 
 |CPU|RAM|OS|AES|CNv4|Fast mode|Light mode|
 |---|---|--|---|-----|------|--------------|
@@ -61,16 +61,18 @@ Intel Core i9-9900K|32G DDR4-3200|Windows 10|hw|660 (8T)|5770 (8T)|1160 (16T)|
 AMD Ryzen 7 1700|16G DDR4-2666|Ubuntu 16.04|hw|520 (8T)|4100 (8T)|620 (16T)|
 Intel Core i7-8550U|16G DDR4-2400|Windows 10|hw|200 (4T)|1700  (4T)|350 (8T)|
 Intel Core i3-3220|4G DDR3-1333|Ubuntu 16.04|soft|42 (4T)|510 (4T)|150 (4T)|
-Raspberry Pi 3|1G LPDDR2|Ubuntu 16.04|soft|3.5 (4T)|-|2.0 (4T) †|
+Raspberry Pi 3|1G LPDDR2|Ubuntu 16.04|soft|3.5 (4T)|-|20 (4T)|
 
-† Using the interpreter mode. Compiled mode is expected to increase performance by a factor of 10.
+Note that RandomX currently includes a JIT compiler for x86-64 and ARM64. Other architectures have to use the portable interpreter, which is much slower.
 
 ### GPU performance
 
 SChernykh is developing GPU mining code for RandomX. Benchmarks are included in the following repositories:
 
 * [CUDA miner](https://github.com/SChernykh/RandomX_CUDA) - NVIDIA GPUs.
-* [OpenCL miner](https://github.com/SChernykh/RandomX_OpenCL) - currently only for AMD Vega (uses GCN5 machine code).
+* [OpenCL miner](https://github.com/SChernykh/RandomX_OpenCL) - only for AMD Vega and AMD Polaris GPUs (uses GCN machine code).
+
+The code from the above repositories is included in the open source miner [XMRig](https://github.com/xmrig/xmrig).
 
 Note that GPUs are at a disadvantage when running RandomX since the algorithm was designed to be efficient on CPUs.
 
@@ -90,8 +92,6 @@ Most Intel and AMD CPUs made since 2011 should be fairly efficient at RandomX. M
     * DDR3 memory is limited to about 1500-2000 H/s per channel (depending on frequency and timings)
     * DDR4 memory is limited to about 4000-6000 H/s per channel  (depending on frequency and timings)
 
-
-
 ### Does RandomX facilitate botnets/malware mining or web mining?
 Efficient mining requires more than 2 GiB of memory, which is difficult to hide in an infected computer and disqualifies many low-end machines such as IoT devices. Web mining is infeasible due to the large memory requirement and the lack of directed rounding support for floating point operations in both Javascript and WebAssembly.
 
@@ -105,6 +105,12 @@ The reference implementation has been validated on the following platforms:
 * ARMv7+VFPv3 (32-bit, little-endian)
 * ARMv8 (64-bit, little-endian)
 * PPC64 (64-bit, big-endian)
+
+### Can FPGAs mine RandomX?
+
+RandomX generates multiple unique programs for every hash, so FPGAs cannot dynamically reconfigure their circuitry because typical FPGA takes tens of seconds to load a bitstream. It is also not possible to generate bitstreams for RandomX programs in advance due to the sheer number of combinations (there are 2<sup>512</sup> unique programs).
+
+Sufficiently large FPGAs can mine RandomX in a [soft microprocessor](https://en.wikipedia.org/wiki/Soft_microprocessor) configuration by emulating a CPU. Under these circumstances, an FPGA will be much less efficient than a CPU or a specialized chip (ASIC).
 
 ## Acknowledgements
 * [tevador](https://github.com/tevador) - author

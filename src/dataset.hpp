@@ -58,6 +58,7 @@ struct randomx_cache {
 
 //A pointer to a standard-layout struct object points to its initial member
 static_assert(std::is_standard_layout<randomx_dataset>(), "randomx_dataset must be a standard-layout struct");
+//the following assert fails when compiling Debug in Visual Studio (JIT mode will crash in Debug)
 static_assert(std::is_standard_layout<randomx_cache>(), "randomx_cache must be a standard-layout struct");
 
 namespace randomx {
