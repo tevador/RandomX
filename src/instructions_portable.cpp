@@ -161,7 +161,7 @@ void rx_set_rounding_mode(uint32_t mode) {
 
 #ifdef RANDOMX_USE_X87
 
-#ifdef _M_IX86
+#if defined(_MSC_VER) && defined(_M_IX86)
 
 void rx_set_double_precision() {
 	_control87(_PC_53, _MCW_PC);
