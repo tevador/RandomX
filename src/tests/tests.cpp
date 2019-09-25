@@ -1008,12 +1008,14 @@ int main() {
 
 	runTest("Hash test 1e (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
 
-	randomx_release_cache(cache);
-	cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
-	currentKey.size = 0;
-	randomx_destroy_vm(vm);
-	initCache("test key 000");
-	vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+	if (RANDOMX_HAVE_COMPILER) {
+		randomx_release_cache(cache);
+		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
+		currentKey.size = 0;
+		randomx_destroy_vm(vm);
+		initCache("test key 000");
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+	}
 
 	runTest("Hash test 2a (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
 
