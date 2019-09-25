@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.1.1" << std::endl;
+	std::cout << "RandomX benchmark v1.1.2" << std::endl;
 
 	if (help || (!miningMode && !verificationMode)) {
 		printUsage(argv[0]);
