@@ -18,6 +18,19 @@ Full specification is available in [specs.md](doc/specs.md).
 
 Design description and analysis is available in [design.md](doc/design.md).
 
+## Audits
+
+Between May and August 2019, RandomX was audited by 4 independent security research teams:
+
+* [Trail of Bits](https://www.trailofbits.com/) (28 000 USD)
+* [X41 D-SEC](https://www.x41-dsec.de/) (42 000 EUR)
+* [Kudelski Security](https://www.kudelskisecurity.com/) (18 250 CHF)
+* [QuarksLab](https://quarkslab.com/en/) (52 800 USD)
+
+The first audit was generously funded by [Arweave](https://www.arweave.org/), one of the early adopters of RandomX. The remaining three audits were funded by donations from the [Monero community](https://ccs.getmonero.org/proposals/RandomX-audit.html). All four audits were coordinated by [OSTIF](https://ostif.org/).
+
+Final reports from all four audits are available in the [audits](audits/) directory. None of the audits found any critical vulnerabilities, but several changes in the algorithm and the code were made as a direct result of the audits. More details can be found in the [final report by OSTIF](https://ostif.org/four-audits-of-randomx-for-monero-and-arweave-have-been-completed-results/).
+
 ## Build
 
 RandomX is written in C++11 and builds a static library with a C API provided by header file [randomx.h](src/randomx.h). Minimal API usage example is provided in [api-example1.c](src/tests/api-example1.c). The reference code includes a `randomx-benchmark` and `randomx-tests` executables for testing.
