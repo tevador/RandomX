@@ -93,7 +93,12 @@ extern "C" {
 	void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize) {
 		assert(cache != nullptr);
 		assert(keySize == 0 || key != nullptr);
-		cache->initialize(cache, key, keySize);
+		std::string data;
+		data.assign((const char *)key, keySize);
+		if (cache->cacheData != data) {
+			cache->initialize(cache, key, keySize);
+			cache->cacheData = data;
+		}
 	}
 
 	void randomx_release_cache(randomx_cache* cache) {
@@ -293,7 +298,10 @@ extern "C" {
 	void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache) {
 		assert(machine != nullptr);
 		assert(cache != nullptr && cache->isInitialized());
-		machine->setCache(cache);
+		if (machine->cacheData != cache->cacheData) {
+			machine->setCache(cache);
+			machine->cacheData = cache->cacheData;
+		}
 	}
 
 	void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset) {
