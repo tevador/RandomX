@@ -66,7 +66,7 @@ protected:
 	};
 	uint64_t datasetOffset;
 public:
-	std::string cacheData;
+	std::string cacheKey;
 };
 
 namespace randomx {
