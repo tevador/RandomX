@@ -71,6 +71,7 @@ RANDOMX_EXPORT randomx_cache *randomx_alloc_cache(randomx_flags flags);
 
 /**
  * Initializes the cache memory and SuperscalarHash using the provided key value.
+ * Does nothing if called again with the same key value.
  *
  * @param cache is a pointer to a previously allocated randomx_cache structure. Must not be NULL.
  * @param key is a pointer to memory which contains the key value. Must not be NULL.
@@ -162,7 +163,8 @@ RANDOMX_EXPORT randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache 
 
 /**
  * Reinitializes a virtual machine with a new Cache. This function should be called anytime
- * the Cache is reinitialized with a new key.
+ * the Cache is reinitialized with a new key. Does nothing if called with a Cache containing
+ * the same key value as already set.
  *
  * @param machine is a pointer to a randomx_vm structure that was initialized
  *        without RANDOMX_FLAG_FULL_MEM. Must not be NULL.

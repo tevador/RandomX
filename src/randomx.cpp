@@ -93,7 +93,12 @@ extern "C" {
 	void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize) {
 		assert(cache != nullptr);
 		assert(keySize == 0 || key != nullptr);
-		cache->initialize(cache, key, keySize);
+		std::string cacheKey;
+		cacheKey.assign((const char *)key, keySize);
+		if (cache->cacheKey != cacheKey || !cache->isInitialized()) {
+			cache->initialize(cache, key, keySize);
+			cache->cacheKey = cacheKey;
+		}
 	}
 
 	void randomx_release_cache(randomx_cache* cache) {
@@ -274,8 +279,10 @@ extern "C" {
 					UNREACHABLE;
 			}
 
-			if(cache != nullptr)
+			if(cache != nullptr) {
 				vm->setCache(cache);
+				vm->cacheKey = cache->cacheKey;
+			}
 
 			if(dataset != nullptr)
 				vm->setDataset(dataset);
@@ -293,7 +300,10 @@ extern "C" {
 	void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache) {
 		assert(machine != nullptr);
 		assert(cache != nullptr && cache->isInitialized());
-		machine->setCache(cache);
+		if (machine->cacheKey != cache->cacheKey) {
+			machine->setCache(cache);
+			machine->cacheKey = cache->cacheKey;
+		}
 	}
 
 	void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset *dataset) {
