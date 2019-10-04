@@ -16,26 +16,13 @@
 #include "../jit_compiler.hpp"
 #include "../aes_hash.hpp"
 
-struct CacheKey {
-	void* key;
-	size_t size = 0;
-};
-
 randomx_cache* cache;
 randomx_vm* vm = nullptr;
-CacheKey currentKey;
 
 template<size_t N>
 void initCache(const char (&key)[N]) {
 	assert(cache != nullptr);
-	if (N - 1 == currentKey.size && memcmp(currentKey.key, key, N - 1) == 0)
-		return;
-	//std::cout << "randomx_init_cache with key ";
-	//outputHex(std::cout, key, N - 1);
-	//std::cout << std::endl;
 	randomx_init_cache(cache, key, N - 1);
-	currentKey.key = (void*)key;
-	currentKey.size = N - 1;
 	if (vm != nullptr)
 		randomx_vm_set_cache(vm, cache);
 }
@@ -1011,7 +998,6 @@ int main() {
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_release_cache(cache);
 		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
-		currentKey.size = 0;
 		randomx_destroy_vm(vm);
 		initCache("test key 000");
 		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
