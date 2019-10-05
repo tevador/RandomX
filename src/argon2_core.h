@@ -73,17 +73,6 @@ enum argon2_core_constants {
  */
 typedef struct block_ { uint64_t v[ARGON2_QWORDS_IN_BLOCK]; } block;
 
-/*****************Functions that work with the block******************/
-
-/* Initialize each byte of the block with @in */
-void rxa2_init_block_value(block *b, uint8_t in);
-
-/* Copy block @src to block @dst */
-void rxa2_copy_block(block *dst, const block *src);
-
-/* XOR @src onto @dst bytewise */
-void rxa2_xor_block(block *dst, const block *src);
-
 /*
  * Argon2 instance: memory pointer, number of passes, amount of memory, type,
  * and derived values.
@@ -102,6 +91,7 @@ typedef struct Argon2_instance_t {
 	argon2_type type;
 	int print_internals; /* whether to print the memory blocks */
 	argon2_context *context_ptr; /* points back to original context */
+	randomx_argon2_impl *impl;
 } argon2_instance_t;
 
 /*
@@ -123,42 +113,6 @@ typedef struct Argon2_thread_data {
 
 /*************************Argon2 core functions********************************/
 
-/* Allocates memory to the given pointer, uses the appropriate allocator as
- * specified in the context. Total allocated memory is num*size.
- * @param context argon2_context which specifies the allocator
- * @param memory pointer to the pointer to the memory
- * @param size the size in bytes for each element to be allocated
- * @param num the number of elements to be allocated
- * @return ARGON2_OK if @memory is a valid pointer and memory is allocated
- */
-int rxa2_allocate_memory(const argon2_context *context, uint8_t **memory,
-	size_t num, size_t size);
-
-/*
- * Frees memory at the given pointer, uses the appropriate deallocator as
- * specified in the context. Also cleans the memory using clear_internal_memory.
- * @param context argon2_context which specifies the deallocator
- * @param memory pointer to buffer to be freed
- * @param size the size in bytes for each element to be deallocated
- * @param num the number of elements to be deallocated
- */
-void rxa2_free_memory(const argon2_context *context, uint8_t *memory,
-	size_t num, size_t size);
-
-/* Function that securely cleans the memory. This ignores any flags set
- * regarding clearing memory. Usually one just calls clear_internal_memory.
- * @param mem Pointer to the memory
- * @param s Memory size in bytes
- */
-void rxa2_secure_wipe_memory(void *v, size_t n);
-
-/* Function that securely clears the memory if FLAG_clear_internal_memory is
- * set. If the flag isn't set, this function does nothing.
- * @param mem Pointer to the memory
- * @param s Memory size in bytes
- */
-void rxa2_clear_internal_memory(void *v, size_t n);
-
 /*
  * Computes absolute position of reference block in the lane following a skewed
  * distribution and using a pseudo-random value as input
@@ -169,7 +123,7 @@ void rxa2_clear_internal_memory(void *v, size_t n);
  * If so we can reference the current segment
  * @pre All pointers must be valid
  */
-uint32_t rxa2_index_alpha(const argon2_instance_t *instance,
+uint32_t randomx_argon2_index_alpha(const argon2_instance_t *instance,
 	const argon2_position_t *position, uint32_t pseudo_rand,
 	int same_lane);
 
@@ -180,28 +134,7 @@ uint32_t rxa2_index_alpha(const argon2_instance_t *instance,
  * @return ARGON2_OK if everything is all right, otherwise one of error codes
  * (all defined in <argon2.h>
  */
-int rxa2_validate_inputs(const argon2_context *context);
-
-/*
- * Hashes all the inputs into @a blockhash[PREHASH_DIGEST_LENGTH], clears
- * password and secret if needed
- * @param  context  Pointer to the Argon2 internal structure containing memory
- * pointer, and parameters for time and space requirements.
- * @param  blockhash Buffer for pre-hashing digest
- * @param  type Argon2 type
- * @pre    @a blockhash must have at least @a PREHASH_DIGEST_LENGTH bytes
- * allocated
- */
-void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context,
-	argon2_type type);
-
-/*
- * Function creates first 2 blocks per lane
- * @param instance Pointer to the current instance
- * @param blockhash Pointer to the pre-hashing digest
- * @pre blockhash must point to @a PREHASH_SEED_LENGTH allocated values
- */
-void rxa2_fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instance);
+int randomx_argon2_validate_inputs(const argon2_context *context);
 
 /*
  * Function allocates memory, hashes the inputs with Blake,  and creates first
@@ -213,31 +146,7 @@ void rxa2_fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instanc
  * @return Zero if successful, -1 if memory failed to allocate. @context->state
  * will be modified if successful.
  */
-int rxa2_argon_initialize(argon2_instance_t *instance, argon2_context *context);
-
-/*
- * XORing the last block of each lane, hashing it, making the tag. Deallocates
- * the memory.
- * @param context Pointer to current Argon2 context (use only the out parameters
- * from it)
- * @param instance Pointer to current instance of Argon2
- * @pre instance->state must point to necessary amount of memory
- * @pre context->out must point to outlen bytes of memory
- * @pre if context->free_cbk is not NULL, it should point to a function that
- * deallocates memory
- */
-void rxa2_finalize(const argon2_context *context, argon2_instance_t *instance);
-
-/*
- * Function that fills the segment using previous segments also from other
- * threads
- * @param context current context
- * @param instance Pointer to the current instance
- * @param position Current position
- * @pre all block pointers must be valid
- */
-void rxa2_fill_segment(const argon2_instance_t *instance,
-	argon2_position_t position);
+int randomx_argon2_initialize(argon2_instance_t *instance, argon2_context *context);
 
 /*
  * Function that fills the entire memory t_cost times based on the first two
@@ -245,7 +154,7 @@ void rxa2_fill_segment(const argon2_instance_t *instance,
  * @param instance Pointer to the current instance
  * @return ARGON2_OK if successful, @context->state
  */
-int rxa2_fill_memory_blocks(argon2_instance_t *instance);
+int randomx_argon2_fill_memory_blocks(argon2_instance_t* instance);
 
 #if defined(__cplusplus)
 }

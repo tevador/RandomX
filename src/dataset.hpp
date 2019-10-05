@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common.hpp"
 #include "superscalar_program.hpp"
 #include "allocator.hpp"
+#include "argon2.h"
 
 /* Global scope for C binding */
 struct randomx_dataset {
@@ -51,6 +52,7 @@ struct randomx_cache {
 	randomx::SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES];
 	std::vector<uint64_t> reciprocalCache;
 	std::string cacheKey;
+	randomx_argon2_impl* argonImpl;
 
 	bool isInitialized() {
 		return programs[0].getSize() != 0;
@@ -79,4 +81,21 @@ namespace randomx {
 	void initCacheCompile(randomx_cache*, const void*, size_t);
 	void initDatasetItem(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);
 	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
+
+	inline randomx_argon2_impl* selectArgonImpl(randomx_flags flags) {
+		if ((flags & RANDOMX_FLAG_ARGON2) == 0) {
+			return &randomx_argon2_fill_segment_ref;
+		}
+		randomx_argon2_impl* impl = nullptr;
+		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_SSE3) {
+			impl = randomx_argon2_impl_sse3();
+		}
+		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_AVX2) {
+			impl = randomx_argon2_impl_avx2();
+		}
+		if (impl != nullptr) {
+			return impl;
+		}
+		throw std::runtime_error("Unsupported Argon2 implementation");
+	}
 }

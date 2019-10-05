@@ -39,10 +39,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
-		randomx_cache *cache;
+		randomx_cache *cache = nullptr;
 
 		try {
 			cache = new randomx_cache();
+			cache->argonImpl = randomx::selectArgonImpl(flags);
 			switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES)) {
 				case RANDOMX_FLAG_DEFAULT:
 					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
@@ -103,7 +104,9 @@ extern "C" {
 
 	void randomx_release_cache(randomx_cache* cache) {
 		assert(cache != nullptr);
-		cache->dealloc(cache);
+		if (cache->memory != nullptr) {
+			cache->dealloc(cache);
+		}
 		delete cache;
 	}
 
@@ -114,7 +117,7 @@ extern "C" {
 			return nullptr;
 		}
 
-		randomx_dataset *dataset;
+		randomx_dataset *dataset = nullptr;
 
 		try {
 			dataset = new randomx_dataset();

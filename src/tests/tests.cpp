@@ -997,8 +997,9 @@ int main() {
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_release_cache(cache);
-		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		randomx_destroy_vm(vm);
+		vm = nullptr;
+		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		initCache("test key 000");
 		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
 	}
@@ -1012,6 +1013,35 @@ int main() {
 	runTest("Hash test 2d (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
 
 	runTest("Hash test 2e (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
+
+	randomx_destroy_vm(vm);
+	vm = nullptr;
+
+	randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_SSE3);
+
+	runTest("Cache initialization: SSSE3", cache != nullptr && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		uint64_t* cacheMemory = (uint64_t*)cache->memory;
+		assert(cacheMemory[0] == 0x191e0e1d23c02186);
+		assert(cacheMemory[1568413] == 0xf1b62fe6210bf8b1);
+		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
+	});
+
+	if (cache != nullptr)
+		randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_AVX2);
+
+	runTest("Cache initialization: AVX2", cache != nullptr && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		uint64_t* cacheMemory = (uint64_t*)cache->memory;
+		assert(cacheMemory[0] == 0x191e0e1d23c02186);
+		assert(cacheMemory[1568413] == 0xf1b62fe6210bf8b1);
+		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
+	});
+
+	if (cache != nullptr)
+		randomx_release_cache(cache);
 
 	std::cout << std::endl << "All tests PASSED" << std::endl;
 

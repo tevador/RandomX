@@ -70,18 +70,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /***************Instance and Position constructors**********/
-void rxa2_init_block_value(block *b, uint8_t in) { memset(b->v, in, sizeof(b->v)); }
-
-void rxa2_copy_block(block *dst, const block *src) {
-	memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
-}
-
-void rxa2_xor_block(block *dst, const block *src) {
-	int i;
-	for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
-		dst->v[i] ^= src->v[i];
-	}
-}
 
 static void load_block(block *dst, const void *input) {
 	unsigned i;
@@ -97,69 +85,7 @@ static void store_block(void *output, const block *src) {
 	}
 }
 
-/***************Memory functions*****************/
-
-int rxa2_allocate_memory(const argon2_context *context, uint8_t **memory,
-	size_t num, size_t size) {
-	size_t memory_size = num * size;
-	if (memory == NULL) {
-		return ARGON2_MEMORY_ALLOCATION_ERROR;
-	}
-
-	/* 1. Check for multiplication overflow */
-	if (size != 0 && memory_size / size != num) {
-		return ARGON2_MEMORY_ALLOCATION_ERROR;
-	}
-
-	/* 2. Try to allocate with appropriate allocator */
-	if (context->allocate_cbk) {
-		(context->allocate_cbk)(memory, memory_size);
-	}
-	else {
-		*memory = (uint8_t*)malloc(memory_size);
-	}
-
-	if (*memory == NULL) {
-		return ARGON2_MEMORY_ALLOCATION_ERROR;
-	}
-
-	return ARGON2_OK;
-}
-
-void rxa2_free_memory(const argon2_context *context, uint8_t *memory,
-	size_t num, size_t size) {
-	size_t memory_size = num * size;
-	rxa2_clear_internal_memory(memory, memory_size);
-	if (context->free_cbk) {
-		(context->free_cbk)(memory, memory_size);
-	}
-	else {
-		free(memory);
-	}
-}
-
-void NOT_OPTIMIZED rxa2_secure_wipe_memory(void *v, size_t n) {
-#if defined(_MSC_VER) && VC_GE_2005(_MSC_VER)
-	SecureZeroMemory(v, n);
-#elif defined memset_s
-	memset_s(v, n, 0, n);
-#elif defined(__OpenBSD__)
-	explicit_bzero(v, n);
-#else
-	static void *(*const volatile memset_sec)(void *, int, size_t) = &memset;
-	memset_sec(v, 0, n);
-#endif
-}
-
-/* Memory clear flag defaults to true. */
-#define FLAG_clear_internal_memory 0
-void rxa2_clear_internal_memory(void *v, size_t n) {
-	if (FLAG_clear_internal_memory && v) {
-		rxa2_secure_wipe_memory(v, n);
-	}
-}
-
-uint32_t rxa2_index_alpha(const argon2_instance_t *instance,
+uint32_t randomx_argon2_index_alpha(const argon2_instance_t *instance,
 	const argon2_position_t *position, uint32_t pseudo_rand,
 	int same_lane) {
 	/*
@@ -241,24 +167,22 @@ static int fill_memory_blocks_st(argon2_instance_t *instance) {
 		for (s = 0; s < ARGON2_SYNC_POINTS; ++s) {
 			for (l = 0; l < instance->lanes; ++l) {
 				argon2_position_t position = { r, l, (uint8_t)s, 0 };
-				rxa2_fill_segment(instance, position);
+				//fill the segment using the selected implementation
+				instance->impl(instance, position);
 			}
 		}
-#ifdef GENKAT
-		internal_kat(instance, r); /* Print all memory blocks */
-#endif
 	}
 	return ARGON2_OK;
 }
 
-int rxa2_fill_memory_blocks(argon2_instance_t *instance) {
+int randomx_argon2_fill_memory_blocks(argon2_instance_t *instance) {
 	if (instance == NULL || instance->lanes == 0) {
 		return ARGON2_INCORRECT_PARAMETER;
 	}
 	return fill_memory_blocks_st(instance);
 }
 
-int rxa2_validate_inputs(const argon2_context *context) {
+int randomx_argon2_validate_inputs(const argon2_context *context) {
 	if (NULL == context) {
 		return ARGON2_INCORRECT_PARAMETER;
 	}
@@ -394,7 +318,6 @@ void rxa2_fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instanc
 		load_block(&instance->memory[l * instance->lane_length + 1],
 			blockhash_bytes);
 	}
-	rxa2_clear_internal_memory(blockhash_bytes, ARGON2_BLOCK_SIZE);
 }
 
 void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context, argon2_type type) {
@@ -431,11 +354,6 @@ void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context, argon2_type 
 	if (context->pwd != NULL) {
 		blake2b_update(&BlakeHash, (const uint8_t *)context->pwd,
 			context->pwdlen);
-
-		if (context->flags & ARGON2_FLAG_CLEAR_PASSWORD) {
-			rxa2_secure_wipe_memory(context->pwd, context->pwdlen);
-			context->pwdlen = 0;
-		}
 	}
 
 	store32(&value, context->saltlen);
@@ -451,11 +369,6 @@ void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context, argon2_type 
 	if (context->secret != NULL) {
 		blake2b_update(&BlakeHash, (const uint8_t *)context->secret,
 			context->secretlen);
-
-		if (context->flags & ARGON2_FLAG_CLEAR_SECRET) {
-			rxa2_secure_wipe_memory(context->secret, context->secretlen);
-			context->secretlen = 0;
-		}
 	}
 
 	store32(&value, context->adlen);
@@ -469,7 +382,7 @@ void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context, argon2_type 
 	blake2b_final(&BlakeHash, blockhash, ARGON2_PREHASH_DIGEST_LENGTH);
 }
 
-int rxa2_argon_initialize(argon2_instance_t *instance, argon2_context *context) {
+int randomx_argon2_initialize(argon2_instance_t *instance, argon2_context *context) {
 	uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
 	int result = ARGON2_OK;
 
@@ -478,10 +391,7 @@ int rxa2_argon_initialize(argon2_instance_t *instance, argon2_context *context) 
 	instance->context_ptr = context;
 
 	/* 1. Memory allocation */
-	/*result = allocate_memory(context, (uint8_t **)&(instance->memory), instance->memory_blocks, sizeof(block));
-	if (result != ARGON2_OK) {
-		return result;
-	}*/
+	//RandomX takes care of memory allocation
 
 	/* 2. Initial hashing */
 	/* H_0 + 8 extra bytes to produce the first blocks */
@@ -489,15 +399,13 @@ int rxa2_argon_initialize(argon2_instance_t *instance, argon2_context *context) 
 	/* Hashing all inputs */
 	rxa2_initial_hash(blockhash, context, instance->type);
 	/* Zeroing 8 extra bytes */
-	rxa2_clear_internal_memory(blockhash + ARGON2_PREHASH_DIGEST_LENGTH,
+	/*rxa2_clear_internal_memory(blockhash + ARGON2_PREHASH_DIGEST_LENGTH,
 		ARGON2_PREHASH_SEED_LENGTH -
-		ARGON2_PREHASH_DIGEST_LENGTH);
+		ARGON2_PREHASH_DIGEST_LENGTH);*/
 
 	/* 3. Creating first blocks, we always have at least two blocks in a slice
 	 */
 	rxa2_fill_first_blocks(blockhash, instance);
-	/* Clearing the hash */
-	rxa2_clear_internal_memory(blockhash, ARGON2_PREHASH_SEED_LENGTH);
 
 	return ARGON2_OK;
 }

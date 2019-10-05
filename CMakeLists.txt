@@ -31,6 +31,8 @@ cmake_minimum_required(VERSION 2.8.7)
 set (randomx_sources
 src/aes_hash.cpp
 src/argon2_ref.c
+src/argon2_sse3.c
+src/argon2_avx2.c
 src/bytecode_machine.cpp
 src/dataset.cpp
 src/soft_aes.cpp
@@ -103,6 +105,14 @@ if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "
   else()
     # default build has hardware AES enabled (software AES can be selected at runtime)
     add_flag("-maes")
+    check_c_compiler_flag(-mssse3 HAVE_SSSE3)
+    if(HAVE_SSSE3)
+      set_source_files_properties(src/argon2_sse3.c COMPILE_FLAGS -mssse3)
+    endif()
+    check_c_compiler_flag(-mavx2 HAVE_AVX2)
+    if(HAVE_AVX2)
+      set_source_files_properties(src/argon2_avx2.c COMPILE_FLAGS -mavx2)
+    endif()
   endif()
 endif()
 

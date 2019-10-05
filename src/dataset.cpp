@@ -92,7 +92,7 @@ namespace randomx {
 		context.flags = ARGON2_DEFAULT_FLAGS;
 		context.version = ARGON2_VERSION_NUMBER;
 
-		int inputsValid = rxa2_validate_inputs(&context);
+		int inputsValid = randomx_argon2_validate_inputs(&context);
 		assert(inputsValid == ARGON2_OK);
 
 		/* 2. Align memory size */
@@ -111,6 +111,7 @@ namespace randomx {
 		instance.threads = context.threads;
 		instance.type = Argon2_d;
 		instance.memory = (block*)cache->memory;
+		instance.impl = cache->argonImpl;
 
 		if (instance.threads > instance.lanes) {
 			instance.threads = instance.lanes;
@@ -119,9 +120,9 @@ namespace randomx {
 		/* 3. Initialization: Hashing inputs, allocating memory, filling first
 		 * blocks
 		 */
-		rxa2_argon_initialize(&instance, &context);
+		randomx_argon2_initialize(&instance, &context);
 
-		rxa2_fill_memory_blocks(&instance);
+		randomx_argon2_fill_memory_blocks(&instance);
 
 		cache->reciprocalCache.clear();
 		randomx::Blake2Generator gen(key, keySize);

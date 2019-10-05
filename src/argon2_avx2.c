@@ -37,84 +37,69 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 
 #include "argon2.h"
+
+void randomx_argon2_fill_segment_avx2(const argon2_instance_t* instance,
+	argon2_position_t position);
+
+randomx_argon2_impl* randomx_argon2_impl_avx2() {
+#if defined(__AVX2__)
+	return &randomx_argon2_fill_segment_avx2;
+#endif
+	return NULL;
+}
+
+#if defined(__AVX2__)
+
 #include "argon2_core.h"
 
-#include "blake2/blamka-round-ref.h"
+#include "blake2/blamka-round-avx2.h"
 #include "blake2/blake2-impl.h"
 #include "blake2/blake2.h"
 
-static void copy_block(block* dst, const block* src) {
-	memcpy(dst->v, src->v, sizeof(uint64_t) * ARGON2_QWORDS_IN_BLOCK);
-}
+static void fill_block(__m256i* state, const block* ref_block,
+	block* next_block, int with_xor) {
+	__m256i block_XY[ARGON2_HWORDS_IN_BLOCK];
+	unsigned int i;
 
-static void xor_block(block* dst, const block* src) {
-	int i;
-	for (i = 0; i < ARGON2_QWORDS_IN_BLOCK; ++i) {
-		dst->v[i] ^= src->v[i];
-	}
-}
-
- /*
-  * Function fills a new memory block and optionally XORs the old block over the new one.
-  * @next_block must be initialized.
-  * @param prev_block Pointer to the previous block
-  * @param ref_block Pointer to the reference block
-  * @param next_block Pointer to the block to be constructed
-  * @param with_xor Whether to XOR into the new block (1) or just overwrite (0)
-  * @pre all block pointers must be valid
-  */
-static void fill_block(const block *prev_block, const block *ref_block,
-	block *next_block, int with_xor) {
-	block blockR, block_tmp;
-	unsigned i;
-
-	copy_block(&blockR, ref_block);
-	xor_block(&blockR, prev_block);
-	copy_block(&block_tmp, &blockR);
-	/* Now blockR = ref_block + prev_block and block_tmp = ref_block + prev_block */
 	if (with_xor) {
-		/* Saving the next block contents for XOR over: */
-		xor_block(&block_tmp, next_block);
-		/* Now blockR = ref_block + prev_block and
-		   block_tmp = ref_block + prev_block + next_block */
+		for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
+			state[i] = _mm256_xor_si256(
+				state[i], _mm256_loadu_si256((const __m256i*)ref_block->v + i));
+			block_XY[i] = _mm256_xor_si256(
+				state[i], _mm256_loadu_si256((const __m256i*)next_block->v + i));
+		}
+	}
+	else {
+		for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
+			block_XY[i] = state[i] = _mm256_xor_si256(
+				state[i], _mm256_loadu_si256((const __m256i*)ref_block->v + i));
+		}
 	}
 
-	/* Apply Blake2 on columns of 64-bit words: (0,1,...,15) , then
-	   (16,17,..31)... finally (112,113,...127) */
-	for (i = 0; i < 8; ++i) {
-		BLAKE2_ROUND_NOMSG(
-			blockR.v[16 * i], blockR.v[16 * i + 1], blockR.v[16 * i + 2],
-			blockR.v[16 * i + 3], blockR.v[16 * i + 4], blockR.v[16 * i + 5],
-			blockR.v[16 * i + 6], blockR.v[16 * i + 7], blockR.v[16 * i + 8],
-			blockR.v[16 * i + 9], blockR.v[16 * i + 10], blockR.v[16 * i + 11],
-			blockR.v[16 * i + 12], blockR.v[16 * i + 13], blockR.v[16 * i + 14],
-			blockR.v[16 * i + 15]);
+	for (i = 0; i < 4; ++i) {
+		BLAKE2_ROUND_1(state[8 * i + 0], state[8 * i + 4], state[8 * i + 1], state[8 * i + 5],
+			state[8 * i + 2], state[8 * i + 6], state[8 * i + 3], state[8 * i + 7]);
 	}
 
-	/* Apply Blake2 on rows of 64-bit words: (0,1,16,17,...112,113), then
-	   (2,3,18,19,...,114,115).. finally (14,15,30,31,...,126,127) */
-	for (i = 0; i < 8; i++) {
-		BLAKE2_ROUND_NOMSG(
-			blockR.v[2 * i], blockR.v[2 * i + 1], blockR.v[2 * i + 16],
-			blockR.v[2 * i + 17], blockR.v[2 * i + 32], blockR.v[2 * i + 33],
-			blockR.v[2 * i + 48], blockR.v[2 * i + 49], blockR.v[2 * i + 64],
-			blockR.v[2 * i + 65], blockR.v[2 * i + 80], blockR.v[2 * i + 81],
-			blockR.v[2 * i + 96], blockR.v[2 * i + 97], blockR.v[2 * i + 112],
-			blockR.v[2 * i + 113]);
+	for (i = 0; i < 4; ++i) {
+		BLAKE2_ROUND_2(state[0 + i], state[4 + i], state[8 + i], state[12 + i],
+			state[16 + i], state[20 + i], state[24 + i], state[28 + i]);
 	}
 
-	copy_block(next_block, &block_tmp);
-	xor_block(next_block, &blockR);
+	for (i = 0; i < ARGON2_HWORDS_IN_BLOCK; i++) {
+		state[i] = _mm256_xor_si256(state[i], block_XY[i]);
+		_mm256_storeu_si256((__m256i*)next_block->v + i, state[i]);
+	}
 }
 
-void randomx_argon2_fill_segment_ref(const argon2_instance_t *instance,
+void randomx_argon2_fill_segment_avx2(const argon2_instance_t* instance,
 	argon2_position_t position) {
-	block *ref_block = NULL, *curr_block = NULL;
-	block address_block, input_block, zero_block;
+	block* ref_block = NULL, * curr_block = NULL;
+	block address_block, input_block;
 	uint64_t pseudo_rand, ref_index, ref_lane;
 	uint32_t prev_offset, curr_offset;
-	uint32_t starting_index;
-	uint32_t i;
+	uint32_t starting_index, i;
+	__m256i state[ARGON2_HWORDS_IN_BLOCK];
 
 	if (instance == NULL) {
 		return;
@@ -138,6 +123,8 @@ void randomx_argon2_fill_segment_ref(const argon2_instance_t *instance,
 		/* Previous block */
 		prev_offset = curr_offset - 1;
 	}
+
+	memcpy(state, ((instance->memory + prev_offset)->v), ARGON2_BLOCK_SIZE);
 
 	for (i = starting_index; i < instance->segment_length;
 		++i, ++curr_offset, ++prev_offset) {
@@ -171,17 +158,17 @@ void randomx_argon2_fill_segment_ref(const argon2_instance_t *instance,
 		curr_block = instance->memory + curr_offset;
 		if (ARGON2_VERSION_10 == instance->version) {
 			/* version 1.2.1 and earlier: overwrite, not XOR */
-			fill_block(instance->memory + prev_offset, ref_block, curr_block, 0);
+			fill_block(state, ref_block, curr_block, 0);
 		}
 		else {
 			if (0 == position.pass) {
-				fill_block(instance->memory + prev_offset, ref_block,
-					curr_block, 0);
+				fill_block(state, ref_block, curr_block, 0);
 			}
 			else {
-				fill_block(instance->memory + prev_offset, ref_block,
-					curr_block, 1);
+				fill_block(state, ref_block, curr_block, 1);
 			}
 		}
 	}
 }
+
+#endif

@@ -227,3 +227,35 @@ typedef enum Argon2_version {
 	ARGON2_VERSION_13 = 0x13,
 	ARGON2_VERSION_NUMBER = ARGON2_VERSION_13
 } argon2_version;
+
+//Argon2 instance - forward declaration
+typedef struct Argon2_instance_t argon2_instance_t;
+
+//Argon2 position = forward declaration
+typedef struct Argon2_position_t argon2_position_t;
+
+//Argon2 implementation function
+typedef void randomx_argon2_impl(const argon2_instance_t* instance,
+	argon2_position_t position);
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+/*
+ * Function that fills the segment using previous segments also from other
+ * threads
+ * @param context current context
+ * @param instance Pointer to the current instance
+ * @param position Current position
+ * @pre all block pointers must be valid
+ */
+void randomx_argon2_fill_segment_ref(const argon2_instance_t* instance,
+	argon2_position_t position);
+
+randomx_argon2_impl *randomx_argon2_impl_sse3();
+randomx_argon2_impl *randomx_argon2_impl_avx2();
+
+#if defined(__cplusplus)
+}
+#endif

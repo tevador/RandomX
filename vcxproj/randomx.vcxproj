@@ -114,6 +114,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AssemblerOutput>AssemblyCode</AssemblerOutput>
       <PreprocessorDefinitions>_MBCS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -131,8 +132,10 @@ SET ERRORLEVEL = 0</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\allocator.cpp" />
+    <ClCompile Include="..\src\argon2_avx2.c" />
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
+    <ClCompile Include="..\src\argon2_sse3.c" />
     <ClCompile Include="..\src\assembly_generator_x86.cpp" />
     <ClCompile Include="..\src\blake2_generator.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
@@ -163,7 +166,9 @@ SET ERRORLEVEL = 0</Command>
     <ClInclude Include="..\src\assembly_generator_x86.hpp" />
     <ClInclude Include="..\src\blake2\blake2-impl.h" />
     <ClInclude Include="..\src\blake2\blake2.h" />
+    <ClInclude Include="..\src\blake2\blamka-round-avx2.h" />
     <ClInclude Include="..\src\blake2\blamka-round-ref.h" />
+    <ClInclude Include="..\src\blake2\blamka-round-sse3.h" />
     <ClInclude Include="..\src\blake2\endian.h" />
     <ClInclude Include="..\src\blake2_generator.hpp" />
     <ClInclude Include="..\src\bytecode_machine.hpp" />
