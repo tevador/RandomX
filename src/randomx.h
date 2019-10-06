@@ -45,7 +45,7 @@ typedef enum {
   RANDOMX_FLAG_FULL_MEM = 4,
   RANDOMX_FLAG_JIT = 8,
   RANDOMX_FLAG_SECURE = 16,
-  RANDOMX_FLAG_ARGON2_SSE3 = 32,
+  RANDOMX_FLAG_ARGON2_SSSE3 = 32,
   RANDOMX_FLAG_ARGON2_AVX2 = 64,
   RANDOMX_FLAG_ARGON2 = 96
 } randomx_flags;
@@ -66,7 +66,7 @@ extern "C" {
  *        RANDOMX_FLAG_JIT - create cache structure with JIT compilation support; this makes
  *                           subsequent Dataset initialization faster
  *        Optionally, one of these two flags may be selected:
- *        RANDOMX_FLAG_ARGON2_SSE3 - optimized Argon2 for CPUs with the SSSE3 instruction set
+ *        RANDOMX_FLAG_ARGON2_SSSE3 - optimized Argon2 for CPUs with the SSSE3 instruction set
  *                                   makes subsequent cache initialization faster
  *        RANDOMX_FLAG_ARGON2_AVX2 - optimized Argon2 for CPUs with the AVX2 instruction set
  *                                   makes subsequent cache initialization faster

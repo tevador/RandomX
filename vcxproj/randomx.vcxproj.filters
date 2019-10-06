@@ -81,10 +81,10 @@
     <ClCompile Include="..\src\bytecode_machine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\argon2_sse3.c">
+    <ClCompile Include="..\src\argon2_avx2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\argon2_avx2.c">
+    <ClCompile Include="..\src\argon2_ssse3.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -191,10 +191,10 @@
     <ClInclude Include="..\src\bytecode_machine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\blake2\blamka-round-sse3.h">
+    <ClInclude Include="..\src\blake2\blamka-round-avx2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\blake2\blamka-round-avx2.h">
+    <ClInclude Include="..\src\blake2\blamka-round-ssse3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

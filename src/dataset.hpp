@@ -87,8 +87,8 @@ namespace randomx {
 			return &randomx_argon2_fill_segment_ref;
 		}
 		randomx_argon2_impl* impl = nullptr;
-		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_SSE3) {
-			impl = randomx_argon2_impl_sse3();
+		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_SSSE3) {
+			impl = randomx_argon2_impl_ssse3();
 		}
 		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_AVX2) {
 			impl = randomx_argon2_impl_avx2();

@@ -1018,7 +1018,7 @@ int main() {
 	vm = nullptr;
 
 	randomx_release_cache(cache);
-	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_SSE3);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_SSSE3);
 
 	runTest("Cache initialization: SSSE3", cache != nullptr && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		initCache("test key 000");

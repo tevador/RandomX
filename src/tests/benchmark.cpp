@@ -91,7 +91,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --init Q      initialize dataset with Q threads (default: 1)" << std::endl;
 	std::cout << "  --nonces N    run N nonces (default: 1000)" << std::endl;
 	std::cout << "  --seed S      seed for cache initialization (default: 0)" << std::endl;
-	std::cout << "  --sse3        use optimized Argon2 for SSSE3 CPUs" << std::endl;
+	std::cout << "  --ssse3       use optimized Argon2 for SSSE3 CPUs" << std::endl;
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
 }
 
@@ -130,7 +130,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, sse3, avx2;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
 	readOption("--jit", argc, argv, jit);
 	readOption("--help", argc, argv, help);
 	readOption("--secure", argc, argv, secure);
-	readOption("--sse3", argc, argv, sse3);
+	readOption("--ssse3", argc, argv, ssse3);
 	readOption("--avx2", argc, argv, avx2);
 
 	store32(&seed, seedValue);
@@ -171,9 +171,9 @@ int main(int argc, char** argv) {
 	randomx_cache* cache;
 	randomx_flags flags = RANDOMX_FLAG_DEFAULT;
 
-	if (sse3) {
-		flags = (randomx_flags)(flags | RANDOMX_FLAG_ARGON2_SSE3);
-		std::cout << " - Argon2 implementation: SSE3" << std::endl;
+	if (ssse3) {
+		flags = (randomx_flags)(flags | RANDOMX_FLAG_ARGON2_SSSE3);
+		std::cout << " - Argon2 implementation: SSSE3" << std::endl;
 	}
 
 	if (avx2) {
