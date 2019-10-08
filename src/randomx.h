@@ -54,9 +54,37 @@ typedef struct randomx_dataset randomx_dataset;
 typedef struct randomx_cache randomx_cache;
 typedef struct randomx_vm randomx_vm;
 
+
 #if defined(__cplusplus)
+
+#ifdef __cpp_constexpr
+#define CONSTEXPR constexpr
+#else
+#define CONSTEXPR
+#endif
+
+inline CONSTEXPR randomx_flags operator |(randomx_flags a, randomx_flags b) {
+	return static_cast<randomx_flags>(static_cast<int>(a) | static_cast<int>(b));
+}
+inline CONSTEXPR randomx_flags operator &(randomx_flags a, randomx_flags b) {
+	return static_cast<randomx_flags>(static_cast<int>(a) & static_cast<int>(b));
+}
+inline randomx_flags& operator |=(randomx_flags& a, randomx_flags b) {
+	return a = a | b;
+}
+
 extern "C" {
 #endif
+
+/**
+ * @return The recommended flags to be used on the current machine.
+ *         Does not include:
+ *            RANDOMX_FLAG_LARGE_PAGES
+ *            RANDOMX_FLAG_FULL_MEM
+ *            RANDOMX_FLAG_SECURE
+ *         These flags must be added manually if desired.
+ */
+RANDOMX_EXPORT randomx_flags randomx_get_flags(void);
 
 /**
  * Creates a randomx_cache structure and allocates memory for RandomX Cache.

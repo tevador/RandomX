@@ -34,6 +34,7 @@ src/argon2_ref.c
 src/argon2_ssse3.c
 src/argon2_avx2.c
 src/bytecode_machine.cpp
+src/cpu.cpp
 src/dataset.cpp
 src/soft_aes.cpp
 src/virtual_memory.cpp
@@ -131,6 +132,13 @@ if (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "arm
     src/jit_compiler_a64.cpp)
   # cheat because cmake and ccache hate each other
   set_property(SOURCE src/jit_compiler_a64_static.S PROPERTY LANGUAGE C)
+
+  # not sure if this check is needed
+  include(CheckIncludeFile)
+  check_include_file(asm/hwcap.h HAVE_HWCAP)
+  if(HAVE_HWCAP)
+    add_definitions(-DHAVE_HWCAP)
+  endif()
 
   if(ARCH STREQUAL "native")
     add_flag("-march=native")

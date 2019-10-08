@@ -33,10 +33,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm_compiled.hpp"
 #include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
+#include "cpu.hpp"
 #include <cassert>
 #include <limits>
 
 extern "C" {
+
+	randomx_flags randomx_get_flags() {
+		randomx_flags flags = RANDOMX_HAVE_COMPILER ? RANDOMX_FLAG_JIT : RANDOMX_FLAG_DEFAULT;
+		randomx::Cpu cpu;
+		if (cpu.hasAes()) {
+			flags |= RANDOMX_FLAG_HARD_AES;
+		}
+		if (randomx_argon2_impl_avx2() != nullptr && cpu.hasAvx2()) {
+			flags |= RANDOMX_FLAG_ARGON2_AVX2;
+		}
+		else if (randomx_argon2_impl_ssse3() != nullptr && cpu.hasSsse3()) {
+			flags |= RANDOMX_FLAG_ARGON2_SSSE3;
+		}
+		return flags;
+	}
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
 		randomx_cache *cache = nullptr;
