@@ -43,6 +43,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <intrin.h>
 #endif
 
+#ifdef _mm_roti_epi64 //clang defines it using the XOP instruction set
+#undef _mm_roti_epi64
+#endif
+
 #define r16                                                                    \
     (_mm_setr_epi8(2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9))
 #define r24                                                                    \
