@@ -42,7 +42,7 @@ extern "C" {
 	randomx_flags randomx_get_flags() {
 		randomx_flags flags = RANDOMX_HAVE_COMPILER ? RANDOMX_FLAG_JIT : RANDOMX_FLAG_DEFAULT;
 		randomx::Cpu cpu;
-		if (cpu.hasAes()) {
+		if (HAVE_AES && cpu.hasAes()) {
 			flags |= RANDOMX_FLAG_HARD_AES;
 		}
 		if (randomx_argon2_impl_avx2() != nullptr && cpu.hasAvx2()) {

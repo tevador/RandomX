@@ -132,7 +132,7 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 #define rx_aesenc_vec_i128 _mm_aesenc_si128
 #define rx_aesdec_vec_i128 _mm_aesdec_si128
 
-#define HAVE_AES
+#define HAVE_AES 1
 
 #endif //__AES__
 
@@ -303,7 +303,7 @@ FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
 	__m128ll out = vrev((__m128i)__builtin_crypto_vncipher(_v,zero));
 	return (rx_vec_i128)vec_xor((__m128i)out,rkey);
 }
-#define HAVE_AES
+#define HAVE_AES 1
 
 #endif //__CRYPTO__
 
@@ -455,7 +455,7 @@ FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 a, rx_vec_i128 key) {
 	return vaesimcq_u8(vaesdq_u8(a, zero)) ^ key;
 }
 
-#define HAVE_AES
+#define HAVE_AES 1
 
 #endif
 
@@ -718,6 +718,9 @@ FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
 FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
 	throw std::runtime_error(platformError);
 }
+
+#define HAVE_AES 0
+
 #endif
 
 #ifdef RANDOMX_DEFAULT_FENV
