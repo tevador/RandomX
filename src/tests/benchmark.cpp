@@ -203,12 +203,14 @@ int main(int argc, char** argv) {
 		flags |= RANDOMX_FLAG_SECURE;
 	}
 
-	if (flags & RANDOMX_FLAG_ARGON2_SSSE3) {
-		std::cout << " - Argon2 implementation: SSSE3" << std::endl;
-	}
-
 	if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
 		std::cout << " - Argon2 implementation: AVX2" << std::endl;
+	}
+	else if (flags & RANDOMX_FLAG_ARGON2_SSSE3) {
+		std::cout << " - Argon2 implementation: SSSE3" << std::endl;
+	}
+	else {
+		std::cout << " - Argon2 implementation: reference" << std::endl;
 	}
 
 	if (flags & RANDOMX_FLAG_FULL_MEM) {
@@ -253,7 +255,9 @@ int main(int argc, char** argv) {
 	std::cout << " ..." << std::endl;
 
 	try {
-		randomx::selectArgonImpl(flags); //just to check if flags are valid
+		if (nullptr == randomx::selectArgonImpl(flags)) {
+			throw std::runtime_error("Unsupported Argon2 implementation");
+		}
 		if ((flags & RANDOMX_FLAG_JIT) && !RANDOMX_HAVE_COMPILER) {
 			throw std::runtime_error("JIT compilation is not supported on this platform. Try without --jit");
 		}

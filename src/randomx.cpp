@@ -48,7 +48,7 @@ extern "C" {
 		if (randomx_argon2_impl_avx2() != nullptr && cpu.hasAvx2()) {
 			flags |= RANDOMX_FLAG_ARGON2_AVX2;
 		}
-		else if (randomx_argon2_impl_ssse3() != nullptr && cpu.hasSsse3()) {
+		if (randomx_argon2_impl_ssse3() != nullptr && cpu.hasSsse3()) {
 			flags |= RANDOMX_FLAG_ARGON2_SSSE3;
 		}
 		return flags;
@@ -56,10 +56,14 @@ extern "C" {
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
 		randomx_cache *cache = nullptr;
+		auto impl = randomx::selectArgonImpl(flags);
+		if (impl == nullptr) {
+			return cache;
+		}
 
 		try {
 			cache = new randomx_cache();
-			cache->argonImpl = randomx::selectArgonImpl(flags);
+			cache->argonImpl = impl;
 			switch (flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES)) {
 				case RANDOMX_FLAG_DEFAULT:
 					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;

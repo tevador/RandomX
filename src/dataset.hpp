@@ -83,19 +83,12 @@ namespace randomx {
 	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 
 	inline randomx_argon2_impl* selectArgonImpl(randomx_flags flags) {
-		if ((flags & RANDOMX_FLAG_ARGON2) == 0) {
-			return &randomx_argon2_fill_segment_ref;
+		if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
+			return randomx_argon2_impl_avx2();
 		}
-		randomx_argon2_impl* impl = nullptr;
-		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_SSSE3) {
-			impl = randomx_argon2_impl_ssse3();
+		if (flags & RANDOMX_FLAG_ARGON2_SSSE3) {
+			return randomx_argon2_impl_ssse3();
 		}
-		if ((flags & RANDOMX_FLAG_ARGON2) == RANDOMX_FLAG_ARGON2_AVX2) {
-			impl = randomx_argon2_impl_avx2();
-		}
-		if (impl != nullptr) {
-			return impl;
-		}
-		throw std::runtime_error("Unsupported Argon2 implementation");
+		return &randomx_argon2_fill_segment_ref;
 	}
 }
