@@ -17,7 +17,7 @@ int main() {
 	int64_t size = 0;
 	for (int i = 0; i < count; ++i) {
 		randomx::SuperscalarProgram prog;
-		randomx::Blake2Generator gen(seed, i);
+		randomx::Blake2Generator gen(seed, sizeof(seed), i);
 		randomx::generateSuperscalar(prog, gen);
 		asicLatency += prog.asicLatency;
 		codesize += prog.codeSize;
