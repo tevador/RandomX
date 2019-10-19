@@ -83,6 +83,7 @@ extern "C" {
  *            RANDOMX_FLAG_FULL_MEM
  *            RANDOMX_FLAG_SECURE
  *         These flags must be added manually if desired.
+ *         On OpenBSD RANDOMX_FLAG_SECURE is enabled by default in JIT mode as W^X is enforced by the OS.
  */
 RANDOMX_EXPORT randomx_flags randomx_get_flags(void);
 
