@@ -28,6 +28,8 @@
 
 cmake_minimum_required(VERSION 2.8.7)
 
+project(RandomX)
+
 set (randomx_sources
 src/aes_hash.cpp
 src/argon2_ref.c
@@ -96,11 +98,20 @@ endfunction()
 # x86-64
 if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64")
   list(APPEND randomx_sources
-    src/jit_compiler_x86_static.S
     src/jit_compiler_x86.cpp)
-  # cheat because cmake and ccache hate each other
-  set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY LANGUAGE C)
-  set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
+
+  if (MSVC)
+    enable_language(ASM_MASM)
+    list(APPEND randomx_sources src/jit_compiler_x86_static.asm)
+
+    set_property(SOURCE src/jit_compiler_x86_static.asm PROPERTY LANGUAGE ASM_MASM)
+  else()
+    list(APPEND randomx_sources src/jit_compiler_x86_static.S)
+
+    # cheat because cmake and ccache hate each other
+    set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY LANGUAGE C)
+    set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
+  endif()
 
   if(ARCH STREQUAL "native")
     add_flag("-march=native")
