@@ -143,7 +143,11 @@ int main() {
 		randomx::JitCompiler jit;
 		jit.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		jit.generateDatasetInitCode();
+#ifdef __OpenBSD__
+		jit.enableExecution();
+#else
 		jit.enableAll();
+#endif
 		uint64_t datasetItem[8];
 		jit.getDatasetInitFunc()(cache, (uint8_t*)&datasetItem, 0, 1);
 		assert(datasetItem[0] == 0x680588a85ae222db);
@@ -950,7 +954,11 @@ int main() {
 		assert(ibc.memMask == randomx::ScratchpadL3Mask);
 	});
 
+#ifdef __OpenBSD__
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
 	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
 
 	auto test_a = [&] {
 		char hash[RANDOMX_HASH_SIZE];
@@ -1001,7 +1009,11 @@ int main() {
 		vm = nullptr;
 		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		initCache("test key 000");
-		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+#ifdef __OpenBSD__
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
 	}
 
 	runTest("Hash test 2a (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
