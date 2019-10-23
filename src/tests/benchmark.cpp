@@ -190,6 +190,9 @@ int main(int argc, char** argv) {
 		}
 		if (jit) {
 			flags |= RANDOMX_FLAG_JIT;
+#ifdef __OpenBSD__
+			flags |= RANDOMX_FLAG_SECURE;
+#endif
 		}
 	}
 
@@ -199,9 +202,11 @@ int main(int argc, char** argv) {
 	if (miningMode) {
 		flags |= RANDOMX_FLAG_FULL_MEM;
 	}
+#ifndef __OpenBSD__
 	if (secure) {
 		flags |= RANDOMX_FLAG_SECURE;
 	}
+#endif
 
 	if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
 		std::cout << " - Argon2 implementation: AVX2" << std::endl;
