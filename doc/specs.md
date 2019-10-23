@@ -934,7 +934,7 @@ The item data is represented by 8 64-bit integer registers: `r0`-`r7`.
 1. XOR all registers with the 64 bytes loaded in step 4 (8 bytes per column in order `r0`-`r7`).
 1. Set `cacheIndex` to the value of the register that has the longest dependency chain in the SuperscalarHash function executed in step 5.
 1. Set `i = i + 1` and go back to step 4 if `i < RANDOMX_CACHE_ACCESSES`.
-1. Concatenate registers `r0`-`r7` in little endian format to get the final Datset item data.
+1. Concatenate registers `r0`-`r7` in little endian format to get the final Dataset item data.
 
 The constants used to initialize register values in step 1 were determined as follows:
 
