@@ -100,6 +100,7 @@ if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "
     src/jit_compiler_x86.cpp)
   # cheat because cmake and ccache hate each other
   set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY LANGUAGE C)
+  set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
 
   if(ARCH STREQUAL "native")
     add_flag("-march=native")
@@ -132,6 +133,7 @@ if (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "arm
     src/jit_compiler_a64.cpp)
   # cheat because cmake and ccache hate each other
   set_property(SOURCE src/jit_compiler_a64_static.S PROPERTY LANGUAGE C)
+  set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
 
   # not sure if this check is needed
   include(CheckIncludeFile)
