@@ -307,13 +307,13 @@ void rxa2_fill_first_blocks(uint8_t *blockhash, const argon2_instance_t *instanc
 
 		store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 0);
 		store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH + 4, l);
-		rxa2_blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
+		blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
 			ARGON2_PREHASH_SEED_LENGTH);
 		load_block(&instance->memory[l * instance->lane_length + 0],
 			blockhash_bytes);
 
 		store32(blockhash + ARGON2_PREHASH_DIGEST_LENGTH, 1);
-		rxa2_blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
+		blake2b_long(blockhash_bytes, ARGON2_BLOCK_SIZE, blockhash,
 			ARGON2_PREHASH_SEED_LENGTH);
 		load_block(&instance->memory[l * instance->lane_length + 1],
 			blockhash_bytes);

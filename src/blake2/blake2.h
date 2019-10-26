@@ -84,6 +84,15 @@ extern "C" {
 		1 / !!(sizeof(blake2b_param) == sizeof(uint64_t) * CHAR_BIT)
 	};
 
+	//randomx namespace
+#define blake2b_init        randomx_blake2b_init
+#define blake2b_init_key    randomx_blake2b_init_key
+#define blake2b_init_param  randomx_blake2b_init_param
+#define blake2b_update      randomx_blake2b_update
+#define blake2b_final       randomx_blake2b_final
+#define blake2b             randomx_blake2b
+#define blake2b_long        randomx_blake2b_long
+
 	/* Streaming API */
 	int blake2b_init(blake2b_state *S, size_t outlen);
 	int blake2b_init_key(blake2b_state *S, size_t outlen, const void *key,
@@ -97,7 +106,7 @@ extern "C" {
 		const void *key, size_t keylen);
 
 	/* Argon2 Team - Begin Code */
-	int rxa2_blake2b_long(void *out, size_t outlen, const void *in, size_t inlen);
+	int blake2b_long(void *out, size_t outlen, const void *in, size_t inlen);
 	/* Argon2 Team - End Code */
 
 #if defined(__cplusplus)
