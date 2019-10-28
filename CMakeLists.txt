@@ -105,6 +105,8 @@ if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "
     list(APPEND randomx_sources src/jit_compiler_x86_static.asm)
 
     set_property(SOURCE src/jit_compiler_x86_static.asm PROPERTY LANGUAGE ASM_MASM)
+
+    set_source_files_properties(src/argon2_avx2.c COMPILE_FLAGS /arch:AVX2)
   else()
     list(APPEND randomx_sources src/jit_compiler_x86_static.S)
 
