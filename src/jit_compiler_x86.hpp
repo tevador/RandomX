@@ -65,6 +65,9 @@ namespace randomx {
 		void enableWriting();
 		void enableExecution();
 		void enableAll();
+
+		static bool BranchesWithin32B;
+
 	private:
 		static InstructionGeneratorX86 engine[256];
 		std::vector<int32_t> instructionOffsets;

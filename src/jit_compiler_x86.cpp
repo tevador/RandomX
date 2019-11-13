@@ -197,6 +197,7 @@ namespace randomx {
 	static const uint8_t REX_ADD_I[] = { 0x49, 0x81 };
 	static const uint8_t REX_TEST[] = { 0x49, 0xF7 };
 	static const uint8_t JZ[] = { 0x0f, 0x84 };
+	static const uint8_t JZ_SHORT = 0x74;
 	static const uint8_t RET = 0xc3;
 	static const uint8_t LEA_32[] = { 0x41, 0x8d };
 	static const uint8_t MOVNTI[] = { 0x4c, 0x0f, 0xc3 };
@@ -212,6 +213,25 @@ namespace randomx {
 	static const uint8_t NOP8[] = { 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 	static const uint8_t* NOPX[] = { NOP1, NOP2, NOP3, NOP4, NOP5, NOP6, NOP7, NOP8 };
+
+	static const uint8_t JMP_ALIGN_PREFIX[14][16] = {
+		{},
+		{0x2E},
+		{0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x90, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x66, 0x90, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x66, 0x66, 0x90, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x0F, 0x1F, 0x40, 0x00, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+		{0x0F, 0x1F, 0x44, 0x00, 0x00, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E, 0x2E},
+	};
+
+	bool JitCompilerX86::BranchesWithin32B = false;
 
 	size_t JitCompilerX86::getCodeSize() {
 		return CodeSize;
@@ -327,6 +347,22 @@ namespace randomx {
 		emit((const uint8_t*)&randomx_prefetch_scratchpad, ((uint8_t*)&randomx_prefetch_scratchpad_end) - ((uint8_t*)&randomx_prefetch_scratchpad));
 		memcpy(code + codePos, codeLoopStore, loopStoreSize);
 		codePos += loopStoreSize;
+
+		if (BranchesWithin32B) {
+			const uint32_t branch_begin = static_cast<uint32_t>(codePos);
+			const uint32_t branch_end = static_cast<uint32_t>(branch_begin + 9);
+
+			// If the jump crosses or touches 32-byte boundary, align it
+			if ((branch_begin ^ branch_end) >= 32) {
+				uint32_t alignment_size = 32 - (branch_begin & 31);
+				if (alignment_size > 8) {
+					emit(NOPX[alignment_size - 9], alignment_size - 8);
+					alignment_size = 8;
+				}
+				emit(NOPX[alignment_size - 1], alignment_size);
+			}
+		}
+
 		emit(SUB_EBX);
 		emit(JNZ);
 		emit32(prologueSize - codePos - 4);
@@ -775,18 +811,42 @@ namespace randomx {
 	void JitCompilerX86::h_CBRANCH(Instruction& instr, int i) {
 		int reg = instr.dst;
 		int target = registerUsage[reg] + 1;
+
+		int32_t jmp_offset = instructionOffsets[target] - (codePos + 16);
+
+		if (BranchesWithin32B) {
+			const uint32_t branch_begin = static_cast<uint32_t>(codePos + 7);
+			const uint32_t branch_end = static_cast<uint32_t>(branch_begin + ((jmp_offset >= -128) ? 9 : 13));
+
+			// If the jump crosses or touches 32-byte boundary, align it
+			if ((branch_begin ^ branch_end) >= 32) {
+				const uint32_t alignment_size = 32 - (branch_begin & 31);
+				jmp_offset -= alignment_size;
+				emit(JMP_ALIGN_PREFIX[alignment_size], alignment_size);
+			}
+		}
+
 		emit(REX_ADD_I);
 		emitByte(0xc0 + reg);
-		int shift = instr.getModCond() + ConditionOffset;
+		const int shift = instr.getModCond() + ConditionOffset;
 		uint32_t imm = instr.getImm32() | (1UL << shift);
 		if (ConditionOffset > 0 || shift > 0)
 			imm &= ~(1UL << (shift - 1));
 		emit32(imm);
+
 		emit(REX_TEST);
 		emitByte(0xc0 + reg);
 		emit32(ConditionMask << shift);
-		emit(JZ);
-		emit32(instructionOffsets[target] - (codePos + 4));
+
+		if (jmp_offset >= -128) {
+			emitByte(JZ_SHORT);
+			emitByte(jmp_offset);
+		}
+		else {
+			emit(JZ);
+			emit32(jmp_offset - 4);
+		}
+
 		//mark all registers as used
 		for (unsigned j = 0; j < RegistersCount; ++j) {
 			registerUsage[j] = i;
