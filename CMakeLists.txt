@@ -157,10 +157,9 @@ add_library(randomx
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
 set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET randomx PROPERTY PUBLIC_HEADER src/randomx.h)
 install(TARGETS randomx
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)
 
 add_executable(randomx-tests
   src/tests/tests.cpp)
