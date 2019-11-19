@@ -38,7 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace randomx {
 
 	class Program;
-	class ProgramConfiguration;
+	struct ProgramConfiguration;
 	class SuperscalarProgram;
 	class Instruction;
 
