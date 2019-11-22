@@ -160,8 +160,14 @@ int main(int argc, char** argv) {
 
 	std::cout << "RandomX benchmark v1.1.5" << std::endl;
 
-	if (help || (!miningMode && !verificationMode)) {
+	if (help) {
 		printUsage(argv[0]);
+		return 0;
+	}
+
+	if (!miningMode && !verificationMode) {
+		std::cout << "Please select either the fast mode (--mine) or the slow mode (--verify)" << std::endl;
+		std::cout << "Run '" << argv[0] << " --help' to see all supported options" << std::endl;
 		return 0;
 	}
 
