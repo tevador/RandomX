@@ -65,6 +65,8 @@ RandomX was primarily designed as a PoW algorithm for [Monero](https://www.getmo
 
 If you wish to use RandomX as a PoW algorithm for your cryptocurrency, please follow the [configuration guidelines](doc/configuration.md).
 
+**Note**: To achieve ASIC resistance, the key `K` must change and must not be miner-selectable. We recommend to use blockchain data as the key in a similar way to the Monero example above. If blockchain data cannot be used for some reason, use a predefined sequence of keys.
+
 ### CPU performance
 The table below lists the performance of selected CPUs using the optimal number of threads (T) and large pages (if possible), in hashes per second (H/s). "CNv4" refers to the CryptoNight variant 4 (CN/R) hashrate measured using [XMRig](https://github.com/xmrig/xmrig) v2.14.1. "Fast mode" and "Light mode" are the two modes of RandomX.
 
