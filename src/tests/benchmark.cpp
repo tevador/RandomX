@@ -122,15 +122,13 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 	void* noncePtr = blockTemplate + 39;
 	auto nonce = atomicNonce.fetch_add(1);
 
-	uint64_t tempHash[8];
-
 	store32(noncePtr, nonce);
-	randomx_calculate_hash_first(vm, tempHash, blockTemplate, sizeof(blockTemplate));
+	randomx_calculate_hash_first(vm, blockTemplate, sizeof(blockTemplate));
 
 	while (nonce < noncesCount) {
 		nonce = atomicNonce.fetch_add(1);
 		store32(noncePtr, nonce);
-		randomx_calculate_hash_next(vm, tempHash, blockTemplate, sizeof(blockTemplate), &hash);
+		randomx_calculate_hash_next(vm, blockTemplate, sizeof(blockTemplate), &hash);
 		result.xorWith(hash);
 	}
 }
