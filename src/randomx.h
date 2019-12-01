@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RANDOMX_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define RANDOMX_HASH_SIZE 32
 #define RANDOMX_DATASET_ITEM_SIZE 64
@@ -237,6 +238,21 @@ RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
  *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
 */
 RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
+
+/**
+ * Paired functions used to calculate multiple RandomX hashes during mining for example.
+ *
+ * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
+ * @param tempHash an array of 8 64-bit values used to store intermediate data between calls to randomx_calculate_hash_first and randomx_calculate_hash_next.
+ * @param input is a pointer to memory to be hashed. Must not be NULL.
+ * @param inputSize is the number of bytes to be hashed.
+ * @param nextInput is a pointer to memory to be hashed for the next hash. Must not be NULL.
+ * @param nextInputSize is the number of bytes to be hashed for the next hash.
+ * @param output is a pointer to memory where the hash will be stored. Must not
+ *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+*/
+RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, uint64_t *tempHash, const void* input, size_t inputSize);
+RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, uint64_t *tempHash, const void* nextInput, size_t nextInputSize, void* output);
 
 #if defined(__cplusplus)
 }
