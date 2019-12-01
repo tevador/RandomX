@@ -251,8 +251,8 @@ RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *inpu
  * @param output is a pointer to memory where the hash will be stored. Must not
  *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
 */
-RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, uint64_t (&tempHash)[8], const void* input, size_t inputSize);
-RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, uint64_t (&tempHash)[8], const void* nextInput, size_t nextInputSize, void* output);
+RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, uint64_t *tempHash, const void* input, size_t inputSize);
+RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, uint64_t *tempHash, const void* nextInput, size_t nextInputSize, void* output);
 
 #if defined(__cplusplus)
 }

@@ -121,7 +121,7 @@ namespace randomx {
 	}
 
 	template<class Allocator, bool softAes>
-	void VmBase<Allocator, softAes>::hashAndFill(void* out, size_t outSize, uint64_t (&fill_state)[8]) {
+	void VmBase<Allocator, softAes>::hashAndFill(void* out, size_t outSize, uint64_t *fill_state) {
 		hashAndFillAes1Rx4<softAes>((void*) getScratchpad(), ScratchpadSize, &reg.a, fill_state);
 		blake2b(out, outSize, &reg, sizeof(RegisterFile), nullptr, 0);
 	}

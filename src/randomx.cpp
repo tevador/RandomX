@@ -363,12 +363,12 @@ extern "C" {
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
 	}
 
-	void randomx_calculate_hash_first(randomx_vm* machine, uint64_t (&tempHash)[8], const void* input, size_t inputSize) {
+	void randomx_calculate_hash_first(randomx_vm* machine, uint64_t *tempHash, const void* input, size_t inputSize) {
 		blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
 		machine->initScratchpad(tempHash);
 	}
 
-	void randomx_calculate_hash_next(randomx_vm* machine, uint64_t (&tempHash)[8], const void* nextInput, size_t nextInputSize, void* output) {
+	void randomx_calculate_hash_next(randomx_vm* machine, uint64_t *tempHash, const void* nextInput, size_t nextInputSize, void* output) {
 		machine->resetRoundingMode();
 		for (uint32_t chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			machine->run(&tempHash);
