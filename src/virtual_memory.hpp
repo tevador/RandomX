@@ -29,8 +29,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
-constexpr std::size_t alignSize(std::size_t pos, std::size_t align) {
+constexpr uint64_t alignSize(uint64_t pos, uint64_t align) {
 	return ((pos - 1) / align + 1) * align;
 }
 
@@ -39,4 +40,5 @@ void setPagesRW(void*, std::size_t);
 void setPagesRX(void*, std::size_t);
 void setPagesRWX(void*, std::size_t);
 void* allocLargePagesMemory(std::size_t);
+void* allocMonsterPagesMemory(std::size_t);
 void freePagedMemory(void*, std::size_t);

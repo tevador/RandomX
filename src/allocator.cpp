@@ -57,4 +57,20 @@ namespace randomx {
 		freePagedMemory(ptr, count);
 	};
 
+	void* NullAllocator::allocMemory(size_t count) {
+		return nullptr;
+	}
+
+	void NullAllocator::freeMemory(void* ptr, size_t count) {
+
+	};
+
+	void* MonsterPageAllocator::allocMemory(size_t count) {
+		return allocMonsterPagesMemory(count);
+	}
+
+	void MonsterPageAllocator::freeMemory(void* ptr, size_t count) {
+		freePagedMemory(ptr, count);
+	};
+
 }

@@ -77,4 +77,9 @@ namespace randomx {
 	template class CompiledVm<AlignedAllocator<CacheLineSize>, true, true>;
 	template class CompiledVm<LargePageAllocator, false, true>;
 	template class CompiledVm<LargePageAllocator, true, true>;
+
+	template class CompiledVm<NullAllocator, false, false>;
+	template class CompiledVm<NullAllocator, true, false>;
+	template class CompiledVm<NullAllocator, false, true>;
+	template class CompiledVm<NullAllocator, true, true>;
 }

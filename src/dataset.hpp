@@ -86,6 +86,8 @@ namespace randomx {
 	template<class Allocator>
 	void deallocCache(randomx_cache* cache);
 
+	void deallocCacheContainer(randomx_cache* cache);
+
 	void initCache(randomx_cache*, const void*, size_t);
 	void initCacheCompile(randomx_cache*, const void*, size_t);
 	void initDatasetItem(randomx_cache* cache, uint8_t* out, uint64_t blockNumber);

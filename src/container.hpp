@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2019, tevador <tevador@gmail.com>
 
 All rights reserved.
 
@@ -28,28 +28,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <cstddef>
+#include "randomx.h"
+#include <type_traits>
 
 namespace randomx {
 
-	template<size_t alignment>
-	struct AlignedAllocator {
-		static void* allocMemory(size_t);
-		static void freeMemory(void*, size_t);
+	typedef void(DeallocFunc)(void*, size_t);
+
+}
+
+struct randomx_container_data {
+	void* buffer;
+	void* bufferHead;
+	size_t bufferSize;
+	size_t bufferCapacity;
+	randomx::DeallocFunc* dealloc;
+};
+
+namespace randomx {
+
+	struct Container : public randomx_container {
+		template<class Allocator>
+		static Container* create(randomx_flags flags, size_t vmCount);
+		void* alloc(size_t bytes, size_t align = sizeof(uintptr_t));
+		template<typename T>
+		void* alloc() {
+			return alloc(sizeof(T), alignof(T));
+		}
+		template<class T>
+		T* construct() {
+			return new(alloc<T>()) T();
+		}
+		template<class T>
+		T* construct(size_t numElements) {
+			return new(alloc(numElements * sizeof(T), alignof(T))) T[numElements];
+		}
+		void dealloc();
 	};
 
-	struct LargePageAllocator {
-		static void* allocMemory(size_t);
-		static void freeMemory(void*, size_t);
-	};
-
-	struct NullAllocator {
-		static void* allocMemory(size_t);
-		static void freeMemory(void*, size_t);
-	};
-
-	struct MonsterPageAllocator {
-		static void* allocMemory(size_t);
-		static void freeMemory(void*, size_t);
-	};
+	static_assert(std::is_standard_layout<Container>(), "Container must be a standard-layout struct");
 }
