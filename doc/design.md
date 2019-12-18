@@ -255,7 +255,7 @@ The Scratchpad is split into 3 levels to mimic the typical CPU cache hierarchy [
 |----------------|----------|----------|----------|------|
 ARM Cortex A55|2|6|-|[[24](https://www.anandtech.com/show/11441/dynamiq-and-arms-new-cpus-cortex-a75-a55/4)]
 |AMD Zen+|4|12|40|[[25](https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy)]|
-|Intel Skylake|4|12|42|[[26](https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy)]
+|Intel Skylake|4|12|42|[[26](https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(client)#Memory_Hierarchy)]
 
 The L3 cache is much larger and located further from the CPU core. As a result, its access latencies are much higher and can cause stalls in program execution.
 
@@ -638,7 +638,7 @@ state3 = 00000000000000000000000000000000
 
 [25] AMD Zen+ Microarchitecture - https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy
 
-[26] Intel Skylake Microarchitecture - https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy
+[26] Intel Skylake Microarchitecture - https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(client)#Memory_Hierarchy
 
 [27] Biryukov et al.: Fast and Tradeoff-Resilient Memory-Hard Functions for
 Cryptocurrencies and Password Hashing - https://eprint.iacr.org/2015/430.pdf Table 2, page 8
