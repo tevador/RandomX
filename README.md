@@ -48,6 +48,8 @@ cmake -DARCH=native ..
 make
 ```
 
+To build portable binaries, omit the `ARCH` option when executing cmake.
+
 ### Windows
 
 On Windows, it is possible to build using MinGW (same procedure as on Linux) or using Visual Studio (solution file is provided).
