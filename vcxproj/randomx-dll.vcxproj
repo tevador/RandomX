@@ -54,12 +54,17 @@
   <ItemGroup>
     <ClCompile Include="..\src\aes_hash.cpp" />
     <ClCompile Include="..\src\allocator.cpp" />
+    <ClCompile Include="..\src\argon2_avx2.c">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
+    <ClCompile Include="..\src\argon2_ssse3.c" />
     <ClCompile Include="..\src\assembly_generator_x86.cpp" />
     <ClCompile Include="..\src\blake2\blake2b.c" />
     <ClCompile Include="..\src\blake2_generator.cpp" />
     <ClCompile Include="..\src\bytecode_machine.cpp" />
+    <ClCompile Include="..\src\cpu.cpp" />
     <ClCompile Include="..\src\dataset.cpp" />
     <ClCompile Include="..\src\instruction.cpp" />
     <ClCompile Include="..\src\instructions_portable.cpp" />
