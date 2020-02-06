@@ -36,6 +36,7 @@ src/argon2_ref.c
 src/argon2_ssse3.c
 src/argon2_avx2.c
 src/bytecode_machine.cpp
+src/container.cpp
 src/cpu.cpp
 src/dataset.cpp
 src/soft_aes.cpp

@@ -50,6 +50,9 @@ public:
 	const void* getScratchpad() {
 		return scratchpad;
 	}
+	void setScratchpad(void* memory) {
+		scratchpad = (uint8_t*)memory;
+	}
 	const randomx::Program& getProgram()
 	{
 		return program;

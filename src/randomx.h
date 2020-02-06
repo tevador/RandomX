@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2019, The Monero Project
 
 All rights reserved.
 
@@ -48,13 +49,22 @@ typedef enum {
   RANDOMX_FLAG_SECURE = 16,
   RANDOMX_FLAG_ARGON2_SSSE3 = 32,
   RANDOMX_FLAG_ARGON2_AVX2 = 64,
-  RANDOMX_FLAG_ARGON2 = 96
+  RANDOMX_FLAG_ARGON2 = 96,
+  RANDOMX_FLAG_MONSTER_PAGES = 128
 } randomx_flags;
 
 typedef struct randomx_dataset randomx_dataset;
 typedef struct randomx_cache randomx_cache;
 typedef struct randomx_vm randomx_vm;
+typedef struct randomx_container_data randomx_container_data;
 
+typedef struct randomx_container {
+	randomx_cache* cache;
+	randomx_dataset* dataset;
+	randomx_vm** vms;
+	size_t vmCount;
+	randomx_container_data* data; /* private */
+} randomx_container;
 
 #if defined(__cplusplus)
 
@@ -105,7 +115,7 @@ RANDOMX_EXPORT randomx_flags randomx_get_flags(void);
  *         Returns NULL if:
  *         (1) memory allocation fails
  *         (2) the RANDOMX_FLAG_JIT is set and JIT compilation is not supported on the current platform
- *         (3) an invalid or unsupported RANDOMX_FLAG_ARGON2 value is set
+ *         (3) an unsupported RANDOMX_FLAG_ARGON2 value is set
  */
 RANDOMX_EXPORT randomx_cache *randomx_alloc_cache(randomx_flags flags);
 
@@ -124,13 +134,14 @@ RANDOMX_EXPORT void randomx_init_cache(randomx_cache *cache, const void *key, si
  *
  * @param cache is a pointer to a previously allocated randomx_cache structure.
 */
-RANDOMX_EXPORT void randomx_release_cache(randomx_cache* cache);
+RANDOMX_EXPORT void randomx_release_cache(randomx_cache *cache);
 
 /**
  * Creates a randomx_dataset structure and allocates memory for RandomX Dataset.
  *
- * @param flags is the initialization flags. Only one flag is supported (can be set or not set):
+ * @param flags is the initialization flags. Two flags are supported (can be set or not set):
  *        RANDOMX_FLAG_LARGE_PAGES - allocate memory in large pages
+ *        RANDOMX_FLAG_MONSTER_PAGES - allocate memory using 1GB memory pages
  *
  * @return Pointer to an allocated randomx_dataset structure.
  *         NULL is returned if memory allocation fails.
@@ -229,6 +240,38 @@ RANDOMX_EXPORT void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset 
 RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
 
 /**
+ * Allocates a container that includes a randomx_dataset structure, one or more randomx_vm
+ * structures and optionally a randomx_cache structure. All memory is allocated in
+ * a single contiguous memory buffer.
+ *
+ * @param flags is a combination of flags used to create structures inside the container.
+ *        The following flags set the properties of the container itself:
+ *        RANDOMX_FLAG_FULL_MEM - if set, the container will include a randomx_cache structure
+ *        RANDOMX_FLAG_LARGE_PAGES - the container will be allocated using large pages
+ *        RANDOMX_FLAG_MONSTER_PAGES - the container will be allocated using 1GB memory pages
+ *
+ *        The remaining flags have the same meaning as the flags parameter of randomx_alloc_cache,
+ *        randomx_alloc_dataset and randomx_create_vm functions. Virtual machines in the container
+ *        always use the full dataset.
+ *
+ * @param vmCount is the number of virtual machines to create inside the container.
+ *
+ * @return Pointer to an allocated randomx_container structure.
+ *         Returns NULL if:
+ *         (1) memory allocation fails
+ *         (2) the RANDOMX_FLAG_JIT is set and JIT compilation is not supported on the current platform
+ *         (3) the RANDOMX_FLAG_FULL_MEM is set and an unsupported RANDOMX_FLAG_ARGON2 value is set
+*/
+RANDOMX_EXPORT randomx_container* randomx_alloc_container(randomx_flags flags, size_t vmCount);
+
+/**
+ * Releases all memory occupied by the randomx_container structure.
+ *
+ * @param machine is a pointer to a randomx_container structure returned from randomx_alloc_container.
+*/
+RANDOMX_EXPORT void randomx_release_container(randomx_container *container);
+
+/**
  * Calculates a RandomX hash value.
  *
  * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
@@ -252,8 +295,8 @@ RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *inpu
  * @param output is a pointer to memory where the hash will be stored. Must not
  *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
 */
-RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize);
-RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
+RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm *machine, const void *input, size_t inputSize);
+RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm *machine, const void *nextInput, size_t nextInputSize, void *output);
 
 #if defined(__cplusplus)
 }

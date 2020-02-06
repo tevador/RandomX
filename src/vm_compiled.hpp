@@ -40,15 +40,6 @@ namespace randomx {
 	template<class Allocator, bool softAes, bool secureJit>
 	class CompiledVm : public VmBase<Allocator, softAes> {
 	public:
-		void* operator new(size_t size) {
-			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
-			if (ptr == nullptr)
-				throw std::bad_alloc();
-			return ptr;
-		}
-		void operator delete(void* ptr) {
-			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledVm));
-		}
 		CompiledVm();
 		void setDataset(randomx_dataset* dataset) override;
 		void run(void* seed) override;
@@ -74,4 +65,9 @@ namespace randomx {
 	using CompiledVmHardAesSecure = CompiledVm<AlignedAllocator<CacheLineSize>, false, true>;
 	using CompiledVmLargePageSecure = CompiledVm<LargePageAllocator, true, true>;
 	using CompiledVmLargePageHardAesSecure = CompiledVm<LargePageAllocator, false, true>;
+
+	using CompiledVmContainer = CompiledVm<NullAllocator, true, false>;
+	using CompiledVmContainerHardAes = CompiledVm<NullAllocator, false, false>;
+	using CompiledVmContainerSecure = CompiledVm<NullAllocator, true, true>;
+	using CompiledVmContainerHardAesSecure = CompiledVm<NullAllocator, false, true>;
 }

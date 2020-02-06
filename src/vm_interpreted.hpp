@@ -48,15 +48,7 @@ namespace randomx {
 		using VmBase<Allocator, softAes>::reg;
 		using VmBase<Allocator, softAes>::datasetPtr;
 		using VmBase<Allocator, softAes>::datasetOffset;
-		void* operator new(size_t size) {
-			void* ptr = AlignedAllocator<CacheLineSize>::allocMemory(size);
-			if (ptr == nullptr)
-				throw std::bad_alloc();
-			return ptr;
-		}
-		void operator delete(void* ptr) {
-			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(InterpretedVm));
-		}
+
 		void run(void* seed) override;
 		void setDataset(randomx_dataset* dataset) override;
 	protected:
@@ -72,4 +64,7 @@ namespace randomx {
 	using InterpretedVmHardAes = InterpretedVm<AlignedAllocator<CacheLineSize>, false>;
 	using InterpretedVmLargePage = InterpretedVm<LargePageAllocator, true>;
 	using InterpretedVmLargePageHardAes = InterpretedVm<LargePageAllocator, false>;
+
+	using InterpretedVmContainer = InterpretedVm<NullAllocator, true>;
+	using InterpretedVmContainerHardAes = InterpretedVm<NullAllocator, false>;
 }

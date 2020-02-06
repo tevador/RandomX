@@ -94,6 +94,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --ssse3       use optimized Argon2 for SSSE3 CPUs" << std::endl;
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
 	std::cout << "  --auto        select the best options for the current CPU" << std::endl;
+	std::cout << "  --container   allocate all memory at once" << std::endl;
 }
 
 struct MemoryException : public std::exception {
@@ -106,6 +107,11 @@ struct CacheAllocException : public MemoryException {
 struct DatasetAllocException : public MemoryException {
 	const char * what() const throw () {
 		return "Dataset allocation failed";
+	}
+};
+struct ContainerAllocException : public MemoryException {
+	const char* what() const throw () {
+		return "Container allocation failed";
 	}
 };
 
@@ -134,7 +140,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2, autoFlags;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2, autoFlags, useContainer, monsterPages;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -158,10 +164,12 @@ int main(int argc, char** argv) {
 	readOption("--ssse3", argc, argv, ssse3);
 	readOption("--avx2", argc, argv, avx2);
 	readOption("--auto", argc, argv, autoFlags);
+	readOption("--container", argc, argv, useContainer);
+	readOption("--monsterPages", argc, argv, monsterPages);
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.1.7" << std::endl;
+	std::cout << "RandomX benchmark v1.2.0" << std::endl;
 
 	if (help) {
 		printUsage(argv[0]);
@@ -178,9 +186,10 @@ int main(int argc, char** argv) {
 	AtomicHash result;
 	std::vector<randomx_vm*> vms;
 	std::vector<std::thread> threads;
-	randomx_dataset* dataset;
-	randomx_cache* cache;
+	randomx_dataset* dataset = nullptr;
+	randomx_cache* cache = nullptr;
 	randomx_flags flags;
+	randomx_container* container = nullptr;
 
 	if (autoFlags) {
 		initThreadCount = std::thread::hardware_concurrency();
@@ -207,6 +216,9 @@ int main(int argc, char** argv) {
 
 	if (largePages) {
 		flags |= RANDOMX_FLAG_LARGE_PAGES;
+	}
+	if (monsterPages) {
+		flags |= RANDOMX_FLAG_MONSTER_PAGES;
 	}
 	if (miningMode) {
 		flags |= RANDOMX_FLAG_FULL_MEM;
@@ -252,7 +264,10 @@ int main(int argc, char** argv) {
 		std::cout << " - software AES mode" << std::endl;
 	}
 
-	if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+	if (miningMode && (flags & RANDOMX_FLAG_MONSTER_PAGES)) {
+		std::cout << " - monster pages mode" << std::endl;
+	}
+	else if (flags & RANDOMX_FLAG_LARGE_PAGES) {
 		std::cout << " - large pages mode" << std::endl;
 	}
 	else {
@@ -280,15 +295,27 @@ int main(int argc, char** argv) {
 		}
 
 		Stopwatch sw(true);
-		cache = randomx_alloc_cache(flags);
-		if (cache == nullptr) {
-			throw CacheAllocException();
+		if (miningMode && useContainer) {
+			container = randomx_alloc_container(flags, threadCount);
+			if (container == nullptr) {
+				throw ContainerAllocException();
+			}
+			cache = container->cache;
+			dataset = container->dataset;
+		}
+		else {
+			cache = randomx_alloc_cache(flags);
+			if (cache == nullptr) {
+				throw CacheAllocException();
+			}
 		}
 		randomx_init_cache(cache, &seed, sizeof(seed));
 		if (miningMode) {
-			dataset = randomx_alloc_dataset(flags);
 			if (dataset == nullptr) {
-				throw DatasetAllocException();
+				dataset = randomx_alloc_dataset(flags);
+				if (dataset == nullptr) {
+					throw DatasetAllocException();
+				}
 			}
 			uint32_t datasetItemCount = randomx_dataset_item_count();
 			if (initThreadCount > 1) {
@@ -307,14 +334,22 @@ int main(int argc, char** argv) {
 			else {
 				randomx_init_dataset(dataset, cache, 0, datasetItemCount);
 			}
-			randomx_release_cache(cache);
-			cache = nullptr;
+			if (container == nullptr) {
+				randomx_release_cache(cache);
+				cache = nullptr;
+			}
 			threads.clear();
 		}
 		std::cout << "Memory initialized in " << sw.getElapsed() << " s" << std::endl;
 		std::cout << "Initializing " << threadCount << " virtual machine(s) ..." << std::endl;
 		for (int i = 0; i < threadCount; ++i) {
-			randomx_vm *vm = randomx_create_vm(flags, cache, dataset);
+			randomx_vm* vm;
+			if (container != nullptr) {
+				vm = container->vms[i];
+			}
+			else {
+				vm = randomx_create_vm(flags, cache, dataset);
+			}
 			if (vm == nullptr) {
 				if ((flags & RANDOMX_FLAG_HARD_AES)) {
 					throw std::runtime_error("Cannot create VM with the selected options. Try using --softAes");
@@ -344,12 +379,17 @@ int main(int argc, char** argv) {
 		}
 
 		double elapsed = sw.getElapsed();
-		for (unsigned i = 0; i < vms.size(); ++i)
-			randomx_destroy_vm(vms[i]);
-		if (miningMode)
-			randomx_release_dataset(dataset);
-		else
-			randomx_release_cache(cache);
+		if (container != nullptr) {
+			randomx_release_container(container);
+		}
+		else {
+			for (unsigned i = 0; i < vms.size(); ++i)
+				randomx_destroy_vm(vms[i]);
+			if (miningMode)
+				randomx_release_dataset(dataset);
+			else
+				randomx_release_cache(cache);
+		}
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if (noncesCount == 1000 && seedValue == 0)

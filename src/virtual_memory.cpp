@@ -152,6 +152,22 @@ void* allocLargePagesMemory(std::size_t bytes) {
 	return mem;
 }
 
+#if !defined(MAP_HUGE_1GB) && defined(MAP_HUGE_SHIFT)
+#define MAP_HUGE_1GB (30 << MAP_HUGE_SHIFT)
+#endif
+
+void* allocMonsterPagesMemory(std::size_t bytes) {
+	void* mem;
+#ifdef MAP_HUGE_1GB
+	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_POPULATE | MAP_HUGE_1GB, -1, 0);
+	if (mem == MAP_FAILED)
+		throw std::runtime_error("allocMonsterPagesMemory - mmap failed");
+#else
+	throw std::runtime_error("allocMonsterPagesMemory - Monster pages are not supported");
+#endif
+	return mem;
+}
+
 void freePagedMemory(void* ptr, std::size_t bytes) {
 #if defined(_WIN32) || defined(__CYGWIN__)
 	VirtualFree(ptr, 0, MEM_RELEASE);

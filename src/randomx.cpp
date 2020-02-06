@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2019, The Monero Project
 
 All rights reserved.
 
@@ -34,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
 #include "cpu.hpp"
+#include "container.hpp"
 #include <cassert>
 #include <limits>
 
@@ -60,50 +62,33 @@ extern "C" {
 	}
 
 	randomx_cache *randomx_alloc_cache(randomx_flags flags) {
-		randomx_cache *cache = nullptr;
 		auto impl = randomx::selectArgonImpl(flags);
 		if (impl == nullptr) {
-			return cache;
+			return nullptr;
 		}
+
+		randomx_cache* cache;
 
 		try {
 			cache = new randomx_cache();
 			cache->argonImpl = impl;
-			switch ((int)(flags & (RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES))) {
-				case RANDOMX_FLAG_DEFAULT:
-					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
-					cache->jit = nullptr;
-					cache->initialize = &randomx::initCache;
-					cache->datasetInit = &randomx::initDataset;
-					cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
-					break;
-
-				case RANDOMX_FLAG_JIT:
-					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
-					cache->jit = new randomx::JitCompiler();
-					cache->initialize = &randomx::initCacheCompile;
-					cache->datasetInit = cache->jit->getDatasetInitFunc();
-					cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
-					break;
-
-				case RANDOMX_FLAG_LARGE_PAGES:
-					cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
-					cache->jit = nullptr;
-					cache->initialize = &randomx::initCache;
-					cache->datasetInit = &randomx::initDataset;
-					cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
-					break;
-
-				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES:
-					cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
-					cache->jit = new randomx::JitCompiler();
-					cache->initialize = &randomx::initCacheCompile;
-					cache->datasetInit = cache->jit->getDatasetInitFunc();
-					cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
-					break;
-
-				default:
-					UNREACHABLE;
+			if (flags & RANDOMX_FLAG_JIT) {
+				cache->jit = new randomx::JitCompiler();
+				cache->initialize = &randomx::initCacheCompile;
+				cache->datasetInit = cache->jit->getDatasetInitFunc();
+			}
+			else {
+				cache->jit = nullptr;
+				cache->initialize = &randomx::initCache;
+				cache->datasetInit = &randomx::initDataset;
+			}
+			if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+				cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
+				cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
+			}
+			else {
+				cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
+				cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
 			}
 		}
 		catch (std::exception &ex) {
@@ -146,7 +131,11 @@ extern "C" {
 
 		try {
 			dataset = new randomx_dataset();
-			if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+			if (flags & RANDOMX_FLAG_MONSTER_PAGES) {
+				dataset->dealloc = &randomx::deallocDataset<randomx::MonsterPageAllocator>;
+				dataset->memory = (uint8_t*)randomx::MonsterPageAllocator::allocMemory(randomx::DatasetSize);
+			}
+			else if (flags & RANDOMX_FLAG_LARGE_PAGES) {
 				dataset->dealloc = &randomx::deallocDataset<randomx::LargePageAllocator>;
 				dataset->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::DatasetSize);
 			}
@@ -163,6 +152,106 @@ extern "C" {
 		}
 
 		return dataset;
+	}
+
+	randomx_container* randomx_alloc_container(randomx_flags flags, size_t vmCount) {
+		assert(vmCount > 0);
+		size_t align = randomx::CacheLineSize;
+		randomx_argon2_impl* impl;
+		if (flags & RANDOMX_FLAG_FULL_MEM) {
+			impl = randomx::selectArgonImpl(flags);
+			if (impl == nullptr) {
+				return nullptr;
+			}
+		}
+		if ((flags & RANDOMX_FLAG_JIT) && !RANDOMX_HAVE_COMPILER) {
+			return nullptr;
+		}
+		randomx::Container* container;
+		try {
+			if (flags & RANDOMX_FLAG_MONSTER_PAGES) {
+				container = randomx::Container::create<randomx::MonsterPageAllocator>(flags, vmCount);
+			}
+			else if (flags & RANDOMX_FLAG_LARGE_PAGES) {
+				align = 2 * 1024 * 1024;
+				container = randomx::Container::create<randomx::LargePageAllocator>(flags, vmCount);
+			}
+			else {
+				container = randomx::Container::create<randomx::DefaultAllocator>(flags, vmCount);
+			}
+		}
+		catch (std::exception& ex) {
+			return nullptr;
+		}
+		if (flags & RANDOMX_FLAG_FULL_MEM) {
+			auto cache = container->cache = container->construct<randomx_cache>();
+			if (flags & RANDOMX_FLAG_JIT) {
+				cache->jit = container->construct<randomx::JitCompiler>();
+				cache->initialize = &randomx::initCacheCompile;
+				cache->datasetInit = cache->jit->getDatasetInitFunc();
+			}
+			else {
+				cache->jit = nullptr;
+				cache->initialize = &randomx::initCache;
+				cache->datasetInit = &randomx::initDataset;
+			}
+			cache->dealloc = &randomx::deallocCacheContainer;
+			cache->argonImpl = impl;
+		}
+		else {
+			container->cache = nullptr;
+		}
+		auto dataset = container->dataset = container->construct<randomx_dataset>();
+		dataset->dealloc = &randomx::deallocDataset<randomx::NullAllocator>;
+		container->vmCount = vmCount;
+		container->vms = container->construct<randomx_vm*>(vmCount);
+		for (size_t i = 0; i < vmCount; ++i) {
+			randomx_vm* vm;
+			if (flags & RANDOMX_FLAG_JIT) {
+				if (flags & RANDOMX_FLAG_HARD_AES) {
+					if (flags & RANDOMX_FLAG_SECURE) {
+						vm = container->construct<randomx::CompiledVmContainerHardAesSecure>();
+					}
+					else {
+						vm = container->construct<randomx::CompiledVmContainerHardAes>();
+					}
+				}
+				else {
+					if (flags & RANDOMX_FLAG_SECURE) {
+						vm = container->construct<randomx::CompiledVmContainerSecure>();
+					}
+					else {
+						vm = container->construct<randomx::CompiledVmContainer>();
+					}
+				}
+			}
+			else {
+				if (flags & RANDOMX_FLAG_HARD_AES) {
+					vm = container->construct<randomx::InterpretedVmContainerHardAes>();
+				}
+				else {
+					vm = container->construct<randomx::InterpretedVmContainer>();
+				}
+			}
+			container->vms[i] = vm;
+		}
+		for (size_t i = 0; i < vmCount; ++i) {
+			container->vms[i]->setScratchpad(container->alloc(randomx::ScratchpadSize, align));
+		}
+		if (container->cache != nullptr) {
+			container->cache->memory = (uint8_t*)container->alloc(randomx::CacheSize, align);
+		}
+		container->dataset->memory = (uint8_t*)container->alloc(randomx::DatasetSize, align);
+		for (size_t i = 0; i < vmCount; ++i) {
+			container->vms[i]->setDataset(dataset);
+		}
+		return container;
+	}
+
+	void randomx_release_container(randomx_container* container) {
+		assert(container != nullptr);
+		randomx::Container* cont = reinterpret_cast<randomx::Container*>(container);
+		cont->dealloc();
 	}
 
 	constexpr unsigned long DatasetItemCount = randomx::DatasetSize / RANDOMX_DATASET_ITEM_SIZE;

@@ -140,4 +140,6 @@ namespace randomx {
 	template class VmBase<AlignedAllocator<CacheLineSize>, true>;
 	template class VmBase<LargePageAllocator, false>;
 	template class VmBase<LargePageAllocator, true>;
+	template class VmBase<NullAllocator, false>;
+	template class VmBase<NullAllocator, true>;
 }
