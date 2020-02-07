@@ -380,4 +380,14 @@ extern "C" {
 		blake2b(machine->tempHash, sizeof(machine->tempHash), nextInput, nextInputSize, nullptr, 0);
 		machine->hashAndFill(output, RANDOMX_HASH_SIZE, machine->tempHash);
 	}
+
+	void randomx_calculate_hash_last(randomx_vm* machine, void* output) {
+		machine->resetRoundingMode();
+		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
+			machine->run(machine->tempHash);
+			blake2b(machine->tempHash, sizeof(machine->tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
+		}
+		machine->run(machine->tempHash);
+		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
+	}
 }
