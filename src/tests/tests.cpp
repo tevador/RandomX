@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <iomanip>
-#include <cfenv>
 #include "utility.hpp"
 #include "../bytecode_machine.hpp"
 #include "../dataset.hpp"
@@ -1076,10 +1075,11 @@ int main() {
 	});
 
 	runTest("Preserve rounding mode", RANDOMX_FREQ_CFROUND > 0, []() {
-		fesetround(FE_TONEAREST);
+		rx_set_rounding_mode(RoundToNearest);
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
-		assert(fegetround() == FE_TONEAREST);
+		assert(equalsHex(hash, "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
+		assert(rx_get_rounding_mode() == RoundToNearest);
 	});
 
 	randomx_destroy_vm(vm);
