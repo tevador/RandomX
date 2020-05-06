@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <iomanip>
+#include <cfenv>
 #include "utility.hpp"
 #include "../bytecode_machine.hpp"
 #include "../dataset.hpp"
@@ -1051,6 +1052,10 @@ int main() {
 		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
 	});
 
+	if (cache != nullptr)
+		randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_DEFAULT);
+
 	runTest("Hash batch test", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		char hash1[RANDOMX_HASH_SIZE];
 		char hash2[RANDOMX_HASH_SIZE];
@@ -1068,6 +1073,13 @@ int main() {
 		assert(equalsHex(hash1, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
 		assert(equalsHex(hash2, "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
 		assert(equalsHex(hash3, "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
+	});
+
+	runTest("Preserve rounding mode", RANDOMX_FREQ_CFROUND > 0, []() {
+		fesetround(FE_TONEAREST);
+		char hash[RANDOMX_HASH_SIZE];
+		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
+		assert(fegetround() == FE_TONEAREST);
 	});
 
 	randomx_destroy_vm(vm);
