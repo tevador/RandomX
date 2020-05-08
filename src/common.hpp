@@ -92,7 +92,7 @@ namespace randomx {
 	//Prevent some unsafe configurations.
 #ifndef RANDOMX_UNSAFE
 	static_assert((uint64_t)ArgonBlockSize * RANDOMX_CACHE_ACCESSES * RANDOMX_ARGON_MEMORY + 33554432 >= (uint64_t)RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE, "Unsafe configuration: Memory-time tradeoffs");
-	static_assert((128 + RANDOMX_PROGRAM_SIZE * RANDOMX_FREQ_ISTORE / 256) * (RANDOMX_PROGRAM_COUNT * RANDOMX_PROGRAM_ITERATIONS) >= RANDOMX_SCRATCHPAD_L3, "Unsafe configuration: Insufficient Scratchpad writes");
+	//static_assert((128 + RANDOMX_PROGRAM_SIZE * RANDOMX_FREQ_ISTORE / 256) * (RANDOMX_PROGRAM_COUNT * RANDOMX_PROGRAM_ITERATIONS) >= RANDOMX_SCRATCHPAD_L3, "Unsafe configuration: Insufficient Scratchpad writes");
 	static_assert(RANDOMX_PROGRAM_COUNT > 1, "Unsafe configuration: Program filtering strategies");
 	static_assert(RANDOMX_PROGRAM_SIZE >= 64, "Unsafe configuration: Low program entropy");
 	static_assert(RANDOMX_PROGRAM_ITERATIONS >= 400, "Unsafe configuration: High compilation overhead");
