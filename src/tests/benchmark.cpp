@@ -87,6 +87,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --ssse3       use optimized Argon2 for SSSE3 CPUs" << std::endl;
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
 	std::cout << "  --auto        select the best options for the current CPU" << std::endl;
+	std::cout << "  --batch       process hashes as a batch" << std::endl;
 }
 
 struct MemoryException : public std::exception {
@@ -107,6 +108,9 @@ struct HashResult {
 	uint32_t nonce;
 };
 
+using ThreadFunc = void(randomx_vm * vm, std::atomic<uint32_t> & atomicNonce, AtomicHash & result, uint32_t noncesCount, int thread, int cpuid, HashResult & bestResult);
+
+template<bool batch>
 void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid, HashResult& bestResult) {
 	if (cpuid >= 0) {
 		int rc = set_thread_affinity(cpuid);
@@ -121,18 +125,25 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 	uint32_t nonce = atomicNonce.fetch_add(1);
 	uint32_t prevNonce;
 
-	store32(noncePtr, nonce);
-	randomx_calculate_hash_first(vm, fullNonce, sizeof(fullNonce));
+	if (batch) {
+		store32(noncePtr, nonce);
+		randomx_calculate_hash_first(vm, fullNonce, sizeof(fullNonce));
+	}
 
 	while (nonce < noncesCount) {
 		prevNonce = nonce;
-		nonce = atomicNonce.fetch_add(1);
+		if (batch) {
+			nonce = atomicNonce.fetch_add(1);
+		}
 		store32(noncePtr, nonce);
-		auto hash = randomx_calculate_numeric_next(vm, fullNonce, sizeof(fullNonce));
+		auto hash = (batch ? randomx_calculate_numeric_next : randomx_calculate_numeric)(vm, fullNonce, sizeof(fullNonce));
 		//result.xorWith(hash);
 		if (hash < bestResult.result) {
 			bestResult.result = hash;
-			bestResult.nonce = prevNonce;
+			bestResult.nonce = (batch ? prevNonce : nonce);
+		}
+		if (!batch) {
+			nonce = atomicNonce.fetch_add(1);
 		}
 	}
 }
@@ -143,7 +154,7 @@ int validateResult(randomx_vm* vm, uint64_t effort, void* nonce) {
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2, autoFlags;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2, autoFlags, batch;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -167,6 +178,7 @@ int main(int argc, char** argv) {
 	readOption("--ssse3", argc, argv, ssse3);
 	readOption("--avx2", argc, argv, avx2);
 	readOption("--auto", argc, argv, autoFlags);
+	readOption("--batch", argc, argv, batch);
 
 	store32(&seed, seedValue);
 
@@ -191,6 +203,7 @@ int main(int argc, char** argv) {
 	randomx_cache* cache;
 	randomx_flags flags;
 	std::vector<HashResult> results;
+	ThreadFunc* workerFunc;
 
 	if (autoFlags) {
 		initThreadCount = std::thread::hardware_concurrency();
@@ -273,6 +286,14 @@ int main(int argc, char** argv) {
 		std::cout << " - thread affinity (" << mask_to_string(threadAffinity) << ")" << std::endl;
 	}
 
+	if (batch) {
+		workerFunc = &mine<true>;
+		std::cout << " - batch mode" << std::endl;
+	}
+	else {
+		workerFunc = &mine<false>;
+	}
+
 	std::cout << "Initializing";
 	if (miningMode)
 		std::cout << " (" << initThreadCount << " thread" << (initThreadCount > 1 ? "s)" : ")");
@@ -344,14 +365,14 @@ int main(int argc, char** argv) {
 				int cpuid = -1;
 				if (threadAffinity)
 					cpuid = cpuid_from_mask(threadAffinity, i);
-				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid, std::ref(results[i])));
+				threads.push_back(std::thread(workerFunc, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid, std::ref(results[i])));
 			}
 			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
 		else {
-			mine(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0, -1, std::ref(results[0]));
+			workerFunc(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0, -1, std::ref(results[0]));
 		}
 
 		double elapsed = sw.getElapsed();
