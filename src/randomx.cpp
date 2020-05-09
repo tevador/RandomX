@@ -34,6 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vm_compiled_light.hpp"
 #include "blake2/blake2.h"
 #include "cpu.hpp"
+#include "blake2/endian.h"
+#include "intrin_portable.h"
 #include <cassert>
 #include <limits>
 
@@ -345,10 +347,9 @@ extern "C" {
 		delete machine;
 	}
 
-	void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output) {
+	uint64_t randomx_calculate_numeric(randomx_vm *machine, const void *input, size_t inputSize) {
 		assert(machine != nullptr);
 		assert(inputSize == 0 || input != nullptr);
-		assert(output != nullptr);
 		alignas(16) uint64_t tempHash[8];
 		int blakeResult = blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
 		assert(blakeResult == 0);
@@ -360,7 +361,9 @@ extern "C" {
 			assert(blakeResult == 0);
 		}
 		machine->run(&tempHash);
-		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
+		uint8_t resultBytes[RANDOMX_HASH_SIZE];
+		machine->getFinalResult(resultBytes, RANDOMX_HASH_SIZE);
+		return load64(resultBytes);
 	}
 
 	void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize) {
@@ -368,7 +371,7 @@ extern "C" {
 		machine->initScratchpad(machine->tempHash);
 	}
 
-	void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output) {
+	uint64_t randomx_calculate_numeric_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize) {
 		machine->resetRoundingMode();
 		for (uint32_t chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			machine->run(machine->tempHash);
@@ -378,16 +381,21 @@ extern "C" {
 
 		// Finish current hash and fill the scratchpad for the next hash at the same time
 		blake2b(machine->tempHash, sizeof(machine->tempHash), nextInput, nextInputSize, nullptr, 0);
-		machine->hashAndFill(output, RANDOMX_HASH_SIZE, machine->tempHash);
+		uint8_t resultBytes[RANDOMX_HASH_SIZE];
+		machine->hashAndFill(resultBytes, RANDOMX_HASH_SIZE, machine->tempHash);
+		return load64(resultBytes);
 	}
 
-	void randomx_calculate_hash_last(randomx_vm* machine, void* output) {
+	uint64_t randomx_calculate_numeric_last(randomx_vm* machine) {
 		machine->resetRoundingMode();
 		for (int chain = 0; chain < RANDOMX_PROGRAM_COUNT - 1; ++chain) {
 			machine->run(machine->tempHash);
 			blake2b(machine->tempHash, sizeof(machine->tempHash), machine->getRegisterFile(), sizeof(randomx::RegisterFile), nullptr, 0);
 		}
 		machine->run(machine->tempHash);
-		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
+		uint8_t resultBytes[RANDOMX_HASH_SIZE];
+		machine->getFinalResult(resultBytes, RANDOMX_HASH_SIZE);
+		return load64(resultBytes);
 	}
+
 }

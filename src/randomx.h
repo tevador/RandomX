@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>
 #include <stdint.h>
 
-#define RANDOMX_HASH_SIZE 32
+#define RANDOMX_HASH_SIZE 8
 #define RANDOMX_DATASET_ITEM_SIZE 64
 
 #ifndef RANDOMX_EXPORT
@@ -229,34 +229,36 @@ RANDOMX_EXPORT void randomx_vm_set_dataset(randomx_vm *machine, randomx_dataset 
 RANDOMX_EXPORT void randomx_destroy_vm(randomx_vm *machine);
 
 /**
- * Calculates a RandomX hash value.
+ * Calculates a RandomX hash value and interprets the result as a little-endian 64-bit usigned integer.
  *
  * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
  * @param input is a pointer to memory to be hashed. Must not be NULL.
  * @param inputSize is the number of bytes to be hashed.
- * @param output is a pointer to memory where the hash will be stored. Must not
- *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+ *
+ * @return 64-bit numeric hash value
 */
-RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *input, size_t inputSize, void *output);
+RANDOMX_EXPORT uint64_t randomx_calculate_numeric(randomx_vm *machine, const void *input, size_t inputSize);
 
 /**
  * Set of functions used to calculate multiple RandomX hashes more efficiently.
- * randomx_calculate_hash_first will begin a hash calculation.
- * randomx_calculate_hash_next  will output the hash value of the previous input
- *                              and begin the calculation of the next hash.
- * randomx_calculate_hash_last  will output the hash value of the previous input.
+ * Hashes are returned as 64-bit unsigned integers.
+ *
+ * randomx_calculate_hash_first    will begin a hash calculation.
+ * randomx_calculate_numeric_next  will output the hash value of the previous input
+ *                                 and begin the calculation of the next hash.
+ * randomx_calculate_numeric_last  will output the hash value of the previous input.
  *
  * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
  * @param input is a pointer to memory to be hashed. Must not be NULL.
  * @param inputSize is the number of bytes to be hashed.
  * @param nextInput is a pointer to memory to be hashed for the next hash. Must not be NULL.
  * @param nextInputSize is the number of bytes to be hashed for the next hash.
- * @param output is a pointer to memory where the hash will be stored. Must not
- *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+ *
+ * @return 64-bit numeric hash value (when applicable).
 */
 RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize);
-RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
-RANDOMX_EXPORT void randomx_calculate_hash_last(randomx_vm* machine, void* output);
+RANDOMX_EXPORT uint64_t randomx_calculate_numeric_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize);
+RANDOMX_EXPORT uint64_t randomx_calculate_numeric_last(randomx_vm* machine);
 
 #if defined(__cplusplus)
 }

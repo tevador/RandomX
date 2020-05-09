@@ -40,32 +40,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../dataset.hpp"
 #include "../blake2/endian.h"
 #include "../common.hpp"
+#include "../intrin_portable.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <VersionHelpers.h>
 #endif
 #include "affinity.hpp"
 
-const uint8_t blockTemplate_[] = {
-		0x07, 0x07, 0xf7, 0xa4, 0xf0, 0xd6, 0x05, 0xb3, 0x03, 0x26, 0x08, 0x16, 0xba, 0x3f, 0x10, 0x90, 0x2e, 0x1a, 0x14,
-		0x5a, 0xc5, 0xfa, 0xd3, 0xaa, 0x3a, 0xf6, 0xea, 0x44, 0xc1, 0x18, 0x69, 0xdc, 0x4f, 0x85, 0x3f, 0x00, 0x2b, 0x2e,
-		0xea, 0x00, 0x00, 0x00, 0x00, 0x77, 0xb2, 0x06, 0xa0, 0x2c, 0xa5, 0xb1, 0xd4, 0xce, 0x6b, 0xbf, 0xdf, 0x0a, 0xca,
-		0xc3, 0x8b, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0xf9, 0x5c, 0xd2, 0x0c, 0xef, 0xc1, 0x2f, 0x61, 0xd5, 0x61, 0x09
-};
+const uint8_t nonceTemplate[] = { 0x8b, 0xc3, 0xde, 0xd3, 0x4d, 0x2d, 0xcd, 0xee, 0x00, 0x00, 0x00, 0x00, 0xf9, 0x5c, 0xd2, 0x0c };
 
 class AtomicHash {
 public:
 	AtomicHash() {
-		for (int i = 0; i < 4; ++i)
-			hash[i].store(0);
+		hash.store(0);
 	}
-	void xorWith(uint64_t update[4]) {
-		for (int i = 0; i < 4; ++i)
-			hash[i].fetch_xor(update[i]);
+	void xorWith(uint64_t update) {
+		hash.fetch_xor(update);
 	}
 	void print(std::ostream& os) {
-		for (int i = 0; i < 4; ++i)
-			print(hash[i], os);
+		print(hash, os);
 		os << std::endl;
 	}
 private:
@@ -73,14 +66,14 @@ private:
 		auto h = hash.load();
 		outputHex(std::cout, (char*)&h, sizeof(h));
 	}
-	std::atomic<uint64_t> hash[4];
+	std::atomic<uint64_t> hash;
 };
 
 void printUsage(const char* executable) {
 	std::cout << "Usage: " << executable << " [OPTIONS]" << std::endl;
 	std::cout << "Supported options:" << std::endl;
 	std::cout << "  --help        shows this message" << std::endl;
-	std::cout << "  --mine        mining mode: 2080 MiB" << std::endl;
+	std::cout << "  --mine        mining mode: 1040 MiB" << std::endl;
 	std::cout << "  --verify      verification mode: 256 MiB" << std::endl;
 	std::cout << "  --jit         JIT compiled mode (default: interpreter)" << std::endl;
 	std::cout << "  --secure      W^X policy for JIT pages (default: off)" << std::endl;
@@ -109,28 +102,44 @@ struct DatasetAllocException : public MemoryException {
 	}
 };
 
-void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid=-1) {
+struct HashResult {
+	uint64_t result = UINT64_MAX;
+	uint32_t nonce;
+};
+
+void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid, HashResult& bestResult) {
 	if (cpuid >= 0) {
 		int rc = set_thread_affinity(cpuid);
 		if (rc) {
 			std::cerr << "Failed to set thread affinity for thread " << thread << " (error=" << rc << ")" <<  std::endl;
 		}
 	}
-	uint64_t hash[RANDOMX_HASH_SIZE / sizeof(uint64_t)];
-	uint8_t blockTemplate[sizeof(blockTemplate_)];
-	memcpy(blockTemplate, blockTemplate_, sizeof(blockTemplate));
-	void* noncePtr = blockTemplate + 39;
-	auto nonce = atomicNonce.fetch_add(1);
+
+	uint8_t fullNonce[sizeof(nonceTemplate)];
+	memcpy(fullNonce, nonceTemplate, sizeof(nonceTemplate));
+	void* noncePtr = fullNonce + 8;
+	uint32_t nonce = atomicNonce.fetch_add(1);
+	uint32_t prevNonce;
 
 	store32(noncePtr, nonce);
-	randomx_calculate_hash_first(vm, blockTemplate, sizeof(blockTemplate));
+	randomx_calculate_hash_first(vm, fullNonce, sizeof(fullNonce));
 
 	while (nonce < noncesCount) {
+		prevNonce = nonce;
 		nonce = atomicNonce.fetch_add(1);
 		store32(noncePtr, nonce);
-		randomx_calculate_hash_next(vm, blockTemplate, sizeof(blockTemplate), &hash);
-		result.xorWith(hash);
+		auto hash = randomx_calculate_numeric_next(vm, fullNonce, sizeof(fullNonce));
+		//result.xorWith(hash);
+		if (hash < bestResult.result) {
+			bestResult.result = hash;
+			bestResult.nonce = prevNonce;
+		}
 	}
+}
+
+int validateResult(randomx_vm* vm, uint64_t effort, void* nonce) {
+	uint64_t result = randomx_calculate_numeric(vm, nonce, sizeof(nonceTemplate));
+	return mulh(effort, result) == 0;
 }
 
 int main(int argc, char** argv) {
@@ -161,7 +170,7 @@ int main(int argc, char** argv) {
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.1.7" << std::endl;
+	std::cout << "RandomX-TOR-v1 benchmark" << std::endl;
 
 	if (help) {
 		printUsage(argv[0]);
@@ -181,6 +190,7 @@ int main(int argc, char** argv) {
 	randomx_dataset* dataset;
 	randomx_cache* cache;
 	randomx_flags flags;
+	std::vector<HashResult> results;
 
 	if (autoFlags) {
 		initThreadCount = std::thread::hardware_concurrency();
@@ -228,7 +238,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (flags & RANDOMX_FLAG_FULL_MEM) {
-		std::cout << " - full memory mode (2080 MiB)" << std::endl;
+		std::cout << " - full memory mode (1040 MiB)" << std::endl;
 	}
 	else {
 		std::cout << " - light memory mode (256 MiB)" << std::endl;
@@ -325,6 +335,7 @@ int main(int argc, char** argv) {
 				throw std::runtime_error("Cannot create VM");
 			}
 			vms.push_back(vm);
+			results.push_back(HashResult());
 		}
 		std::cout << "Running benchmark (" << noncesCount << " nonces) ..." << std::endl;
 		sw.restart();
@@ -333,33 +344,45 @@ int main(int argc, char** argv) {
 				int cpuid = -1;
 				if (threadAffinity)
 					cpuid = cpuid_from_mask(threadAffinity, i);
-				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid));
+				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid, std::ref(results[i])));
 			}
 			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
 		else {
-			mine(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0);
+			mine(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0, -1, std::ref(results[0]));
 		}
 
 		double elapsed = sw.getElapsed();
+		std::cout << "Performance: " << noncesCount / elapsed << " hashes per second" << std::endl;
+		HashResult bestResult;
+		for (auto& result : results) {
+			if (result.result < bestResult.result) {
+				bestResult = result;
+			}
+		}
+
+		auto effort = UINT64_MAX / bestResult.result;
+		std::cout << "Best result: " << std::endl;
+		uint8_t nonce[sizeof(nonceTemplate)];
+		memcpy(nonce, nonceTemplate, sizeof(nonceTemplate));
+		store32(nonce + 8, bestResult.nonce);
+		std::cout << "  Nonce: ";
+		outputHex(std::cout, (const char*)nonce, sizeof(nonce));
+		std::cout << std::endl;
+		std::cout << "  Result: ";
+		outputHex(std::cout, (char*)&bestResult.result, sizeof(bestResult.result));
+		std::cout << std::endl;
+		std::cout << "  Effort: " << effort << std::endl;
+		std::cout << "  Valid: " << validateResult(vms[0], effort, nonce) << std::endl;
+
 		for (unsigned i = 0; i < vms.size(); ++i)
 			randomx_destroy_vm(vms[i]);
 		if (miningMode)
 			randomx_release_dataset(dataset);
 		else
 			randomx_release_cache(cache);
-		std::cout << "Calculated result: ";
-		result.print(std::cout);
-		if (noncesCount == 1000 && seedValue == 0)
-			std::cout << "Reference result:  10b649a3f15c7c7f88277812f2e74b337a0f20ce909af09199cccb960771cfa1" << std::endl;
-		if (!miningMode) {
-			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;
-		}
-		else {
-			std::cout << "Performance: " << noncesCount / elapsed << " hashes per second" << std::endl;
-		}
 	}
 	catch (MemoryException& e) {
 		std::cout << "ERROR: " << e.what() << std::endl;
@@ -370,7 +393,7 @@ int main(int argc, char** argv) {
 				std::cout << "Additionally, you have to run the benchmark from elevated command prompt." << std::endl;
 			}
 #else
-			std::cout << "To use large pages, please run: sudo sysctl -w vm.nr_hugepages=1250" << std::endl;
+			std::cout << "To use large pages, please run: sudo sysctl -w vm.nr_hugepages=750" << std::endl;
 #endif
 		}
 		return 1;
