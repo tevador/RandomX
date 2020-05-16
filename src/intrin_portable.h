@@ -173,6 +173,10 @@ FORCE_INLINE void rx_set_rounding_mode(uint32_t mode) {
 	_mm_setcsr(rx_mxcsr_default | (mode << 13));
 }
 
+FORCE_INLINE uint32_t rx_get_rounding_mode() {
+	return (_mm_getcsr() >> 13) & 3;
+}
+
 #elif defined(__PPC64__) && defined(__ALTIVEC__) && defined(__VSX__) //sadly only POWER7 and newer will be able to use SIMD acceleration. Earlier processors cant use doubles or 64 bit integers with SIMD
 #include <cstdint>
 #include <stdexcept>
@@ -735,6 +739,8 @@ FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey) {
 void rx_reset_float_state();
 
 void rx_set_rounding_mode(uint32_t mode);
+
+uint32_t rx_get_rounding_mode();
 
 #endif
 

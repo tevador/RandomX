@@ -246,6 +246,8 @@ RANDOMX_EXPORT void randomx_calculate_hash(randomx_vm *machine, const void *inpu
  *                              and begin the calculation of the next hash.
  * randomx_calculate_hash_last  will output the hash value of the previous input.
  *
+ * WARNING: These functions may alter the floating point rounding mode of the calling thread.
+ *
  * @param machine is a pointer to a randomx_vm structure. Must not be NULL.
  * @param input is a pointer to memory to be hashed. Must not be NULL.
  * @param inputSize is the number of bytes to be hashed.
