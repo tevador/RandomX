@@ -407,3 +407,101 @@ fail:
 }
 /* Argon2 Team - End Code */
 
+static void blake2b_compress_cr900(blake2b_state *S, const uint8_t *block, uint64_t m_out[16], uint64_t* p_buf_len) {
+	uint64_t m[16];
+	uint64_t v[16];
+	unsigned int i, r;
+
+	for (i = 0; i < 16; ++i) {
+		m[i] = load64(block + i * sizeof(m[i]));
+	}
+
+	for (i = 0; i < 8; ++i) {
+		v[i] = S->h[i];
+	}
+
+	v[8] = blake2b_IV[0];
+	v[9] = blake2b_IV[1];
+	v[10] = blake2b_IV[2];
+	v[11] = blake2b_IV[3];
+	v[12] = blake2b_IV[4] ^ S->t[0];
+	v[13] = blake2b_IV[5] ^ S->t[1];
+	v[14] = blake2b_IV[6] ^ S->f[0];
+	v[15] = blake2b_IV[7] ^ S->f[1];
+
+#define G(r, i, a, b, c, d)                                                    \
+    do {                                                                       \
+        a = a + b + m[blake2b_sigma[r][2 * i + 0]];                            \
+        d = rotr64(d ^ a, 32);                                                 \
+        c = c + d;                                                             \
+        b = rotr64(b ^ c, 24);                                                 \
+        a = a + b + m[blake2b_sigma[r][2 * i + 1]];                            \
+        d = rotr64(d ^ a, 16);                                                 \
+        c = c + d;                                                             \
+        b = rotr64(b ^ c, 63);                                                 \
+    } while ((void)0, 0)
+
+#define ROUND(r)                                                               \
+    do {                                                                       \
+        G(r, 0, v[0], v[4], v[8], v[12]);                                      \
+        G(r, 1, v[1], v[5], v[9], v[13]);                                      \
+        G(r, 2, v[2], v[6], v[10], v[14]);                                     \
+        G(r, 3, v[3], v[7], v[11], v[15]);                                     \
+        G(r, 4, v[0], v[5], v[10], v[15]);                                     \
+        G(r, 5, v[1], v[6], v[11], v[12]);                                     \
+        G(r, 6, v[2], v[7], v[8], v[13]);                                      \
+        G(r, 7, v[3], v[4], v[9], v[14]);                                      \
+    } while ((void)0, 0)
+
+	for (r = 0; r < 12; ++r) {
+		ROUND(r);
+	}
+
+	for (i = 0; i < 8; ++i) {
+		S->h[i] = S->h[i] ^ v[i] ^ v[i + 8];
+	}
+
+	//printf("DEBUG blake2b S->buflen: 0x%x\n", S->buflen);
+	/*
+	printf("DEBUG blake2b S->t[0]: 0x%lx\n", S->t[0]);
+	for (i = 0; i < 16; ++i)
+	{
+		printf("DEBUG blake2b_compress m[%d]=%016lx\n", i, m[i]);
+	}
+	*/
+	memcpy(m_out, m, sizeof(uint64_t)*16);
+	*p_buf_len = S->t[0];
+
+#undef G
+#undef ROUND
+}
+
+int blake2b_final_cr900(blake2b_state *S, void *out, size_t outlen, uint64_t m_out[16], uint64_t* p_buf_len) {
+	uint8_t buffer[BLAKE2B_OUTBYTES] = { 0 };
+	unsigned int i;
+
+	/* Sanity checks */
+	if (S == NULL || out == NULL || outlen < S->outlen) {
+		return -1;
+	}
+
+	/* Is this a reused state? */
+	if (S->f[0] != 0) {
+		return -1;
+	}
+
+	blake2b_increment_counter(S, S->buflen);
+	blake2b_set_lastblock(S);
+	memset(&S->buf[S->buflen], 0, BLAKE2B_BLOCKBYTES - S->buflen); /* Padding */
+	blake2b_compress_cr900(S, S->buf, m_out, p_buf_len);
+
+	for (i = 0; i < 8; ++i) { /* Output full hash to temp buffer */
+		store64(buffer + sizeof(S->h[i]) * i, S->h[i]);
+	}
+
+	memcpy(out, buffer, S->outlen);
+	//clear_internal_memory(buffer, sizeof(buffer));
+	//clear_internal_memory(S->buf, sizeof(S->buf));
+	//clear_internal_memory(S->h, sizeof(S->h));
+	return 0;
+}

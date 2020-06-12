@@ -109,6 +109,8 @@ extern "C" {
 	int blake2b_long(void *out, size_t outlen, const void *in, size_t inlen);
 	/* Argon2 Team - End Code */
 
+	int blake2b_final_cr900(blake2b_state *S, void *out, size_t outlen, uint64_t m_out[16], uint64_t* p_buf_len);
+
 #if defined(__cplusplus)
 }
 #endif

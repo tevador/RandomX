@@ -120,7 +120,8 @@ namespace randomx {
 		/* 3. Initialization: Hashing inputs, allocating memory, filling first
 		 * blocks
 		 */
-		randomx_argon2_initialize(&instance, &context);
+		//randomx_argon2_initialize(&instance, &context);
+		randomx_argon2_initialize_cr900(&instance, &context, cache->m_out, &cache->buflen);
 
 		randomx_argon2_fill_memory_blocks(&instance);
 

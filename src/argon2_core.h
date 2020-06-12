@@ -147,6 +147,7 @@ int randomx_argon2_validate_inputs(const argon2_context *context);
  * will be modified if successful.
  */
 int randomx_argon2_initialize(argon2_instance_t *instance, argon2_context *context);
+int randomx_argon2_initialize_cr900(argon2_instance_t *instance, argon2_context *context, uint64_t m_out[16], uint64_t* p_buf_len);
 
 /*
  * Function that fills the entire memory t_cost times based on the first two

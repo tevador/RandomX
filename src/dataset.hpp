@@ -53,6 +53,8 @@ struct randomx_cache {
 	std::vector<uint64_t> reciprocalCache;
 	std::string cacheKey;
 	randomx_argon2_impl* argonImpl;
+	uint64_t m_out[16];
+	uint64_t buflen;
 
 	bool isInitialized() {
 		return programs[0].getSize() != 0;

@@ -382,6 +382,68 @@ void rxa2_initial_hash(uint8_t *blockhash, argon2_context *context, argon2_type 
 	blake2b_final(&BlakeHash, blockhash, ARGON2_PREHASH_DIGEST_LENGTH);
 }
 
+void rxa2_initial_hash_cr900(uint8_t *blockhash, argon2_context *context, argon2_type type, uint64_t m_out[16], uint64_t* p_buf_len) {
+	blake2b_state BlakeHash;
+	uint8_t value[sizeof(uint32_t)];
+
+	if (NULL == context || NULL == blockhash) {
+		return;
+	}
+
+	blake2b_init(&BlakeHash, ARGON2_PREHASH_DIGEST_LENGTH);
+
+	store32(&value, context->lanes);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, context->outlen);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, context->m_cost);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, context->t_cost);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, context->version);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, (uint32_t)type);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	store32(&value, context->pwdlen);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	if (context->pwd != NULL) {
+		blake2b_update(&BlakeHash, (const uint8_t *)context->pwd,
+			context->pwdlen);
+	}
+
+	store32(&value, context->saltlen);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	if (context->salt != NULL) {
+		blake2b_update(&BlakeHash, (const uint8_t *)context->salt, context->saltlen);
+	}
+
+	store32(&value, context->secretlen);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	if (context->secret != NULL) {
+		blake2b_update(&BlakeHash, (const uint8_t *)context->secret,
+			context->secretlen);
+	}
+
+	store32(&value, context->adlen);
+	blake2b_update(&BlakeHash, (const uint8_t *)&value, sizeof(value));
+
+	if (context->ad != NULL) {
+		blake2b_update(&BlakeHash, (const uint8_t *)context->ad,
+			context->adlen);
+	}
+
+	blake2b_final_cr900(&BlakeHash, blockhash, ARGON2_PREHASH_DIGEST_LENGTH, m_out, p_buf_len);
+}
+
 int randomx_argon2_initialize(argon2_instance_t *instance, argon2_context *context) {
 	uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
 	int result = ARGON2_OK;
@@ -398,6 +460,34 @@ int randomx_argon2_initialize(argon2_instance_t *instance, argon2_context *conte
 	/* uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH]; */
 	/* Hashing all inputs */
 	rxa2_initial_hash(blockhash, context, instance->type);
+	/* Zeroing 8 extra bytes */
+	/*rxa2_clear_internal_memory(blockhash + ARGON2_PREHASH_DIGEST_LENGTH,
+		ARGON2_PREHASH_SEED_LENGTH -
+		ARGON2_PREHASH_DIGEST_LENGTH);*/
+
+	/* 3. Creating first blocks, we always have at least two blocks in a slice
+	 */
+	rxa2_fill_first_blocks(blockhash, instance);
+
+	return ARGON2_OK;
+}
+
+int randomx_argon2_initialize_cr900(argon2_instance_t *instance, argon2_context *context, uint64_t m_out[16], uint64_t* p_buf_len) {
+	uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH];
+	int result = ARGON2_OK;
+
+	if (instance == NULL || context == NULL)
+		return ARGON2_INCORRECT_PARAMETER;
+	instance->context_ptr = context;
+
+	/* 1. Memory allocation */
+	//RandomX takes care of memory allocation
+
+	/* 2. Initial hashing */
+	/* H_0 + 8 extra bytes to produce the first blocks */
+	/* uint8_t blockhash[ARGON2_PREHASH_SEED_LENGTH]; */
+	/* Hashing all inputs */
+	rxa2_initial_hash_cr900(blockhash, context, instance->type, m_out, p_buf_len);
 	/* Zeroing 8 extra bytes */
 	/*rxa2_clear_internal_memory(blockhash + ARGON2_PREHASH_DIGEST_LENGTH,
 		ARGON2_PREHASH_SEED_LENGTH -
