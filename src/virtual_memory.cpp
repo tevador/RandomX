@@ -94,7 +94,12 @@ void* allocMemoryPages(std::size_t bytes) {
 	if (mem == nullptr)
 		throw std::runtime_error(getErrorMessage("allocMemoryPages - VirtualAlloc"));
 #else
-	mem = mmap(nullptr, bytes, PAGE_READWRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	#if defined(__NetBSD__)
+		#define RESERVED_FLAGS PROT_MPROTECT(PROT_EXEC)
+	#else
+		#define RESERVED_FLAGS 0
+	#endif
+	mem = mmap(nullptr, bytes, PAGE_READWRITE | RESERVED_FLAGS, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	if (mem == MAP_FAILED)
 		throw std::runtime_error("allocMemoryPages - mmap failed");
 #endif
@@ -141,7 +146,7 @@ void* allocLargePagesMemory(std::size_t bytes) {
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, VM_FLAGS_SUPERPAGE_SIZE_2MB, 0);
 #elif defined(__FreeBSD__)
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_ALIGNED_SUPER, -1, 0);
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
 	mem = MAP_FAILED; // OpenBSD does not support huge pages
 #else
 	mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_POPULATE, -1, 0);

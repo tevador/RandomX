@@ -35,3 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #include "jit_compiler_fallback.hpp"
 #endif
+
+#if defined(__OpenBSD__) || defined(__NetBSD__)
+#define RANDOMX_FORCE_SECURE
+#endif

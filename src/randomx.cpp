@@ -43,7 +43,7 @@ extern "C" {
 	randomx_flags randomx_get_flags() {
 		randomx_flags flags = RANDOMX_HAVE_COMPILER ? RANDOMX_FLAG_JIT : RANDOMX_FLAG_DEFAULT;
 		randomx::Cpu cpu;
-#ifdef __OpenBSD__
+#ifdef RANDOMX_FORCE_SECURE
 		if (flags == RANDOMX_FLAG_JIT) {
 			flags |= RANDOMX_FLAG_SECURE;
 		}

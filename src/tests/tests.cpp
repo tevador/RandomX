@@ -143,7 +143,7 @@ int main() {
 		randomx::JitCompiler jit;
 		jit.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		jit.generateDatasetInitCode();
-#ifdef __OpenBSD__
+#ifdef RANDOMX_FORCE_SECURE
 		jit.enableExecution();
 #else
 		jit.enableAll();
@@ -954,7 +954,7 @@ int main() {
 		assert(ibc.memMask == randomx::ScratchpadL3Mask);
 	});
 
-#ifdef __OpenBSD__
+#ifdef RANDOMX_FORCE_SECURE
 	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
 #else
 	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
@@ -1009,10 +1009,10 @@ int main() {
 		vm = nullptr;
 		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		initCache("test key 000");
-#ifdef __OpenBSD__
-		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#ifdef RANDOMX_FORCE_SECURE
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT | RANDOMX_FLAG_SECURE, cache, nullptr);
 #else
-		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
 #endif
 	}
 
