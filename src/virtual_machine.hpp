@@ -54,6 +54,9 @@ public:
 	{
 		return program;
 	}
+	const uint8_t* getMemory() const {
+		return mem.memory;
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;
