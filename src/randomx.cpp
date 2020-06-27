@@ -329,7 +329,7 @@ extern "C" {
 	void randomx_vm_set_cache(randomx_vm *machine, randomx_cache* cache) {
 		assert(machine != nullptr);
 		assert(cache != nullptr && cache->isInitialized());
-		if (machine->cacheKey != cache->cacheKey) {
+		if (machine->cacheKey != cache->cacheKey || machine->getMemory() != cache->memory) {
 			machine->setCache(cache);
 			machine->cacheKey = cache->cacheKey;
 		}
