@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../jit_compiler.hpp"
 #ifdef _WIN32
 #include <windows.h>
-#include <VersionHelpers.h>
+#include <versionhelpers.h>
 #endif
 #include "affinity.hpp"
 
