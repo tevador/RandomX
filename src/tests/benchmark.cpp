@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../dataset.hpp"
 #include "../blake2/endian.h"
 #include "../common.hpp"
+#include "../jit_compiler.hpp"
 #ifdef _WIN32
 #include <windows.h>
 #include <VersionHelpers.h>
@@ -199,7 +200,7 @@ int main(int argc, char** argv) {
 		}
 		if (jit) {
 			flags |= RANDOMX_FLAG_JIT;
-#ifdef __OpenBSD__
+#ifdef RANDOMX_FORCE_SECURE
 			flags |= RANDOMX_FLAG_SECURE;
 #endif
 		}
@@ -211,7 +212,7 @@ int main(int argc, char** argv) {
 	if (miningMode) {
 		flags |= RANDOMX_FLAG_FULL_MEM;
 	}
-#ifndef __OpenBSD__
+#ifndef RANDOMX_FORCE_SECURE
 	if (secure) {
 		flags |= RANDOMX_FLAG_SECURE;
 	}

@@ -65,7 +65,7 @@ set_thread_affinity(std::thread::native_handle_type thread,
             (thread_policy_t)&policy, 1);
 #elif defined(_WIN32) || defined(__CYGWIN__)
     rc = SetThreadAffinityMask(reinterpret_cast<HANDLE>(thread), 1ULL << cpuid) == 0 ? -2 : 0;
-#elif !defined(__OpenBSD__) && !defined(__FreeBSD__) && !defined(__ANDROID__)
+#elif !defined(__OpenBSD__) && !defined(__FreeBSD__) && !defined(__ANDROID__) && !defined(__NetBSD__)
     cpu_set_t cs;
     CPU_ZERO(&cs);
     CPU_SET(cpuid, &cs);
