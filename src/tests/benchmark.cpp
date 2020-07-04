@@ -95,6 +95,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --ssse3       use optimized Argon2 for SSSE3 CPUs" << std::endl;
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
 	std::cout << "  --auto        select the best options for the current CPU" << std::endl;
+	std::cout << "  --noBatch     calculate hashes one by one (default: batch)" << std::endl;
 }
 
 struct MemoryException : public std::exception {
@@ -110,11 +111,14 @@ struct DatasetAllocException : public MemoryException {
 	}
 };
 
-void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid=-1) {
+using MineFunc = void(randomx_vm * vm, std::atomic<uint32_t> & atomicNonce, AtomicHash & result, uint32_t noncesCount, int thread, int cpuid);
+
+template<bool batch>
+void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid = -1) {
 	if (cpuid >= 0) {
 		int rc = set_thread_affinity(cpuid);
 		if (rc) {
-			std::cerr << "Failed to set thread affinity for thread " << thread << " (error=" << rc << ")" <<  std::endl;
+			std::cerr << "Failed to set thread affinity for thread " << thread << " (error=" << rc << ")" << std::endl;
 		}
 	}
 	uint64_t hash[RANDOMX_HASH_SIZE / sizeof(uint64_t)];
@@ -123,19 +127,27 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 	void* noncePtr = blockTemplate + 39;
 	auto nonce = atomicNonce.fetch_add(1);
 
-	store32(noncePtr, nonce);
-	randomx_calculate_hash_first(vm, blockTemplate, sizeof(blockTemplate));
+	if (batch) {
+		store32(noncePtr, nonce);
+		randomx_calculate_hash_first(vm, blockTemplate, sizeof(blockTemplate));
+	}
 
 	while (nonce < noncesCount) {
-		nonce = atomicNonce.fetch_add(1);
+		if (batch) {
+			nonce = atomicNonce.fetch_add(1);
+		}
 		store32(noncePtr, nonce);
-		randomx_calculate_hash_next(vm, blockTemplate, sizeof(blockTemplate), &hash);
+		(batch ? randomx_calculate_hash_next : randomx_calculate_hash)(vm, blockTemplate, sizeof(blockTemplate), &hash);
 		result.xorWith(hash);
+		if (!batch) {
+			nonce = atomicNonce.fetch_add(1);
+		}
 	}
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, ssse3, avx2, autoFlags;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure;
+	bool ssse3, avx2, autoFlags, noBatch;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -159,10 +171,11 @@ int main(int argc, char** argv) {
 	readOption("--ssse3", argc, argv, ssse3);
 	readOption("--avx2", argc, argv, avx2);
 	readOption("--auto", argc, argv, autoFlags);
+	readOption("--noBatch", argc, argv, noBatch);
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.1.7" << std::endl;
+	std::cout << "RandomX benchmark v1.1.8" << std::endl;
 
 	if (help) {
 		printUsage(argv[0]);
@@ -264,6 +277,16 @@ int main(int argc, char** argv) {
 		std::cout << " - thread affinity (" << mask_to_string(threadAffinity) << ")" << std::endl;
 	}
 
+	MineFunc* func;
+
+	if (noBatch) {
+		func = &mine<false>;
+	}
+	else {
+		func = &mine<true>;
+		std::cout << " - batch mode" << std::endl;
+	}
+
 	std::cout << "Initializing";
 	if (miningMode)
 		std::cout << " (" << initThreadCount << " thread" << (initThreadCount > 1 ? "s)" : ")");
@@ -334,14 +357,14 @@ int main(int argc, char** argv) {
 				int cpuid = -1;
 				if (threadAffinity)
 					cpuid = cpuid_from_mask(threadAffinity, i);
-				threads.push_back(std::thread(&mine, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid));
+				threads.push_back(std::thread(func, vms[i], std::ref(atomicNonce), std::ref(result), noncesCount, i, cpuid));
 			}
 			for (unsigned i = 0; i < threads.size(); ++i) {
 				threads[i].join();
 			}
 		}
 		else {
-			mine(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0);
+			func(vms[0], std::ref(atomicNonce), std::ref(result), noncesCount, 0, -1);
 		}
 
 		double elapsed = sw.getElapsed();
