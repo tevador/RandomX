@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if defined(_M_X64) || defined(__x86_64__)
 	#define HAVE_CPUID
-	#ifdef _WIN32
+	#if defined(_MSC_VER)
 		#include <intrin.h>
 		#define cpuid(info, x) __cpuidex(info, x, 0)
 	#else //GCC
