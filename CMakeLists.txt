@@ -30,6 +30,23 @@ cmake_minimum_required(VERSION 2.8.7)
 
 project(RandomX)
 
+#cross build
+option(CROSS_COMPILE "cross compile" OFF)
+IF(CROSS_COMPILE)
+MESSAGE("use cross compile")
+SET(CMAKE_SYSTEM_NAME Linux)
+SET(TOOLCHAIN_DIR "/home/clouder/cross/toolchain/4.9.3")
+#SET(CMAKE_FIND_ROOT_PATH  ${TOOLCHAIN_DIR}
+    #${TOOLCHAIN_DIR}/arm-cortexa9-linux-gnueabihf/include
+    #${TOOLCHAIN_DIR}/arm-cortexa9-linux-gnueabihf/lib )
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN_DIR}/bin/arm-linux-g++)
+set(CMAKE_C_COMPILER   ${TOOLCHAIN_DIR}/bin/arm-linux-gcc)
+include_directories(${TOOLCHAIN_DIR}/include)
+link_directories(${TOOLCHAIN_DIR}/lib)
+SET(CMAKE_C_FLAGS_RELEASE "$ENV{CFLAGS} -std=c99")
+#SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -std=c++11 -Wall -g -ggdb")
+ENDIF(CROSS_COMPILE)
+
 set(randomx_sources
 src/aes_hash.cpp
 src/argon2_ref.c
@@ -125,7 +142,7 @@ if(ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "a
       add_flag("-march=native")
     else()
       # default build has hardware AES enabled (software AES can be selected at runtime)
-      add_flag("-maes")
+      #add_flag("-maes")
       check_c_compiler_flag(-mssse3 HAVE_SSSE3)
       if(HAVE_SSSE3)
         set_source_files_properties(src/argon2_ssse3.c COMPILE_FLAGS -mssse3)
