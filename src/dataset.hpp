@@ -55,6 +55,7 @@ struct randomx_cache {
 	randomx_argon2_impl* argonImpl;
 	uint64_t m_out[16];
 	uint64_t buflen;
+	randomx::SuperscalarProgram programs_copy[RANDOMX_CACHE_ACCESSES];
 
 	bool isInitialized() {
 		return programs[0].getSize() != 0;

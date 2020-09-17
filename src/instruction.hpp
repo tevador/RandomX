@@ -99,6 +99,13 @@ namespace randomx {
 		void setMod(uint8_t val) {
 			mod = val;
 		}
+		void copy(Instruction &a) {
+			a.opcode = opcode;
+			a.dst = dst;
+			a.src = src;
+			a.mod = mod;
+			a.imm32 = imm32;
+		}
 
 		uint8_t opcode;
 		uint8_t dst;

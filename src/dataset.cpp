@@ -129,6 +129,7 @@ namespace randomx {
 		randomx::Blake2Generator gen(key, keySize);
 		for (int i = 0; i < RANDOMX_CACHE_ACCESSES; ++i) {
 			randomx::generateSuperscalar(cache->programs[i], gen);
+			cache->programs[i].copy_inst(cache->programs_copy[i]);
 			for (unsigned j = 0; j < cache->programs[i].getSize(); ++j) {
 				auto& instr = cache->programs[i](j);
 				if ((SuperscalarInstructionType)instr.opcode == SuperscalarInstructionType::IMUL_RCP) {

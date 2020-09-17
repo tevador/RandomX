@@ -55,6 +55,13 @@ namespace randomx {
 		void setAddressRegister(int val) {
 			addrReg = val;
 		}
+		void copy_inst(SuperscalarProgram &a) {
+			a.setSize(size);
+			for(int i=0;i<size;i++)
+			{
+				programBuffer[i].copy(a.programBuffer[i]);
+			}
+		}
 
 		Instruction programBuffer[SuperscalarMaxSize];
 		uint32_t size
