@@ -35,6 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #ifdef __APPLE__
 #include <mach/vm_statistics.h>
+#include <TargetConditionals.h>
+#include <pthread.h>
 #endif
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -129,11 +131,19 @@ static inline void pageProtect(void* ptr, std::size_t bytes, int rules) {
 }
 
 void setPagesRW(void* ptr, std::size_t bytes) {
+#if defined(__APPLE__) && defined(__aarch64__) && TARGET_OS_OSX
+	pthread_jit_write_protect_np(false);
+#else
 	pageProtect(ptr, bytes, PAGE_READWRITE);
+#endif
 }
 
 void setPagesRX(void* ptr, std::size_t bytes) {
+#if defined(__APPLE__) && defined(__aarch64__) && TARGET_OS_OSX
+	pthread_jit_write_protect_np(true);
+#else
 	pageProtect(ptr, bytes, PAGE_EXECUTE_READ);
+#endif
 }
 
 void setPagesRWX(void* ptr, std::size_t bytes) {
