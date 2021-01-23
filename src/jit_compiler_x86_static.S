@@ -40,7 +40,6 @@
 .global DECL(randomx_prefetch_scratchpad)
 .global DECL(randomx_prefetch_scratchpad_end)
 .global DECL(randomx_program_prologue)
-.global DECL(randomx_program_prologue_first_load)
 .global DECL(randomx_program_loop_begin)
 .global DECL(randomx_program_loop_load)
 .global DECL(randomx_program_start)
@@ -88,10 +87,6 @@ DECL(randomx_program_prologue):
 	movapd xmm13, xmmword ptr [mantissaMask+rip]
 	movapd xmm14, xmmword ptr [exp240+rip]
 	movapd xmm15, xmmword ptr [scaleMask+rip]
-
-DECL(randomx_program_prologue_first_load):
-	xor rax, r8
-	xor rax, r8
 	mov rdx, rax
 	and eax, RANDOMX_SCRATCHPAD_MASK
 	ror rdx, 32
