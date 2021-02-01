@@ -95,6 +95,10 @@ JitCompilerA64::JitCompilerA64()
 {
 	memset(reg_changed_offset, 0, sizeof(reg_changed_offset));
 	memcpy(code, (void*) randomx_program_aarch64, CodeSize);
+
+#ifdef __GNUC__
+	__builtin___clear_cache(reinterpret_cast<char*>(code), reinterpret_cast<char*>(code + CodeSize));
+#endif
 }
 
 JitCompilerA64::~JitCompilerA64()
