@@ -153,7 +153,7 @@ if(ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv
     src/jit_compiler_a64.cpp)
   # cheat because cmake and ccache hate each other
   set_property(SOURCE src/jit_compiler_a64_static.S PROPERTY LANGUAGE C)
-  set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
+  set_property(SOURCE src/jit_compiler_a64_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
 
   # not sure if this check is needed
   include(CheckIncludeFile)
