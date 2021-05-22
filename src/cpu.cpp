@@ -62,9 +62,13 @@ namespace randomx {
 			cpuid(info, 0x00000007);
 			avx2_ = (info[1] & (1 << 5)) != 0;
 		}
-#elif defined(__aarch64__) && defined(HWCAP_AES)
+#elif defined(__aarch64__)
+	#if defined(HWCAP_AES)
 		long hwcaps = getauxval(AT_HWCAP);
 		aes_ = (hwcaps & HWCAP_AES) != 0;
+	#elif defined(__APPLE__)
+		aes_ = true;
+	#endif
 #endif
 		//TODO POWER8 AES
 	}
