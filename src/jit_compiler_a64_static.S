@@ -333,6 +333,7 @@ DECL(randomx_program_aarch64_cacheline_align_mask2):
 	add	x10, x10, x1
 
 DECL(randomx_program_aarch64_xor_with_dataset_line):
+rx_program_xor_with_dataset_line:
 	# xor integer registers with dataset data
 	ldp	x18, x19, [x10]
 	eor	x4, x4, x18
@@ -431,14 +432,14 @@ DECL(randomx_program_aarch64_light_dataset_offset):
 	add	x2, x2, 0
 	add	x2, x2, 0
 
-	bl	DECL(randomx_calc_dataset_item_aarch64)
+	bl	rx_calc_dataset_item
 
 	mov	x10, sp
 	ldp	x0, x1, [sp, 64]
 	ldp	x2, x30, [sp, 80]
 	add	sp, sp, 96
 
-	b	DECL(randomx_program_aarch64_xor_with_dataset_line)
+	b	rx_program_xor_with_dataset_line
 
 
 
@@ -457,7 +458,7 @@ DECL(randomx_init_dataset_aarch64):
 	ldr	x0, [x0]
 
 DECL(randomx_init_dataset_aarch64_main_loop):
-	bl	DECL(randomx_calc_dataset_item_aarch64)
+	bl	rx_calc_dataset_item
 	add	x1, x1, 64
 	add	x2, x2, 1
 	cmp	x2, x3
@@ -487,6 +488,7 @@ DECL(randomx_init_dataset_aarch64_end):
 # x13 -> temporary
 
 DECL(randomx_calc_dataset_item_aarch64):
+rx_calc_dataset_item:
 	sub	sp, sp, 112
 	stp	x0, x1, [sp]
 	stp	x2, x3, [sp, 16]
@@ -533,7 +535,7 @@ DECL(randomx_calc_dataset_item_aarch64):
 	ldr	x12, superscalarAdd7
 	eor	x7, x0, x12
 
-	b	DECL(randomx_calc_dataset_item_aarch64_prefetch)
+	b	rx_calc_dataset_item_prefetch
 
 superscalarMul0: .quad 6364136223846793005
 superscalarAdd1: .quad 9298411001130361340
@@ -547,6 +549,7 @@ superscalarAdd7: .quad 9549104520008361294
 # Prefetch -> SuperScalar hash -> Mix will be repeated N times
 
 DECL(randomx_calc_dataset_item_aarch64_prefetch):
+rx_calc_dataset_item_prefetch:
 	# Actual mask will be inserted by JIT compiler
 	and	x11, x10, 1
 	add	x11, x8, x11, lsl 6
