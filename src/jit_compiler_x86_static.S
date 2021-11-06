@@ -91,13 +91,14 @@ DECL(randomx_program_prologue):
 	and eax, RANDOMX_SCRATCHPAD_MASK
 	ror rdx, 32
 	and edx, RANDOMX_SCRATCHPAD_MASK
-	jmp DECL(randomx_program_loop_begin)
+	jmp rx_program_loop_begin
 
 .balign 64
 	#include "asm/program_xmm_constants.inc"
 
 .balign 64
 DECL(randomx_program_loop_begin):
+rx_program_loop_begin:
 	nop
 
 DECL(randomx_program_loop_load):
@@ -123,6 +124,7 @@ DECL(randomx_program_loop_end):
 
 .balign 64
 DECL(randomx_dataset_init):
+rx_dataset_init:
 	push rbx
 	push rbp
 	push r12
@@ -146,7 +148,7 @@ init_block_loop:
 	prefetchw byte ptr [rsi]
 	mov rbx, rbp
 	.byte 232 ;# 0xE8 = call
-	.int SUPERSCALAR_OFFSET - (call_offset - DECL(randomx_dataset_init))
+	.int SUPERSCALAR_OFFSET - (call_offset - rx_dataset_init)
 call_offset:
 	mov qword ptr [rsi+0], r8
 	mov qword ptr [rsi+8], r9
@@ -211,13 +213,14 @@ DECL(randomx_sshash_init):
 	xor r14, r8
 	mov r15, qword ptr [r7_add+rip]
 	xor r15, r8
-	jmp DECL(randomx_program_end)
+	jmp rx_program_end
 
 .balign 64
 	#include "asm/program_sshash_constants.inc"
 
 .balign 64
 DECL(randomx_program_end):
+rx_program_end:
 	nop
 
 DECL(randomx_reciprocal_fast):
