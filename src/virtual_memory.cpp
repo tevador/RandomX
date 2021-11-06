@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __APPLE__
 #include <mach/vm_statistics.h>
 #include <TargetConditionals.h>
-# if defined(__aarch64__) && TARGET_OS_OSX
+# ifdef TARGET_OS_OSX
 # define USE_PTHREAD_JIT_WP	1
 # include <pthread.h>
 # endif
@@ -104,19 +104,11 @@ void* allocMemoryPages(std::size_t bytes) {
 	#else
 		#define RESERVED_FLAGS 0
 	#endif
-	#ifdef __APPLE__
-		#include <TargetConditionals.h>
-		#ifdef TARGET_OS_OSX
-			#define MEXTRA MAP_JIT
-		#else
-			#define MEXTRA 0
-		#endif
-	#else
-		#define MEXTRA 0
-	#endif
 	#ifdef USE_PTHREAD_JIT_WP
+		#define MEXTRA MAP_JIT
 		#define PEXTRA	PROT_EXEC
 	#else
+		#define MEXTRA 0
 		#define PEXTRA	0
 	#endif
 	mem = mmap(nullptr, bytes, PAGE_READWRITE | RESERVED_FLAGS | PEXTRA, MAP_ANONYMOUS | MAP_PRIVATE | MEXTRA, -1, 0);
