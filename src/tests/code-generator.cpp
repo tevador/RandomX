@@ -69,7 +69,7 @@ void generateNative(uint32_t nonce) {
 	uint8_t scratchpad[randomx::ScratchpadSize];
 	fillAes1Rx4<softAes>((void*)hash, randomx::ScratchpadSize, scratchpad);
 	alignas(16) randomx::Program prog;
-	fillAes1Rx4<softAes>((void*)hash, sizeof(prog), &prog);
+	fillAes4Rx4<softAes>((void*)hash, sizeof(prog), &prog);
 	std::cout << prog << std::endl;
 }
 
