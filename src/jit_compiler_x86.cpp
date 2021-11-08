@@ -94,22 +94,28 @@ namespace randomx {
 
 	constexpr int32_t superScalarHashOffset = RandomXCodeSize;
 
-	const uint8_t* codePrologue = (uint8_t*)&randomx_program_prologue;
-	const uint8_t* codeLoopBegin = (uint8_t*)&randomx_program_loop_begin;
-	const uint8_t* codeLoopLoad = (uint8_t*)&randomx_program_loop_load;
-	const uint8_t* codeProgamStart = (uint8_t*)&randomx_program_start;
-	const uint8_t* codeReadDataset = (uint8_t*)&randomx_program_read_dataset;
-	const uint8_t* codeReadDatasetLightSshInit = (uint8_t*)&randomx_program_read_dataset_sshash_init;
-	const uint8_t* codeReadDatasetLightSshFin = (uint8_t*)&randomx_program_read_dataset_sshash_fin;
-	const uint8_t* codeDatasetInit = (uint8_t*)&randomx_dataset_init;
-	const uint8_t* codeLoopStore = (uint8_t*)&randomx_program_loop_store;
-	const uint8_t* codeLoopEnd = (uint8_t*)&randomx_program_loop_end;
-	const uint8_t* codeEpilogue = (uint8_t*)&randomx_program_epilogue;
-	const uint8_t* codeProgramEnd = (uint8_t*)&randomx_program_end;
-	const uint8_t* codeShhLoad = (uint8_t*)&randomx_sshash_load;
-	const uint8_t* codeShhPrefetch = (uint8_t*)&randomx_sshash_prefetch;
-	const uint8_t* codeShhEnd = (uint8_t*)&randomx_sshash_end;
-	const uint8_t* codeShhInit = (uint8_t*)&randomx_sshash_init;
+#if defined(_MSC_VER) && (defined(_DEBUG) || defined (RELWITHDEBINFO))
+#define ADDR(x) ((((uint8_t*)&x)[0] == 0xE9) ? (((uint8_t*)&x) + *(const int32_t*)(((uint8_t*)&x) + 1) + 5) : ((uint8_t*)&x))
+#else
+#define ADDR(x) ((uint8_t*)&x)
+#endif
+
+	const uint8_t* codePrologue = ADDR(randomx_program_prologue);
+	const uint8_t* codeLoopBegin = ADDR(randomx_program_loop_begin);
+	const uint8_t* codeLoopLoad = ADDR(randomx_program_loop_load);
+	const uint8_t* codeProgamStart = ADDR(randomx_program_start);
+	const uint8_t* codeReadDataset = ADDR(randomx_program_read_dataset);
+	const uint8_t* codeReadDatasetLightSshInit = ADDR(randomx_program_read_dataset_sshash_init);
+	const uint8_t* codeReadDatasetLightSshFin = ADDR(randomx_program_read_dataset_sshash_fin);
+	const uint8_t* codeDatasetInit = ADDR(randomx_dataset_init);
+	const uint8_t* codeLoopStore = ADDR(randomx_program_loop_store);
+	const uint8_t* codeLoopEnd = ADDR(randomx_program_loop_end);
+	const uint8_t* codeEpilogue = ADDR(randomx_program_epilogue);
+	const uint8_t* codeProgramEnd = ADDR(randomx_program_end);
+	const uint8_t* codeShhLoad = ADDR(randomx_sshash_load);
+	const uint8_t* codeShhPrefetch = ADDR(randomx_sshash_prefetch);
+	const uint8_t* codeShhEnd = ADDR(randomx_sshash_end);
+	const uint8_t* codeShhInit = ADDR(randomx_sshash_init);
 
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
@@ -320,7 +326,7 @@ namespace randomx {
 		emitByte(0xc0 + pcfg.readReg0);
 		emit(REX_XOR_RAX_R64);
 		emitByte(0xc0 + pcfg.readReg1);
-		emit((const uint8_t*)&randomx_prefetch_scratchpad, ((uint8_t*)&randomx_prefetch_scratchpad_end) - ((uint8_t*)&randomx_prefetch_scratchpad));
+		emit(ADDR(randomx_prefetch_scratchpad), ADDR(randomx_prefetch_scratchpad_end) - ADDR(randomx_prefetch_scratchpad));
 		memcpy(code + codePos, codeLoopStore, loopStoreSize);
 		codePos += loopStoreSize;
 		emit(SUB_EBX);
