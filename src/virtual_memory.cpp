@@ -36,9 +36,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __APPLE__
 #include <mach/vm_statistics.h>
 #include <TargetConditionals.h>
-# ifdef TARGET_OS_OSX
-# define USE_PTHREAD_JIT_WP	1
-# include <pthread.h>
+# if TARGET_OS_OSX
+#  if TARGET_CPU_ARM64
+#   define USE_PTHREAD_JIT_WP	1
+#  else
+#   undef USE_PTHREAD_JIT_WP
+#  endif
+#  include <pthread.h>
 # endif
 #endif
 #include <sys/types.h>
