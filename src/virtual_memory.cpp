@@ -142,6 +142,8 @@ void setPagesRW(void* ptr, std::size_t bytes) {
 	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
 	if (__builtin_available(macOS 11.0, *)) {
 		pthread_jit_write_protect_np(false);
+	} else {
+		pageProtect(ptr, bytes, PAGE_READWRITE);
 	}
 #else
 	pageProtect(ptr, bytes, PAGE_READWRITE);
@@ -153,6 +155,8 @@ void setPagesRX(void* ptr, std::size_t bytes) {
 	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
 	if (__builtin_available(macOS 11.0, *)) {
 		pthread_jit_write_protect_np(true);
+	} else {
+		pageProtect(ptr, bytes, PAGE_EXECUTE_READ);
 	}
 #else
 	pageProtect(ptr, bytes, PAGE_EXECUTE_READ);
