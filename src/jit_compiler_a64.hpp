@@ -40,6 +40,7 @@ namespace randomx {
 	class Program;
 	struct ProgramConfiguration;
 	class SuperscalarProgram;
+	class JitCompilerA64;
 	class Instruction;
 
 	typedef void(JitCompilerA64::*InstructionGeneratorA64)(Instruction&, uint32_t&);
