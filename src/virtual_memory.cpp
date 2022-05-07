@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # if TARGET_OS_OSX
 #  define USE_PTHREAD_JIT_WP	1
 #  include <pthread.h>
+#  include <sys/utsname.h>
 # endif
 #endif
 #include <sys/types.h>
@@ -51,6 +52,36 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PAGE_READWRITE (PROT_READ | PROT_WRITE)
 #define PAGE_EXECUTE_READ (PROT_READ | PROT_EXEC)
 #define PAGE_EXECUTE_READWRITE (PROT_READ | PROT_WRITE | PROT_EXEC)
+#endif
+
+#if defined(USE_PTHREAD_JIT_WP) && defined(MAC_OS_VERSION_11_0) \
+	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
+extern "C" {
+static int MacOSchecked, MacOSver;
+/* This function is used implicitly by clang's __builtin_available() checker.
+ * When cross-compiling, the library containing this function doesn't exist,
+ * and linking will fail because the symbol is unresolved. The function here
+ * is a quick and dirty hack to get close enough to identify MacOSX 11.0.
+ *
+ * It must be global otherwise clang refuses to emit its code. We change it
+ * to a static later using nmedit, to prevent interfering with anyone else's
+ * code that might rely on the real function. See the custom command in
+ * CMakeLists.txt for the nmedit invocation.
+ */
+int32_t __isOSVersionAtLeast(int32_t major, int32_t minor, int32_t subminor) {
+	if (!MacOSchecked) {
+	    struct utsname ut;
+		int mmaj, mmin;
+		uname(&ut);
+		sscanf(ut.release, "%d.%d", &mmaj, &mmin);
+		// The utsname release version is 9 greater than the canonical OS version
+		mmaj -= 9;
+		MacOSver = (mmaj << 8) | mmin;
+		MacOSchecked = 1;
+	}
+	return MacOSver >= ((major << 8) | minor);
+}
+}
 #endif
 
 #if defined(_WIN32) || defined(__CYGWIN__)

@@ -181,6 +181,14 @@ if(TARGET generate-asm)
   add_dependencies(randomx generate-asm)
 endif()
 
+if(APPLE)
+# Change symbol ___isOSVersionAtLeast from global to static. See comment
+# in virtual_memory.cpp for explanation why this is needed.
+  add_custom_command(TARGET randomx PRE_LINK
+    COMMAND echo ___isOSVersionAtLeast > Rfile
+    COMMAND ${_CMAKE_TOOLCHAIN_PREFIX}nmedit -R Rfile ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/randomx.dir/src/virtual_memory.cpp.o)
+endif()
+
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
 set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
