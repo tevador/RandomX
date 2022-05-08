@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "common.hpp"
 #include "dataset.hpp"
-#include "virtual_memory.hpp"
+#include "virtual_memory.h"
 #include "superscalar.hpp"
 #include "blake2_generator.hpp"
 #include "reciprocal.h"

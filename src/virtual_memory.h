@@ -28,15 +28,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <cstddef>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-constexpr std::size_t alignSize(std::size_t pos, std::size_t align) {
-	return ((pos - 1) / align + 1) * align;
+#include <stddef.h>
+
+#define alignSize(pos, align) (((pos - 1) / align + 1) * align)
+
+void* allocMemoryPages(size_t);
+void setPagesRW(void*, size_t);
+void setPagesRX(void*, size_t);
+void setPagesRWX(void*, size_t);
+void* allocLargePagesMemory(size_t);
+void freePagedMemory(void*, size_t);
+
+#ifdef __cplusplus
 }
-
-void* allocMemoryPages(std::size_t);
-void setPagesRW(void*, std::size_t);
-void setPagesRX(void*, std::size_t);
-void setPagesRWX(void*, std::size_t);
-void* allocLargePagesMemory(std::size_t);
-void freePagedMemory(void*, std::size_t);
+#endif

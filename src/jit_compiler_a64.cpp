@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "superscalar.hpp"
 #include "program.hpp"
 #include "reciprocal.h"
-#include "virtual_memory.hpp"
+#include "virtual_memory.h"
 
 namespace ARMV8A {
 
@@ -93,6 +93,8 @@ JitCompilerA64::JitCompilerA64()
 	, literalPos(ImulRcpLiteralsEnd)
 	, num32bitLiterals(0)
 {
+	if (code == nullptr)
+		throw std::runtime_error("allocMemoryPages");
 	memset(reg_changed_offset, 0, sizeof(reg_changed_offset));
 	memcpy(code, (void*) randomx_program_aarch64, CodeSize);
 
