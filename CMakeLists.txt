@@ -39,7 +39,7 @@ src/bytecode_machine.cpp
 src/cpu.cpp
 src/dataset.cpp
 src/soft_aes.cpp
-src/virtual_memory.cpp
+src/virtual_memory.c
 src/vm_interpreted.cpp
 src/allocator.cpp
 src/assembly_generator_x86.cpp
