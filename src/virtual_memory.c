@@ -26,11 +26,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "virtual_memory.h"
-
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <windows.h>
 #else
+#define _GNU_SOURCE	1	/* needed for MAP_ANONYMOUS on older platforms */
 #ifdef __APPLE__
 #include <mach/vm_statistics.h>
 #include <TargetConditionals.h>
@@ -39,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define USE_PTHREAD_JIT_WP	1
 #  include <pthread.h>
 #  include <sys/utsname.h>
+#  include <stdio.h>
 # endif
 #endif
 #include <sys/types.h>
@@ -52,6 +52,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PAGE_EXECUTE_READ (PROT_READ | PROT_EXEC)
 #define PAGE_EXECUTE_READWRITE (PROT_READ | PROT_WRITE | PROT_EXEC)
 #endif
+
+#include "virtual_memory.h"
 
 #if defined(USE_PTHREAD_JIT_WP) && defined(MAC_OS_VERSION_11_0) \
 	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
