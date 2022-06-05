@@ -1,6 +1,5 @@
 cimport crandomx
 
-#from cython.parallel import prange
 import multiprocessing, threading
 
 cpdef enum:
@@ -325,14 +324,19 @@ cdef class VM:
          *        New storage will be allocated if this is NULL or left out.
         */
         '''
-        cdef unsigned char output2[HASH_SIZE]
+        cdef const void * input_ptr = voidptr(input)
+        cdef unsigned char local_output[HASH_SIZE]
         if output is NULL:
-            output = output2
-        crandomx.randomx_calculate_hash(self._c_vm, voidptr(input), len(input), output)
-        return output
+            output = local_output
+        with nogil:
+            crandomx.randomx_calculate_hash(self._c_vm, input_ptr, len(input), <void*>output)
+        return output[:HASH_SIZE]
 
     def __call__(self, const unsigned char[:] input not None, unsigned char output[HASH_SIZE] = NULL):
         '''An alias for calculate_hash'''
+        cdef unsigned char local_output[HASH_SIZE]
+        if output is NULL:
+            output = local_output
         return self.calculate_hash(input, output)
 
     def calculate_hashes(self, inputs not None):
