@@ -206,8 +206,8 @@ void* allocLargePagesMemory(size_t bytes) {
 #if defined(_WIN32) || defined(__CYGWIN__)
 	if (setPrivilege("SeLockMemoryPrivilege", 1, &errfunc))
 		return NULL;
-	auto pageMinimum = GetLargePageMinimum();
-	if (pageMinimum <= 0) {
+	size_t pageMinimum = GetLargePageMinimum();
+	if (!pageMinimum) {
 		errfunc = "No large pages";
 		return NULL;
 	}
