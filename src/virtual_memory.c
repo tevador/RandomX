@@ -144,6 +144,8 @@ void* allocMemoryPages(size_t bytes) {
 		#define PEXTRA	0
 	#endif
 	mem = mmap(NULL, bytes, PAGE_READWRITE | RESERVED_FLAGS | PEXTRA, MAP_ANONYMOUS | MAP_PRIVATE | MEXTRA, -1, 0);
+	if (mem == MAP_FAILED)
+		mem = NULL;
 #if defined(USE_PTHREAD_JIT_WP) && defined(MAC_OS_VERSION_11_0) \
 	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
 	if (__builtin_available(macOS 11.0, *)) {
