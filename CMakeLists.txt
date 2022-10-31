@@ -150,7 +150,7 @@ if(ARCH_ID STREQUAL "ppc64" OR ARCH_ID STREQUAL "ppc64le")
 endif()
 
 # ARMv8
-if(ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv8-a")
+if(ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "aarch64_be" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv8-a")
   list(APPEND randomx_sources
     src/jit_compiler_a64_static.S
     src/jit_compiler_a64.cpp)
