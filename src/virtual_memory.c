@@ -189,6 +189,7 @@ void setPagesRX(void* ptr, size_t bytes) {
 	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
 	if (__builtin_available(macOS 11.0, *)) {
 		pthread_jit_write_protect_np(1);
+		__builtin___clear_cache((char*)ptr, ((char*)ptr) + bytes);
 	} else {
 		pageProtect(ptr, bytes, PAGE_EXECUTE_READ, &errfunc);
 	}
