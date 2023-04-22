@@ -400,4 +400,15 @@ extern "C" {
 		machine->run(machine->tempHash);
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
 	}
+
+	void randomx_calculate_hash_v2(const void* input, size_t inputSize, const void* v1_in, void* v2_out) {
+		assert(inputSize == 0 || input != nullptr);
+		assert(v1_in != nullptr);
+		assert(v2_out != nullptr);
+		blake2b_state state;
+		blake2b_init(&state, RANDOMX_HASH_SIZE);
+		blake2b_update(&state, input, inputSize);
+		blake2b_update(&state, v1_in, RANDOMX_HASH_SIZE);
+		blake2b_final(&state, v2_out, RANDOMX_HASH_SIZE);
+	}
 }

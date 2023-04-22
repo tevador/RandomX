@@ -156,7 +156,7 @@ SET ERRORLEVEL = 0</Command>
     <ClCompile Include="..\src\reciprocal.c" />
     <ClCompile Include="..\src\soft_aes.cpp" />
     <ClCompile Include="..\src\virtual_machine.cpp" />
-    <ClCompile Include="..\src\virtual_memory.cpp" />
+    <ClCompile Include="..\src\virtual_memory.c" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="..\src\jit_compiler_x86_static.asm" />

@@ -260,6 +260,17 @@ RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void
 RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
 RANDOMX_EXPORT void randomx_calculate_hash_last(randomx_vm* machine, void* output);
 
+/**
+ * Calculate V2 hash from the V1 hash and its input.
+ *
+ * @param input is a pointer to memory that was hashed by V1. Must not be NULL.
+ * @param inputSize is the number of bytes in the input.
+ * @param v1_in is the V1 hash (RANDOMX_HASH_SIZE bytes).
+ * @param output is a pointer to memory where the V2 hash will be stored. Must not
+ *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+*/
+RANDOMX_EXPORT void randomx_calculate_hash_v2(const void* input, size_t inputSize, const void* v1_in, void* v2_out);
+
 #if defined(__cplusplus)
 }
 #endif

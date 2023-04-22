@@ -72,7 +72,7 @@
     <ClCompile Include="..\src\vm_interpreted.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\virtual_memory.cpp">
+    <ClCompile Include="..\src\virtual_memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\blake2_generator.cpp">
