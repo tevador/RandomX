@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <cstdint>
 
 constexpr char hexmap[] = "0123456789abcdef";
 inline void outputHex(std::ostream& os, const char* data, int length) {
