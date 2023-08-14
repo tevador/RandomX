@@ -203,7 +203,7 @@ namespace randomx {
 		int resultOp_ = 0;
 		int dstOp_ = 0;
 		int srcOp_;
-	
+	//public:
 		SuperscalarInstructionInfo(const char* name)
 			: name_(name), type_(SuperscalarInstructionType::INVALID), latency_(0) {
 			}
@@ -579,10 +579,20 @@ namespace randomx {
 	public:
 		SuperscalarInstruction(const SuperscalarInstruction& obj1) : info_(obj1.info_)
 		{
+			
 			if(!obj1.info_)
 			{
 				info_ = (&SuperscalarInstructionInfo::NOP);
 			}
+			//else
+			src_ = obj1.src_;
+			dst_ = obj1.dst_;
+			mod_ = obj1.mod_;
+			imm32_ = obj1.imm32_;
+			opGroup_ = obj1.opGroup_;
+			opGroupPar_ = obj1.opGroupPar_;
+			canReuse_ = obj1.canReuse_;
+			groupParIsSource_ = obj1.groupParIsSource_;
 
 		}
 	};
