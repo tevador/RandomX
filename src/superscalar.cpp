@@ -203,7 +203,7 @@ namespace randomx {
 		int resultOp_ = 0;
 		int dstOp_ = 0;
 		int srcOp_;
-	public:
+	
 		SuperscalarInstructionInfo(const char* name)
 			: name_(name), type_(SuperscalarInstructionType::INVALID), latency_(0) {
 			}
