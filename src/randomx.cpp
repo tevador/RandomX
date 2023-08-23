@@ -36,7 +36,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cpu.hpp"
 #include <cassert>
 #include <limits>
+
+#if defined(__SSE__) || defined(__SSE2__) || (defined(_M_IX86_FP) && (_M_IX86_FP > 0))
+#define USE_CSR_INTRINSICS
+#include <xmmintrin.h>
+#else
 #include <cfenv>
+#endif
 
 extern "C" {
 
@@ -356,8 +362,14 @@ extern "C" {
 		assert(machine != nullptr);
 		assert(inputSize == 0 || input != nullptr);
 		assert(output != nullptr);
+
+#ifdef USE_CSR_INTRINSICS
+		const unsigned int fpstate = _mm_getcsr();
+#else
 		fenv_t fpstate;
 		fegetenv(&fpstate);
+#endif
+
 		alignas(16) uint64_t tempHash[8];
 		int blakeResult = blake2b(tempHash, sizeof(tempHash), input, inputSize, nullptr, 0);
 		assert(blakeResult == 0);
@@ -370,7 +382,12 @@ extern "C" {
 		}
 		machine->run(&tempHash);
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
+
+#ifdef USE_CSR_INTRINSICS
+		_mm_setcsr(fpstate);
+#else
 		fesetenv(&fpstate);
+#endif
 	}
 
 	void randomx_calculate_hash_first(randomx_vm* machine, const void* input, size_t inputSize) {

@@ -1,0 +1,223 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  build-alpine:
+
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        config:
+          - {arch: x86_64, branch: latest-stable}
+          - {arch: x86, branch: latest-stable}
+          - {arch: aarch64, branch: latest-stable}
+          - {arch: armhf, branch: latest-stable}
+          - {arch: armv7, branch: latest-stable}
+          - {arch: ppc64le, branch: latest-stable}
+          - {arch: riscv64, branch: edge}
+          - {arch: s390x, branch: latest-stable}
+
+    steps:
+    - name: Setup Alpine Linux
+      uses: jirutka/setup-alpine@v1
+      with:
+        arch: ${{ matrix.config.arch }}
+        branch: ${{ matrix.config.branch }}
+
+    - name: Install dependencies
+      shell: alpine.sh --root {0}
+      run: |
+        apk add git cmake gcc g++ make
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Build RandomX
+      shell: alpine.sh {0}
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc)
+
+    - name: Run tests
+      shell: alpine.sh {0}
+      run: |
+        build/randomx-tests
+
+  build-ubuntu:
+
+    timeout-minutes: 5
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      matrix:
+        config:
+          - {os: ubuntu-20.04, c: gcc-11, cpp: g++-11}
+          - {os: ubuntu-22.04, c: gcc-12, cpp: g++-12}
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        sudo apt update
+        sudo apt install -y git build-essential cmake ${{ matrix.config.c }} ${{ matrix.config.cpp }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Build RandomX
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j$(nproc)
+
+    - name: Run tests
+      run: |
+        build/randomx-tests
+
+  build-windows-msys2:
+
+    timeout-minutes: 15
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        config:
+          - {c: "gcc", cxx: "g++"}
+          - {c: "clang", cxx: "clang++"}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Setup MSYS2
+      uses: eine/setup-msys2@v2
+      with:
+        update: true
+        install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-clang mingw-w64-x86_64-lld mingw-w64-x86_64-cmake make
+
+    - name: Build RandomX
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.c }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx }}
+        make -j$(nproc)
+
+    - name: Run tests
+      run: |
+        build/randomx-tests.exe
+
+  build-windows-msbuild:
+
+    timeout-minutes: 5
+    runs-on: windows-${{ matrix.config.os }}
+
+    strategy:
+      matrix:
+        config:
+          - {arch: x64, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\"}
+          - {arch: x64, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\amd64\\"}
+          - {arch: Win32, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\"}
+          - {arch: Win32, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\"}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Setup cmake
+      uses: lukka/get-cmake@latest
+
+    - name: Build RandomX
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "${{ matrix.config.vs }}" -A ${{ matrix.config.arch }}
+        & "${{ matrix.config.msbuild }}msbuild" -v:m /m /p:Configuration=Release randomx-tests.vcxproj
+
+    - name: Run tests
+      run: |
+        build/Release/randomx-tests.exe
+
+  build-macos:
+
+    timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-11, macos-12, macos-13]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake
+
+    - name: Build RandomX
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make -j3
+
+    - name: Run tests
+      run: |
+        build/randomx-tests
+
+  build-freebsd:
+
+    timeout-minutes: 15
+    runs-on: ${{ matrix.os.host }}
+
+    strategy:
+      matrix:
+        os:
+          - name: freebsd
+            architecture: x86-64
+            version: '13.2'
+            host: ubuntu-22.04
+
+          - name: freebsd
+            architecture: arm64
+            version: '13.2'
+            host: ubuntu-22.04
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Build RandomX
+      uses: cross-platform-actions/action@v0.19.0
+      with:
+        operating_system: ${{ matrix.os.name }}
+        architecture: ${{ matrix.os.architecture }}
+        version: ${{ matrix.os.version }}
+        shell: bash
+        run: |
+          sudo pkg install -y cmake
+          mkdir build && cd build
+          cmake ..
+          make -j2
+          ./randomx-tests
