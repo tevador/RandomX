@@ -124,6 +124,8 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 	return _mm_castsi128_pd(_mm_set1_epi64x(x));
 }
 
+#define rx_cast_vec_i2f _mm_castsi128_pd
+#define rx_cast_vec_f2i _mm_castpd_si128
 #define rx_xor_vec_f128 _mm_xor_pd
 #define rx_and_vec_f128 _mm_and_pd
 #define rx_or_vec_f128 _mm_or_pd
@@ -623,6 +625,16 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 	v.i.u64[0] = x;
 	v.i.u64[1] = x;
 	return v;
+}
+
+FORCE_INLINE rx_vec_f128 rx_cast_vec_i2f(rx_vec_i128 a) {
+	rx_vec_f128 x;
+	x.i = a;
+	return x;
+}
+
+FORCE_INLINE rx_vec_i128 rx_cast_vec_f2i(rx_vec_f128 a) {
+	return a.i;
 }
 
 FORCE_INLINE rx_vec_f128 rx_xor_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {

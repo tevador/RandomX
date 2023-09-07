@@ -193,6 +193,7 @@ namespace randomx {
 	static const uint8_t REX_XOR_EAX[] = { 0x41, 0x33 };
 	static const uint8_t SUB_EBX[] = { 0x83, 0xEB, 0x01 };
 	static const uint8_t JNZ[] = { 0x0f, 0x85 };
+	static const uint8_t JNZ_SHORT = 0x75;
 	static const uint8_t JMP = 0xe9;
 	static const uint8_t REX_XOR_RAX_R64[] = { 0x49, 0x33 };
 	static const uint8_t REX_XCHG[] = { 0x4d, 0x87 };
@@ -207,6 +208,7 @@ namespace randomx {
 	static const uint8_t LEA_32[] = { 0x41, 0x8d };
 	static const uint8_t MOVNTI[] = { 0x4c, 0x0f, 0xc3 };
 	static const uint8_t ADD_EBX_I[] = { 0x81, 0xc3 };
+	static const uint8_t TEST_EAX_60SL13[] = { 0xa9, 0x00, 0x80, 0x07, 0x00 };
 
 	static const uint8_t NOP1[] = { 0x90 };
 	static const uint8_t NOP2[] = { 0x66, 0x90 };
@@ -219,11 +221,13 @@ namespace randomx {
 
 	static const uint8_t* NOPX[] = { NOP1, NOP2, NOP3, NOP4, NOP5, NOP6, NOP7, NOP8 };
 
-	size_t JitCompilerX86::getCodeSize() {
+	template<randomx_flags vmFlags>
+	size_t JitCompilerX86<vmFlags>::getCodeSize() {
 		return CodeSize;
 	}
 
-	JitCompilerX86::JitCompilerX86() {
+	template<randomx_flags vmFlags>
+	JitCompilerX86<vmFlags>::JitCompilerX86() {
 		code = (uint8_t*)allocMemoryPages(CodeSize);
 		if (code == nullptr)
 			throw std::runtime_error("allocMemoryPages");
@@ -231,30 +235,36 @@ namespace randomx {
 		memcpy(code + epilogueOffset, codeEpilogue, epilogueSize);
 	}
 
-	JitCompilerX86::~JitCompilerX86() {
+	template<randomx_flags vmFlags>
+	JitCompilerX86<vmFlags>::~JitCompilerX86() {
 		freePagedMemory(code, CodeSize);
 	}
 
-	void JitCompilerX86::enableAll() {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::enableAll() {
 		setPagesRWX(code, CodeSize);
 	}
 
-	void JitCompilerX86::enableWriting() {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::enableWriting() {
 		setPagesRW(code, CodeSize);
 	}
 
-	void JitCompilerX86::enableExecution() {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::enableExecution() {
 		setPagesRX(code, CodeSize);
 	}
 
-	void JitCompilerX86::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
 		generateProgramPrologue(prog, pcfg);
 		memcpy(code + codePos, codeReadDataset, readDatasetSize);
 		codePos += readDatasetSize;
 		generateProgramEpilogue(prog, pcfg);
 	}
 
-	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
 		generateProgramPrologue(prog, pcfg);
 		emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
 		emit(ADD_EBX_I);
@@ -265,18 +275,18 @@ namespace randomx {
 		generateProgramEpilogue(prog, pcfg);
 	}
 
-	template<size_t N>
-	void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &reciprocalCache) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateSuperscalarHash(SuperscalarProgramList &programs, std::vector<uint64_t> &reciprocalCache) {
 		memcpy(code + superScalarHashOffset, codeShhInit, codeSshInitSize);
 		codePos = superScalarHashOffset + codeSshInitSize;
-		for (unsigned j = 0; j < N; ++j) {
+		for (unsigned j = 0; j < programs.size(); ++j) {
 			SuperscalarProgram& prog = programs[j];
 			for (unsigned i = 0; i < prog.getSize(); ++i) {
 				Instruction& instr = prog(i);
 				generateSuperscalarCode(instr, reciprocalCache);
 			}
 			emit(codeShhLoad, codeSshLoadSize);
-			if (j < N - 1) {
+			if (j < programs.size() - 1) {
 				emit(REX_MOV_RR64);
 				emitByte(0xd8 + prog.getAddressRegister());
 				emit(codeShhPrefetch, codeSshPrefetchSize);
@@ -294,14 +304,13 @@ namespace randomx {
 		emitByte(RET);
 	}
 
-	template
-		void JitCompilerX86::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
-
-	void JitCompilerX86::generateDatasetInitCode() {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateDatasetInitCode() {
 		memcpy(code, codeDatasetInit, datasetInitSize);
 	}
 
-	void JitCompilerX86::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateProgramPrologue(Program& prog, ProgramConfiguration& pcfg) {
 		instructionOffsets.clear();
 		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i] = -1;
@@ -323,7 +332,8 @@ namespace randomx {
 		emitByte(0xc0 + pcfg.readReg3);
 	}
 
-	void JitCompilerX86::generateProgramEpilogue(Program& prog, ProgramConfiguration& pcfg) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateProgramEpilogue(Program& prog, ProgramConfiguration& pcfg) {
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + pcfg.readReg0);
 		emit(REX_XOR_RAX_R64);
@@ -338,13 +348,15 @@ namespace randomx {
 		emit32(epilogueOffset - codePos - 4);
 	}
 
-	void JitCompilerX86::generateCode(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateCode(Instruction& instr, int i) {
 		instructionOffsets.push_back(codePos);
 		auto generator = engine[instr.opcode];
 		(this->*generator)(instr, i);
 	}
 
-	void JitCompilerX86::generateSuperscalarCode(Instruction& instr, std::vector<uint64_t> &reciprocalCache) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::generateSuperscalarCode(Instruction& instr, std::vector<uint64_t> &reciprocalCache) {
 		switch ((SuperscalarInstructionType)instr.opcode)
 		{
 		case randomx::SuperscalarInstructionType::ISUB_R:
@@ -438,7 +450,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::genAddressReg(Instruction& instr, bool rax = true) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::genAddressReg(Instruction& instr, bool rax) {
 		emit(LEA_32);
 		emitByte(0x80 + instr.src + (rax ? 0 : 8));
 		if (instr.src == RegisterNeedsSib) {
@@ -452,7 +465,8 @@ namespace randomx {
 		emit32(instr.getModMem() ? ScratchpadL1Mask : ScratchpadL2Mask);
 	}
 
-	void JitCompilerX86::genAddressRegDst(Instruction& instr) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::genAddressRegDst(Instruction& instr) {
 		emit(LEA_32);
 		emitByte(0x80 + instr.dst);
 		if (instr.dst == RegisterNeedsSib) {
@@ -468,11 +482,13 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::genAddressImm(Instruction& instr) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::genAddressImm(Instruction& instr) {
 		emit32(instr.getImm32() & ScratchpadL3Mask);
 	}
 
-	void JitCompilerX86::h_IADD_RS(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IADD_RS(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		emit(REX_LEA);
 		if (instr.dst == RegisterNeedsDisplacement)
@@ -484,10 +500,11 @@ namespace randomx {
 			emit32(instr.getImm32());
 	}
 
-	void JitCompilerX86::h_IADD_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IADD_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			genAddressReg(instr);
+			genAddressReg(instr, true);
 			emit(REX_ADD_RM);
 			emitByte(0x04 + 8 * instr.dst);
 			emitByte(0x06);
@@ -499,11 +516,13 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::genSIB(int scale, int index, int base) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::genSIB(int scale, int index, int base) {
 		emitByte((scale << 6) | (index << 3) | base);
 	}
 
-	void JitCompilerX86::h_ISUB_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISUB_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_SUB_RR);
@@ -516,10 +535,11 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_ISUB_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISUB_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			genAddressReg(instr);
+			genAddressReg(instr, true);
 			emit(REX_SUB_RM);
 			emitByte(0x04 + 8 * instr.dst);
 			emitByte(0x06);
@@ -531,7 +551,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IMUL_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IMUL_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_IMUL_RR);
@@ -544,10 +565,11 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IMUL_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IMUL_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			genAddressReg(instr);
+			genAddressReg(instr, true);
 			emit(REX_IMUL_RM);
 			emitByte(0x04 + 8 * instr.dst);
 			emitByte(0x06);
@@ -559,7 +581,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IMULH_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
@@ -569,7 +592,8 @@ namespace randomx {
 		emitByte(0xc2 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_IMULH_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IMULH_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, false);
@@ -588,7 +612,8 @@ namespace randomx {
 		emitByte(0xc2 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_ISMULH_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISMULH_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.dst);
@@ -598,7 +623,8 @@ namespace randomx {
 		emitByte(0xc2 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_ISMULH_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISMULH_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			genAddressReg(instr, false);
@@ -617,7 +643,8 @@ namespace randomx {
 		emitByte(0xc2 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IMUL_RCP(Instruction& instr, int i) {
 		uint64_t divisor = instr.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			registerUsage[instr.dst] = i;
@@ -628,13 +655,15 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_INEG_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_INEG_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		emit(REX_NEG);
 		emitByte(0xd8 + instr.dst);
 	}
 
-	void JitCompilerX86::h_IXOR_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IXOR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_XOR_RR);
@@ -647,10 +676,11 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IXOR_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IXOR_M(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
-			genAddressReg(instr);
+			genAddressReg(instr, true);
 			emit(REX_XOR_RM);
 			emitByte(0x04 + 8 * instr.dst);
 			emitByte(0x06);
@@ -662,7 +692,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IROR_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IROR_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_MOV_RR);
@@ -677,7 +708,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_IROL_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_IROL_R(Instruction& instr, int i) {
 		registerUsage[instr.dst] = i;
 		if (instr.src != instr.dst) {
 			emit(REX_MOV_RR);
@@ -692,7 +724,8 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_ISWAP_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISWAP_R(Instruction& instr, int i) {
 		if (instr.src != instr.dst) {
 			registerUsage[instr.dst] = i;
 			registerUsage[instr.src] = i;
@@ -701,82 +734,107 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_FSWAP_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FSWAP_R(Instruction& instr, int i) {
 		emit(SHUFPD);
 		emitByte(0xc0 + 9 * instr.dst);
 		emitByte(1);
 	}
 
-	void JitCompilerX86::h_FADD_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FADD_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
 		instr.src %= RegisterCountFlt;
 		emit(REX_ADDPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FADD_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FADD_M(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
-		genAddressReg(instr);
+		genAddressReg(instr, true);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_ADDPD);
 		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FSUB_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FSUB_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
 		instr.src %= RegisterCountFlt;
 		emit(REX_SUBPD);
 		emitByte(0xc0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FSUB_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FSUB_M(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
-		genAddressReg(instr);
+		genAddressReg(instr, true);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_SUBPD);
 		emitByte(0xc4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FSCAL_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FSCAL_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
 		emit(REX_XORPS);
 		emitByte(0xc7 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FMUL_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FMUL_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
 		instr.src %= RegisterCountFlt;
 		emit(REX_MULPD);
 		emitByte(0xe0 + instr.src + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FDIV_M(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FDIV_M(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
-		genAddressReg(instr);
+		genAddressReg(instr, true);
 		emit(REX_CVTDQ2PD_XMM12);
 		emit(REX_ANDPS_XMM12);
 		emit(REX_DIVPD);
 		emitByte(0xe4 + 8 * instr.dst);
 	}
 
-	void JitCompilerX86::h_FSQRT_R(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_FSQRT_R(Instruction& instr, int i) {
 		instr.dst %= RegisterCountFlt;
 		emit(SQRTPD);
 		emitByte(0xe4 + 9 * instr.dst);
 	}
 
-	void JitCompilerX86::h_CFROUND(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_CFROUND(Instruction& instr, int i) {
+		//mov rax {src}
 		emit(REX_MOV_RR64);
 		emitByte(0xc0 + instr.src);
 		int rotate = (13 - (instr.getImm32() & 63)) & 63;
 		if (rotate != 0) {
+			//rol rax, {imm32}
 			emit(ROL_RAX);
 			emitByte(rotate);
 		}
+		if (vmFlags & RANDOMX_FLAG_V2) {
+			//test eax, 491520
+			//jnz next
+			emit(TEST_EAX_60SL13);
+			emitByte(JNZ_SHORT);
+			emitByte(sizeof(AND_OR_MOV_LDMXCSR));
+		}
+		//and eax, 24576
+		//or eax, 40896
+		//push rax
+		//ldmxcsr dword ptr [rsp]
+		//pop rax
 		emit(AND_OR_MOV_LDMXCSR);
 	}
 
-	void JitCompilerX86::h_CBRANCH(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_CBRANCH(Instruction& instr, int i) {
 		int reg = instr.dst;
 		int target = registerUsage[reg] + 1;
 		emit(REX_ADD_I);
@@ -797,21 +855,24 @@ namespace randomx {
 		}
 	}
 
-	void JitCompilerX86::h_ISTORE(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_ISTORE(Instruction& instr, int i) {
 		genAddressRegDst(instr);
 		emit(REX_MOV_MR);
 		emitByte(0x04 + 8 * instr.src);
 		emitByte(0x06);
 	}
 
-	void JitCompilerX86::h_NOP(Instruction& instr, int i) {
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::h_NOP(Instruction& instr, int i) {
 		emit(NOP1);
 	}
 
 #include "instruction_weights.hpp"
 #define INST_HANDLE(x) REPN(&JitCompilerX86::h_##x, WT(x))
 
-	InstructionGeneratorX86 JitCompilerX86::engine[256] = {
+	template<randomx_flags vmFlags>
+	InstructionGeneratorX86<vmFlags> JitCompilerX86<vmFlags>::engine[256] = {
 		INST_HANDLE(IADD_RS)
 		INST_HANDLE(IADD_M)
 		INST_HANDLE(ISUB_R)
@@ -844,4 +905,6 @@ namespace randomx {
 		INST_HANDLE(NOP)
 	};
 
+	template class JitCompilerX86<RANDOMX_FLAG_DEFAULT>;
+	template class JitCompilerX86<RANDOMX_FLAG_V2>;
 }

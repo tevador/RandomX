@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "dataset.hpp"
 #include "intrin_portable.h"
 #include "reciprocal.h"
+#include "soft_aes.h"
 
 namespace randomx {
 
@@ -92,11 +93,28 @@ namespace randomx {
 			for (unsigned i = 0; i < RegistersCount; ++i)
 				store64(scratchpad + spAddr1 + 8 * i, nreg.r[i]);
 
-			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				nreg.f[i] = rx_xor_vec_f128(nreg.f[i], nreg.e[i]);
+			rx_vec_i128 ekey[RegisterCountFlt];
+			rx_vec_i128 freg[RegisterCountFlt];
+
+			for (unsigned i = 0; i < RegisterCountFlt; ++i) {
+				ekey[i] = rx_cast_vec_f2i(nreg.e[i]);
+				freg[i] = rx_cast_vec_f2i(nreg.f[i]);
+			}
+
+			for (unsigned i = 0; i < RegisterCountFlt; ++i) {
+				freg[0] = aesenc<softAes>(freg[0], ekey[i]);
+				freg[1] = aesdec<softAes>(freg[1], ekey[i]);
+				freg[2] = aesenc<softAes>(freg[2], ekey[i]);
+				freg[3] = aesdec<softAes>(freg[3], ekey[i]);
+			}
 
 			for (unsigned i = 0; i < RegisterCountFlt; ++i)
-				rx_store_vec_f128((double*)(scratchpad + spAddr0 + 16 * i), nreg.f[i]);
+				nreg.f[i] = rx_cast_vec_i2f(freg[i]);
+
+			uint8_t* fStoreAddr = scratchpad + spAddr0;
+
+			for (unsigned i = 0; i < RegisterCountFlt; ++i)
+				rx_store_vec_f128((double*)(fStoreAddr + 16 * i), nreg.f[i]);
 
 			spAddr0 = 0;
 			spAddr1 = 0;
