@@ -8,10 +8,22 @@
 	mov qword ptr [rcx+48], r14
 	mov qword ptr [rcx+56], r15
 	mov rcx, qword ptr [rsp+8]
-	xorpd xmm0, xmm4
-	xorpd xmm1, xmm5
-	xorpd xmm2, xmm6
-	xorpd xmm3, xmm7
+	aesenc xmm0, xmm4
+	aesdec xmm1, xmm4
+	aesenc xmm2, xmm4
+	aesdec xmm3, xmm4
+	aesenc xmm0, xmm5
+	aesdec xmm1, xmm5
+	aesenc xmm2, xmm5
+	aesdec xmm3, xmm5
+	aesenc xmm0, xmm6
+	aesdec xmm1, xmm6
+	aesenc xmm2, xmm6
+	aesdec xmm3, xmm6
+	aesenc xmm0, xmm7
+	aesdec xmm1, xmm7
+	aesenc xmm2, xmm7
+	aesdec xmm3, xmm7
 	movapd xmmword ptr [rcx+0], xmm0
 	movapd xmmword ptr [rcx+16], xmm1
 	movapd xmmword ptr [rcx+32], xmm2

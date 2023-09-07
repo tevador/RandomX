@@ -690,23 +690,23 @@ namespace randomx {
 		clearCache(state);
 	}
 
-	void JitCompilerRV64::generateSuperscalarHash(SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t>& reciprocalCache) {
+	void JitCompilerRV64::generateSuperscalarHash(SuperscalarProgramList &programs, std::vector<uint64_t>& reciprocalCache) {
 		if (vectorCode) {
-			entryDataInitVector = generateDatasetInitVectorRV64(vectorCode, programs, RANDOMX_CACHE_ACCESSES, reciprocalCache);
+			entryDataInitVector = generateDatasetInitVectorRV64(vectorCode, programs, reciprocalCache);
 			// No return here because we also need the scalar dataset init function for the light mode
 		}
 
 		state.codePos = SuperScalarHashOffset;
 		state.rcpCount = 0;
 		state.emit(codeSshInit, sizeSshInit);
-		for (unsigned j = 0; j < RANDOMX_CACHE_ACCESSES; ++j) {
+		for (unsigned j = 0; j < programs.size(); ++j) {
 			SuperscalarProgram& prog = programs[j];
 			for (unsigned i = 0; i < prog.getSize(); ++i) {
 				Instruction instr = prog(i);
 				generateSuperscalarCode(state, instr, reciprocalCache);
 			}
 			state.emit(codeSshLoad, sizeSshLoad);
-			if (j < RANDOMX_CACHE_ACCESSES - 1) {
+			if (j < programs.size() - 1) {
 				int32_t fixPos = state.codePos;
 				state.emit(codeSshPrefetch, sizeSshPrefetch);
 				//and x7, x{addrReg}, x7

@@ -259,7 +259,10 @@ namespace randomx {
 		}
 
 		static void exe_CFROUND(RANDOMX_EXE_ARGS) {
-			rx_set_rounding_mode(rotr(*ibc.isrc, ibc.imm) % 4);
+			uint64_t isrc = rotr(*ibc.isrc, ibc.imm);
+			if ((isrc & 60) == 0) {
+				rx_set_rounding_mode(isrc % 4);
+			}
 		}
 
 		static void exe_ISTORE(RANDOMX_EXE_ARGS) {

@@ -31,17 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "intrin_portable.h"
 
-extern const uint32_t lutEnc0[256];
-extern const uint32_t lutEnc1[256];
-extern const uint32_t lutEnc2[256];
-extern const uint32_t lutEnc3[256];
-extern const uint32_t lutDec0[256];
-extern const uint32_t lutDec1[256];
-extern const uint32_t lutDec2[256];
-extern const uint32_t lutDec3[256];
+extern "C" const uint32_t randomx_aes_lut_enc[4][256];
+extern "C" const uint32_t randomx_aes_lut_dec[4][256];
 
-extern const uint8_t lutEncIndex[4][32];
-extern const uint8_t lutDecIndex[4][32];
+extern "C" const uint8_t randomx_aes_lut_enc_index[4][32];
+extern "C" const uint8_t randomx_aes_lut_dec_index[4][32];
 
 rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key);
 

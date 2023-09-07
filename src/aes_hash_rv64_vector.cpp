@@ -70,6 +70,19 @@ static constexpr uint32_t AES_HASH_1R_XKEY11[8] = { 0x61b263d1, 0x51f4e03c, 0xee
 static constexpr uint32_t AES_HASH_STRIDE_X2[8] = { 0, 4, 8, 12, 32, 36, 40, 44 };
 static constexpr uint32_t AES_HASH_STRIDE_X4[8] = { 12, 8, 4, 0, 76, 72, 68, 64 };
 
+#define lutEnc0 randomx_aes_lut_enc[0]
+#define lutEnc1 randomx_aes_lut_enc[1]
+#define lutEnc2 randomx_aes_lut_enc[2]
+#define lutEnc3 randomx_aes_lut_enc[3]
+
+#define lutDec0 randomx_aes_lut_dec[0]
+#define lutDec1 randomx_aes_lut_dec[1]
+#define lutDec2 randomx_aes_lut_dec[2]
+#define lutDec3 randomx_aes_lut_dec[3]
+
+#define lutEncIndex randomx_aes_lut_enc_index
+#define lutDecIndex randomx_aes_lut_dec_index
+
 void hashAes1Rx4_RVV(const void *input, size_t inputSize, void *hash) {
 	const uint8_t* inptr = (const uint8_t*)input;
 	const uint8_t* inputEnd = inptr + inputSize;

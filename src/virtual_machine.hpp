@@ -57,6 +57,9 @@ public:
 	const uint8_t* getMemory() const {
 		return mem.memory;
 	}
+	randomx_flags getFlags() const {
+		return vmFlags;
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;
@@ -69,6 +72,7 @@ protected:
 		randomx_dataset* datasetPtr;
 	};
 	uint64_t datasetOffset;
+	randomx_flags vmFlags;
 public:
 	std::string cacheKey;
 	alignas(16) uint64_t tempHash[8]; //8 64-bit values used to store intermediate data
@@ -79,6 +83,7 @@ namespace randomx {
 	template<class Allocator, bool softAes>
 	class VmBase : public randomx_vm {
 	public:
+		explicit VmBase(randomx_flags flags) { vmFlags = flags; }
 		~VmBase() override;
 		void allocate() override;
 		void initScratchpad(void* seed) override;

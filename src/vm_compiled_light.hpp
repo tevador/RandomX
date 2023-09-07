@@ -45,6 +45,7 @@ namespace randomx {
 		void operator delete(void* ptr) {
 			AlignedAllocator<CacheLineSize>::freeMemory(ptr, sizeof(CompiledLightVm));
 		}
+		explicit CompiledLightVm(randomx_flags flags) : CompiledVm<Allocator, softAes, secureJit>(flags) {}
 		void setCache(randomx_cache* cache) override;
 		void setDataset(randomx_dataset* dataset) override { }
 		void run(void* seed) override;

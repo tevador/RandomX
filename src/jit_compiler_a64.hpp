@@ -52,8 +52,7 @@ namespace randomx {
 		void generateProgram(Program&, ProgramConfiguration&);
 		void generateProgramLight(Program&, ProgramConfiguration&, uint32_t);
 
-		template<size_t N>
-		void generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &);
+		void generateSuperscalarHash(SuperscalarProgramList &programs, std::vector<uint64_t> &);
 
 		void generateDatasetInitCode() {}
 
@@ -66,12 +65,15 @@ namespace randomx {
 		void enableExecution();
 		void enableAll();
 
+		void setFlags(randomx_flags f) { flags = f; }
 	private:
 		static InstructionGeneratorA64 engine[256];
 		uint32_t reg_changed_offset[8];
 		uint8_t* code;
 		uint32_t literalPos;
 		uint32_t num32bitLiterals;
+
+		randomx_flags flags;
 
 		static void emit32(uint32_t val, uint8_t* code, uint32_t& codePos)
 		{

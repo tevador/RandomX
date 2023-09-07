@@ -47,12 +47,14 @@ constexpr int MaskL3Shift = 32 - maskLog2(RANDOMX_SCRATCHPAD_L3, 0);
 #define ADDR(x) ((uint8_t*) &(x))
 #define DIST(x, y) (ADDR(y) - ADDR(x))
 
-void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgram* programs, size_t num_programs, std::vector<uint64_t>& reciprocalCache)
+void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgramList &programs, std::vector<uint64_t>& reciprocalCache)
 {
 	uint8_t* p = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_generated_instructions);
 
 	uint8_t* literals = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_imul_rcp_literals);
 	uint8_t* cur_literal = literals;
+
+	const size_t num_programs = programs.size();
 
 	for (size_t i = 0; i < num_programs; ++i) {
 		// Step 4

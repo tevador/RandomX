@@ -169,6 +169,21 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 	codePos = ((uint8_t*)randomx_program_aarch64_update_spMix1) - ((uint8_t*)randomx_program_aarch64);
 	emit32(ARMV8A::EOR | 10 | (IntRegMap[config.readReg0] << 5) | (IntRegMap[config.readReg1] << 16), code, codePos);
 
+	// Enable RandomX v2 AES tweak
+	if (flags & RANDOMX_FLAG_V2) {
+		codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
+
+		if (flags & RANDOMX_FLAG_HARD_AES) {
+			// Disable the jump to RandomX v1 FE mix code by writing "movi v28.4s, 0" instruction
+			emit32(0x4F00041C, code, codePos);
+		}
+		else {
+			// Jump to RandomX v2 FE mix soft AES code by writing "b randomx_program_aarch64_v2_FE_mix_soft_aes" instruction
+			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+			emit32(ARMV8A::B | (offset / 4), code, codePos);
+		}
+	}
+
 #ifdef __GNUC__
 	__builtin___clear_cache(reinterpret_cast<char*>(code + MainLoopBegin), reinterpret_cast<char*>(code + codePos));
 #endif
@@ -216,6 +231,21 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 	codePos = ((uint8_t*)randomx_program_aarch64_update_spMix1) - ((uint8_t*)randomx_program_aarch64);
 	emit32(ARMV8A::EOR | 10 | (IntRegMap[config.readReg0] << 5) | (IntRegMap[config.readReg1] << 16), code, codePos);
 
+	// Enable RandomX v2 AES tweak
+	if (flags & RANDOMX_FLAG_V2) {
+		codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
+
+		if (flags & RANDOMX_FLAG_HARD_AES) {
+			// Disable the jump to RandomX v1 FE mix code by writing "movi v28.4s, 0" instruction
+			emit32(0x4F00041C, code, codePos);
+		}
+		else {
+			// Jump to RandomX v2 FE mix soft AES code by writing "b randomx_program_aarch64_v2_FE_mix_soft_aes" instruction
+			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+			emit32(ARMV8A::B | (offset / 4), code, codePos);
+		}
+	}
+
 	// Apply dataset offset
 	codePos = ((uint8_t*)randomx_program_aarch64_light_dataset_offset) - ((uint8_t*)randomx_program_aarch64);
 
@@ -231,8 +261,7 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 #endif
 }
 
-template<size_t N>
-void JitCompilerA64::generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &reciprocalCache)
+void JitCompilerA64::generateSuperscalarHash(SuperscalarProgramList &programs, std::vector<uint64_t> &reciprocalCache)
 {
 	uint32_t codePos = CodeSize;
 
@@ -244,7 +273,7 @@ void JitCompilerA64::generateSuperscalarHash(SuperscalarProgram(&programs)[N], s
 	num32bitLiterals = 64;
 	constexpr uint32_t tmp_reg = 12;
 
-	for (size_t i = 0; i < N; ++i)
+	for (size_t i = 0; i < programs.size(); ++i)
 	{
 		// and x11, x10, CacheSize / CacheLineSize - 1
 		emit32(0x92400000 | 11 | (10 << 5) | ((Log2(CacheSize / CacheLineSize) - 1) << 10), code, codePos);
@@ -348,8 +377,6 @@ void JitCompilerA64::generateSuperscalarHash(SuperscalarProgram(&programs)[N], s
 	__builtin___clear_cache(reinterpret_cast<char*>(code + CodeSize), reinterpret_cast<char*>(code + codePos));
 #endif
 }
-
-template void JitCompilerA64::generateSuperscalarHash(SuperscalarProgram(&programs)[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t> &reciprocalCache);
 
 DatasetInitFunc* JitCompilerA64::getDatasetInitFunc()
 {
@@ -979,6 +1006,14 @@ void JitCompilerA64::h_CFROUND(Instruction& instr, uint32_t& codePos)
 
 	// ror tmp_reg, src, imm
 	emit32(ARMV8A::ROR_IMM | tmp_reg | (src << 5) | ((instr.getImm32() & 63) << 10) | (src << 16), code, k);
+
+	if (flags & RANDOMX_FLAG_V2) {
+		// tst tmp_reg, 60
+		emit32(0xF27E0E9F, code, k);
+
+		// bne next
+		emit32(0x54000081, code, k);
+	}
 
 	// bfi fpcr_tmp_reg, tmp_reg, 40, 2
 	emit32(0xB3580400 | fpcr_tmp_reg | (tmp_reg << 5), code, k);

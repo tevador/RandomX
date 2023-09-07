@@ -35,10 +35,11 @@ namespace randomx {
 	static_assert(sizeof(RegisterFile) == 256, "Invalid alignment of struct randomx::RegisterFile");
 
 	template<class Allocator, bool softAes, bool secureJit>
-	CompiledVm<Allocator, softAes, secureJit>::CompiledVm() {
+	CompiledVm<Allocator, softAes, secureJit>::CompiledVm(randomx_flags flags) : VmBase<Allocator, softAes>(flags) {
 		if (!secureJit) {
 			compiler.enableAll(); //make JIT buffer both writable and executable
 		}
+		compiler.setFlags(flags);
 	}
 
 	template<class Allocator, bool softAes, bool secureJit>

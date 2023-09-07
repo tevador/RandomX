@@ -39,7 +39,11 @@ PUBLIC randomx_program_read_dataset_sshash_init
 PUBLIC randomx_program_read_dataset_sshash_fin
 PUBLIC randomx_dataset_init
 PUBLIC randomx_program_loop_store
+PUBLIC randomx_program_loop_store_hard_aes
+PUBLIC randomx_program_loop_store_soft_aes
 PUBLIC randomx_program_loop_end
+PUBLIC randomx_program_soft_aes
+PUBLIC randomx_program_soft_aes_end
 PUBLIC randomx_program_epilogue
 PUBLIC randomx_sshash_load
 PUBLIC randomx_sshash_prefetch
@@ -55,6 +59,7 @@ RANDOMX_DATASET_BASE_MASK   EQU (RANDOMX_DATASET_BASE_SIZE-64)
 RANDOMX_CACHE_MASK          EQU (RANDOMX_ARGON_MEMORY*16-1)
 RANDOMX_ALIGN               EQU 4096
 SUPERSCALAR_OFFSET          EQU ((((RANDOMX_ALIGN + 32 * RANDOMX_PROGRAM_SIZE) - 1) / (RANDOMX_ALIGN) + 1) * (RANDOMX_ALIGN))
+RIP_REL                     EQU 0
 
 randomx_prefetch_scratchpad PROC
 	mov rdx, rax
@@ -114,9 +119,33 @@ randomx_program_loop_store PROC
 	include asm/program_loop_store.inc
 randomx_program_loop_store ENDP
 
+randomx_program_loop_store_hard_aes PROC
+	include asm/program_loop_store_hard_aes.inc
+randomx_program_loop_store_hard_aes ENDP
+
+randomx_program_loop_store_soft_aes PROC
+	include asm/program_loop_store_soft_aes.inc
+randomx_program_loop_store_soft_aes ENDP
+
 randomx_program_loop_end PROC
-	nop
+	sub ebx, 1
+	jnz rx_program_end
+	jmp rx_program_end
 randomx_program_loop_end ENDP
+
+randomx_program_soft_aes PROC
+soft_aes_enc::
+	include asm/program_soft_aes_enc.inc
+soft_aes_dec::
+	include asm/program_soft_aes_dec.inc
+randomx_program_soft_aes ENDP
+
+randomx_program_soft_aes_end PROC
+aes_lut_enc::
+	db 0, 0, 0, 0, 0, 0, 0, 0
+aes_lut_dec::
+	db 0, 0, 0, 0, 0, 0, 0, 0
+randomx_program_soft_aes_end ENDP
 
 ALIGN 64
 randomx_dataset_init PROC
@@ -212,6 +241,7 @@ rx_program_end::
 	nop
 randomx_program_end ENDP
 
+ALIGN 64
 randomx_reciprocal_fast PROC
 	include asm/randomx_reciprocal.inc
 randomx_reciprocal_fast ENDP
