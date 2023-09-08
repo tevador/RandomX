@@ -72,7 +72,7 @@
     <ClCompile Include="..\src\vm_interpreted.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\virtual_memory.cpp">
+    <ClCompile Include="..\src\virtual_memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\blake2_generator.cpp">
@@ -164,7 +164,7 @@
     <ClInclude Include="..\src\virtual_machine.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\virtual_memory.hpp">
+    <ClInclude Include="..\src\virtual_memory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\superscalar.hpp">
