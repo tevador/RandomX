@@ -260,6 +260,17 @@ RANDOMX_EXPORT void randomx_calculate_hash_first(randomx_vm* machine, const void
 RANDOMX_EXPORT void randomx_calculate_hash_next(randomx_vm* machine, const void* nextInput, size_t nextInputSize, void* output);
 RANDOMX_EXPORT void randomx_calculate_hash_last(randomx_vm* machine, void* output);
 
+/**
+ * Calculate a RandomX commitment from a RandomX hash and its input.
+ *
+ * @param input is a pointer to memory that was hashed. Must not be NULL.
+ * @param inputSize is the number of bytes in the input.
+ * @param hash_in is the output from randomx_calculate_hash* (RANDOMX_HASH_SIZE bytes).
+ * @param com_out is a pointer to memory where the commitment will be stored. Must not
+ *        be NULL and at least RANDOMX_HASH_SIZE bytes must be available for writing.
+*/
+RANDOMX_EXPORT void randomx_calculate_commitment(const void* input, size_t inputSize, const void* hash_in, void* com_out);
+
 #if defined(__cplusplus)
 }
 #endif

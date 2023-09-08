@@ -417,4 +417,15 @@ extern "C" {
 		machine->run(machine->tempHash);
 		machine->getFinalResult(output, RANDOMX_HASH_SIZE);
 	}
+
+	void randomx_calculate_commitment(const void* input, size_t inputSize, const void* hash_in, void* com_out) {
+		assert(inputSize == 0 || input != nullptr);
+		assert(hash_in != nullptr);
+		assert(com_out != nullptr);
+		blake2b_state state;
+		blake2b_init(&state, RANDOMX_HASH_SIZE);
+		blake2b_update(&state, input, inputSize);
+		blake2b_update(&state, hash_in, RANDOMX_HASH_SIZE);
+		blake2b_final(&state, com_out, RANDOMX_HASH_SIZE);
+	}
 }

@@ -96,6 +96,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
 	std::cout << "  --auto        select the best options for the current CPU" << std::endl;
 	std::cout << "  --noBatch     calculate hashes one by one (default: batch)" << std::endl;
+	std::cout << "  --commit      calculate commitments instead of hashes (default: hashes)" << std::endl;
 }
 
 struct MemoryException : public std::exception {
@@ -113,7 +114,7 @@ struct DatasetAllocException : public MemoryException {
 
 using MineFunc = void(randomx_vm * vm, std::atomic<uint32_t> & atomicNonce, AtomicHash & result, uint32_t noncesCount, int thread, int cpuid);
 
-template<bool batch>
+template<bool batch, bool commit>
 void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result, uint32_t noncesCount, int thread, int cpuid = -1) {
 	if (cpuid >= 0) {
 		int rc = set_thread_affinity(cpuid);
@@ -138,6 +139,9 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 		}
 		store32(noncePtr, nonce);
 		(batch ? randomx_calculate_hash_next : randomx_calculate_hash)(vm, blockTemplate, sizeof(blockTemplate), &hash);
+		if (commit) {
+			randomx_calculate_commitment(blockTemplate, sizeof(blockTemplate), &hash, &hash);
+		}
 		result.xorWith(hash);
 		if (!batch) {
 			nonce = atomicNonce.fetch_add(1);
@@ -146,7 +150,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 }
 
 int main(int argc, char** argv) {
-	bool softAes, miningMode, verificationMode, help, largePages, jit, secure;
+	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, commit;
 	bool ssse3, avx2, autoFlags, noBatch;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
@@ -172,10 +176,11 @@ int main(int argc, char** argv) {
 	readOption("--avx2", argc, argv, avx2);
 	readOption("--auto", argc, argv, autoFlags);
 	readOption("--noBatch", argc, argv, noBatch);
+	readOption("--commit", argc, argv, commit);
 
 	store32(&seed, seedValue);
 
-	std::cout << "RandomX benchmark v1.1.11" << std::endl;
+	std::cout << "RandomX benchmark v1.1.12" << std::endl;
 
 	if (help) {
 		printUsage(argv[0]);
@@ -280,11 +285,24 @@ int main(int argc, char** argv) {
 	MineFunc* func;
 
 	if (noBatch) {
-		func = &mine<false>;
+		if (commit) {
+			std::cout << " - hash commitments" << std::endl;
+			func = &mine<false, true>;
+		}
+		else {
+			func = &mine<false, false>;
+		}
 	}
 	else {
-		func = &mine<true>;
-		std::cout << " - batch mode" << std::endl;
+		if (commit) {
+			//TODO: support batch mode with commitments
+			std::cout << " - hash commitments" << std::endl;
+			func = &mine<false, true>;
+		}
+		else {
+			std::cout << " - batch mode" << std::endl;
+			func = &mine<true, false>;
+		}
 	}
 
 	std::cout << "Initializing";
@@ -376,7 +394,7 @@ int main(int argc, char** argv) {
 			randomx_release_cache(cache);
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
-		if (noncesCount == 1000 && seedValue == 0)
+		if (noncesCount == 1000 && seedValue == 0 && !commit)
 			std::cout << "Reference result:  10b649a3f15c7c7f88277812f2e74b337a0f20ce909af09199cccb960771cfa1" << std::endl;
 		if (!miningMode) {
 			std::cout << "Performance: " << 1000 * elapsed / noncesCount << " ms per hash" << std::endl;

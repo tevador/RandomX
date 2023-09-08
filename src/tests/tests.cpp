@@ -35,6 +35,14 @@ void calcStringHash(const char(&key)[K], const char(&input)[H], void* output) {
 }
 
 template<size_t K, size_t H>
+void calcStringCommitment(const char(&key)[K], const char(&input)[H], void* output) {
+	initCache(key);
+	assert(vm != nullptr);
+	randomx_calculate_hash(vm, input, H - 1, output);
+	randomx_calculate_commitment(input, H - 1, output, output);
+}
+
+template<size_t K, size_t H>
 void calcHexHash(const char(&key)[K], const char(&hex)[H], void* output) {
 	initCache(key);
 	assert(vm != nullptr);
@@ -1080,6 +1088,22 @@ int main() {
 		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
 		assert(equalsHex(hash, "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
 		assert(rx_get_rounding_mode() == RoundToNearest);
+	});
+
+	if (RANDOMX_HAVE_COMPILER) {
+		randomx_destroy_vm(vm);
+		vm = nullptr;
+#ifdef RANDOMX_FORCE_SECURE
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
+	}
+
+	runTest("Commitment test", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		char hash[RANDOMX_HASH_SIZE];
+		calcStringCommitment("test key 000", "This is a test", &hash);
+		assert(equalsHex(hash, "d53ccf348b75291b7be76f0a7ac8208bbced734b912f6fca60539ab6f86be919"));
 	});
 
 	randomx_destroy_vm(vm);
