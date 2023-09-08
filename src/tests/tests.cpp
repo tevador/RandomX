@@ -35,11 +35,11 @@ void calcStringHash(const char(&key)[K], const char(&input)[H], void* output) {
 }
 
 template<size_t K, size_t H>
-void calcStringHashV2(const char(&key)[K], const char(&input)[H], void* output) {
+void calcStringCommitment(const char(&key)[K], const char(&input)[H], void* output) {
 	initCache(key);
 	assert(vm != nullptr);
 	randomx_calculate_hash(vm, input, H - 1, output);
-	randomx_calculate_hash_v2(input, H - 1, output, output);
+	randomx_calculate_commitment(input, H - 1, output, output);
 }
 
 template<size_t K, size_t H>
@@ -1100,9 +1100,9 @@ int main() {
 #endif
 	}
 
-	runTest("RandomX v2 hash test", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+	runTest("Commitment test", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		char hash[RANDOMX_HASH_SIZE];
-		calcStringHashV2("test key 000", "This is a test", &hash);
+		calcStringCommitment("test key 000", "This is a test", &hash);
 		assert(equalsHex(hash, "d53ccf348b75291b7be76f0a7ac8208bbced734b912f6fca60539ab6f86be919"));
 	});
 
