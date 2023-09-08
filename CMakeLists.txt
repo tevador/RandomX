@@ -96,7 +96,7 @@ function(add_flag flag)
 endfunction()
 
 # x86-64
-if(ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64")
+if ((CMAKE_SIZEOF_VOID_P EQUAL 8) AND (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64"))
   list(APPEND randomx_sources
     src/jit_compiler_x86.cpp)
 

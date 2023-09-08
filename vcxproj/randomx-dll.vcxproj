@@ -43,7 +43,7 @@
     <ClInclude Include="..\src\superscalar.hpp" />
     <ClInclude Include="..\src\superscalar_program.hpp" />
     <ClInclude Include="..\src\virtual_machine.hpp" />
-    <ClInclude Include="..\src\virtual_memory.hpp" />
+    <ClInclude Include="..\src\virtual_memory.h" />
     <ClInclude Include="..\src\vm_compiled.hpp" />
     <ClInclude Include="..\src\vm_compiled_light.hpp" />
     <ClInclude Include="..\src\vm_interpreted.hpp" />
@@ -74,7 +74,7 @@
     <ClCompile Include="..\src\soft_aes.cpp" />
     <ClCompile Include="..\src\superscalar.cpp" />
     <ClCompile Include="..\src\virtual_machine.cpp" />
-    <ClCompile Include="..\src\virtual_memory.cpp" />
+    <ClCompile Include="..\src\virtual_memory.c" />
     <ClCompile Include="..\src\vm_compiled.cpp" />
     <ClCompile Include="..\src\vm_compiled_light.cpp" />
     <ClCompile Include="..\src\vm_interpreted.cpp" />
