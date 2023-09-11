@@ -84,6 +84,8 @@ namespace randomx {
 		void generateCode(Instruction&, int);
 		void generateSuperscalarCode(Instruction &, std::vector<uint64_t> &);
 
+		void alignCode(int align);
+
 		void emitByte(uint8_t val) {
 			code[codePos] = val;
 			codePos++;

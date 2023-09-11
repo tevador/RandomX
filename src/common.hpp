@@ -122,7 +122,7 @@ namespace randomx {
 	#define RANDOMX_HAVE_COMPILER 1
 	template<randomx_flags vmFlags>
 	class JitCompilerX86;
-	using JitCompiler = JitCompilerX86<RANDOMX_FLAG_V2>;
+	using JitCompiler = JitCompilerX86<RANDOMX_FLAG_V2 | RANDOMX_FLAG_HARD_AES>;
 #elif defined(__aarch64__)
 	#define RANDOMX_HAVE_COMPILER 1
 	class JitCompilerA64;

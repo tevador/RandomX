@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "program.hpp"
 #include "reciprocal.h"
 #include "virtual_memory.h"
+#include "soft_aes.h"
 
 namespace randomx {
 	/*
@@ -76,6 +77,51 @@ namespace randomx {
 
 	*/
 
+	/*
+	STACK LAYOUT (offsets from rsp):
+	456 -> return address
+	448 -> RegisterFile& registerFile
+	432 -> xmm15   store
+	416 -> xmm14   store
+	400 -> xmm13   store
+	384 -> xmm12   store
+	368 -> xmm11   store
+	352 -> xmm10   store
+	336 -> xmm9    store
+	320 -> xmm8    store
+	304 -> xmm7    store
+	288 -> xmm6    store
+	280 -> r15     store
+	272 -> r14     store
+	264 -> r13     store
+	256 -> r12     store
+	248 -> rdi     store
+	240 -> rsi     store
+	232 -> rbp     store
+	224 -> rbx     store
+	208 -> xmm7    spill
+	192 -> xmm6    spill
+	176 -> xmm5    spill
+	160 -> xmm4    spill
+	144 -> xmm3    spill
+	128 -> xmm2    spill
+	112 -> xmm1    spill
+	 96 -> xmm0    spill
+	 88 -> rbx     spill
+	 80 -> r15/rdi spill
+	 72 -> r14/rsi spill
+	 64 -> r13     spill
+	 56 -> r12/rbp spill
+	 48 -> r11/rdx spill
+	 40 -> r10/rcx spill
+	 32 -> r9      spill
+	 24 -> r8/rax  spill
+	 16 -> spAddr1
+	  8 -> spAddr0
+	  4 -> (empty)
+	  0 -> mxcsr
+	*/
+
 	//Calculate the required code buffer size that is sufficient for the largest possible program:
 
 	constexpr size_t MaxRandomXInstrCodeSize = 32;   //FDIV_M requires up to 32 bytes of x86 code
@@ -109,7 +155,11 @@ namespace randomx {
 	const uint8_t* codeReadDatasetLightSshFin = ADDR(randomx_program_read_dataset_sshash_fin);
 	const uint8_t* codeDatasetInit = ADDR(randomx_dataset_init);
 	const uint8_t* codeLoopStore = ADDR(randomx_program_loop_store);
+	const uint8_t* codeLoopStoreHardAes = ADDR(randomx_program_loop_store_hard_aes);
+	const uint8_t* codeLoopStoreSoftAes = ADDR(randomx_program_loop_store_soft_aes);
 	const uint8_t* codeLoopEnd = ADDR(randomx_program_loop_end);
+	const uint8_t* codeSoftAes = ADDR(randomx_program_soft_aes);
+	const uint8_t* codeSoftAesEnd = ADDR(randomx_program_soft_aes_end);
 	const uint8_t* codeEpilogue = ADDR(randomx_program_epilogue);
 	const uint8_t* codeProgramEnd = ADDR(randomx_program_end);
 	const uint8_t* codeShhLoad = ADDR(randomx_sshash_load);
@@ -122,7 +172,11 @@ namespace randomx {
 	const int32_t readDatasetSize = codeReadDatasetLightSshInit - codeReadDataset;
 	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
 	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
-	const int32_t loopStoreSize = codeLoopEnd - codeLoopStore;
+	const int32_t loopStoreSize = codeLoopStoreHardAes - codeLoopStore;
+	const int32_t loopStoreHardAesSize = codeLoopStoreSoftAes - codeLoopStoreHardAes;
+	const int32_t loopStoreSoftAesSize = codeLoopEnd - codeLoopStoreSoftAes;
+	const int32_t softAesSize = codeSoftAesEnd - codeSoftAes;
+
 	const int32_t datasetInitSize = codeEpilogue - codeDatasetInit;
 	const int32_t epilogueSize = codeShhLoad - codeEpilogue;
 	const int32_t codeSshLoadSize = codeShhPrefetch - codeShhLoad;
@@ -183,7 +237,7 @@ namespace randomx {
 	static const uint8_t REX_MAXPD[] = { 0x66, 0x41, 0x0f, 0x5f };
 	static const uint8_t REX_DIVPD[] = { 0x66, 0x41, 0x0f, 0x5e };
 	static const uint8_t SQRTPD[] = { 0x66, 0x0f, 0x51 };
-	static const uint8_t AND_OR_MOV_LDMXCSR[] = { 0x25, 0x00, 0x60, 0x00, 0x00, 0x0D, 0xC0, 0x9F, 0x00, 0x00, 0x50, 0x0F, 0xAE, 0x14, 0x24, 0x58 };
+	static const uint8_t AND_OR_MOV_LDMXCSR[] = { 0x25, 0x00, 0x60, 0x00, 0x00, 0x0d, 0xc0, 0x9f, 0x00, 0x00, 0x89, 0x04, 0x24, 0x0f, 0xae, 0x14, 0x24 };
 	static const uint8_t ROL_RAX[] = { 0x48, 0xc1, 0xc0 };
 	static const uint8_t XOR_ECX_ECX[] = { 0x33, 0xC9 };
 	static const uint8_t REX_CMP_R32I[] = { 0x41, 0x81 };
@@ -224,6 +278,17 @@ namespace randomx {
 	template<randomx_flags vmFlags>
 	size_t JitCompilerX86<vmFlags>::getCodeSize() {
 		return CodeSize;
+	}
+
+	template<randomx_flags vmFlags>
+	void JitCompilerX86<vmFlags>::alignCode(int align) {
+		int rem = codePos % align;
+		while (rem != 0) {
+			int nopSize = align - rem;
+			if (nopSize > 8) nopSize = 8;
+			emit(NOPX[nopSize - 1], nopSize);
+			rem = codePos % align;
+		}
 	}
 
 	template<randomx_flags vmFlags>
@@ -291,13 +356,7 @@ namespace randomx {
 				emitByte(0xd8 + prog.getAddressRegister());
 				emit(codeShhPrefetch, codeSshPrefetchSize);
 #ifdef RANDOMX_ALIGN
-				int align = (codePos % 16);
-				while (align != 0) {
-					int nopSize = 16 - align;
-					if (nopSize > 8) nopSize = 8;
-					emit(NOPX[nopSize - 1], nopSize);
-					align = (codePos % 16);
-				}
+				alignCode(16);
 #endif
 			}
 		}
@@ -339,13 +398,31 @@ namespace randomx {
 		emit(REX_XOR_RAX_R64);
 		emitByte(0xc0 + pcfg.readReg1);
 		emit(ADDR(randomx_prefetch_scratchpad), ADDR(randomx_prefetch_scratchpad_end) - ADDR(randomx_prefetch_scratchpad));
-		memcpy(code + codePos, codeLoopStore, loopStoreSize);
-		codePos += loopStoreSize;
+		if (vmFlags & RANDOMX_FLAG_V2) {
+			if (vmFlags & RANDOMX_FLAG_HARD_AES) {
+				memcpy(code + codePos, codeLoopStoreHardAes, loopStoreHardAesSize);
+				codePos += loopStoreHardAesSize;
+			}
+			else {
+				memcpy(code + codePos, codeLoopStoreSoftAes, loopStoreSoftAesSize);
+				codePos += loopStoreSoftAesSize;
+			}
+		}
+		else {
+			memcpy(code + codePos, codeLoopStore, loopStoreSize);
+			codePos += loopStoreSize;
+		}
 		emit(SUB_EBX);
 		emit(JNZ);
 		emit32(prologueSize - codePos - 4);
 		emitByte(JMP);
 		emit32(epilogueOffset - codePos - 4);
+		if ((vmFlags & RANDOMX_FLAG_V2) && !(vmFlags & RANDOMX_FLAG_HARD_AES)) {
+			memcpy(code + codePos, codeSoftAes, softAesSize);
+			codePos += softAesSize;
+			emit64((uint64_t)randomx_aes_lut_enc);
+			emit64((uint64_t)randomx_aes_lut_dec);
+		}
 	}
 
 	template<randomx_flags vmFlags>
@@ -827,9 +904,8 @@ namespace randomx {
 		}
 		//and eax, 24576
 		//or eax, 40896
-		//push rax
+		//mov dword ptr [rsp], eax
 		//ldmxcsr dword ptr [rsp]
-		//pop rax
 		emit(AND_OR_MOV_LDMXCSR);
 	}
 
@@ -907,4 +983,5 @@ namespace randomx {
 
 	template class JitCompilerX86<RANDOMX_FLAG_DEFAULT>;
 	template class JitCompilerX86<RANDOMX_FLAG_V2>;
+	template class JitCompilerX86<RANDOMX_FLAG_V2 | RANDOMX_FLAG_HARD_AES>;
 }
