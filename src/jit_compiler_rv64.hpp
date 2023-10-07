@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2023 tevador <tevador@gmail.com>
 
 All rights reserved.
 
@@ -28,52 +28,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include "common.hpp"
+#include <cstdint>
+#include <cstring>
+#include <vector>
+#include "jit_compiler.hpp"
 
 namespace randomx {
 
-	struct CodeBuffer {
-		uint8_t* code;
-		int32_t codePos;
-		int32_t rcpCount;
+	class Program;
+	struct ProgramConfiguration;
+	class SuperscalarProgram;
+	class Instruction;
 
-		void emit(const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
-			codePos += len;
+	class JitCompilerRV64 {
+	public:
+		JitCompilerRV64();
+		~JitCompilerRV64();
+		void generateProgram(Program&, ProgramConfiguration&);
+		void generateProgramLight(Program&, ProgramConfiguration&, uint32_t);
+		void generateSuperscalarHash(SuperscalarProgram programs[RANDOMX_CACHE_ACCESSES], std::vector<uint64_t>&);
+		void generateDatasetInitCode() {}
+		ProgramFunc* getProgramFunc() {
+			return (ProgramFunc*)entryProgram;
 		}
-
-		template<typename T>
-		void emit(T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-			codePos += sizeof(src);
+		DatasetInitFunc* getDatasetInitFunc() {
+			return (DatasetInitFunc*)entryDataInit;
 		}
-
-		void emitAt(int32_t codePos, const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
+		uint8_t* getCode() {
+			return state.code;
 		}
-
-		template<typename T>
-		void emitAt(int32_t codePos, T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-		}
-	};
-
-	struct CompilerState : public CodeBuffer {
-		int32_t instructionOffsets[RANDOMX_PROGRAM_SIZE];
-		int registerUsage[RegistersCount];
+		size_t getCodeSize();
+		void enableWriting();
+		void enableExecution();
+		void enableAll();
+	private:
+		CompilerState state;
+		void* entryDataInit;
+		void* entryProgram;
 	};
 }
-
-#if defined(RANDOMX_COMPILER_X86)
-#include "jit_compiler_x86.hpp"
-#elif defined(RANDOMX_COMPILER_A64)
-#include "jit_compiler_a64.hpp"
-#elif defined(RANDOMX_COMPILER_RV64)
-#include "jit_compiler_rv64.hpp"
-#else
-#include "jit_compiler_fallback.hpp"
-#endif
-
-#if defined(__OpenBSD__) || defined(__NetBSD__) || (defined(__APPLE__) && defined(__aarch64__))
-#define RANDOMX_FORCE_SECURE
-#endif
