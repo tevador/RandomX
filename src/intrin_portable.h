@@ -349,7 +349,7 @@ FORCE_INLINE rx_vec_i128 rx_load_vec_i128(rx_vec_i128 const *p) {
 #if defined(NATIVE_LITTLE_ENDIAN)
 	return *p;
 #else
-	uint32_t* ptr = (uint32_t*)p;
+	const uint32_t* ptr = (const uint32_t*)p;
 	vec_u c;
 	c.u32[0] = load32(ptr + 0);
 	c.u32[1] = load32(ptr + 1);
@@ -375,8 +375,8 @@ FORCE_INLINE void rx_store_vec_i128(rx_vec_i128 *p, rx_vec_i128 b) {
 
 FORCE_INLINE rx_vec_f128 rx_cvt_packed_int_vec_f128(const void* addr) {
 	vec_u x;
-	x.d64[0] = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 0));
-	x.d64[1] = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 4));
+	x.d64[0] = (double)unsigned32ToSigned2sCompl(load32((const uint8_t*)addr + 0));
+	x.d64[1] = (double)unsigned32ToSigned2sCompl(load32((const uint8_t*)addr + 4));
 	return (rx_vec_f128)x.d;
 }
 
@@ -684,7 +684,7 @@ FORCE_INLINE rx_vec_i128 rx_load_vec_i128(rx_vec_i128 const* p) {
 #if defined(NATIVE_LITTLE_ENDIAN)
 	return *p;
 #else
-	uint32_t* ptr = (uint32_t*)p;
+	const uint32_t* ptr = (const uint32_t*)p;
 	rx_vec_i128 c;
 	c.u32[0] = load32(ptr + 0);
 	c.u32[1] = load32(ptr + 1);
@@ -708,8 +708,8 @@ FORCE_INLINE void rx_store_vec_i128(rx_vec_i128 *p, rx_vec_i128 b) {
 
 FORCE_INLINE rx_vec_f128 rx_cvt_packed_int_vec_f128(const void* addr) {
 	rx_vec_f128 x;
-	x.lo = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 0));
-	x.hi = (double)unsigned32ToSigned2sCompl(load32((uint8_t*)addr + 4));
+	x.lo = (double)unsigned32ToSigned2sCompl(load32((const uint8_t*)addr + 0));
+	x.hi = (double)unsigned32ToSigned2sCompl(load32((const uint8_t*)addr + 4));
 	return x;
 }
 
