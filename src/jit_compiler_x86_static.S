@@ -47,7 +47,11 @@
 .global DECL(randomx_program_read_dataset_sshash_init)
 .global DECL(randomx_program_read_dataset_sshash_fin)
 .global DECL(randomx_program_loop_store)
+.global DECL(randomx_program_loop_store_hard_aes)
+.global DECL(randomx_program_loop_store_soft_aes)
 .global DECL(randomx_program_loop_end)
+.global DECL(randomx_program_soft_aes)
+.global DECL(randomx_program_soft_aes_end)
 .global DECL(randomx_dataset_init)
 .global DECL(randomx_program_epilogue)
 .global DECL(randomx_sshash_load)
@@ -64,6 +68,7 @@
 #define RANDOMX_CACHE_MASK           (RANDOMX_ARGON_MEMORY*16-1)
 #define RANDOMX_ALIGN                4096
 #define SUPERSCALAR_OFFSET           ((((RANDOMX_ALIGN + 32 * RANDOMX_PROGRAM_SIZE) - 1) / (RANDOMX_ALIGN) + 1) * (RANDOMX_ALIGN))
+#define RIP_REL                      rip
 
 #define db .byte
 
@@ -119,8 +124,28 @@ DECL(randomx_program_read_dataset_sshash_fin):
 DECL(randomx_program_loop_store):
 	#include "asm/program_loop_store.inc"
 
+DECL(randomx_program_loop_store_hard_aes):
+	#include "asm/program_loop_store_hard_aes.inc"
+
+DECL(randomx_program_loop_store_soft_aes):
+	#include "asm/program_loop_store_soft_aes.inc"
+
 DECL(randomx_program_loop_end):
-	nop
+	sub ebx, 1
+	jnz rx_program_end
+	jmp rx_program_end
+
+DECL(randomx_program_soft_aes):
+soft_aes_enc:
+	#include "asm/program_soft_aes_enc.inc"
+soft_aes_dec:
+	#include "asm/program_soft_aes_dec.inc"
+
+DECL(randomx_program_soft_aes_end):
+aes_lut_enc:
+	db 0, 0, 0, 0, 0, 0, 0, 0
+aes_lut_dec:
+	db 0, 0, 0, 0, 0, 0, 0, 0
 
 .balign 64
 DECL(randomx_dataset_init):
@@ -223,6 +248,7 @@ DECL(randomx_program_end):
 rx_program_end:
 	nop
 
+.balign 64
 DECL(randomx_reciprocal_fast):
 #if !defined(WINABI)
 	mov rcx, rdi

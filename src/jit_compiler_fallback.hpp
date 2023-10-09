@@ -50,8 +50,8 @@ namespace randomx {
 		void generateProgramLight(Program&, ProgramConfiguration&, uint32_t) {
 
 		}
-		template<size_t N>
-		void generateSuperscalarHash(SuperscalarProgram(&programs)[N], std::vector<uint64_t> &) {
+
+		void generateSuperscalarHash(SuperscalarProgramList& programs, std::vector<uint64_t> &) {
 
 		}
 		void generateDatasetInitCode() {

@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdint>
 #include <iostream>
 #include <climits>
+#include <array>
 #include "blake2/endian.h"
 #include "configuration.h"
 #include "randomx.h"
@@ -114,10 +115,14 @@ namespace randomx {
 #endif
 #endif
 
+	class SuperscalarProgram;
+	using SuperscalarProgramList = std::array<SuperscalarProgram, RANDOMX_CACHE_ACCESSES>;
+
 #if defined(_M_X64) || defined(__x86_64__)
 	#define RANDOMX_HAVE_COMPILER 1
+	template<randomx_flags vmFlags>
 	class JitCompilerX86;
-	using JitCompiler = JitCompilerX86;
+	using JitCompiler = JitCompilerX86<RANDOMX_FLAG_V2 | RANDOMX_FLAG_HARD_AES>;
 #elif defined(__aarch64__)
 	#define RANDOMX_HAVE_COMPILER 1
 	class JitCompilerA64;

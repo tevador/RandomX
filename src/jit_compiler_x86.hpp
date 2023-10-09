@@ -38,19 +38,21 @@ namespace randomx {
 	class Program;
 	struct ProgramConfiguration;
 	class SuperscalarProgram;
+	template<randomx_flags vmFlags>
 	class JitCompilerX86;
 	class Instruction;
 
-	typedef void(JitCompilerX86::*InstructionGeneratorX86)(Instruction&, int);
+	template<randomx_flags vmFlags>
+	using InstructionGeneratorX86 = void(JitCompilerX86<vmFlags>::*)(Instruction&, int);
 
+	template<randomx_flags vmFlags>
 	class JitCompilerX86 {
 	public:
 		JitCompilerX86();
 		~JitCompilerX86();
 		void generateProgram(Program&, ProgramConfiguration&);
 		void generateProgramLight(Program&, ProgramConfiguration&, uint32_t);
-		template<size_t N>
-		void generateSuperscalarHash(SuperscalarProgram (&programs)[N], std::vector<uint64_t> &);
+		void generateSuperscalarHash(SuperscalarProgramList &programs, std::vector<uint64_t> &);
 		void generateDatasetInitCode();
 		ProgramFunc* getProgramFunc() {
 			return (ProgramFunc*)code;
@@ -66,7 +68,7 @@ namespace randomx {
 		void enableExecution();
 		void enableAll();
 	private:
-		static InstructionGeneratorX86 engine[256];
+		static InstructionGeneratorX86<vmFlags> engine[256];
 		std::vector<int32_t> instructionOffsets;
 		int registerUsage[RegistersCount];
 		uint8_t* code;
@@ -81,6 +83,8 @@ namespace randomx {
 
 		void generateCode(Instruction&, int);
 		void generateSuperscalarCode(Instruction &, std::vector<uint64_t> &);
+
+		void alignCode(int align);
 
 		void emitByte(uint8_t val) {
 			code[codePos] = val;

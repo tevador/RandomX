@@ -31,6 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "intrin_portable.h"
 
+extern "C" const uint32_t randomx_aes_lut_enc[4][256];
+extern "C" const uint32_t randomx_aes_lut_dec[4][256];
+
 rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key);
 
 rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key);
