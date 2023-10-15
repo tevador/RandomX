@@ -173,6 +173,42 @@ if(ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv
   endif()
 endif()
 
+# RISC-V
+if(ARCH_ID STREQUAL "riscv64")
+  list(APPEND randomx_sources
+    src/jit_compiler_rv64_static.S
+    src/jit_compiler_rv64.cpp)
+  # cheat because cmake and ccache hate each other
+  set_property(SOURCE src/jit_compiler_rv64_static.S PROPERTY LANGUAGE C)
+  set_property(SOURCE src/jit_compiler_rv64_static.S PROPERTY XCODE_EXPLICIT_FILE_TYPE sourcecode.asm)
+
+  # default build uses the RV64GC baseline
+  set(RVARCH "rv64gc")
+
+  # for native builds, enable Zba and Zbb if supported by the CPU
+  if(ARCH STREQUAL "native")
+    enable_language(ASM)
+    try_run(RANDOMX_ZBA_RUN_FAIL
+        RANDOMX_ZBA_COMPILE_OK
+        ${CMAKE_CURRENT_BINARY_DIR}/
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/riscv64_zba.s
+        COMPILE_DEFINITIONS "-march=rv64gc_zba")
+    if (RANDOMX_ZBA_COMPILE_OK AND NOT RANDOMX_ZBA_RUN_FAIL)
+      set(RVARCH "${RVARCH}_zba")
+    endif()
+    try_run(RANDOMX_ZBB_RUN_FAIL
+        RANDOMX_ZBB_COMPILE_OK
+        ${CMAKE_CURRENT_BINARY_DIR}/
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/riscv64_zbb.s
+        COMPILE_DEFINITIONS "-march=rv64gc_zbb")
+    if (RANDOMX_ZBB_COMPILE_OK AND NOT RANDOMX_ZBB_RUN_FAIL)
+      set(RVARCH "${RVARCH}_zbb")
+    endif()
+  endif()
+
+  add_flag("-march=${RVARCH}")
+endif()
+
 set(RANDOMX_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE STRING "RandomX Include path")
 
 add_library(randomx ${randomx_sources})
