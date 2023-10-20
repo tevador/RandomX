@@ -745,7 +745,7 @@ softaes_enc:
 #endif
 
     /* byte 0 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
     addi x12, x13, -2048
 #ifdef __riscv_zba
@@ -757,7 +757,7 @@ softaes_enc:
     lwu x14, -2048(x14)
 
     /* byte 1 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -769,7 +769,7 @@ softaes_enc:
     xor x8, x8, x14
 
     /* byte 2 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -781,7 +781,7 @@ softaes_enc:
     xor x11, x11, x15
 
     /* byte 3 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x13
@@ -793,7 +793,7 @@ softaes_enc:
     xor x10, x10, x14
 
     /* byte 4 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -805,7 +805,7 @@ softaes_enc:
     xor x9, x9, x15
 
     /* byte 5 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -817,7 +817,7 @@ softaes_enc:
     xor x9, x9, x14
 
     /* byte 6 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -829,7 +829,7 @@ softaes_enc:
     xor x8, x8, x15
 
     /* byte 7 */
-    zext.b x15, x30
+    andi x15, x30, 255
 #ifdef __riscv_zba
     sh2add x15, x15, x13
 #else
@@ -840,7 +840,7 @@ softaes_enc:
     xor x11, x11, x14
 
     /* byte 8 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -852,7 +852,7 @@ softaes_enc:
     xor x10, x10, x15
 
     /* byte 9 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -864,7 +864,7 @@ softaes_enc:
     xor x10, x10, x14
 
     /* byte 10 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -876,7 +876,7 @@ softaes_enc:
     xor x9, x9, x15
 
     /* byte 11 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x13
@@ -888,7 +888,7 @@ softaes_enc:
     xor x8, x8, x14
 
     /* byte 12 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -900,7 +900,7 @@ softaes_enc:
     xor x11, x11, x15
 
     /* byte 13 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -912,7 +912,7 @@ softaes_enc:
     xor x11, x11, x14
 
     /* byte 14 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -924,7 +924,7 @@ softaes_enc:
     xor x10, x10, x15
 
     /* byte 15 */
-    zext.b x15, x31
+    andi x15, x31, 255
 #ifdef __riscv_zba
     sh2add x15, x15, x13
 #else
@@ -960,7 +960,7 @@ softaes_dec:
 #endif
 
     /* byte 0 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
     addi x12, x13, -2048
 #ifdef __riscv_zba
@@ -972,7 +972,7 @@ softaes_dec:
     lwu x14, -2048(x14)
 
     /* byte 1 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -984,7 +984,7 @@ softaes_dec:
     xor x8, x8, x14
 
     /* byte 2 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -996,7 +996,7 @@ softaes_dec:
     xor x9, x9, x15
 
     /* byte 3 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x13
@@ -1008,7 +1008,7 @@ softaes_dec:
     xor x10, x10, x14
 
     /* byte 4 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -1020,7 +1020,7 @@ softaes_dec:
     xor x11, x11, x15
 
     /* byte 5 */
-    zext.b x15, x30
+    andi x15, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -1032,7 +1032,7 @@ softaes_dec:
     xor x9, x9, x14
 
     /* byte 6 */
-    zext.b x14, x30
+    andi x14, x30, 255
     srli x30, x30, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -1044,7 +1044,7 @@ softaes_dec:
     xor x10, x10, x15
 
     /* byte 7 */
-    zext.b x15, x30
+    andi x15, x30, 255
 #ifdef __riscv_zba
     sh2add x15, x15, x13
 #else
@@ -1055,7 +1055,7 @@ softaes_dec:
     xor x11, x11, x14
 
     /* byte 8 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -1067,7 +1067,7 @@ softaes_dec:
     xor x8, x8, x15
 
     /* byte 9 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -1079,7 +1079,7 @@ softaes_dec:
     xor x10, x10, x14
 
     /* byte 10 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -1091,7 +1091,7 @@ softaes_dec:
     xor x11, x11, x15
 
     /* byte 11 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x13
@@ -1103,7 +1103,7 @@ softaes_dec:
     xor x8, x8, x14
 
     /* byte 12 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x12
@@ -1115,7 +1115,7 @@ softaes_dec:
     xor x9, x9, x15
 
     /* byte 13 */
-    zext.b x15, x31
+    andi x15, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x15, x15, x12
@@ -1127,7 +1127,7 @@ softaes_dec:
     xor x11, x11, x14
 
     /* byte 14 */
-    zext.b x14, x31
+    andi x14, x31, 255
     srli x31, x31, 8
 #ifdef __riscv_zba
     sh2add x14, x14, x13
@@ -1139,7 +1139,7 @@ softaes_dec:
     xor x8, x8, x15
 
     /* byte 15 */
-    zext.b x15, x31
+    andi x15, x31, 255
 #ifdef __riscv_zba
     sh2add x15, x15, x13
 #else
