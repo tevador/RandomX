@@ -37,7 +37,7 @@ RandomX is written in C++11 and builds a static library with a C API provided by
 
 ### Linux
 
-Build dependencies: `cmake` (minimum 2.8.7) and `gcc` (minimum version 4.8, but version 7+ is recommended).
+Build dependencies: `cmake` (minimum 3.5) and `gcc` (minimum version 4.8, but version 7+ is recommended).
 
 To build optimized binaries for your machine, run:
 ```
@@ -82,7 +82,7 @@ Intel Core i7-8550U|16G DDR4-2400|Windows 10|hw|200 (4T)|1700  (4T)|350 (8T)|
 Intel Core i3-3220|4G DDR3-1333|Ubuntu 16.04|soft|42 (4T)|510 (4T)|150 (4T)|
 Raspberry Pi 3|1G LPDDR2|Ubuntu 16.04|soft|3.5 (4T)|-|20 (4T)|
 
-Note that RandomX currently includes a JIT compiler for x86-64 and ARM64. Other architectures have to use the portable interpreter, which is much slower.
+Note that RandomX currently includes a JIT compiler for x86-64, ARM64 and RISCV64. Other architectures have to use the portable interpreter, which is much slower.
 
 ### GPU performance
 
@@ -129,6 +129,7 @@ The reference implementation has been validated on the following platforms:
 * ARMv7+VFPv3 (32-bit, little-endian)
 * ARMv8 (64-bit, little-endian)
 * PPC64 (64-bit, big-endian)
+* RISCV64 (64-bit, little-endian)
 
 ### Can FPGAs mine RandomX?
 
