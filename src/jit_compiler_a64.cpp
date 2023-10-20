@@ -709,7 +709,8 @@ void JitCompilerA64::h_IMUL_RCP(Instruction& instr, uint32_t& codePos)
 	const uint32_t literal_id = (ImulRcpLiteralsEnd - literalPos) / sizeof(uint64_t);
 
 	literalPos -= sizeof(uint64_t);
-	*(uint64_t*)(code + literalPos) = (q << shift) + ((r << shift) / divisor);
+	const uint64_t randomx_reciprocal = (q << shift) + ((r << shift) / divisor);
+	memcpy(code + literalPos, &randomx_reciprocal, sizeof(randomx_reciprocal));
 
 	if (literal_id < 12)
 	{
