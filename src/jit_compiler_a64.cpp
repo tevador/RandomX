@@ -686,7 +686,7 @@ void JitCompilerA64::h_ISMULH_M(Instruction& instr, uint32_t& codePos)
 
 void JitCompilerA64::h_IMUL_RCP(Instruction& instr, uint32_t& codePos)
 {
-	const uint64_t divisor = instr.getImm32();
+	const uint32_t divisor = instr.getImm32();
 	if (isZeroOrPowerOf2(divisor))
 		return;
 
@@ -695,22 +695,11 @@ void JitCompilerA64::h_IMUL_RCP(Instruction& instr, uint32_t& codePos)
 	constexpr uint32_t tmp_reg = 20;
 	const uint32_t dst = IntRegMap[instr.dst];
 
-	constexpr uint64_t N = 1ULL << 63;
-	const uint64_t q = N / divisor;
-	const uint64_t r = N % divisor;
-#ifdef __GNUC__
-	const uint64_t shift = 64 - __builtin_clzll(divisor);
-#else
-	uint64_t shift = 32;
-	for (uint64_t k = 1U << 31; (k & divisor) == 0; k >>= 1)
-		--shift;
-#endif
-
 	const uint32_t literal_id = (ImulRcpLiteralsEnd - literalPos) / sizeof(uint64_t);
-
 	literalPos -= sizeof(uint64_t);
-	const uint64_t randomx_reciprocal = (q << shift) + ((r << shift) / divisor);
-	memcpy(code + literalPos, &randomx_reciprocal, sizeof(randomx_reciprocal));
+
+	const uint64_t reciprocal = randomx_reciprocal_fast(divisor);
+	memcpy(code + literalPos, &reciprocal, sizeof(reciprocal));
 
 	if (literal_id < 12)
 	{

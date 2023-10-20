@@ -445,7 +445,7 @@ namespace randomx {
 	}
 
 	void AssemblyGeneratorX86::h_IMUL_RCP(Instruction& instr, int i) {
-		uint64_t divisor = instr.getImm32();
+		const uint32_t divisor = instr.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			registerUsage[instr.dst] = i;
 			asmCode << "\tmov rax, " << randomx_reciprocal(divisor) << std::endl;
