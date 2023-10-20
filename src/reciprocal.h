@@ -40,8 +40,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-uint64_t randomx_reciprocal(uint64_t);
-uint64_t randomx_reciprocal_fast(uint64_t);
+uint64_t randomx_reciprocal(uint32_t);
+uint64_t randomx_reciprocal_fast(uint32_t);
 
 #if defined(__cplusplus)
 }

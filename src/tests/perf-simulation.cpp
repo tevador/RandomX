@@ -477,7 +477,7 @@ int analyze(randomx::Program& p) {
 		}
 
 		if (opcode < randomx::ceil_IMUL_RCP) {
-			uint64_t divisor = instr.getImm32();
+			const uint32_t divisor = instr.getImm32();
 			if (!randomx::isZeroOrPowerOf2(divisor)) {
 				instr.dst = instr.dst % randomx::RegistersCount;
 				instr.opcode |= DST_INT;

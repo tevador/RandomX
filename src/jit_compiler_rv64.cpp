@@ -776,7 +776,7 @@ namespace randomx {
 	}
 
 	static void v1_IMUL_RCP(HANDLER_ARGS) {
-		uint64_t divisor = isn.getImm32();
+		const uint32_t divisor = isn.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			state.registerUsage[isn.dst] = i;
 			if (state.rcpCount < 4) {

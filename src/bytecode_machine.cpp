@@ -243,7 +243,7 @@ namespace randomx {
 		}
 
 		if (opcode < ceil_IMUL_RCP) {
-			uint64_t divisor = instr.getImm32();
+			const uint32_t divisor = instr.getImm32();
 			if (!isZeroOrPowerOf2(divisor)) {
 				auto dst = instr.dst % RegistersCount;
 				ibc.type = InstructionType::IMUL_R;

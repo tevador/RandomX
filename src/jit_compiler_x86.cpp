@@ -618,7 +618,7 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::h_IMUL_RCP(Instruction& instr, int i) {
-		uint64_t divisor = instr.getImm32();
+		const uint32_t divisor = instr.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			registerUsage[instr.dst] = i;
 			emit(MOV_RAX_I);
