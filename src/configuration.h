@@ -28,98 +28,98 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-//Cache size in KiB. Must be a power of 2.
-#define RANDOMX_ARGON_MEMORY       262144
+// Cache size in KiB. Must be a power of 2.
+#define RANDOMX_ARGON_MEMORY 262144
 
-//Number of Argon2d iterations for Cache initialization.
-#define RANDOMX_ARGON_ITERATIONS   3
+// Number of Argon2d iterations for Cache initialization.
+#define RANDOMX_ARGON_ITERATIONS 1
 
-//Number of parallel lanes for Cache initialization.
-#define RANDOMX_ARGON_LANES        1
+// Number of parallel lanes for Cache initialization.
+#define RANDOMX_ARGON_LANES 1
 
-//Argon2d salt
-#define RANDOMX_ARGON_SALT         "RandomX\x03"
+// Argon2d salt
+#define RANDOMX_ARGON_SALT "CpuRandomX\x03"
 
-//Number of random Cache accesses per Dataset item. Minimum is 2.
-#define RANDOMX_CACHE_ACCESSES     8
+// Number of random Cache accesses per Dataset item. Minimum is 2.
+#define RANDOMX_CACHE_ACCESSES 16
 
-//Target latency for SuperscalarHash (in cycles of the reference CPU).
-#define RANDOMX_SUPERSCALAR_LATENCY   170
+// Target latency for SuperscalarHash (in cycles of the reference CPU).
+#define RANDOMX_SUPERSCALAR_LATENCY 100
 
-//Dataset base size in bytes. Must be a power of 2.
-#define RANDOMX_DATASET_BASE_SIZE  2147483648
+// Dataset base size in bytes. Must be a power of 2.
+#define RANDOMX_DATASET_BASE_SIZE 2147483648
 
-//Dataset extra size. Must be divisible by 64.
+// Dataset extra size. Must be divisible by 64.
 #define RANDOMX_DATASET_EXTRA_SIZE 33554368
 
-//Number of instructions in a RandomX program. Must be divisible by 8.
-#define RANDOMX_PROGRAM_SIZE       256
+// Number of instructions in a RandomX program. Must be divisible by 8.
+#define RANDOMX_PROGRAM_SIZE 256
 
-//Number of iterations during VM execution.
+// Number of iterations during VM execution.
 #define RANDOMX_PROGRAM_ITERATIONS 2048
 
-//Number of chained VM executions per hash.
-#define RANDOMX_PROGRAM_COUNT      8
+// Number of chained VM executions per hash.
+#define RANDOMX_PROGRAM_COUNT 8
 
-//Scratchpad L3 size in bytes. Must be a power of 2.
-#define RANDOMX_SCRATCHPAD_L3      2097152
+// Scratchpad L3 size in bytes. Must be a power of 2.
+#define RANDOMX_SCRATCHPAD_L3 2097152
 
-//Scratchpad L2 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L3.
-#define RANDOMX_SCRATCHPAD_L2      262144
+// Scratchpad L2 size in bytes. Must be a power of two and less than or equal to RANDOMX_SCRATCHPAD_L3.
+#define RANDOMX_SCRATCHPAD_L2 262144
 
-//Scratchpad L1 size in bytes. Must be a power of two (minimum 64) and less than or equal to RANDOMX_SCRATCHPAD_L2.
-#define RANDOMX_SCRATCHPAD_L1      16384
+// Scratchpad L1 size in bytes. Must be a power of two (minimum 64) and less than or equal to RANDOMX_SCRATCHPAD_L2.
+#define RANDOMX_SCRATCHPAD_L1 16384
 
-//Jump condition mask size in bits.
-#define RANDOMX_JUMP_BITS          8
+// Jump condition mask size in bits.
+#define RANDOMX_JUMP_BITS 8
 
-//Jump condition mask offset in bits. The sum of RANDOMX_JUMP_BITS and RANDOMX_JUMP_OFFSET must not exceed 16.
-#define RANDOMX_JUMP_OFFSET        8
+// Jump condition mask offset in bits. The sum of RANDOMX_JUMP_BITS and RANDOMX_JUMP_OFFSET must not exceed 16.
+#define RANDOMX_JUMP_OFFSET 8
 
 /*
 Instruction frequencies (per 256 opcodes)
 Total sum of frequencies must be 256
 */
 
-//Integer instructions
-#define RANDOMX_FREQ_IADD_RS       16
-#define RANDOMX_FREQ_IADD_M         7
-#define RANDOMX_FREQ_ISUB_R        16
-#define RANDOMX_FREQ_ISUB_M         7
-#define RANDOMX_FREQ_IMUL_R        16
-#define RANDOMX_FREQ_IMUL_M         4
-#define RANDOMX_FREQ_IMULH_R        4
-#define RANDOMX_FREQ_IMULH_M        1
-#define RANDOMX_FREQ_ISMULH_R       4
-#define RANDOMX_FREQ_ISMULH_M       1
-#define RANDOMX_FREQ_IMUL_RCP       8
-#define RANDOMX_FREQ_INEG_R         2
-#define RANDOMX_FREQ_IXOR_R        15
-#define RANDOMX_FREQ_IXOR_M         5
-#define RANDOMX_FREQ_IROR_R         8
-#define RANDOMX_FREQ_IROL_R         2
-#define RANDOMX_FREQ_ISWAP_R        4
+// Integer instructions
+#define RANDOMX_FREQ_IADD_RS 16
+#define RANDOMX_FREQ_IADD_M 7
+#define RANDOMX_FREQ_ISUB_R 16
+#define RANDOMX_FREQ_ISUB_M 7
+#define RANDOMX_FREQ_IMUL_R 16
+#define RANDOMX_FREQ_IMUL_M 4
+#define RANDOMX_FREQ_IMULH_R 4
+#define RANDOMX_FREQ_IMULH_M 1
+#define RANDOMX_FREQ_ISMULH_R 4
+#define RANDOMX_FREQ_ISMULH_M 1
+#define RANDOMX_FREQ_IMUL_RCP 8
+#define RANDOMX_FREQ_INEG_R 2
+#define RANDOMX_FREQ_IXOR_R 15
+#define RANDOMX_FREQ_IXOR_M 5
+#define RANDOMX_FREQ_IROR_R 8
+#define RANDOMX_FREQ_IROL_R 2
+#define RANDOMX_FREQ_ISWAP_R 4
 
-//Floating point instructions
-#define RANDOMX_FREQ_FSWAP_R        4
-#define RANDOMX_FREQ_FADD_R        16
-#define RANDOMX_FREQ_FADD_M         5
-#define RANDOMX_FREQ_FSUB_R        16
-#define RANDOMX_FREQ_FSUB_M         5
-#define RANDOMX_FREQ_FSCAL_R        6
-#define RANDOMX_FREQ_FMUL_R        32
-#define RANDOMX_FREQ_FDIV_M         4
-#define RANDOMX_FREQ_FSQRT_R        6
+// Floating point instructions
+#define RANDOMX_FREQ_FSWAP_R 4
+#define RANDOMX_FREQ_FADD_R 16
+#define RANDOMX_FREQ_FADD_M 5
+#define RANDOMX_FREQ_FSUB_R 16
+#define RANDOMX_FREQ_FSUB_M 5
+#define RANDOMX_FREQ_FSCAL_R 6
+#define RANDOMX_FREQ_FMUL_R 32
+#define RANDOMX_FREQ_FDIV_M 4
+#define RANDOMX_FREQ_FSQRT_R 6
 
-//Control instructions
-#define RANDOMX_FREQ_CBRANCH       25
-#define RANDOMX_FREQ_CFROUND        1
+// Control instructions
+#define RANDOMX_FREQ_CBRANCH 25
+#define RANDOMX_FREQ_CFROUND 1
 
-//Store instruction
-#define RANDOMX_FREQ_ISTORE        16
+// Store instruction
+#define RANDOMX_FREQ_ISTORE 16
 
-//No-op instruction
-#define RANDOMX_FREQ_NOP            0
+// No-op instruction
+#define RANDOMX_FREQ_NOP 0
 /*                               ------
-                                  256
+								  256
 */
