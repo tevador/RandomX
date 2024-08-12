@@ -127,14 +127,15 @@ extern "C" {
 		return cache;
 	}
 
-	void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize) {
+	void randomx_init_cache(randomx_cache* cache, const void* key, size_t keyLength) {
 		assert(cache != nullptr);
-		assert(keySize == 0 || key != nullptr);
-		std::string cacheKey;
-		cacheKey.assign((const char *)key, keySize);
-		if (cache->cacheKey != cacheKey || !cache->isInitialized()) {
-			cache->initialize(cache, key, keySize);
-			cache->cacheKey = cacheKey;
+		assert(keyLength == 0 || key != nullptr);
+
+		std::string newCacheKey(static_cast<const char*>(key), keyLength);
+
+		if (cache->cacheKey != newCacheKey || !cache->isInitialized()) {
+			cache->initialize(cache, key, keyLength);
+			cache->cacheKey = std::move(newCacheKey);
 		}
 	}
 
