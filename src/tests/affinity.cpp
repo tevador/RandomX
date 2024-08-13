@@ -1,6 +1,6 @@
 /*
-Copyright (c) 2019, jtgrassie
-Copyright (c) 2019, tevador <tevador@gmail.com>
+Copyright (c) 2024, jtgrassie
+Copyright (c) 2024, tevador <tevador@gmail.com>
 
 All rights reserved.
 

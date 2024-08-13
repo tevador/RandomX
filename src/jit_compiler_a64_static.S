@@ -1,5 +1,5 @@
-# Copyright (c) 2018-2019, tevador <tevador@gmail.com>
-# Copyright (c) 2019, SChernykh    <https://github.com/SChernykh>
+# Copyright (c) 2018-2024, tevador <tevador@gmail.com>
+# Copyright (c) 2024, SChernykh    <https://github.com/SChernykh>
 #
 # All rights reserved.
 #
