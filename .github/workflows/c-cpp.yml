@@ -165,7 +165,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-11, macos-12, macos-13]
+        os: [macos-13, macos-14, macos-15]
 
     steps:
     - name: Checkout repository
