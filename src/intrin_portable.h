@@ -539,6 +539,35 @@ typedef union {
 	rx_vec_i128 i;
 } rx_vec_f128;
 
+#if defined(__arm__) && defined(__ARM_FEATURE_CRYPTO)
+#include <arm_neon.h>
+
+FORCE_INLINE rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 a, rx_vec_i128 key) {
+	const uint8x16_t zero = { 0 };
+	rx_vec_i128 ret;
+	uint8x16_t aa, kk;
+	aa = vld1q_u8(a.u8);
+	kk = vld1q_u8(key.u8);
+	aa = vaesmcq_u8(vaeseq_u8(aa, zero)) ^ kk;
+	vst1q_u8(ret.u8, aa);
+	return ret;
+}
+
+FORCE_INLINE rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 a, rx_vec_i128 key) {
+	const uint8x16_t zero = { 0 };
+	rx_vec_i128 ret;
+	uint8x16_t aa, kk;
+	aa = vld1q_u8(a.u8);
+	kk = vld1q_u8(key.u8);
+	aa = vaesimcq_u8(vaesdq_u8(aa, zero)) ^ kk;
+	vst1q_u8(ret.u8, aa);
+	return ret;
+}
+
+#define HAVE_AES 1
+
+#endif
+
 #define rx_aligned_alloc(a, b) malloc(a)
 #define rx_aligned_free(a) free(a)
 #define rx_prefetch_nta(x)
