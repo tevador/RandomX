@@ -235,6 +235,9 @@ void freePagedMemory(void* ptr, size_t bytes) {
 #if defined(_WIN32) || defined(__CYGWIN__)
 	VirtualFree(ptr, 0, MEM_RELEASE);
 #else
-	munmap(ptr, bytes);
+	// some munmap implementations can crash on null pointer, despite what the manpage says
+	if (ptr) {
+		munmap(ptr, bytes);
+	}
 #endif
 }
