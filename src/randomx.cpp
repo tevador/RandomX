@@ -138,6 +138,11 @@ extern "C" {
 		}
 	}
 
+	void *randomx_get_cache_memory(randomx_cache *cache) {
+		assert(cache != nullptr);
+		return cache->memory;
+	}
+
 	void randomx_release_cache(randomx_cache* cache) {
 		assert(cache != nullptr);
 		cache->dealloc(cache);
