@@ -120,6 +120,16 @@ RANDOMX_EXPORT randomx_cache *randomx_alloc_cache(randomx_flags flags);
 RANDOMX_EXPORT void randomx_init_cache(randomx_cache *cache, const void *key, size_t keySize);
 
 /**
+ * Returns a pointer to the internal memory buffer of the cache structure. The size
+ * of the internal memory buffer is RANDOMX_ARGON_MEMORY KiB.
+ *
+ * @param cache is a pointer to a previously allocated randomx_cache structure. Must not be NULL.
+ *
+ * @return Pointer to the internal memory buffer of the cache structure.
+*/
+RANDOMX_EXPORT void *randomx_get_cache_memory(randomx_cache *cache);
+
+/**
  * Releases all memory occupied by the randomx_cache structure.
  *
  * @param cache is a pointer to a previously allocated randomx_cache structure.
