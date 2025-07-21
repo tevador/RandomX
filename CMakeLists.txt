@@ -56,6 +56,17 @@ src/virtual_machine.cpp
 src/vm_compiled_light.cpp
 src/blake2/blake2b.c)
 
+if (NOT WIN32)
+    check_symbol_exists("__builtin___clear_cache" "stdlib.h" HAVE_BUILTIN_CLEAR_CACHE)
+    if (HAVE_BUILTIN_CLEAR_CACHE)
+        add_definitions(-DHAVE_BUILTIN_CLEAR_CACHE)
+    endif()
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+  add_definitions(-D_GNU_SOURCE -DHAVE_BUILTIN_CLEAR_CACHE)
+endif()
+
 if(NOT ARCH_ID)
   # allow cross compiling
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL "")
