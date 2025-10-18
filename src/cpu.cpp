@@ -39,6 +39,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 			__cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 		}
 	#endif
+#elif defined(__powerpc64__) || defined(__ppc64__)
+    #include <sys/auxv.h>
+    #include <asm/hwcap.h>
+    #define PPC_FEATURE2_AES 0x04000000  // AES flag for Power8+
 #endif
 
 #if defined(HAVE_HWCAP)
@@ -70,7 +74,12 @@ namespace randomx {
 		aes_ = true;
 	#endif
 #endif
-		//TODO POWER8 AES
+#elif defined(__powerpc64__) || defined(__ppc64__)
+    // Check for Power8 AES support using PPC_FEATURE2
+    long hwcaps = getauxval(AT_HWCAP);
+    aes_ = (hwcaps & PPC_FEATURE2_AES) != 0;
+#endif
+		//Power8 AES detection complete
 	}
 
 }
