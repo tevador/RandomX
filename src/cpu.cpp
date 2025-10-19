@@ -74,12 +74,11 @@ namespace randomx {
 		aes_ = true;
 	#endif
 #endif
-    #elif defined(__powerpc64__) || defined(__ppc64__)
-        // Check for Power8+ Vcrypto (AES) support using PPC_FEATURE2_HAS_VCRYPTO
-        long hwcaps = getauxval(AT_HWCAP2);
-        aes_ = (hwcaps & PPC_FEATURE2_HAS_VCRYPTO) != 0;
-    #endif
-		//Power8 AES detection complete
+	#elif defined(__powerpc64__) || defined(__ppc64__)
+		// Check for Power8+ Vcrypto (AES) support using PPC_FEATURE2_HAS_VCRYPTO
+		long hwcaps = getauxval(AT_HWCAP2);
+		aes_ = (hwcaps & PPC_FEATURE2_HAS_VCRYPTO) != 0;
+	#endif
 	}
 
 }
