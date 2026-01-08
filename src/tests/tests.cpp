@@ -15,6 +15,7 @@
 #include "../intrin_portable.h"
 #include "../jit_compiler.hpp"
 #include "../aes_hash.hpp"
+#include "../virtual_machine.hpp"
 
 randomx_cache* cache;
 randomx_vm* vm = nullptr;
@@ -205,7 +206,7 @@ int main() {
 	runTest("IADD_RS (execute)", RANDOMX_FREQ_IADD_RS > 0, [&] {
 		reg.r[registerDst] = 0x8000000000000000;
 		reg.r[registerSrc] = 0x1000000000000000;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0);
 	});
 
@@ -227,7 +228,7 @@ int main() {
 	runTest("IADD_RS with immediate (decode)", RANDOMX_FREQ_IADD_RS > 0, [&] {
 		reg.r[randomx::RegisterNeedsDisplacement] = 0x8000000000000000;
 		reg.r[registerSrc] = 0x2000000000000000;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[randomx::RegisterNeedsDisplacement] == imm64);
 	});
 
@@ -261,7 +262,7 @@ int main() {
 	runTest("ISUB_R (execute)", RANDOMX_FREQ_ISUB_R > 0, [&] {
 		reg.r[registerDst] = 1;
 		reg.r[registerSrc] = 0xFFFFFFFF;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0xFFFFFFFF00000002);
 	});
 
@@ -279,7 +280,7 @@ int main() {
 
 	runTest("ISUB_R with immediate (decode)", RANDOMX_FREQ_ISUB_R > 0, [&] {
 		reg.r[registerDst] = 0;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == (~imm64 + 1));
 	});
 
@@ -313,7 +314,7 @@ int main() {
 	runTest("IMUL_R (execute)", RANDOMX_FREQ_IMUL_R > 0, [&] {
 		reg.r[registerDst] = 0xBC550E96BA88A72B;
 		reg.r[registerSrc] = 0xF5391FA9F18D6273;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0x28723424A9108E51);
 	});
 
@@ -331,7 +332,7 @@ int main() {
 
 	runTest("IMUL_R with immediate (execute)", RANDOMX_FREQ_IMUL_R > 0, [&] {
 		reg.r[registerDst] = 1;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == imm64);
 	});
 
@@ -365,7 +366,7 @@ int main() {
 	runTest("IMULH_R (execute)", RANDOMX_FREQ_IMULH_R > 0, [&] {
 		reg.r[registerDst] = 0xBC550E96BA88A72B;
 		reg.r[registerSrc] = 0xF5391FA9F18D6273;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0xB4676D31D2B34883);
 	});
 
@@ -411,7 +412,7 @@ int main() {
 	runTest("ISMULH_R (execute)", RANDOMX_FREQ_ISMULH_R > 0, [&] {
 		reg.r[registerDst] = 0xBC550E96BA88A72B;
 		reg.r[registerSrc] = 0xF5391FA9F18D6273;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0x02D93EF1269D3EE5);
 	});
 
@@ -474,7 +475,7 @@ int main() {
 
 	runTest("INEG_R (execute)", RANDOMX_FREQ_INEG_R > 0, [&] {
 		reg.r[registerDst] = 0xFFFFFFFFFFFFFFFF;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 1);
 	});
 	
@@ -493,7 +494,7 @@ int main() {
 	runTest("IXOR_R (execute)", RANDOMX_FREQ_IMUL_R > 0, [&] {
 		reg.r[registerDst] = 0x8888888888888888;
 		reg.r[registerSrc] = 0xAAAAAAAAAAAAAAAA;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0x2222222222222222);
 	});
 
@@ -511,7 +512,7 @@ int main() {
 
 	runTest("IXOR_R with immediate (execute)", RANDOMX_FREQ_IXOR_R > 0, [&] {
 		reg.r[registerDst] = 0xFFFFFFFFFFFFFFFF;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == ~imm64);
 	});
 
@@ -544,7 +545,7 @@ int main() {
 	runTest("IROR_R (execute)", RANDOMX_FREQ_IROR_R > 0, [&] {
 		reg.r[registerDst] = 953360005391419562;
 		reg.r[registerSrc] = 4569451684712230561;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 0xD835C455069D81EF);
 	});
 
@@ -563,7 +564,7 @@ int main() {
 	runTest("IROL_R (execute)", RANDOMX_FREQ_IROL_R > 0, [&] {
 		reg.r[registerDst] = 953360005391419562;
 		reg.r[registerSrc] = 4569451684712230561;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 6978065200552740799);
 	});
 
@@ -582,7 +583,7 @@ int main() {
 	runTest("ISWAP_R (execute)", RANDOMX_FREQ_ISWAP_R > 0, [&] {
 		reg.r[registerDst] = 953360005391419562;
 		reg.r[registerSrc] = 4569451684712230561;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(reg.r[registerDst] == 4569451684712230561);
 		assert(reg.r[registerSrc] == 953360005391419562);
 	});
@@ -599,7 +600,7 @@ int main() {
 	runTest("FSWAP_R (execute)", RANDOMX_FREQ_FSWAP_R > 0, [&] {
 		alignas(16) uint64_t vec[2];
 		reg.f[registerDst] = rx_set_vec_f128(953360005391419562, 4569451684712230561);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex((const char*)&vec, "aa886bb0df033b0da12e95e518f4693f"));
 	});
@@ -621,7 +622,7 @@ int main() {
 		reg.f[registerDst] = rx_set_vec_f128(0x3ffd2c97cc4ef015, 0xc1ce30b3c4223576);
 		reg.a[registerSrc] = rx_set_vec_f128(0x402a26a86a60c8fb, 0x40b8f684057a59e1);
 		rx_set_rounding_mode(RoundToNearest);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex(&vec, "b932e048a730cec1fea6ea633bcc2d40"));
 	});
@@ -631,7 +632,7 @@ int main() {
 		reg.f[registerDst] = rx_set_vec_f128(0x3ffd2c97cc4ef015, 0xc1ce30b3c4223576);
 		reg.a[registerSrc] = rx_set_vec_f128(0x402a26a86a60c8fb, 0x40b8f684057a59e1);
 		rx_set_rounding_mode(RoundDown);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex(&vec, "b932e048a730cec1fda6ea633bcc2d40"));
 	});
@@ -641,7 +642,7 @@ int main() {
 		reg.f[registerDst] = rx_set_vec_f128(0x3ffd2c97cc4ef015, 0xc1ce30b3c4223576);
 		reg.a[registerSrc] = rx_set_vec_f128(0x402a26a86a60c8fb, 0x40b8f684057a59e1);
 		rx_set_rounding_mode(RoundUp);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex(&vec, "b832e048a730cec1fea6ea633bcc2d40"));
 	});
@@ -651,7 +652,7 @@ int main() {
 		reg.f[registerDst] = rx_set_vec_f128(0x3ffd2c97cc4ef015, 0xc1ce30b3c4223576);
 		reg.a[registerSrc] = rx_set_vec_f128(0x402a26a86a60c8fb, 0x40b8f684057a59e1);
 		rx_set_rounding_mode(RoundToZero);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex(&vec, "b832e048a730cec1fda6ea633bcc2d40"));
 	});
@@ -678,7 +679,7 @@ int main() {
 		reg.f[registerDst] = rx_set_vec_f128(0, 0);
 		reg.r[registerSrc] = 0xFFFFFFFFFFFFE930;
 		rx_set_rounding_mode(RoundToNearest);
-		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config);
+		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex(&vec, "000040840cd5dbc1000000785634b241"));
 	});
@@ -723,7 +724,7 @@ int main() {
 	runTest("FSCAL_R (execute)", RANDOMX_FREQ_FSCAL_R > 0, [&] {
 		alignas(16) uint64_t vec[2];
 		reg.f[registerDst] = rx_set_vec_f128(0x41dbc35cef248783, 0x40fdfdabb6173d07);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.f[registerDst]);
 		assert(equalsHex((const char*)&vec, "073d17b6abfd0dc0838724ef5cc32bc1"));
 	});
@@ -745,7 +746,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41dbc35cef248783, 0x40fdfdabb6173d07);
 		reg.a[registerSrc] = rx_set_vec_f128(0x40eba861aa31c7c0, 0x41c4561212ae2d50);
 		rx_set_rounding_mode(RoundToNearest);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "69697aff350fd3422f1589cdecfed742"));
 	});
@@ -755,7 +756,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41dbc35cef248783, 0x40fdfdabb6173d07);
 		reg.a[registerSrc] = rx_set_vec_f128(0x40eba861aa31c7c0, 0x41c4561212ae2d50);
 		rx_set_rounding_mode(RoundDown);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "69697aff350fd3422e1589cdecfed742"));
 	});
@@ -765,7 +766,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41dbc35cef248783, 0x40fdfdabb6173d07);
 		reg.a[registerSrc] = rx_set_vec_f128(0x40eba861aa31c7c0, 0x41c4561212ae2d50);
 		rx_set_rounding_mode(RoundUp);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "6a697aff350fd3422f1589cdecfed742"));
 	});
@@ -795,7 +796,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41937f76fede16ee, 0x411b414296ce93b6);
 		reg.r[registerSrc] = 0xFFFFFFFFFFFFE930;
 		rx_set_rounding_mode(RoundToNearest);
-		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config);
+		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e7b269639484434632474a66635ba547"));
 	});
@@ -810,7 +811,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41937f76fede16ee, 0x411b414296ce93b6);
 		reg.r[registerSrc] = 0xFFFFFFFFFFFFE930;
 		rx_set_rounding_mode(RoundDown);
-		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config);
+		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e6b269639484434632474a66635ba547"));
 	});
@@ -825,7 +826,7 @@ int main() {
 		reg.e[registerDst] = rx_set_vec_f128(0x41937f76fede16ee, 0x411b414296ce93b6);
 		reg.r[registerSrc] = 0xFFFFFFFFFFFFE930;
 		rx_set_rounding_mode(RoundUp);
-		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config);
+		decoder.executeInstruction(ibc, pc, (uint8_t*)&mockScratchpad, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e7b269639484434633474a66635ba547"));
 	});
@@ -843,7 +844,7 @@ int main() {
 		alignas(16) uint64_t vec[2];
 		reg.e[registerDst] = rx_set_vec_f128(0x41b6b21c11affea7, 0x40526a7e778d9824);
 		rx_set_rounding_mode(RoundToNearest);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e81f300b612a21408dbaa33f570ed340"));
 	});
@@ -852,7 +853,7 @@ int main() {
 		alignas(16) uint64_t vec[2];
 		reg.e[registerDst] = rx_set_vec_f128(0x41b6b21c11affea7, 0x40526a7e778d9824);
 		rx_set_rounding_mode(RoundDown);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e81f300b612a21408cbaa33f570ed340"));
 	});
@@ -861,7 +862,7 @@ int main() {
 		alignas(16) uint64_t vec[2];
 		reg.e[registerDst] = rx_set_vec_f128(0x41b6b21c11affea7, 0x40526a7e778d9824);
 		rx_set_rounding_mode(RoundUp);
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		rx_store_vec_f128((double*)&vec, reg.e[registerDst]);
 		assert(equalsHex(&vec, "e91f300b612a21408dbaa33f570ed340"));
 	});
@@ -896,13 +897,13 @@ int main() {
 
 	runTest("CBRANCH not taken (execute)", RANDOMX_FREQ_CBRANCH > 0, [&] {
 		reg.r[registerDst] = 0;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(pc == 200);
 	});
 
 	runTest("CBRANCH taken (execute)", RANDOMX_FREQ_CBRANCH > 0, [&] {
 		reg.r[registerDst] = 0xFFFFFFFFFFFC6800;
-		decoder.executeInstruction(ibc, pc, nullptr, config);
+		decoder.executeInstruction(ibc, pc, nullptr, config, RANDOMX_FLAG_DEFAULT);
 		assert(pc == ibc.target);
 	});
 
@@ -971,25 +972,25 @@ int main() {
 	auto test_a = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "53901485cc6991507167d2aa745b7ad7a1d36422aa83f143c14ebfe97ab97af7" : "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
 	};
 
 	auto test_b = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
-		assert(equalsHex(hash, "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "c6bb84de94b6cd87eb1f72fc4a74f09a33a82637b4be88dddb301b735aa699ab" : "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
 	};
 
 	auto test_c = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "686fcc407290465ae16d379fb4689269405d4e47da9e8ef43449491a2202b220" : "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
 	};
 
 	auto test_d = [&] {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 001", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, "e9ff4503201c0c2cca26d285c93ae883f9b1d30c9eb240b820756f2d5a7905fc"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "e1b557bbab3a253c4b6307ada808a20d42816f4398b9830612b7fb8d7e49c461" : "e9ff4503201c0c2cca26d285c93ae883f9b1d30c9eb240b820756f2d5a7905fc"));
 	};
 
 	auto test_e = [&] {
@@ -998,18 +999,28 @@ int main() {
 		//std::cout << std::endl;
 		//outputHex(std::cout, (const char*)hash, sizeof(hash));
 		//std::cout << std::endl;
-		assert(equalsHex(hash, "c56414121acda1713c2f2a819d8ae38aed7c80c35c2a769298d34f03833cd5f1"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "0939cde2fbaf15d8581cd85f32cf7e470ef494a845667bf235467fc6a75e691d" : "c56414121acda1713c2f2a819d8ae38aed7c80c35c2a769298d34f03833cd5f1"));
 	};
 
 	runTest("Hash test 1a (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
-
 	runTest("Hash test 1b (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_b);
-
 	runTest("Hash test 1c (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
-
 	runTest("Hash test 1d (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
-
 	runTest("Hash test 1e (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
+
+	randomx_destroy_vm(vm);
+
+#ifdef RANDOMX_FORCE_SECURE
+	vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+	vm = randomx_create_vm(RANDOMX_FLAG_V2, cache, nullptr);
+#endif
+
+	runTest("Hash test 1a (interpreter v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
+	runTest("Hash test 1b (interpreter v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_b);
+	runTest("Hash test 1c (interpreter v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
+	runTest("Hash test 1d (interpreter v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
+	runTest("Hash test 1e (interpreter v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_release_cache(cache);
@@ -1025,14 +1036,24 @@ int main() {
 	}
 
 	runTest("Hash test 2a (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
-
 	runTest("Hash test 2b (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_b);
-
 	runTest("Hash test 2c (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
-
 	runTest("Hash test 2d (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
-
 	runTest("Hash test 2e (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
+
+	randomx_destroy_vm(vm);
+
+#ifdef RANDOMX_FORCE_SECURE
+	vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_JIT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+	vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_JIT, cache, nullptr);
+#endif
+
+	runTest("Hash test 2a (compiler v2)", RANDOMX_HAVE_COMPILER&& stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
+	runTest("Hash test 2b (compiler v2)", RANDOMX_HAVE_COMPILER&& stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_b);
+	runTest("Hash test 2c (compiler v2)", RANDOMX_HAVE_COMPILER&& stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
+	runTest("Hash test 2d (compiler v2)", RANDOMX_HAVE_COMPILER&& stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
+	runTest("Hash test 2e (compiler v2)", RANDOMX_HAVE_COMPILER&& stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
 
 	auto flags = randomx_get_flags();
 
@@ -1067,7 +1088,16 @@ int main() {
 		char hash1[RANDOMX_HASH_SIZE];
 		char hash2[RANDOMX_HASH_SIZE];
 		char hash3[RANDOMX_HASH_SIZE];
+
 		initCache("test key 000");
+
+		randomx_destroy_vm(vm);
+#ifdef RANDOMX_FORCE_SECURE
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+#endif
+
 		char input1[] = "This is a test";
 		char input2[] = "Lorem ipsum dolor sit amet";
 		char input3[] = "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua";
@@ -1080,7 +1110,30 @@ int main() {
 		assert(equalsHex(hash1, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
 		assert(equalsHex(hash2, "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
 		assert(equalsHex(hash3, "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
+
+		randomx_destroy_vm(vm);
+#ifdef RANDOMX_FORCE_SECURE
+		vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_JIT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_JIT, cache, nullptr);
+#endif
+
+		randomx_calculate_hash_first(vm, input1, sizeof(input1) - 1);
+		randomx_calculate_hash_next(vm, input2, sizeof(input2) - 1, &hash1);
+		randomx_calculate_hash_next(vm, input3, sizeof(input3) - 1, &hash2);
+		randomx_calculate_hash_last(vm, &hash3);
+
+		assert(equalsHex(hash1, "53901485cc6991507167d2aa745b7ad7a1d36422aa83f143c14ebfe97ab97af7"));
+		assert(equalsHex(hash2, "c6bb84de94b6cd87eb1f72fc4a74f09a33a82637b4be88dddb301b735aa699ab"));
+		assert(equalsHex(hash3, "686fcc407290465ae16d379fb4689269405d4e47da9e8ef43449491a2202b220"));
 	});
+
+	randomx_destroy_vm(vm);
+#ifdef RANDOMX_FORCE_SECURE
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
 
 	runTest("Preserve rounding mode", RANDOMX_FREQ_CFROUND > 0, []() {
 		rx_set_rounding_mode(RoundToNearest);
@@ -1094,16 +1147,16 @@ int main() {
 		randomx_destroy_vm(vm);
 		vm = nullptr;
 #ifdef RANDOMX_FORCE_SECURE
-		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+		vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_SECURE, cache, nullptr);
 #else
-		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+		vm = randomx_create_vm(RANDOMX_FLAG_V2, cache, nullptr);
 #endif
 	}
 
 	runTest("Commitment test", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		char hash[RANDOMX_HASH_SIZE];
 		calcStringCommitment("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, "d53ccf348b75291b7be76f0a7ac8208bbced734b912f6fca60539ab6f86be919"));
+		assert(equalsHex(hash, "bf7fadad7506423c36220b22915ae1b824bbc42a13f2298ae0e421c9b75fb5ab"));
 	});
 
 	randomx_destroy_vm(vm);

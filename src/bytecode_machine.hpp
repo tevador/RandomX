@@ -98,7 +98,7 @@ namespace randomx {
 	OPCODE_CEIL_DECLARE(NOP, ISTORE);
 #undef OPCODE_CEIL_DECLARE
 
-#define RANDOMX_EXE_ARGS InstructionByteCode& ibc, int& pc, uint8_t* scratchpad, ProgramConfiguration& config
+#define RANDOMX_EXE_ARGS InstructionByteCode& ibc, int& pc, uint8_t* scratchpad, ProgramConfiguration& config, randomx_flags flags
 #define RANDOMX_GEN_ARGS Instruction& instr, int i, InstructionByteCode& ibc
 
 	class BytecodeMachine;
@@ -123,10 +123,10 @@ namespace randomx {
 			}
 		}
 
-		static void executeBytecode(InstructionByteCode bytecode[RANDOMX_PROGRAM_SIZE], uint8_t* scratchpad, ProgramConfiguration& config) {
+		static void executeBytecode(InstructionByteCode bytecode[RANDOMX_PROGRAM_SIZE], uint8_t* scratchpad, ProgramConfiguration& config, randomx_flags flags) {
 			for (int pc = 0; pc < RANDOMX_PROGRAM_SIZE; ++pc) {
 				auto& ibc = bytecode[pc];
-				executeInstruction(ibc, pc, scratchpad, config);
+				executeInstruction(ibc, pc, scratchpad, config, flags);
 			}
 		}
 
@@ -260,7 +260,7 @@ namespace randomx {
 
 		static void exe_CFROUND(RANDOMX_EXE_ARGS) {
 			uint64_t isrc = rotr(*ibc.isrc, ibc.imm);
-			if ((isrc & 60) == 0) {
+			if (((flags & RANDOMX_FLAG_V2) == 0) || ((isrc & 60) == 0)) {
 				rx_set_rounding_mode(isrc % 4);
 			}
 		}

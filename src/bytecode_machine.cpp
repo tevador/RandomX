@@ -34,7 +34,7 @@ namespace randomx {
 	const int_reg_t BytecodeMachine::zero = 0;
 
 #define INSTR_CASE(x) case InstructionType::x: \
-	exe_ ## x(ibc, pc, scratchpad, config); \
+	exe_ ## x(ibc, pc, scratchpad, config, flags); \
 	break;
 
 	void BytecodeMachine::executeInstruction(RANDOMX_EXE_ARGS) {

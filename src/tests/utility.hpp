@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <fstream>
 #include <cstdint>
+#include <vector>
 
 constexpr char hexmap[] = "0123456789abcdef";
 inline void outputHex(std::ostream& os, const char* data, int length) {
@@ -65,11 +66,11 @@ constexpr bool stringsEqual(char const * a, char const * b) {
 	return *a == *b && (*a == '\0' || stringsEqual(a + 1, b + 1));
 }
 
-template<size_t N>
-bool equalsHex(const void* hash, const char (&hex)[N]) {
-	char reference[N / 2];
-	hex2bin(hex, N - 1, reference);
-	return memcmp(hash, reference, sizeof(reference)) == 0;
+bool equalsHex(const void* hash, const char* hex) {
+	const size_t N = strlen(hex);
+	std::vector<char> reference(N / 2);
+	hex2bin(hex, N, reference.data());
+	return memcmp(hash, reference.data(), N / 2) == 0;
 }
 
 inline void dump(const char* buffer, uint64_t count, const char* name) {
