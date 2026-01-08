@@ -537,8 +537,8 @@ DECL(randomx_program_aarch64_v2_FE_mix_soft_aes):
 	stp	x16, x30, [sp, 128]
 	stp	q0, q1, [sp, 144]
 
-	adr	x18, randomx_aes_lut_enc
-	adr	x19, randomx_aes_lut_dec
+	adr	x19, randomx_aes_lut_enc
+	adr	x20, randomx_aes_lut_dec
 
 	# f0 = aesenc(f0, e0), f0 = aesenc(f0, e1), f0 = aesenc(f0, e2), f0 = aesenc(f0, e3)
 	mov	v0.16b, v16.16b
@@ -622,20 +622,20 @@ randomx_soft_aesenc:
 	add	x9, x9, 256
 	add	x2, x2, 512
 	add	x11, x11, 768
-	ldr	w10, [x18, x4, lsl 2]
-	ldr	w15, [x18, x5, lsl 2]
+	ldr	w10, [x19, x4, lsl 2]
+	ldr	w15, [x19, x5, lsl 2]
 	umov	w13, v0.b[8]
-	ldr	w14, [x18, x12, lsl 2]
+	ldr	w14, [x19, x12, lsl 2]
 	umov	w6, v0.b[1]
-	ldr	w1, [x18, x1, lsl 2]
+	ldr	w1, [x19, x1, lsl 2]
 	eor	w10, w10, w15
-	ldr	w2, [x18, x2, lsl 2]
+	ldr	w2, [x19, x2, lsl 2]
 	umov	w5, v0.b[6]
-	ldr	w9, [x18, x9, lsl 2]
+	ldr	w9, [x19, x9, lsl 2]
 	umov	w4, v0.b[11]
-	ldr	w12, [x18, x16, lsl 2]
+	ldr	w12, [x19, x16, lsl 2]
 	eor	w1, w1, w14
-	ldr	w11, [x18, x11, lsl 2]
+	ldr	w11, [x19, x11, lsl 2]
 	eor	w1, w1, w10
 	add	x8, x8, 512
 	add	x3, x3, 256
@@ -645,21 +645,21 @@ randomx_soft_aesenc:
 	eor	w1, w2, w11
 	umov	w10, v0.b[12]
 	eor	w1, w1, w9
-	ldr	w3, [x18, x3, lsl 2]
+	ldr	w3, [x19, x3, lsl 2]
 	add	x6, x6, 256
-	ldr	w9, [x18, x13, lsl 2]
+	ldr	w9, [x19, x13, lsl 2]
 	ins	v28.s[1], w1
-	ldr	w2, [x18, x8, lsl 2]
+	ldr	w2, [x19, x8, lsl 2]
 	add	x5, x5, 512
-	ldr	w7, [x18, x7, lsl 2]
+	ldr	w7, [x19, x7, lsl 2]
 	add	x4, x4, 768
 	eor	w1, w3, w9
-	ldr	w3, [x18, x6, lsl 2]
+	ldr	w3, [x19, x6, lsl 2]
 	eor	w2, w2, w7
-	ldr	w6, [x18, x10, lsl 2]
+	ldr	w6, [x19, x10, lsl 2]
 	eor	w2, w2, w1
-	ldr	w1, [x18, x5, lsl 2]
-	ldr	w0, [x18, x4, lsl 2]
+	ldr	w1, [x19, x5, lsl 2]
+	ldr	w0, [x19, x4, lsl 2]
 	eor	w3, w3, w6
 	ins	v28.s[2], w2
 	eor	w0, w1, w0
@@ -686,20 +686,20 @@ randomx_soft_aesdec:
 	add	x9, x9, 768
 	add	x2, x2, 512
 	add	x11, x11, 256
-	ldr	w15, [x19, x3, lsl 2]
-	ldr	w10, [x19, x4, lsl 2]
+	ldr	w15, [x20, x3, lsl 2]
+	ldr	w10, [x20, x4, lsl 2]
 	umov	w13, v0.b[8]
-	ldr	w14, [x19, x12, lsl 2]
+	ldr	w14, [x20, x12, lsl 2]
 	umov	w5, v0.b[9]
-	ldr	w1, [x19, x1, lsl 2]
+	ldr	w1, [x20, x1, lsl 2]
 	umov	w3, v0.b[6]
-	ldr	w12, [x19, x9, lsl 2]
+	ldr	w12, [x20, x9, lsl 2]
 	umov	w4, v0.b[3]
-	ldr	w9, [x19, x16, lsl 2]
+	ldr	w9, [x20, x16, lsl 2]
 	eor	w1, w1, w15
-	ldr	w2, [x19, x2, lsl 2]
+	ldr	w2, [x20, x2, lsl 2]
 	eor	w10, w10, w14
-	ldr	w11, [x19, x11, lsl 2]
+	ldr	w11, [x20, x11, lsl 2]
 	eor	w1, w1, w10
 	add	x8, x8, 256
 	add	x6, x6, 512
@@ -709,21 +709,21 @@ randomx_soft_aesdec:
 	eor	w1, w9, w11
 	eor	w1, w2, w1
 	umov	w9, v0.b[12]
-	ldr	w2, [x19, x13, lsl 2]
+	ldr	w2, [x20, x13, lsl 2]
 	add	x5, x5, 256
-	ldr	w8, [x19, x8, lsl 2]
+	ldr	w8, [x20, x8, lsl 2]
 	ins	v28.s[1], w1
-	ldr	w6, [x19, x6, lsl 2]
+	ldr	w6, [x20, x6, lsl 2]
 	add	x3, x3, 512
-	ldr	w7, [x19, x7, lsl 2]
+	ldr	w7, [x20, x7, lsl 2]
 	add	x4, x4, 768
 	eor	w2, w2, w8
-	ldr	w1, [x19, x9, lsl 2]
+	ldr	w1, [x20, x9, lsl 2]
 	eor	w6, w6, w7
-	ldr	w3, [x19, x3, lsl 2]
+	ldr	w3, [x20, x3, lsl 2]
 	eor	w2, w2, w6
-	ldr	w4, [x19, x4, lsl 2]
-	ldr	w5, [x19, x5, lsl 2]
+	ldr	w4, [x20, x4, lsl 2]
+	ldr	w5, [x20, x5, lsl 2]
 	ins	v28.s[2], w2
 	eor	w0, w1, w5
 	eor	w1, w3, w4

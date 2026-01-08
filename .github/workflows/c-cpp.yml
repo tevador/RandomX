@@ -2,7 +2,7 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, v2 ]
   pull_request:
 
 jobs:
@@ -62,6 +62,7 @@ jobs:
       matrix:
         config:
           - {os: ubuntu-24.04, c: gcc-14, cpp: g++-14}
+          - {os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14}
 
     steps:
     - name: Install dependencies
@@ -164,7 +165,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-14, macos-15]
+        os: [macos-15, macos-15-intel]
 
     steps:
     - name: Checkout repository
@@ -172,15 +173,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install dependencies
-      run: HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake
-
     - name: Build RandomX
       run: |
         mkdir build
         cd build
         cmake ..
-        make -j3
+        make -j4
 
     - name: Run tests
       run: |

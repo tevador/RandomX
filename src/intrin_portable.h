@@ -276,6 +276,14 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 	return (rx_vec_f128)vec_splat2sd(x);
 }
 
+FORCE_INLINE rx_vec_f128 rx_cast_vec_i2f(rx_vec_i128 a) {
+	return (rx_vec_f128)a;
+}
+
+FORCE_INLINE rx_vec_i128 rx_cast_vec_f2i(rx_vec_f128 a) {
+	return (rx_vec_i128)a;
+}
+
 FORCE_INLINE rx_vec_f128 rx_xor_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 	return (rx_vec_f128)vec_xor(a,b);
 }
@@ -635,16 +643,6 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 	return v;
 }
 
-FORCE_INLINE rx_vec_f128 rx_cast_vec_i2f(rx_vec_i128 a) {
-	rx_vec_f128 x;
-	x.i = a;
-	return x;
-}
-
-FORCE_INLINE rx_vec_i128 rx_cast_vec_f2i(rx_vec_f128 a) {
-	return a.i;
-}
-
 FORCE_INLINE rx_vec_f128 rx_xor_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
 	rx_vec_f128 x;
 	x.i.u64[0] = a.i.u64[0] ^ b.i.u64[0];
@@ -723,6 +721,28 @@ FORCE_INLINE void rx_store_vec_i128(rx_vec_i128 *p, rx_vec_i128 b) {
 	store32(ptr + 1, b.u32[1]);
 	store32(ptr + 2, b.u32[2]);
 	store32(ptr + 3, b.u32[3]);
+#endif
+}
+
+FORCE_INLINE rx_vec_f128 rx_cast_vec_i2f(rx_vec_i128 a) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	rx_vec_f128 x;
+	x.i = a;
+	return x;
+#else
+	alignas(16) char buf[16];
+	rx_store_vec_i128((rx_vec_i128*)buf, a);
+	return rx_load_vec_f128((double*)buf);
+#endif
+}
+
+FORCE_INLINE rx_vec_i128 rx_cast_vec_f2i(rx_vec_f128 a) {
+#if defined(NATIVE_LITTLE_ENDIAN)
+	return a.i;
+#else
+	alignas(16) char buf[16];
+	rx_store_vec_f128((double*)buf, a);
+	return rx_load_vec_i128((rx_vec_i128*)buf);
 #endif
 }
 
