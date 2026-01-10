@@ -322,7 +322,7 @@ static void loadFromScratchpad(uint32_t src, uint32_t dst, uint32_t mod, uint32_
 	emit32(0x0002B283);
 }
 
-void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguration& pcfg, const uint8_t (&inst_map)[256], void* entryDataInitScalar, uint32_t datasetOffset)
+void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguration& pcfg, const uint8_t (&inst_map)[256], void* entryDataInitScalar, uint32_t datasetOffset, randomx_flags flags)
 {
 	uint64_t* params = (uint64_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_params));
 
@@ -807,10 +807,24 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 				emit32(0x0062E2B3);
 #endif // __riscv_zbb
 
+				if (flags & RANDOMX_FLAG_V2) {
+					// andi x6, x5, 120
+					emit32(0x0782F313);
+					// bnez x6, +24
+					emit32(0x00031C63);
+				}
+
 				// andi x5, x5, 6
 				emit32(0x0062F293);
 			}
 			else {
+				if (flags & RANDOMX_FLAG_V2) {
+					// andi x6, x20 + src, 120
+					emit32(0x078A7313 + (src << 15));
+					// bnez x6, +24
+					emit32(0x00031C63);
+				}
+
 				// andi x5, x20 + src, 6
 				emit32(0x006A7293 + (src << 15));
 			}

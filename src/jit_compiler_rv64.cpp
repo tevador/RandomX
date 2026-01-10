@@ -41,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "jit_compiler_rv64_vector.h"
 
 namespace {
-#define HANDLER_ARGS randomx::CompilerState& state, randomx::Instruction isn, int i
+#define HANDLER_ARGS randomx::CompilerState& state, randomx::Instruction isn, int i, randomx_flags flags
 	using InstructionHandler = void(HANDLER_ARGS);
 	extern InstructionHandler* opcodeMap1[256];
 }
@@ -466,12 +466,12 @@ namespace randomx {
 		buf.emitAt(codePos, rvi(rv64::JAL, dst + imm1912, 0, imm20 + imm101 + imm11));
 	}
 
-	static void emitInstruction(CompilerState& state, Instruction isn, int i) {
+	static void emitInstruction(CompilerState& state, Instruction isn, int i, randomx_flags flags) {
 		state.instructionOffsets[i] = state.codePos;
-		opcodeMap1[isn.opcode](state, isn, i);
+		opcodeMap1[isn.opcode](state, isn, i, flags);
 	}
 
-	static void emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg) {
+	static void emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags) {
 		state.codePos = RandomXCodePos;
 		state.rcpCount = 0;
 		state.emitAt(LiteralPoolOffset + sizeLiterals, pcfg.eMask[0]);
@@ -483,7 +483,7 @@ namespace randomx {
 			Instruction instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
-			emitInstruction(state, instr, i);
+			emitInstruction(state, instr, i, flags);
 		}
 	}
 
@@ -652,11 +652,11 @@ namespace randomx {
 
 	void JitCompilerRV64::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
 		if (vectorCode) {
-			generateProgramVectorRV64(vectorCode, prog, pcfg, instMap, nullptr, 0);
+			generateProgramVectorRV64(vectorCode, prog, pcfg, instMap, nullptr, 0, flags);
 			return;
 		}
 
-		emitProgramPrefix(state, prog, pcfg);
+		emitProgramPrefix(state, prog, pcfg, flags);
 		int32_t fixPos = state.codePos;
 		state.emit(codeDataRead, sizeDataRead);
 		//xor x8, x{readReg2}, x{readReg3}
@@ -667,11 +667,11 @@ namespace randomx {
 
 	void JitCompilerRV64::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
 		if (vectorCode) {
-			generateProgramVectorRV64(vectorCode, prog, pcfg, instMap, entryDataInit, datasetOffset);
+			generateProgramVectorRV64(vectorCode, prog, pcfg, instMap, entryDataInit, datasetOffset, flags);
 			return;
 		}
 
-		emitProgramPrefix(state, prog, pcfg);
+		emitProgramPrefix(state, prog, pcfg, flags);
 		int32_t fixPos = state.codePos;
 		state.emit(codeDataReadLight, sizeDataReadLight);
 		//xor x8, x{readReg2}, x{readReg3}
@@ -717,7 +717,7 @@ namespace randomx {
 		clearCache(state);
 	}
 
-	static void v1_IADD_RS(HANDLER_ARGS) {
+	static void h_IADD_RS(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int shift = isn.getModShift();
 		if (shift == 0) {
@@ -742,14 +742,14 @@ namespace randomx {
 		}
 	}
 
-	static void v1_IADD_M(HANDLER_ARGS) {
+	static void h_IADD_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//c.add x{dst}, x8
 		state.emit(rvc(rv64::C_ADD, regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_ISUB_R(HANDLER_ARGS) {
+	static void h_ISUB_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		if (isn.src != isn.dst) {
 			//sub x{dst}, x{dst}, x{src}
@@ -762,14 +762,14 @@ namespace randomx {
 		}
 	}
 
-	static void v1_ISUB_M(HANDLER_ARGS) {
+	static void h_ISUB_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//sub x{dst}, x{dst}, x8
 		state.emit(rvi(rv64::SUB, regR(isn.dst), regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_IMUL_R(HANDLER_ARGS) {
+	static void h_IMUL_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		if (isn.src != isn.dst) {
 			//mul x{dst}, x{dst}, x{src}
@@ -784,40 +784,40 @@ namespace randomx {
 		}
 	}
 
-	static void v1_IMUL_M(HANDLER_ARGS) {
+	static void h_IMUL_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//mul x{dst}, x{dst}, x8
 		state.emit(rvi(rv64::MUL, regR(isn.dst), regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_IMULH_R(HANDLER_ARGS) {
+	static void h_IMULH_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		//mulhu x{dst}, x{dst}, x{src}
 		state.emit(rvi(rv64::MULHU, regR(isn.dst), regR(isn.dst), regR(isn.src)));
 	}
 
-	static void v1_IMULH_M(HANDLER_ARGS) {
+	static void h_IMULH_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//mulhu x{dst}, x{dst}, x8
 		state.emit(rvi(rv64::MULHU, regR(isn.dst), regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_ISMULH_R(HANDLER_ARGS) {
+	static void h_ISMULH_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		//mulh x{dst}, x{dst}, x{src}
 		state.emit(rvi(rv64::MULH, regR(isn.dst), regR(isn.dst), regR(isn.src)));
 	}
 
-	static void v1_ISMULH_M(HANDLER_ARGS) {
+	static void h_ISMULH_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//mulh x{dst}, x{dst}, x8
 		state.emit(rvi(rv64::MULH, regR(isn.dst), regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_IMUL_RCP(HANDLER_ARGS) {
+	static void h_IMUL_RCP(HANDLER_ARGS) {
 		const uint32_t divisor = isn.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			state.registerUsage[isn.dst] = i;
@@ -842,13 +842,13 @@ namespace randomx {
 		}
 	}
 
-	static void v1_INEG_R(HANDLER_ARGS) {
+	static void h_INEG_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		//sub x{dst}, x0, x{dst}
 		state.emit(rvi(rv64::SUB, regR(isn.dst), 0, regR(isn.dst)));
 	}
 
-	static void v1_IXOR_R(HANDLER_ARGS) {
+	static void h_IXOR_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		if (isn.src != isn.dst) {
 			//xor x{dst}, x{dst}, x{src}
@@ -863,14 +863,14 @@ namespace randomx {
 		}
 	}
 
-	static void v1_IXOR_M(HANDLER_ARGS) {
+	static void h_IXOR_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		loadFromScratchpad(state, isn);
 		//xor x{dst}, x{dst}, x8
 		state.emit(rvi(rv64::XOR, regR(isn.dst), regR(isn.dst), Tmp1Reg));
 	}
 
-	static void v1_IROR_R(HANDLER_ARGS) {
+	static void h_IROR_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 #ifdef __riscv_zbb
 		if (isn.src != isn.dst) {
@@ -908,7 +908,7 @@ namespace randomx {
 #endif
 	}
 
-	static void v1_IROL_R(HANDLER_ARGS) {
+	static void h_IROL_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 #ifdef __riscv_zbb
 		if (isn.src != isn.dst) {
@@ -946,7 +946,7 @@ namespace randomx {
 #endif
 	}
 
-	static void v1_ISWAP_R(HANDLER_ARGS) {
+	static void h_ISWAP_R(HANDLER_ARGS) {
 		if (isn.src != isn.dst) {
 			state.registerUsage[isn.dst] = i;
 			state.registerUsage[isn.src] = i;
@@ -959,7 +959,7 @@ namespace randomx {
 		}
 	}
 
-	static void v1_FSWAP_R(HANDLER_ARGS) {
+	static void h_FSWAP_R(HANDLER_ARGS) {
 		//fmv.d f24, f{dst_lo}
 		state.emit(rvi(rv64::FMV_D, Tmp1RegF, regLoF(isn.dst), regLoF(isn.dst)));
 		//fmv.d f{dst_lo}, f{dst_hi}
@@ -968,7 +968,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FMV_D, regHiF(isn.dst), Tmp1RegF, Tmp1RegF));
 	}
 
-	static void v1_FADD_R(HANDLER_ARGS) {
+	static void h_FADD_R(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		isn.src %= RegisterCountFlt;
 		//fadd.d f{dst_lo}, f{dst_lo}, f{src_lo}
@@ -977,7 +977,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FADD_D, regHiF(isn.dst), regHiF(isn.dst), regHiA(isn.src)));
 	}
 
-	static void v1_FADD_M(HANDLER_ARGS) {
+	static void h_FADD_M(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		//x9 = mem
 		genAddressReg(state, isn);
@@ -995,7 +995,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FADD_D, regHiF(isn.dst), regHiF(isn.dst), Tmp2RegF));
 	}
 
-	static void v1_FSUB_R(HANDLER_ARGS) {
+	static void h_FSUB_R(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		isn.src %= RegisterCountFlt;
 		//fsub.d f{dst_lo}, f{dst_lo}, f{src_lo}
@@ -1004,7 +1004,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FSUB_D, regHiF(isn.dst), regHiF(isn.dst), regHiA(isn.src)));
 	}
 
-	static void v1_FSUB_M(HANDLER_ARGS) {
+	static void h_FSUB_M(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		//x9 = mem
 		genAddressReg(state, isn);
@@ -1022,7 +1022,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FSUB_D, regHiF(isn.dst), regHiF(isn.dst), Tmp2RegF));
 	}
 
-	static void v1_FSCAL_R(HANDLER_ARGS) {
+	static void h_FSCAL_R(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		//fmv.x.d x8, f{dst_lo}
 		state.emit(rvi(rv64::FMV_X_D, Tmp1Reg, regLoF(isn.dst)));
@@ -1038,7 +1038,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FMV_D_X, regHiF(isn.dst), Tmp2Reg));
 	}
 
-	static void v1_FMUL_R(HANDLER_ARGS) {
+	static void h_FMUL_R(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		isn.src %= RegisterCountFlt;
 		//fmul.d f{dst_lo}, f{dst_lo}, f{src_lo}
@@ -1047,7 +1047,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FMUL_D, regHiE(isn.dst), regHiE(isn.dst), regHiA(isn.src)));
 	}
 
-	static void v1_FDIV_M(HANDLER_ARGS) {
+	static void h_FDIV_M(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		//x9 = mem
 		genAddressReg(state, isn);
@@ -1081,7 +1081,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FDIV_D, regHiE(isn.dst), regHiE(isn.dst), Tmp2RegF));
 	}
 
-	static void v1_FSQRT_R(HANDLER_ARGS) {
+	static void h_FSQRT_R(HANDLER_ARGS) {
 		isn.dst %= RegisterCountFlt;
 		//fsqrt.d f{dst_lo}, f{dst_lo}
 		state.emit(rvi(rv64::FSQRT_D, regLoE(isn.dst), regLoE(isn.dst)));
@@ -1089,7 +1089,7 @@ namespace randomx {
 		state.emit(rvi(rv64::FSQRT_D, regHiE(isn.dst), regHiE(isn.dst)));
 	}
 
-	static void v1_CBRANCH(HANDLER_ARGS) {
+	static void h_CBRANCH(HANDLER_ARGS) {
 		int reg = isn.dst;
 		int target = state.registerUsage[reg] + 1;
 		int shift = isn.getModCond() + ConditionOffset;
@@ -1135,7 +1135,7 @@ namespace randomx {
 		}
 	}
 
-	static void v1_CFROUND(HANDLER_ARGS) {
+	static void h_CFROUND(HANDLER_ARGS) {
 		int32_t imm = (isn.getImm32() - 2) & 63; //-2 to avoid a later left shift to multiply by 4
 		if (imm != 0) {
 #ifdef __riscv_zbb
@@ -1150,10 +1150,22 @@ namespace randomx {
 			//c.or x8, x9
 			state.emit(rvc(rv64::C_OR, Tmp1Reg + OffsetXC, Tmp2Reg + OffsetXC));
 #endif
+			if (flags & RANDOMX_FLAG_V2) {
+				//andi x9, x8, 240
+				state.emit(rvi(rv64::ANDI, Tmp2Reg, Tmp1Reg, 240));
+				//c.bnez x9, +12
+				state.emit(uint16_t(0xE491));
+			}
 			//c.andi x8, 12
 			state.emit(rvc(rv64::C_ANDI, Tmp1Reg + OffsetXC, 12));
 		}
 		else {
+			if (flags & RANDOMX_FLAG_V2) {
+				//andi x9, x{src}, 240
+				state.emit(rvi(rv64::ANDI, Tmp2Reg, regR(isn.src), 240));
+				//c.bnez x9, +14
+				state.emit(uint16_t(0xE499));
+			}
 			//and x8, x{src}, 12
 			state.emit(rvi(rv64::ANDI, Tmp1Reg, regR(isn.src), 12));
 		}
@@ -1165,13 +1177,13 @@ namespace randomx {
 		state.emit(rvi(rv64::FSRM, 0, Tmp1Reg, 0));
 	}
 
-	static void v1_ISTORE(HANDLER_ARGS) {
+	static void h_ISTORE(HANDLER_ARGS) {
 		genAddressRegDst(state, isn);
 		//sd x{src}, 0(x9)
 		state.emit(rvi(rv64::SD, 0, Tmp2Reg, regR(isn.src)));
 	}
 
-	static void v1_NOP(HANDLER_ARGS) {
+	static void h_NOP(HANDLER_ARGS) {
 	}
 }
 
@@ -1179,44 +1191,42 @@ namespace randomx {
 
 namespace {
 
-#define INST_HANDLE1(x) REPN(&randomx::v1_##x, WT(x))
-#define INST_HANDLE2(x) REPN(&randomx::v2_##x, WT(x))
+#define INST_HANDLE(x) REPN(&randomx::h_##x, WT(x))
 
 	InstructionHandler* opcodeMap1[256] = {
-		INST_HANDLE1(IADD_RS)
-		INST_HANDLE1(IADD_M)
-		INST_HANDLE1(ISUB_R)
-		INST_HANDLE1(ISUB_M)
-		INST_HANDLE1(IMUL_R)
-		INST_HANDLE1(IMUL_M)
-		INST_HANDLE1(IMULH_R)
-		INST_HANDLE1(IMULH_M)
-		INST_HANDLE1(ISMULH_R)
-		INST_HANDLE1(ISMULH_M)
-		INST_HANDLE1(IMUL_RCP)
-		INST_HANDLE1(INEG_R)
-		INST_HANDLE1(IXOR_R)
-		INST_HANDLE1(IXOR_M)
-		INST_HANDLE1(IROR_R)
-		INST_HANDLE1(IROL_R)
-		INST_HANDLE1(ISWAP_R)
-		INST_HANDLE1(FSWAP_R)
-		INST_HANDLE1(FADD_R)
-		INST_HANDLE1(FADD_M)
-		INST_HANDLE1(FSUB_R)
-		INST_HANDLE1(FSUB_M)
-		INST_HANDLE1(FSCAL_R)
-		INST_HANDLE1(FMUL_R)
-		INST_HANDLE1(FDIV_M)
-		INST_HANDLE1(FSQRT_R)
-		INST_HANDLE1(CBRANCH)
-		INST_HANDLE1(CFROUND)
-		INST_HANDLE1(ISTORE)
-		INST_HANDLE1(NOP)
+		INST_HANDLE(IADD_RS)
+		INST_HANDLE(IADD_M)
+		INST_HANDLE(ISUB_R)
+		INST_HANDLE(ISUB_M)
+		INST_HANDLE(IMUL_R)
+		INST_HANDLE(IMUL_M)
+		INST_HANDLE(IMULH_R)
+		INST_HANDLE(IMULH_M)
+		INST_HANDLE(ISMULH_R)
+		INST_HANDLE(ISMULH_M)
+		INST_HANDLE(IMUL_RCP)
+		INST_HANDLE(INEG_R)
+		INST_HANDLE(IXOR_R)
+		INST_HANDLE(IXOR_M)
+		INST_HANDLE(IROR_R)
+		INST_HANDLE(IROL_R)
+		INST_HANDLE(ISWAP_R)
+		INST_HANDLE(FSWAP_R)
+		INST_HANDLE(FADD_R)
+		INST_HANDLE(FADD_M)
+		INST_HANDLE(FSUB_R)
+		INST_HANDLE(FSUB_M)
+		INST_HANDLE(FSCAL_R)
+		INST_HANDLE(FMUL_R)
+		INST_HANDLE(FDIV_M)
+		INST_HANDLE(FSQRT_R)
+		INST_HANDLE(CBRANCH)
+		INST_HANDLE(CFROUND)
+		INST_HANDLE(ISTORE)
+		INST_HANDLE(NOP)
 	};
 
-#undef INST_HANDLE1
-#undef INST_HANDLE2
+#undef INST_HANDLE
 }
 
 #define INST_HANDLE(x) REPN(static_cast<uint8_t>(randomx::InstructionType::x), WT(x))
