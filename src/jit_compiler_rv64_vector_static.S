@@ -69,12 +69,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor)
 .global DECL(randomx_riscv64_vector_program_main_loop_spaddr_xor)
+.global DECL(randomx_riscv64_vector_program_main_loop_fe_mix)
 
 .global DECL(randomx_riscv64_vector_program_main_loop_light_mode_data)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end_light_mode)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor_light_mode)
 .global DECL(randomx_riscv64_vector_program_scratchpad_prefetch)
 .global DECL(randomx_riscv64_vector_program_scratchpad_prefetch_end)
+
+.global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1)
 
 .global DECL(randomx_riscv64_vector_program_end)
 
@@ -375,7 +378,7 @@ v12	= E 'and' mask = 0x00ffffffffffffff'00ffffffffffffff
 v13	= E 'or' mask  = 0x3*00000000******'3*00000000******
 v14	= scale mask   = 0x80f0000000000000'80f0000000000000
 
-v15	= unused
+v15	= all zeroes
 v16	= temporary
 v17	= unused
 v18	= temporary
@@ -506,6 +509,9 @@ DECL(randomx_riscv64_vector_program_begin):
 	fld f29, 184(x18)
 	fld f30, 192(x18)
 	fld f31, 200(x18)
+
+	// Set v15 to zero
+	vxor.vv v15, v15, v15
 
 randomx_riscv64_vector_program_main_loop:
 	and x5, x15, x9		// x5 = spAddr0 & 64-byte aligned L3 mask
@@ -673,11 +679,47 @@ DECL(randomx_riscv64_vector_program_main_loop_spaddr_xor):
 	xor x15, x20, x22	// spAddr0-spAddr1 = readReg0 ^ readReg1 (JIT compiler will substitute the actual registers)
 
 	// store registers f0-f3 to the scratchpad (f0-f3 are first combined with e0-e3)
-	vxor.vv v0, v0, v4
+
+	// v2 FE mix code is the main code path
+	// JIT compiler will place a jump to v1 or v2 soft AES code here if needed
+DECL(randomx_riscv64_vector_program_main_loop_fe_mix):
+	vsetivli zero, 4, e32, m1, ta, ma
+
+	// f0 = aesenc(f0, e0), f1 = aesdec(f1, e0), f2 = aesenc(f2, e0), f3 = aesdec(f3, e0)
+	vaesem.vv v0, v4
+	vaesdm.vv v1, v15
+	vaesem.vv v2, v4
+	vaesdm.vv v3, v15
+	vxor.vv v1, v1, v4
+	vxor.vv v3, v3, v4
+
+	// f0 = aesenc(f0, e1), f1 = aesdec(f1, e1), f2 = aesenc(f2, e1), f3 = aesdec(f3, e1)
+	vaesem.vv v0, v5
+	vaesdm.vv v1, v15
+	vaesem.vv v2, v5
+	vaesdm.vv v3, v15
 	vxor.vv v1, v1, v5
-	vxor.vv v2, v2, v6
+	vxor.vv v3, v3, v5
+
+	// f0 = aesenc(f0, e2), f1 = aesdec(f1, e2), f2 = aesenc(f2, e2), f3 = aesdec(f3, e2)
+	vaesem.vv v0, v6
+	vaesdm.vv v1, v15
+	vaesem.vv v2, v6
+	vaesdm.vv v3, v15
+	vxor.vv v1, v1, v6
+	vxor.vv v3, v3, v6
+
+	// f0 = aesenc(f0, e3), f1 = aesdec(f1, e3), f2 = aesenc(f2, e3), f3 = aesdec(f3, e3)
+	vaesem.vv v0, v7
+	vaesdm.vv v1, v15
+	vaesem.vv v2, v7
+	vaesdm.vv v3, v15
+	vxor.vv v1, v1, v7
 	vxor.vv v3, v3, v7
 
+	vsetivli zero, 2, e64, m1, ta, ma
+
+randomx_riscv64_vector_program_main_loop_fe_store:
 	vse64.v v0, (x5)
 
 	addi x6, x5, 16
@@ -867,6 +909,13 @@ DECL(randomx_riscv64_vector_program_scratchpad_prefetch):
 #endif
 
 DECL(randomx_riscv64_vector_program_scratchpad_prefetch_end):
+
+DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1):
+	vxor.vv v0, v0, v4
+	vxor.vv v1, v1, v5
+	vxor.vv v2, v2, v6
+	vxor.vv v3, v3, v7
+	j randomx_riscv64_vector_program_main_loop_fe_store
 
 DECL(randomx_riscv64_vector_program_end):
 

@@ -316,7 +316,7 @@ if(ARCH_ID STREQUAL "riscv64")
     endif()
   endif()
 
-  set_source_files_properties(src/jit_compiler_rv64_vector_static.S PROPERTIES COMPILE_FLAGS "-march=${RV64_VECTOR_FILE_ARCH}")
+  set_source_files_properties(src/jit_compiler_rv64_vector_static.S PROPERTIES COMPILE_FLAGS "-march=${RV64_VECTOR_FILE_ARCH}_zvkned")
   set_source_files_properties(src/aes_hash_rv64_vector.cpp PROPERTIES COMPILE_FLAGS "-O3 -march=${RV64_VECTOR_FILE_ARCH}")
   set_source_files_properties(src/aes_hash_rv64_zvkned.cpp PROPERTIES COMPILE_FLAGS "-O3 -march=${RV64_VECTOR_FILE_ARCH}_zvkned")
 endif()

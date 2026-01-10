@@ -60,12 +60,15 @@ void randomx_riscv64_vector_program_main_loop_instructions();
 void randomx_riscv64_vector_program_main_loop_instructions_end();
 void randomx_riscv64_vector_program_main_loop_mx_xor();
 void randomx_riscv64_vector_program_main_loop_spaddr_xor();
+void randomx_riscv64_vector_program_main_loop_fe_mix();
 void randomx_riscv64_vector_program_main_loop_light_mode_data();
 void randomx_riscv64_vector_program_main_loop_instructions_end_light_mode();
 void randomx_riscv64_vector_program_main_loop_mx_xor_light_mode();
 void randomx_riscv64_vector_program_end();
 void randomx_riscv64_vector_program_scratchpad_prefetch();
 void randomx_riscv64_vector_program_scratchpad_prefetch_end();
+
+void randomx_riscv64_vector_program_main_loop_fe_mix_v1();
 
 void randomx_riscv64_vector_code_end();
 

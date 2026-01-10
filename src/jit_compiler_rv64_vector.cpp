@@ -47,6 +47,8 @@ constexpr int MaskL3Shift = 32 - maskLog2(RANDOMX_SCRATCHPAD_L3, 0);
 #define ADDR(x) ((uint8_t*) &(x))
 #define DIST(x, y) (ADDR(y) - ADDR(x))
 
+#define JUMP(offset) (0x6F | (((offset) & 0x7FE) << 20) | (((offset) & 0x800) << 9) | ((offset) & 0xFF000))
+
 void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgramList &programs, std::vector<uint64_t>& reciprocalCache)
 {
 	uint8_t* p = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_generated_instructions);
@@ -214,8 +216,7 @@ void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgramList &progra
 
 	// Emit "J randomx_riscv64_vector_sshash_generated_instructions_end" instruction
 	const uint8_t* e = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_generated_instructions_end);
-	const uint32_t k = e - p;
-	const uint32_t j = 0x6F | ((k & 0x7FE) << 20) | ((k & 0x800) << 9) | (k & 0xFF000);
+	const uint32_t j = JUMP(e - p);
 	memcpy(p, &j, 4);
 
 	char* result = (char*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_dataset_init));
@@ -903,8 +904,13 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 		e = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_main_loop_instructions_end);
 	}
 
-	const uint32_t k = e - p;
-	emit32(0x6F | ((k & 0x7FE) << 20) | ((k & 0x800) << 9) | (k & 0xFF000));
+	emit32(JUMP(e - p));
+
+	if ((flags & RANDOMX_FLAG_V2) == 0) {
+		// Emit "J randomx_riscv64_vector_program_main_loop_fe_mix_v1" instruction
+		uint32_t* p1 = (uint32_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_main_loop_fe_mix));
+		*p1 = JUMP(DIST(randomx_riscv64_vector_program_main_loop_fe_mix, randomx_riscv64_vector_program_main_loop_fe_mix_v1));
+	}
 
 #ifdef __GNUC__
 	char* p1 = (char*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_params));
