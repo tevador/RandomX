@@ -1151,6 +1151,7 @@ int main() {
 
 	randomx_destroy_vm(vm);
 	vm = nullptr;
+
 #ifdef RANDOMX_FORCE_SECURE
 	vm = randomx_create_vm(RANDOMX_FLAG_V2 | RANDOMX_FLAG_SECURE, cache, nullptr);
 #else
@@ -1164,7 +1165,38 @@ int main() {
 	});
 
 	randomx_destroy_vm(vm);
-	vm = nullptr;
+
+#ifdef RANDOMX_FORCE_SECURE
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
+
+	auto test_switch = [&] {
+		alignas(16) char hash[RANDOMX_HASH_SIZE];
+		calcStringHash("test key 000", "This is a test", &hash);
+		assert(equalsHex(hash, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
+		vm->setFlagV2();
+		calcStringHash("test key 000", "This is a test", &hash);
+		assert(equalsHex(hash, "53901485cc6991507167d2aa745b7ad7a1d36422aa83f143c14ebfe97ab97af7"));
+		vm->clearFlagV2();
+		calcStringHash("test key 000", "This is a test", &hash);
+		assert(equalsHex(hash, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
+	};
+
+	runTest("Hash test (interpreter switch v1 <-> v2)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_switch);
+
+	if (RANDOMX_HAVE_COMPILER) {
+		randomx_destroy_vm(vm);
+
+#ifdef RANDOMX_FORCE_SECURE
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+#endif
+	}
+
+	runTest("Hash test (compiler switch v1 <-> v2)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_switch);
 
 	if (cache != nullptr)
 		randomx_release_cache(cache);

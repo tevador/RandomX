@@ -60,6 +60,12 @@ public:
 	randomx_flags getFlags() const {
 		return vmFlags;
 	}
+	virtual void setFlagV2() { vmFlags |= RANDOMX_FLAG_V2; }
+	virtual void clearFlagV2() {
+		if (vmFlags & RANDOMX_FLAG_V2) {
+			vmFlags = static_cast<randomx_flags>(static_cast<int>(vmFlags) - RANDOMX_FLAG_V2);
+		}
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;

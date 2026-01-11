@@ -169,10 +169,10 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 	codePos = ((uint8_t*)randomx_program_aarch64_update_spMix1) - ((uint8_t*)randomx_program_aarch64);
 	emit32(ARMV8A::EOR | 10 | (IntRegMap[config.readReg0] << 5) | (IntRegMap[config.readReg1] << 16), code, codePos);
 
+	codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
+
 	// Enable RandomX v2 AES tweak
 	if (flags & RANDOMX_FLAG_V2) {
-		codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
-
 		if (flags & RANDOMX_FLAG_HARD_AES) {
 			// Disable the jump to RandomX v1 FE mix code by writing "movi v28.4s, 0" instruction
 			emit32(0x4F00041C, code, codePos);
@@ -182,6 +182,11 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
 			emit32(ARMV8A::B | (offset / 4), code, codePos);
 		}
+	}
+	else {
+		// Restore the jump to RandomX v1 FE mix code
+		const uint32_t offset = (uint8_t*)randomx_program_aarch64_v1_FE_mix - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+		emit32(ARMV8A::B | (offset / 4), code, codePos);
 	}
 
 #ifdef __GNUC__
@@ -231,10 +236,10 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 	codePos = ((uint8_t*)randomx_program_aarch64_update_spMix1) - ((uint8_t*)randomx_program_aarch64);
 	emit32(ARMV8A::EOR | 10 | (IntRegMap[config.readReg0] << 5) | (IntRegMap[config.readReg1] << 16), code, codePos);
 
+	codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
+
 	// Enable RandomX v2 AES tweak
 	if (flags & RANDOMX_FLAG_V2) {
-		codePos = ((uint8_t*)randomx_program_aarch64_v2_FE_mix) - ((uint8_t*)randomx_program_aarch64);
-
 		if (flags & RANDOMX_FLAG_HARD_AES) {
 			// Disable the jump to RandomX v1 FE mix code by writing "movi v28.4s, 0" instruction
 			emit32(0x4F00041C, code, codePos);
@@ -244,6 +249,11 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
 			emit32(ARMV8A::B | (offset / 4), code, codePos);
 		}
+	}
+	else {
+		// Restore the jump to RandomX v1 FE mix code
+		const uint32_t offset = (uint8_t*)randomx_program_aarch64_v1_FE_mix - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+		emit32(ARMV8A::B | (offset / 4), code, codePos);
 	}
 
 	// Apply dataset offset

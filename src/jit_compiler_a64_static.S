@@ -42,6 +42,7 @@
 	.global DECL(randomx_program_aarch64_cacheline_align_mask2)
 	.global DECL(randomx_program_aarch64_update_spMix1)
 	.global DECL(randomx_program_aarch64_v2_FE_mix)
+	.global DECL(randomx_program_aarch64_v1_FE_mix)
 	.global DECL(randomx_program_aarch64_v2_FE_mix_soft_aes)
 	.global DECL(randomx_program_aarch64_vm_instructions_end_light)
 	.global DECL(randomx_program_aarch64_light_cacheline_align_mask)
@@ -364,7 +365,7 @@ DECL(randomx_program_aarch64_v2_FE_mix):
 	# Jump to v1 FE mix code if we're running RandomX v1
 	# JIT compiler will write a "movi v28.4s, 0" (set v28 to all 0) here if we're running RandomX v2
 	# Or, JIT compiler will write a "b randomx_program_aarch64_v2_FE_mix_soft_aes" if we're running RandomX v2 with soft AES
-	b randomx_program_aarch64_v1_FE_mix
+	b DECL(randomx_program_aarch64_v1_FE_mix)
 
 	# f0 = aesenc(f0, e0), f1 = aesdec(f1, e0), f2 = aesenc(f2, e0), f3 = aesdec(f3, e0)
 
@@ -437,7 +438,7 @@ DECL(randomx_program_aarch64_v2_FE_mix):
 	# Skip v1 FE mix code because we already did v2 FE mix
 	b randomx_program_aarch64_FE_store
 
-randomx_program_aarch64_v1_FE_mix:
+DECL(randomx_program_aarch64_v1_FE_mix):
 	eor	v16.16b, v16.16b, v20.16b
 	eor	v17.16b, v17.16b, v21.16b
 	eor	v18.16b, v18.16b, v22.16b
