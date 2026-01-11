@@ -1,6 +1,6 @@
 /*
 Copyright (c) 2023, tevador    <tevador@gmail.com>
-Copyright (c) 2025, SChernykh       <https://github.com/SChernykh>
+Copyright (c) 2025-2026, SChernykh  <https://github.com/SChernykh>
 
 All rights reserved.
 
@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "reciprocal.h"
 #include "superscalar.hpp"
 #include "program.hpp"
+#include "soft_aes.h"
 
 namespace randomx {
 
@@ -332,6 +333,24 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 	params[2] = RANDOMX_SCRATCHPAD_L3 - 8;
 	params[3] = RANDOMX_DATASET_BASE_SIZE - 64;
 	params[4] = (1 << RANDOMX_JUMP_BITS) - 1;
+
+	if ((flags & RANDOMX_FLAG_V2) && ((flags & RANDOMX_FLAG_HARD_AES) == 0)) {
+		params[5] = (uint64_t) randomx_aes_lut_enc;
+		params[6] = (uint64_t) randomx_aes_lut_dec;
+		params[7] = (uint64_t) randomx_aes_lut_enc_index;
+		params[8] = (uint64_t) randomx_aes_lut_dec_index;
+
+		uint32_t* p1 = (uint32_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_v2_soft_aes_init));
+
+		// Restore vsetivli zero, 4, e32, m1, ta, ma
+		*p1 = 0xCD027057;
+	}
+	else {
+		uint32_t* p1 = (uint32_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_v2_soft_aes_init));
+
+		// Emit "J randomx_riscv64_vector_program_main_loop" instruction
+		*p1 = JUMP(DIST(randomx_riscv64_vector_program_v2_soft_aes_init, randomx_riscv64_vector_program_main_loop));
+	}
 
 	uint64_t* imul_rcp_literals = (uint64_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_imul_rcp_literals));
 	uint64_t* cur_literal = imul_rcp_literals;
@@ -906,9 +925,22 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 
 	emit32(JUMP(e - p));
 
-	if ((flags & RANDOMX_FLAG_V2) == 0) {
-		// Emit "J randomx_riscv64_vector_program_main_loop_fe_mix_v1" instruction
+	if (flags & RANDOMX_FLAG_V2) {
 		uint32_t* p1 = (uint32_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_main_loop_fe_mix));
+
+		if (flags & RANDOMX_FLAG_HARD_AES) {
+			// Restore vsetivli zero, 4, e32, m1, ta, ma
+			*p1 = 0xCD027057;
+		}
+		else {
+			// Emit "J randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes" instruction
+			*p1 = JUMP(DIST(randomx_riscv64_vector_program_main_loop_fe_mix, randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes));
+		}
+	}
+	else {
+		uint32_t* p1 = (uint32_t*)(buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_main_loop_fe_mix));
+
+		// Emit "J randomx_riscv64_vector_program_main_loop_fe_mix_v1" instruction
 		*p1 = JUMP(DIST(randomx_riscv64_vector_program_main_loop_fe_mix, randomx_riscv64_vector_program_main_loop_fe_mix_v1));
 	}
 

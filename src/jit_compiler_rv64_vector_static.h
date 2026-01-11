@@ -1,6 +1,6 @@
 /*
 Copyright (c) 2018-2020, tevador    <tevador@gmail.com>
-Copyright (c) 2025, SChernykh       <https://github.com/SChernykh>
+Copyright (c) 2025-2026, SChernykh  <https://github.com/SChernykh>
 
 All rights reserved.
 
@@ -56,6 +56,8 @@ void randomx_riscv64_vector_sshash_end();
 void randomx_riscv64_vector_program_params();
 void randomx_riscv64_vector_program_imul_rcp_literals();
 void randomx_riscv64_vector_program_begin();
+void randomx_riscv64_vector_program_v2_soft_aes_init();
+void randomx_riscv64_vector_program_main_loop();
 void randomx_riscv64_vector_program_main_loop_instructions();
 void randomx_riscv64_vector_program_main_loop_instructions_end();
 void randomx_riscv64_vector_program_main_loop_mx_xor();
@@ -69,6 +71,7 @@ void randomx_riscv64_vector_program_scratchpad_prefetch();
 void randomx_riscv64_vector_program_scratchpad_prefetch_end();
 
 void randomx_riscv64_vector_program_main_loop_fe_mix_v1();
+void randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes();
 
 void randomx_riscv64_vector_code_end();
 

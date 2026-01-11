@@ -1,6 +1,6 @@
 /*
 Copyright (c) 2018-2020, tevador    <tevador@gmail.com>
-Copyright (c) 2025, SChernykh       <https://github.com/SChernykh>
+Copyright (c) 2025-2026, SChernykh  <https://github.com/SChernykh>
 
 All rights reserved.
 
@@ -65,6 +65,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_params)
 .global DECL(randomx_riscv64_vector_program_imul_rcp_literals)
 .global DECL(randomx_riscv64_vector_program_begin)
+.global DECL(randomx_riscv64_vector_program_v2_soft_aes_init)
+.global DECL(randomx_riscv64_vector_program_main_loop)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor)
@@ -78,6 +80,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_scratchpad_prefetch_end)
 
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1)
+.global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes)
 
 .global DECL(randomx_riscv64_vector_program_end)
 
@@ -383,7 +386,16 @@ v16	= temporary
 v17	= unused
 v18	= temporary
 
-v19-v31	= unused
+v19	= temporary in soft aes
+v20	= randomx_aes_lut_enc_index[0]
+v21	= randomx_aes_lut_enc_index[1]
+v22	= randomx_aes_lut_enc_index[2]
+v23	= randomx_aes_lut_enc_index[3]
+v24	= randomx_aes_lut_dec_index[0]
+v25	= randomx_aes_lut_dec_index[1]
+v26	= randomx_aes_lut_dec_index[2]
+v27	= randomx_aes_lut_dec_index[3]
+v28-v31 = temporary in aesenc_soft/aesdec_soft
 */
 
 .balign 8
@@ -392,6 +404,11 @@ DECL(randomx_riscv64_vector_program_params):
 
 // JIT compiler will adjust these values for different RandomX variants
 randomx_masks:	.dword 16376, 262136, 2097144, 2147483584, 255
+
+randomx_aes_lut_enc_ptr:	.dword 0
+randomx_aes_lut_dec_ptr:	.dword 0
+randomx_aes_lut_enc_index_ptr:	.dword 0
+randomx_aes_lut_dec_index_ptr:	.dword 0
 
 DECL(randomx_riscv64_vector_program_imul_rcp_literals):
 
@@ -513,7 +530,41 @@ DECL(randomx_riscv64_vector_program_begin):
 	// Set v15 to zero
 	vxor.vv v15, v15, v15
 
-randomx_riscv64_vector_program_main_loop:
+DECL(randomx_riscv64_vector_program_v2_soft_aes_init):
+	// JIT compiler will place a jump to the main loop here if needed
+
+	// Load randomx_aes_lut_enc_index/randomx_aes_lut_dec_index
+	vsetivli zero, 4, e32, m1, ta, ma
+
+	lla x5, randomx_aes_lut_enc_index_ptr
+	ld x5, (x5)
+	vle32.v v20, (x5)
+
+	addi x6, x5, 32
+	vle32.v v21, (x6)
+
+	addi x6, x5, 64
+	vle32.v v22, (x6)
+
+	addi x6, x5, 96
+	vle32.v v23, (x6)
+
+	lla x5, randomx_aes_lut_dec_index_ptr
+	ld x5, (x5)
+	vle32.v v24, (x5)
+
+	addi x6, x5, 32
+	vle32.v v25, (x6)
+
+	addi x6, x5, 64
+	vle32.v v26, (x6)
+
+	addi x6, x5, 96
+	vle32.v v27, (x6)
+
+	vsetivli zero, 2, e64, m1, ta, ma
+
+DECL(randomx_riscv64_vector_program_main_loop):
 	and x5, x15, x9		// x5 = spAddr0 & 64-byte aligned L3 mask
 	add x5, x5, x12		// x5 = &scratchpad[spAddr0 & 64-byte aligned L3 mask]
 
@@ -915,6 +966,146 @@ DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1):
 	vxor.vv v1, v1, v5
 	vxor.vv v2, v2, v6
 	vxor.vv v3, v3, v7
+	j randomx_riscv64_vector_program_main_loop_fe_store
+
+/*
+aesenc middle round without the final XOR with round key
+
+x5	= pointer to aesenc LUT
+v16	= input and return value
+*/
+aesenc_soft:
+	vsetivli zero, 16, e8, m1, ta, ma
+
+	vrgather.vv v28, v16, v20
+	vrgather.vv v29, v16, v21
+	vrgather.vv v30, v16, v22
+	vrgather.vv v31, v16, v23
+
+	vsetivli zero, 4, e32, m1, ta, ma
+
+	vsll.vi v28, v28, 2
+	vsll.vi v29, v29, 2
+	vsll.vi v30, v30, 2
+	vsll.vi v31, v31, 2
+
+	vluxei32.v v28, (x5), v28
+
+	addi x6, x5, 1024
+	vluxei32.v v29, (x6), v29
+
+	addi x6, x6, 1024
+	vluxei32.v v30, (x6), v30
+
+	addi x6, x6, 1024
+	vluxei32.v v31, (x6), v31
+
+	vxor.vv v28, v28, v29
+	vxor.vv v30, v30, v31
+	vxor.vv v16, v28, v30
+
+	ret
+
+/*
+aesdec middle round without the final XOR with round key
+
+x5	= pointer to aesdec LUT
+v16	= input and return value
+*/
+aesdec_soft:
+	vsetivli zero, 16, e8, m1, ta, ma
+
+	vrgather.vv v28, v16, v24
+	vrgather.vv v29, v16, v25
+	vrgather.vv v30, v16, v26
+	vrgather.vv v31, v16, v27
+
+	vsetivli zero, 4, e32, m1, ta, ma
+
+	vsll.vi v28, v28, 2
+	vsll.vi v29, v29, 2
+	vsll.vi v30, v30, 2
+	vsll.vi v31, v31, 2
+
+	vluxei32.v v28, (x5), v28
+
+	addi x6, x5, 1024
+	vluxei32.v v29, (x6), v29
+
+	addi x6, x6, 1024
+	vluxei32.v v30, (x6), v30
+
+	addi x6, x6, 1024
+	vluxei32.v v31, (x6), v31
+
+	vxor.vv v28, v28, v29
+	vxor.vv v30, v30, v31
+	vxor.vv v16, v28, v30
+
+	ret
+
+DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes):
+	// save x1 and x5
+	vmv.s.x v18, x1
+	vmv.s.x v19, x5
+
+	lla x5, randomx_aes_lut_enc_ptr
+	ld x5, (x5)
+
+	// f0 = aesenc(f0, e0), f0 = aesenc(f0, e1), f0 = aesenc(f0, e2), f0 = aesenc(f0, e3)
+	vmv.v.v v16, v0
+	jal aesenc_soft
+	vxor.vv v16, v16, v4
+	jal aesenc_soft
+	vxor.vv v16, v16, v5
+	jal aesenc_soft
+	vxor.vv v16, v16, v6
+	jal aesenc_soft
+	vxor.vv v0, v16, v7
+
+	// f2 = aesenc(f2, e0), f2 = aesenc(f2, e1), f2 = aesenc(f2, e2), f2 = aesenc(f2, e3)
+	vmv.v.v v16, v2
+	jal aesenc_soft
+	vxor.vv v16, v16, v4
+	jal aesenc_soft
+	vxor.vv v16, v16, v5
+	jal aesenc_soft
+	vxor.vv v16, v16, v6
+	jal aesenc_soft
+	vxor.vv v2, v16, v7
+
+	lla x5, randomx_aes_lut_dec_ptr
+	ld x5, (x5)
+
+	// f1 = aesdec(f1, e0), f1 = aesdec(f1, e1), f1 = aesdec(f1, e2), f1 = aesdec(f1, e3)
+	vmv.v.v v16, v1
+	jal aesdec_soft
+	vxor.vv v16, v16, v4
+	jal aesdec_soft
+	vxor.vv v16, v16, v5
+	jal aesdec_soft
+	vxor.vv v16, v16, v6
+	jal aesdec_soft
+	vxor.vv v1, v16, v7
+
+	// f3 = aesdec(f3, e0), f3 = aesdec(f3, e1), f3 = aesdec(f3, e2), f3 = aesdec(f3, e3)
+	vmv.v.v v16, v3
+	jal aesdec_soft
+	vxor.vv v16, v16, v4
+	jal aesdec_soft
+	vxor.vv v16, v16, v5
+	jal aesdec_soft
+	vxor.vv v16, v16, v6
+	jal aesdec_soft
+	vxor.vv v3, v16, v7
+
+	// Set vector registers back to 2x64 bit
+	vsetivli zero, 2, e64, m1, ta, ma
+
+	// restore x1 and x5
+	vmv.x.s x1, v18
+	vmv.x.s x5, v19
+
 	j randomx_riscv64_vector_program_main_loop_fe_store
 
 DECL(randomx_riscv64_vector_program_end):

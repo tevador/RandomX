@@ -68,7 +68,7 @@ void hashAes1Rx4(const void *input, size_t inputSize, void *hash) {
 	assert(inputSize % 64 == 0);
 
 #ifdef __riscv
-	if (randomx::cpu.hasAes()) {
+	if (!softAes) {
 		hashAes1Rx4_zvkned(input, inputSize, hash);
 		return;
 	}
@@ -153,7 +153,7 @@ void fillAes1Rx4(void *state, size_t outputSize, void *buffer) {
 	assert(outputSize % 64 == 0);
 
 #ifdef __riscv
-	if (randomx::cpu.hasAes()) {
+	if (!softAes) {
 		fillAes1Rx4_zvkned(state, outputSize, buffer);
 		return;
 	}
@@ -221,7 +221,7 @@ void fillAes4Rx4(void *state, size_t outputSize, void *buffer) {
 	assert(outputSize % 64 == 0);
 
 #ifdef __riscv
-	if (randomx::cpu.hasAes()) {
+	if (!softAes) {
 		fillAes4Rx4_zvkned(state, outputSize, buffer);
 		return;
 	}
@@ -288,7 +288,7 @@ template void fillAes4Rx4<false>(void *state, size_t outputSize, void *buffer);
 template<bool softAes>
 void hashAndFillAes1Rx4(void *scratchpad, size_t scratchpadSize, void *hash, void* fill_state) {
 #ifdef __riscv
-	if (randomx::cpu.hasAes()) {
+	if (!softAes) {
 		hashAndFillAes1Rx4_zvkned(scratchpad, scratchpadSize, hash, fill_state);
 		return;
 	}
