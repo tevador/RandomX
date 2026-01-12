@@ -43,7 +43,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_data_read_light)
 .global DECL(randomx_riscv64_fix_loop_call)
 .global DECL(randomx_riscv64_spad_store)
-.global DECL(randomx_riscv64_spad_store_hardaes)
 .global DECL(randomx_riscv64_spad_store_softaes)
 .global DECL(randomx_riscv64_loop_end)
 .global DECL(randomx_riscv64_fix_continue_loop)
@@ -534,9 +533,6 @@ DECL(randomx_riscv64_spad_store):
     fmv.d.x f6, x8
     sd x30, 56(x26)
     fmv.d.x f7, x30
-
-DECL(randomx_riscv64_spad_store_hardaes):
-    nop /* not implemented */
 
 DECL(randomx_riscv64_spad_store_softaes):
     /* store integer registers */

@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "cpu.hpp"
 #include "jit_compiler_rv64_vector_static.h"
 #include "jit_compiler_rv64_vector.h"
+#include "soft_aes.h"
 
 namespace {
 #define HANDLER_ARGS randomx::CompilerState& state, randomx::Instruction isn, int i, randomx_flags flags
@@ -251,7 +252,6 @@ namespace randomx {
 	static const uint8_t* codeDataReadLight = (uint8_t*)&randomx_riscv64_data_read_light;
 	static const uint8_t* codeFixLoopCall = (uint8_t*)&randomx_riscv64_fix_loop_call;
 	static const uint8_t* codeSpadStore = (uint8_t*)&randomx_riscv64_spad_store;
-	static const uint8_t* codeSpadStoreHardAes = (uint8_t*)&randomx_riscv64_spad_store_hardaes;
 	static const uint8_t* codeSpadStoreSoftAes = (uint8_t*)&randomx_riscv64_spad_store_softaes;
 	static const uint8_t* codeLoopEnd = (uint8_t*)&randomx_riscv64_loop_end;
 	static const uint8_t* codeFixContinueLoop = (uint8_t*)&randomx_riscv64_fix_continue_loop;
@@ -269,7 +269,7 @@ namespace randomx {
 	static const int32_t sizeLoopBegin = codeDataRead - codeLoopBegin;
 	static const int32_t sizeDataRead = codeDataReadLight - codeDataRead;
 	static const int32_t sizeDataReadLight = codeSpadStore - codeDataReadLight;
-	static const int32_t sizeSpadStore = codeSpadStoreHardAes - codeSpadStore;
+	static const int32_t sizeSpadStore = codeSpadStoreSoftAes - codeSpadStore;
 	static const int32_t sizeSpadStoreSoftAes = codeLoopEnd - codeSpadStoreSoftAes;
 	static const int32_t sizeLoopEnd = codeEpilogue - codeLoopEnd;
 	static const int32_t sizeEpilogue = codeSoftAes - codeEpilogue;
@@ -474,8 +474,15 @@ namespace randomx {
 	static void emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags) {
 		state.codePos = RandomXCodePos;
 		state.rcpCount = 0;
+
 		state.emitAt(LiteralPoolOffset + sizeLiterals, pcfg.eMask[0]);
 		state.emitAt(LiteralPoolOffset + sizeLiterals + 8, pcfg.eMask[1]);
+
+		if (flags & RANDOMX_FLAG_V2) {
+			state.emitAt(LiteralPoolOffset + sizeLiterals + 16, (uint64_t) &randomx_aes_lut_enc[2][0]);
+			state.emitAt(LiteralPoolOffset + sizeLiterals + 24, (uint64_t) &randomx_aes_lut_dec[2][0]);
+		}
+
 		for (unsigned i = 0; i < RegistersCount; ++i) {
 			state.registerUsage[i] = -1;
 		}
@@ -487,8 +494,14 @@ namespace randomx {
 		}
 	}
 
-	static void emitProgramSuffix(CompilerState& state, ProgramConfiguration& pcfg) {
-		state.emit(codeSpadStore, sizeSpadStore);
+	static void emitProgramSuffix(CompilerState& state, ProgramConfiguration& pcfg, randomx_flags flags) {
+		if (flags & RANDOMX_FLAG_V2) {
+			state.emit(codeSpadStoreSoftAes, sizeSpadStoreSoftAes);
+		}
+		else {
+			state.emit(codeSpadStore, sizeSpadStore);
+		}
+
 		int32_t fixPos = state.codePos;
 		state.emit(codeLoopEnd, sizeLoopEnd);
 		//xor x26, x{readReg0}, x{readReg1}
@@ -497,6 +510,10 @@ namespace randomx {
 		//j LoopTop
 		emitJump(state, 0, fixPos, LoopTopPos);
 		state.emit(codeEpilogue, sizeEpilogue);
+
+		if (flags & RANDOMX_FLAG_V2) {
+			state.emit(codeSoftAes, sizeSoftAes);
+		}
 	}
 
 	static void generateSuperscalarCode(CodeBuffer& buf, Instruction isn, const std::vector<uint64_t>& reciprocalCache) {
@@ -661,7 +678,7 @@ namespace randomx {
 		state.emit(codeDataRead, sizeDataRead);
 		//xor x8, x{readReg2}, x{readReg3}
 		state.emitAt(fixPos, rvi(rv64::XOR, Tmp1Reg, regR(pcfg.readReg2), regR(pcfg.readReg3)));
-		emitProgramSuffix(state, pcfg);
+		emitProgramSuffix(state, pcfg, flags);
 		clearCache(state);
 	}
 
@@ -686,7 +703,7 @@ namespace randomx {
 		fixPos += offsetFixLoopCall;
 		//jal x1, SuperscalarHash
 		emitJump(state, ReturnReg, fixPos, SuperScalarHashOffset);
-		emitProgramSuffix(state, pcfg);
+		emitProgramSuffix(state, pcfg, flags);
 		clearCache(state);
 	}
 

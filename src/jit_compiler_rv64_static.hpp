@@ -39,7 +39,6 @@ extern "C" {
 	void randomx_riscv64_data_read_light();
 	void randomx_riscv64_fix_loop_call();
 	void randomx_riscv64_spad_store();
-	void randomx_riscv64_spad_store_hardaes();
 	void randomx_riscv64_spad_store_softaes();
 	void randomx_riscv64_loop_end();
 	void randomx_riscv64_fix_continue_loop();
