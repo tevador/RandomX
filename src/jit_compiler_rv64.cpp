@@ -109,7 +109,7 @@ namespace randomx {
 	constexpr size_t SuperscalarLiteraPoolSize = RANDOMX_CACHE_ACCESSES * CodeAlign;
 	constexpr size_t ReserveCodeSize = CodeAlign;  //prologue, epilogue + reserve
 
-	constexpr size_t RandomXCodeSize = alignSize(LiteralPoolSize + ReserveCodeSize + MaxRandomXInstrCodeSize * RANDOMX_PROGRAM_SIZE, CodeAlign);
+	constexpr size_t RandomXCodeSize = alignSize(LiteralPoolSize + ReserveCodeSize + MaxRandomXInstrCodeSize * RANDOMX_PROGRAM_MAX_SIZE, CodeAlign);
 	constexpr size_t SuperscalarSize = alignSize(SuperscalarLiteraPoolSize + ReserveCodeSize + (SuperscalarProgramHeader + MaxSuperscalarInstrSize * SuperscalarMaxSize) * RANDOMX_CACHE_ACCESSES, CodeAlign);
 
 	static_assert(RandomXCodeSize < INT32_MAX / 2, "RandomXCodeSize is too large");
@@ -486,7 +486,7 @@ namespace randomx {
 		for (unsigned i = 0; i < RegistersCount; ++i) {
 			state.registerUsage[i] = -1;
 		}
-		for (unsigned i = 0; i < prog.getSize(); ++i) {
+		for (unsigned i = 0; i < prog.getSize(flags); ++i) {
 			Instruction instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;

@@ -130,7 +130,7 @@ namespace randomx {
 	constexpr size_t CodeAlign = 4096;               //align code size to a multiple of 4 KiB
 	constexpr size_t ReserveCodeSize = CodeAlign;    //function prologue/epilogue + reserve
 
-	constexpr size_t RandomXCodeSize = alignSize(ReserveCodeSize + MaxRandomXInstrCodeSize * RANDOMX_PROGRAM_SIZE, CodeAlign);
+	constexpr size_t RandomXCodeSize = alignSize(ReserveCodeSize + MaxRandomXInstrCodeSize * RANDOMX_PROGRAM_MAX_SIZE, CodeAlign);
 	constexpr size_t SuperscalarSize = alignSize(ReserveCodeSize + (SuperscalarProgramHeader + MaxSuperscalarInstrSize * SuperscalarMaxSize) * RANDOMX_CACHE_ACCESSES, CodeAlign);
 
 	static_assert(RandomXCodeSize < INT32_MAX / 2, "RandomXCodeSize is too large");
@@ -367,7 +367,7 @@ namespace randomx {
 		memcpy(code + codePos - 48, &pcfg.eMask, sizeof(pcfg.eMask));
 		memcpy(code + codePos, codeLoopLoad, loopLoadSize);
 		codePos += loopLoadSize;
-		for (unsigned i = 0; i < prog.getSize(); ++i) {
+		for (unsigned i = 0; i < prog.getSize(vmFlags); ++i) {
 			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;

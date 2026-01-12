@@ -274,7 +274,7 @@ DECL(randomx_program_aarch64_vm_instructions):
 
 	# buffer for generated instructions
 	# FDIV_M is the largest instruction taking up to 12 ARMv8 instructions
-	.fill RANDOMX_PROGRAM_SIZE*12,4,0
+	.fill RANDOMX_PROGRAM_MAX_SIZE*12,4,0
 
 literal_x0:  .fill 1,8,0
 literal_x11: .fill 1,8,0

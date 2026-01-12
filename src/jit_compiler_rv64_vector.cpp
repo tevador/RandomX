@@ -396,7 +396,7 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 
 	uint32_t scratchpad_prefetch_pos = 0;
 
-	for (int32_t i = static_cast<int32_t>(prog.getSize()) - 1; i >= 0; --i) {
+	for (int32_t i = static_cast<int32_t>(prog.getSize(flags)) - 1; i >= 0; --i) {
 		Instruction instr = prog(i);
 
 		const InstructionType inst_type = static_cast<InstructionType>(inst_map[instr.opcode]);
@@ -427,7 +427,7 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 		}
 	}
 
-	for (uint32_t i = 0, n = prog.getSize(); i < n; ++i) {
+	for (uint32_t i = 0, n = prog.getSize(flags); i < n; ++i) {
 		Instruction instr = prog(i);
 
 		uint32_t src = instr.src % RegistersCount;

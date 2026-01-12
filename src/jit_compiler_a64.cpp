@@ -140,7 +140,7 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 	for (uint32_t i = 0; i < RegistersCount; ++i)
 		reg_changed_offset[i] = codePos;
 
-	for (uint32_t i = 0; i < program.getSize(); ++i)
+	for (uint32_t i = 0; i < program.getSize(flags); ++i)
 	{
 		Instruction& instr = program(i);
 		instr.src %= RegistersCount;
@@ -211,7 +211,7 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 	for (uint32_t i = 0; i < RegistersCount; ++i)
 		reg_changed_offset[i] = codePos;
 
-	for (uint32_t i = 0; i < program.getSize(); ++i)
+	for (uint32_t i = 0; i < program.getSize(flags); ++i)
 	{
 		Instruction& instr = program(i);
 		instr.src %= RegistersCount;

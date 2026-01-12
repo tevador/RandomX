@@ -51,12 +51,12 @@ namespace randomx {
 	static const char* regIc8 = "bl";
 	static const char* regScratchpadAddr = "rsi";
 
-	void AssemblyGeneratorX86::generateProgram(Program& prog) {
+	void AssemblyGeneratorX86::generateProgram(Program& prog, randomx_flags flags) {
 		for (unsigned i = 0; i < RegistersCount; ++i) {
 			registerUsage[i] = -1;
 		}
 		asmCode.str(std::string()); //clear
-		for (unsigned i = 0; i < prog.getSize(); ++i) {
+		for (unsigned i = 0; i < prog.getSize(flags); ++i) {
 			asmCode << "randomx_isn_" << i << ":" << std::endl;
 			Instruction& instr = prog(i);
 			instr.src %= RegistersCount;

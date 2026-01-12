@@ -61,7 +61,7 @@ namespace randomx {
 		for(unsigned i = 0; i < RegisterCountFlt; ++i)
 			nreg.a[i] = rx_load_vec_f128(&reg.a[i].lo);
 
-		compileProgram(program, bytecode, nreg);
+		compileProgram(program, bytecode, nreg, randomx_vm::vmFlags);
 
 		uint32_t spAddr0 = mem.mx;
 		uint32_t spAddr1 = mem.ma;

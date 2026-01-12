@@ -59,7 +59,7 @@ namespace randomx {
 	};
 
 	struct CompilerState : public CodeBuffer {
-		int32_t instructionOffsets[RANDOMX_PROGRAM_SIZE];
+		int32_t instructionOffsets[RANDOMX_PROGRAM_MAX_SIZE];
 		int registerUsage[RegistersCount];
 	};
 }

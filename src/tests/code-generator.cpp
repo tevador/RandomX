@@ -44,7 +44,7 @@ const uint8_t blockTemplate_[] = {
 };
 
 template<bool softAes>
-void generateAsm(uint32_t nonce) {
+void generateAsm(uint32_t nonce, randomx_flags flags) {
 	alignas(16) uint64_t hash[8];
 	uint8_t blockTemplate[sizeof(blockTemplate_)];
 	memcpy(blockTemplate, blockTemplate_, sizeof(blockTemplate));
@@ -55,7 +55,7 @@ void generateAsm(uint32_t nonce) {
 	randomx::AssemblyGeneratorX86 asmX86;
 	randomx::Program p;
 	fillAes4Rx4<softAes>(hash, sizeof(p), &p);
-	asmX86.generateProgram(p);
+	asmX86.generateProgram(p, flags);
 	asmX86.printCode(std::cout);
 }
 
@@ -84,7 +84,7 @@ void printUsage(const char* executable) {
 }
 
 int main(int argc, char** argv) {
-	bool softAes, genAsm, genNative, genSuperscalar;
+	bool softAes, genAsm, genNative, genSuperscalar, v2;
 	int nonce;
 
 	readOption("--softAes", argc, argv, softAes);
@@ -92,6 +92,7 @@ int main(int argc, char** argv) {
 	readIntOption("--nonce", argc, argv, nonce, 1000);
 	readOption("--genNative", argc, argv, genNative);
 	readOption("--genSuperscalar", argc, argv, genSuperscalar);
+	readOption("--v2", argc, argv, v2);
 
 	if (genSuperscalar) {
 		randomx::SuperscalarProgram p;
@@ -105,9 +106,9 @@ int main(int argc, char** argv) {
 
 	if (genAsm) {
 		if (softAes)
-			generateAsm<true>(nonce);
+			generateAsm<true>(nonce, v2 ? RANDOMX_FLAG_V2 : RANDOMX_FLAG_DEFAULT);
 		else
-			generateAsm<false>(nonce);
+			generateAsm<false>(nonce, v2 ? RANDOMX_FLAG_V2 : RANDOMX_FLAG_DEFAULT);
 		return 0;
 	}
 

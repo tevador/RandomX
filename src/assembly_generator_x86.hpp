@@ -42,7 +42,7 @@ namespace randomx {
 
 	class AssemblyGeneratorX86 {
 	public:
-		void generateProgram(Program& prog);
+		void generateProgram(Program& prog, randomx_flags flags);
 		void generateAsm(SuperscalarProgram& prog);
 		void generateC(SuperscalarProgram& prog);
 		void printCode(std::ostream& os) {

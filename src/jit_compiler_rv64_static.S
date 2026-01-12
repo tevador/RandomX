@@ -55,8 +55,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_ssh_end)
 
 /* The literal pool can fit at most 494 IMUL_RCP literals */
-#if RANDOMX_PROGRAM_SIZE > 494
-    #error RANDOMX_PROGRAM_SIZE larger than 494 is not supported.
+#if RANDOMX_PROGRAM_MAX_SIZE > 494
+    #error RANDOMX_PROGRAM_MAX_SIZE larger than 494 is not supported.
 #endif
 
 #define RANDOMX_CACHE_MASK (RANDOMX_ARGON_MEMORY*16-1)
