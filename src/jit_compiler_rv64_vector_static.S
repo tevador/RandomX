@@ -77,7 +77,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end_light_mode)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor_light_mode)
 .global DECL(randomx_riscv64_vector_program_scratchpad_prefetch)
-.global DECL(randomx_riscv64_vector_program_scratchpad_prefetch_end)
 
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1)
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes)
@@ -386,7 +385,7 @@ v16	= temporary
 v17	= unused
 v18	= temporary
 
-v19	= temporary in soft aes
+v19	= unused
 v20	= randomx_aes_lut_enc_index[0]
 v21	= randomx_aes_lut_enc_index[1]
 v22	= randomx_aes_lut_enc_index[2]
@@ -699,7 +698,24 @@ DECL(randomx_riscv64_vector_program_main_loop_mx_xor):
 	ld x6, 56(x5)
 	xor x27, x27, x6
 
-randomx_riscv64_vector_program_main_loop_swap_mx_ma:
+DECL(randomx_riscv64_vector_program_scratchpad_prefetch):
+	xor x5, x20, x22	// spAddr0-spAddr1 = readReg0 ^ readReg1 (JIT compiler will substitute the actual registers)
+	srli x6, x5, 32		// x6 = spAddr1
+
+	and x5, x5, x9		// x5 = spAddr0 & 64-byte aligned L3 mask
+	and x6, x6, x9		// x6 = spAddr1 & 64-byte aligned L3 mask
+
+	c.add x5, x12		// x5 = &scratchpad[spAddr0 & 64-byte aligned L3 mask]
+	c.add x6, x12		// x6 = &scratchpad[spAddr1 & 64-byte aligned L3 mask]
+
+#ifdef __riscv_zicbop
+	prefetch.r (x5)
+	prefetch.r (x6)
+#else
+	ld x5, (x5)
+	ld x6, (x6)
+#endif
+
 	// swap mx <-> ma
 #ifdef __riscv_zbb
 	rori x14, x14, 32
@@ -939,27 +955,7 @@ DECL(randomx_riscv64_vector_program_main_loop_mx_xor_light_mode):
 
 	addi sp, sp, 192
 
-	j randomx_riscv64_vector_program_main_loop_swap_mx_ma
-
-DECL(randomx_riscv64_vector_program_scratchpad_prefetch):
-	xor x5, x20, x22	// spAddr0-spAddr1 = readReg0 ^ readReg1 (JIT compiler will substitute the actual registers)
-	srli x6, x5, 32		// x6 = spAddr1
-
-	and x5, x5, x9		// x5 = spAddr0 & 64-byte aligned L3 mask
-	and x6, x6, x9		// x6 = spAddr1 & 64-byte aligned L3 mask
-
-	c.add x5, x12		// x5 = &scratchpad[spAddr0 & 64-byte aligned L3 mask]
-	c.add x6, x12		// x6 = &scratchpad[spAddr1 & 64-byte aligned L3 mask]
-
-#ifdef __riscv_zicbop
-	prefetch.r (x5)
-	prefetch.r (x6)
-#else
-	ld x5, (x5)
-	ld x6, (x6)
-#endif
-
-DECL(randomx_riscv64_vector_program_scratchpad_prefetch_end):
+	j randomx_riscv64_vector_program_scratchpad_prefetch
 
 DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1):
 	vxor.vv v0, v0, v4
@@ -969,18 +965,18 @@ DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1):
 	j randomx_riscv64_vector_program_main_loop_fe_store
 
 /*
-aesenc middle round without the final XOR with round key
+aesenc middle round
 
 x5	= pointer to aesenc LUT
 v16	= input and return value
 */
-aesenc_soft:
+.macro aesenc_soft input, key
 	vsetivli zero, 16, e8, m1, ta, ma
 
-	vrgather.vv v28, v16, v20
-	vrgather.vv v29, v16, v21
-	vrgather.vv v30, v16, v22
-	vrgather.vv v31, v16, v23
+	vrgather.vv v28, \input, v20
+	vrgather.vv v29, \input, v21
+	vrgather.vv v30, \input, v22
+	vrgather.vv v31, \input, v23
 
 	vsetivli zero, 4, e32, m1, ta, ma
 
@@ -989,36 +985,36 @@ aesenc_soft:
 	vsll.vi v30, v30, 2
 	vsll.vi v31, v31, 2
 
-	vluxei32.v v28, (x5), v28
+	addi x6, x5, -2048
+	vluxei32.v v28, (x6), v28
 
-	addi x6, x5, 1024
+	addi x6, x5, -1024
 	vluxei32.v v29, (x6), v29
 
-	addi x6, x6, 1024
-	vluxei32.v v30, (x6), v30
+	vluxei32.v v30, (x5), v30
 
-	addi x6, x6, 1024
+	addi x6, x5, 1024
 	vluxei32.v v31, (x6), v31
 
 	vxor.vv v28, v28, v29
 	vxor.vv v30, v30, v31
-	vxor.vv v16, v28, v30
-
-	ret
+	vxor.vv \input, v28, v30
+	vxor.vv \input, \input, \key
+.endm
 
 /*
-aesdec middle round without the final XOR with round key
+aesdec middle round
 
 x5	= pointer to aesdec LUT
 v16	= input and return value
 */
-aesdec_soft:
+.macro aesdec_soft input, key
 	vsetivli zero, 16, e8, m1, ta, ma
 
-	vrgather.vv v28, v16, v24
-	vrgather.vv v29, v16, v25
-	vrgather.vv v30, v16, v26
-	vrgather.vv v31, v16, v27
+	vrgather.vv v28, \input, v24
+	vrgather.vv v29, \input, v25
+	vrgather.vv v30, \input, v26
+	vrgather.vv v31, \input, v27
 
 	vsetivli zero, 4, e32, m1, ta, ma
 
@@ -1027,84 +1023,62 @@ aesdec_soft:
 	vsll.vi v30, v30, 2
 	vsll.vi v31, v31, 2
 
-	vluxei32.v v28, (x5), v28
+	addi x6, x5, -2048
+	vluxei32.v v28, (x6), v28
 
-	addi x6, x5, 1024
+	addi x6, x5, -1024
 	vluxei32.v v29, (x6), v29
 
-	addi x6, x6, 1024
-	vluxei32.v v30, (x6), v30
+	vluxei32.v v30, (x5), v30
 
-	addi x6, x6, 1024
+	addi x6, x5, 1024
 	vluxei32.v v31, (x6), v31
 
 	vxor.vv v28, v28, v29
 	vxor.vv v30, v30, v31
-	vxor.vv v16, v28, v30
-
-	ret
+	vxor.vv \input, v28, v30
+	vxor.vv \input, \input, \key
+.endm
 
 DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes):
-	// save x1 and x5
-	vmv.s.x v18, x1
-	vmv.s.x v19, x5
+	// save x5
+	vmv.s.x v16, x5
 
 	lla x5, randomx_aes_lut_enc_ptr
 	ld x5, (x5)
 
 	// f0 = aesenc(f0, e0), f0 = aesenc(f0, e1), f0 = aesenc(f0, e2), f0 = aesenc(f0, e3)
-	vmv.v.v v16, v0
-	jal aesenc_soft
-	vxor.vv v16, v16, v4
-	jal aesenc_soft
-	vxor.vv v16, v16, v5
-	jal aesenc_soft
-	vxor.vv v16, v16, v6
-	jal aesenc_soft
-	vxor.vv v0, v16, v7
+	aesenc_soft v0, v4
+	aesenc_soft v0, v5
+	aesenc_soft v0, v6
+	aesenc_soft v0, v7
 
 	// f2 = aesenc(f2, e0), f2 = aesenc(f2, e1), f2 = aesenc(f2, e2), f2 = aesenc(f2, e3)
-	vmv.v.v v16, v2
-	jal aesenc_soft
-	vxor.vv v16, v16, v4
-	jal aesenc_soft
-	vxor.vv v16, v16, v5
-	jal aesenc_soft
-	vxor.vv v16, v16, v6
-	jal aesenc_soft
-	vxor.vv v2, v16, v7
+	aesenc_soft v2, v4
+	aesenc_soft v2, v5
+	aesenc_soft v2, v6
+	aesenc_soft v2, v7
 
 	lla x5, randomx_aes_lut_dec_ptr
 	ld x5, (x5)
 
 	// f1 = aesdec(f1, e0), f1 = aesdec(f1, e1), f1 = aesdec(f1, e2), f1 = aesdec(f1, e3)
-	vmv.v.v v16, v1
-	jal aesdec_soft
-	vxor.vv v16, v16, v4
-	jal aesdec_soft
-	vxor.vv v16, v16, v5
-	jal aesdec_soft
-	vxor.vv v16, v16, v6
-	jal aesdec_soft
-	vxor.vv v1, v16, v7
+	aesdec_soft v1, v4
+	aesdec_soft v1, v5
+	aesdec_soft v1, v6
+	aesdec_soft v1, v7
 
 	// f3 = aesdec(f3, e0), f3 = aesdec(f3, e1), f3 = aesdec(f3, e2), f3 = aesdec(f3, e3)
-	vmv.v.v v16, v3
-	jal aesdec_soft
-	vxor.vv v16, v16, v4
-	jal aesdec_soft
-	vxor.vv v16, v16, v5
-	jal aesdec_soft
-	vxor.vv v16, v16, v6
-	jal aesdec_soft
-	vxor.vv v3, v16, v7
+	aesdec_soft v3, v4
+	aesdec_soft v3, v5
+	aesdec_soft v3, v6
+	aesdec_soft v3, v7
 
 	// Set vector registers back to 2x64 bit
 	vsetivli zero, 2, e64, m1, ta, ma
 
-	// restore x1 and x5
-	vmv.x.s x1, v18
-	vmv.x.s x5, v19
+	// restore x5
+	vmv.x.s x5, v16
 
 	j randomx_riscv64_vector_program_main_loop_fe_store
 
