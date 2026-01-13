@@ -191,7 +191,7 @@ Approximate distribution of floating point register values at the end of each pr
 
 The small number of F register values at `1e+14` is caused by the FSCAL instruction, which significantly increases the range of the register values.
 
-Group E registers cover a very large range of values. About 2% of programs produce at least one `infinity` value.
+Group E registers cover a very large range of values. About 2% (6.85% for RandomX v2) of programs produce at least one `infinity` value.
 
 To maximize entropy and also to fit into one 64-byte cache line, floating point registers are combined using the XOR operation at the end of each iteration before being stored into the Scratchpad.
 
@@ -254,12 +254,17 @@ The Scratchpad is split into 3 levels to mimic the typical CPU cache hierarchy [
 |CPU μ-architecture|L1 latency|L2 latency|L3 latency|source|
 |----------------|----------|----------|----------|------|
 ARM Cortex A55|2|6|-|[[24](https://www.anandtech.com/show/11441/dynamiq-and-arms-new-cpus-cortex-a75-a55/4)]
-|AMD Zen+|4|12|40|[[25](https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy)]|
+|AMD Zen+, Zen 2|4|12|40|[[25](https://en.wikichip.org/wiki/amd/microarchitectures/zen%2B#Memory_Hierarchy)]|
+|AMD Zen 3/4|4|14|47|[[31](https://agner.org/optimize/microarchitecture.pdf)]|
+|AMD Zen 5|4|14|55|[[31](https://agner.org/optimize/microarchitecture.pdf)]|
 |Intel Skylake|4|12|42|[[26](https://en.wikichip.org/wiki/intel/microarchitectures/skylake_(client)#Memory_Hierarchy)]
+|Intel Alder Lake P core|5|15|65|[[31](https://agner.org/optimize/microarchitecture.pdf)]|
 
 The L3 cache is much larger and located further from the CPU core. As a result, its access latencies are much higher and can cause stalls in program execution.
 
 RandomX therefore performs only 2 random accesses into "L3" Scratchpad per program iteration (steps 2 and 3 in chapter 4.6.2 of the Specification). Register values from a given iteration are written into the same locations they were loaded from, which guarantees that the required cache lines have been moved into the faster L1 or L2 caches.
+
+RandomX v2 partially hides the stalls from accessing "L3" Scratchpad by doing an extended mixing of group F and group E registers (step 10 in chapter 4.6.2 of the Specification). This keeps the CPU busy at all times so it doesn't waste energy while waiting for data.
 
 Additionally, integer instructions that read from a fixed address also use the whole "L3" Scratchpad (Table 5.1.4 of the Specification) because repetitive accesses will ensure that the cache line will be placed in the L1 cache of the CPU. This shows that the Scratchpad level doesn't always directly correspond to the same CPU cache level.
 
@@ -648,3 +653,5 @@ Cryptocurrencies and Password Hashing - https://eprint.iacr.org/2015/430.pdf Tab
 [29] 7-Zip File archiver - https://www.7-zip.org/
 
 [30] TestU01 library - http://simul.iro.umontreal.ca/testu01/tu01.html
+
+[31] Agner Fog, The microarchitecture of Intel, AMD, and VIA CPUs - https://agner.org/optimize/microarchitecture.pdf
