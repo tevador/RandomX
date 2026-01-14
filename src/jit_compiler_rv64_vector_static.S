@@ -669,8 +669,7 @@ DECL(randomx_riscv64_vector_program_main_loop_mx_xor):
 	and x5, x5, x19		// x5 = (readReg2 ^ readReg3) & dataset mask
 	xor x14, x14, x5	// mx ^= (readReg2 ^ readReg3) & dataset mask
 
-	and x5, x14, x19	// x5 = mx & dataset mask
-	add x5, x5, x11		// x5 = &dataset[mx & dataset mask]
+	add x5, x14, x11	// x5 = &dataset[mx & dataset mask]
 
 #ifdef __riscv_zicbop
 	prefetch.r (x5)
