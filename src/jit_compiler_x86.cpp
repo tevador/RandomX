@@ -151,7 +151,9 @@ namespace randomx {
 	const uint8_t* codeLoopLoad = ADDR(randomx_program_loop_load);
 	const uint8_t* codeProgamStart = ADDR(randomx_program_start);
 	const uint8_t* codeReadDataset = ADDR(randomx_program_read_dataset);
+	const uint8_t* codeReadDatasetV2 = ADDR(randomx_program_read_dataset_v2);
 	const uint8_t* codeReadDatasetLightSshInit = ADDR(randomx_program_read_dataset_sshash_init);
+	const uint8_t* codeReadDatasetLightSshInitV2 = ADDR(randomx_program_read_dataset_sshash_init_v2);
 	const uint8_t* codeReadDatasetLightSshFin = ADDR(randomx_program_read_dataset_sshash_fin);
 	const uint8_t* codeDatasetInit = ADDR(randomx_dataset_init);
 	const uint8_t* codeLoopStore = ADDR(randomx_program_loop_store);
@@ -169,8 +171,10 @@ namespace randomx {
 
 	const int32_t prologueSize = codeLoopBegin - codePrologue;
 	const int32_t loopLoadSize = codeProgamStart - codeLoopLoad;
-	const int32_t readDatasetSize = codeReadDatasetLightSshInit - codeReadDataset;
-	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshFin - codeReadDatasetLightSshInit;
+	const int32_t readDatasetSize = codeReadDatasetV2 - codeReadDataset;
+	const int32_t readDatasetV2Size = codeReadDatasetLightSshInit - codeReadDatasetV2;
+	const int32_t readDatasetLightInitSize = codeReadDatasetLightSshInitV2 - codeReadDatasetLightSshInit;
+	const int32_t readDatasetLightInitV2Size = codeReadDatasetLightSshFin - codeReadDatasetLightSshInitV2;
 	const int32_t readDatasetLightFinSize = codeLoopStore - codeReadDatasetLightSshFin;
 	const int32_t loopStoreSize = codeLoopStoreHardAes - codeLoopStore;
 	const int32_t loopStoreHardAesSize = codeLoopStoreSoftAes - codeLoopStoreHardAes;
@@ -315,14 +319,24 @@ namespace randomx {
 
 	void JitCompilerX86::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
 		generateProgramPrologue(prog, pcfg);
-		memcpy(code + codePos, codeReadDataset, readDatasetSize);
+		if (vmFlags & RANDOMX_FLAG_V2) {
+			memcpy(code + codePos, codeReadDatasetV2, readDatasetV2Size);
+		}
+		else {
+			memcpy(code + codePos, codeReadDataset, readDatasetSize);
+		}
 		codePos += readDatasetSize;
 		generateProgramEpilogue(prog, pcfg);
 	}
 
 	void JitCompilerX86::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
 		generateProgramPrologue(prog, pcfg);
-		emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
+		if (vmFlags & RANDOMX_FLAG_V2) {
+			emit(codeReadDatasetLightSshInitV2, readDatasetLightInitV2Size);
+		}
+		else {
+			emit(codeReadDatasetLightSshInit, readDatasetLightInitSize);
+		}
 		emit(ADD_EBX_I);
 		emit32(datasetOffset / CacheLineSize);
 		emitByte(CALL);

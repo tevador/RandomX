@@ -22,7 +22,15 @@ But in RandomX it's only 20-25% faster, because it's bottlenecked by the RAM lat
 
 This disbalance is the main reason of the program size increase - Zen5 and newer CPUs need more work to keep themselves busy while they're waiting for data from memory.
 
+## 4. Prefetch two main loop iterations ahead instead of just one
+
+RandomX v1 prefetches data from the dataset one iteration ahead. RandomX v2 increases it to two iterations by redefining the prefetch logic (see the `mp` register in specs.md).
+
+This change complements the program size increase tweak and has the same purpose.
+
 ## 4. Performance impact
+
+**TODO: the information below is outdated because the tests were done before the prefetch tweak.**
 
 Tests show that RandomX v2, while being more than 1.5 times "heavier" than RandomX v1, results in only a slight hashrate reduction but massive efficiency improvements (in terms of VM+AES instructions per Joule):
 

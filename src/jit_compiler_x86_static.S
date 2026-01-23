@@ -44,7 +44,9 @@
 .global DECL(randomx_program_loop_load)
 .global DECL(randomx_program_start)
 .global DECL(randomx_program_read_dataset)
+.global DECL(randomx_program_read_dataset_v2)
 .global DECL(randomx_program_read_dataset_sshash_init)
+.global DECL(randomx_program_read_dataset_sshash_init_v2)
 .global DECL(randomx_program_read_dataset_sshash_fin)
 .global DECL(randomx_program_loop_store)
 .global DECL(randomx_program_loop_store_hard_aes)
@@ -115,8 +117,14 @@ DECL(randomx_program_start):
 DECL(randomx_program_read_dataset):
 	#include "asm/program_read_dataset.inc"
 
+DECL(randomx_program_read_dataset_v2):
+	#include "asm/program_read_dataset_v2.inc"
+
 DECL(randomx_program_read_dataset_sshash_init):
 	#include "asm/program_read_dataset_sshash_init.inc"
+
+DECL(randomx_program_read_dataset_sshash_init_v2):
+	#include "asm/program_read_dataset_sshash_init_v2.inc"
 
 DECL(randomx_program_read_dataset_sshash_fin):
 	#include "asm/program_read_dataset_sshash_fin.inc"

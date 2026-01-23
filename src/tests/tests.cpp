@@ -972,25 +972,25 @@ int main() {
 	auto test_a = [&] {
 		alignas(16) char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "a57e1a97633bcdadebd7c021689e902b3e6fb723451426fa9ece728d0d2fbbac" : "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "22ec6b861b3eb23686b2efbad69513c967ecfce80983df66c9c5b4fbfb4cdb6f" : "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
 	};
 
 	auto test_b = [&] {
 		alignas(16) char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "Lorem ipsum dolor sit amet", &hash);
-		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "f611e421bce24f8d1ad28f42c72ea1cd8ca9956440507c4a8519dc5085c36398" : "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "9e2c772c12fd48f93c14c97fdc89d556264d9100597023f44d9163e279012ecf" : "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
 	};
 
 	auto test_c = [&] {
 		alignas(16) char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 000", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "96fe6556b8169321eced92919384d309e92e262bbb9a291720c4d9233bcc7b17" : "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "4d6b063a1a603751d525f18a171336a4002f2f06df6c17e4b25fe17e17796e42" : "c36d4ed4191e617309867ed66a443be4075014e2b061bcdaf9ce7b721d2b77a8"));
 	};
 
 	auto test_d = [&] {
 		alignas(16) char hash[RANDOMX_HASH_SIZE];
 		calcStringHash("test key 001", "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", &hash);
-		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "7f67b159a15a1aad163f764b1681f4f7e2e25ea1879ad285d9a22eb91913716c" : "e9ff4503201c0c2cca26d285c93ae883f9b1d30c9eb240b820756f2d5a7905fc"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "97024134686ce27d362ea8d86d8ef16483ac272abdabd46ef13359400777fe5e" : "e9ff4503201c0c2cca26d285c93ae883f9b1d30c9eb240b820756f2d5a7905fc"));
 	};
 
 	auto test_e = [&] {
@@ -999,7 +999,7 @@ int main() {
 		//std::cout << std::endl;
 		//outputHex(std::cout, (const char*)hash, sizeof(hash));
 		//std::cout << std::endl;
-		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "7b14c58c0baf5961b77e1faee511f9091231c041075ee27d43d3c0161342e352" : "c56414121acda1713c2f2a819d8ae38aed7c80c35c2a769298d34f03833cd5f1"));
+		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "c8e92c5f7c1946fecf06bc382b92e3111da38ee3e6a5ad90704e1a9d8aaf6e76" : "c56414121acda1713c2f2a819d8ae38aed7c80c35c2a769298d34f03833cd5f1"));
 	};
 
 	runTest("Hash test 1a (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
@@ -1129,9 +1129,9 @@ int main() {
 		randomx_calculate_hash_next(vm, input3, sizeof(input3) - 1, &hash2);
 		randomx_calculate_hash_last(vm, &hash3);
 
-		assert(equalsHex(hash1, "a57e1a97633bcdadebd7c021689e902b3e6fb723451426fa9ece728d0d2fbbac"));
-		assert(equalsHex(hash2, "f611e421bce24f8d1ad28f42c72ea1cd8ca9956440507c4a8519dc5085c36398"));
-		assert(equalsHex(hash3, "96fe6556b8169321eced92919384d309e92e262bbb9a291720c4d9233bcc7b17"));
+		assert(equalsHex(hash1, "22ec6b861b3eb23686b2efbad69513c967ecfce80983df66c9c5b4fbfb4cdb6f"));
+		assert(equalsHex(hash2, "9e2c772c12fd48f93c14c97fdc89d556264d9100597023f44d9163e279012ecf"));
+		assert(equalsHex(hash3, "4d6b063a1a603751d525f18a171336a4002f2f06df6c17e4b25fe17e17796e42"));
 	});
 
 	randomx_destroy_vm(vm);
@@ -1161,7 +1161,7 @@ int main() {
 	runTest("Commitment test", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
 		alignas(16) char hash[RANDOMX_HASH_SIZE];
 		calcStringCommitment("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, "cee56a6a2ce1737b7c9df98bab22b92d034072ebf778d49085f233d0745783cf"));
+		assert(equalsHex(hash, "133be717399046b03ae82ce8ddd9d1ee4d3ea7fca03a50dec09b6848cbb98e18"));
 	});
 
 	randomx_destroy_vm(vm);
@@ -1178,7 +1178,7 @@ int main() {
 		assert(equalsHex(hash, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
 		vm->setFlagV2();
 		calcStringHash("test key 000", "This is a test", &hash);
-		assert(equalsHex(hash, "a57e1a97633bcdadebd7c021689e902b3e6fb723451426fa9ece728d0d2fbbac"));
+		assert(equalsHex(hash, "22ec6b861b3eb23686b2efbad69513c967ecfce80983df66c9c5b4fbfb4cdb6f"));
 		vm->clearFlagV2();
 		calcStringHash("test key 000", "This is a test", &hash);
 		assert(equalsHex(hash, "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));

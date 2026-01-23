@@ -401,7 +401,7 @@ int main(int argc, char** argv) {
 		std::cout << "Calculated result: ";
 		result.print(std::cout);
 		if (noncesCount == 1000 && seedValue == 0 && !commit) {
-			const char* r = v2 ? "c9e7466cb44a37e78ad21415c73ef21075bca75a0b8c28ec439a16df0b5c21cd" : "10b649a3f15c7c7f88277812f2e74b337a0f20ce909af09199cccb960771cfa1";
+			const char* r = v2 ? "b85d79e080b10b6ad28c2e6c993601a1361917dba979e03a0a8f7248aaf4ba52" : "10b649a3f15c7c7f88277812f2e74b337a0f20ce909af09199cccb960771cfa1";
 			std::cout << "Reference result:  " << r << std::endl;
 		}
 		if (!miningMode) {
