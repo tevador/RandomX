@@ -27,7 +27,14 @@
 	mov rbx, r9                   ;# loop counter
 
 	mov rax, rbp
+	mov r8d, ebp
 	ror rbp, 32
+	mov r9d, ebp
+
+	and r8d, RANDOMX_DATASET_BASE_MASK
+	and r9d, RANDOMX_DATASET_BASE_MASK
+	prefetchnta byte ptr [rdi+r8]
+	prefetchnta byte ptr [rdi+r9]
 
 	;# zero integer registers
 	xor r8, r8
