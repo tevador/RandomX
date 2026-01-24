@@ -189,6 +189,18 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 		emit32(ARMV8A::B | (offset / 4), code, codePos);
 	}
 
+	// Apply v2 prefetch tweak
+	if (flags & RANDOMX_FLAG_V2) {
+		uint32_t dst = (((uint8_t*)randomx_program_aarch64_vm_instructions_end) - ((uint8_t*)randomx_program_aarch64));
+		uint32_t src = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_v2) - ((uint8_t*)randomx_program_aarch64));
+		memcpy(code + dst, code + src, 16);
+	}
+	else {
+		uint32_t dst = (((uint8_t*)randomx_program_aarch64_vm_instructions_end) - ((uint8_t*)randomx_program_aarch64));
+		uint32_t src = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_v1) - ((uint8_t*)randomx_program_aarch64));
+		memcpy(code + dst, code + src, 16);
+	}
+
 #ifdef __GNUC__
 	__builtin___clear_cache(reinterpret_cast<char*>(code + MainLoopBegin), reinterpret_cast<char*>(code + codePos));
 #endif
@@ -223,13 +235,25 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 	// eor w20, config.readReg2, config.readReg3
 	emit32(ARMV8A::EOR32 | 20 | (IntRegMap[config.readReg2] << 5) | (IntRegMap[config.readReg3] << 16), code, codePos);
 
+	// Apply v2 prefetch tweak
+	if (flags & RANDOMX_FLAG_V2) {
+		uint32_t dst = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_light_tweak) - ((uint8_t*)randomx_program_aarch64));
+		uint32_t src = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_light_v2) - ((uint8_t*)randomx_program_aarch64));
+		memcpy(code + dst, code + src, 8);
+	}
+	else {
+		uint32_t dst = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_light_tweak) - ((uint8_t*)randomx_program_aarch64));
+		uint32_t src = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_light_v1) - ((uint8_t*)randomx_program_aarch64));
+		memcpy(code + dst, code + src, 8);
+	}
+
 	// Jump back to the main loop
 	const uint32_t offset = (((uint8_t*)randomx_program_aarch64_vm_instructions_end_light) - ((uint8_t*)randomx_program_aarch64)) - codePos;
 	emit32(ARMV8A::B | (offset / 4), code, codePos);
 
-	// and w2, w9, CacheLineAlignMask
+	// and w2, w2, CacheLineAlignMask
 	codePos = (((uint8_t*)randomx_program_aarch64_light_cacheline_align_mask) - ((uint8_t*)randomx_program_aarch64));
-	emit32(0x121A0000 | 2 | (9 << 5) | ((Log2(RANDOMX_DATASET_BASE_SIZE) - 7) << 10), code, codePos);
+	emit32(0x121A0000 | 2 | (2 << 5) | ((Log2(RANDOMX_DATASET_BASE_SIZE) - 7) << 10), code, codePos);
 
 	// Update spMix1
 	// eor x10, config.readReg0, config.readReg1

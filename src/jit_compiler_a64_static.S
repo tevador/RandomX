@@ -45,8 +45,13 @@
 	.global DECL(randomx_program_aarch64_v1_FE_mix)
 	.global DECL(randomx_program_aarch64_v2_FE_mix_soft_aes)
 	.global DECL(randomx_program_aarch64_vm_instructions_end_light)
+	.global DECL(randomx_program_aarch64_vm_instructions_end_light_tweak)
 	.global DECL(randomx_program_aarch64_light_cacheline_align_mask)
 	.global DECL(randomx_program_aarch64_light_dataset_offset)
+	.global DECL(randomx_program_aarch64_vm_instructions_end_v1)
+	.global DECL(randomx_program_aarch64_vm_instructions_end_v2)
+	.global DECL(randomx_program_aarch64_vm_instructions_end_light_v1)
+	.global DECL(randomx_program_aarch64_vm_instructions_end_light_v2)
 	.global DECL(randomx_init_dataset_aarch64)
 	.global DECL(randomx_init_dataset_aarch64_end)
 	.global DECL(randomx_calc_dataset_item_aarch64)
@@ -317,6 +322,10 @@ DECL(randomx_program_aarch64_vm_instructions_end):
 
 	# Calculate dataset pointer for dataset prefetch
 	mov	w20, w9
+
+	# mx <-> ma
+	ror	x9, x9, 32
+
 DECL(randomx_program_aarch64_cacheline_align_mask1):
 	# Actual mask will be inserted by JIT compiler
 	and	x20, x20, 1
@@ -324,9 +333,6 @@ DECL(randomx_program_aarch64_cacheline_align_mask1):
 
 	# Prefetch dataset data
 	prfm	pldl2strm, [x20]
-
-	# mx <-> ma
-	ror	x9, x9, 32
 
 DECL(randomx_program_aarch64_cacheline_align_mask2):
 	# Actual mask will be inserted by JIT compiler
@@ -490,6 +496,13 @@ DECL(randomx_program_aarch64_vm_instructions_end_light):
 	stp	x0, x1, [sp, 64]
 	stp	x2, x30, [sp, 80]
 
+	lsr	x2, x9, 32
+
+DECL(randomx_program_aarch64_light_cacheline_align_mask):
+	# Actual mask will be inserted by JIT compiler
+	and	w2, w2, 1
+
+DECL(randomx_program_aarch64_vm_instructions_end_light_tweak):
 	# mx ^= r[readReg2] ^ r[readReg3];
 	eor	x9, x9, x20
 
@@ -501,10 +514,6 @@ DECL(randomx_program_aarch64_vm_instructions_end_light):
 
 	# x1 -> pointer to output
 	mov	x1, sp
-
-DECL(randomx_program_aarch64_light_cacheline_align_mask):
-	# Actual mask will be inserted by JIT compiler
-	and	w2, w9, 1
 
 	# x2 -> item number
 	lsr	x2, x2, 6
@@ -523,6 +532,25 @@ DECL(randomx_program_aarch64_light_dataset_offset):
 
 	b	rx_program_xor_with_dataset_line
 
+DECL(randomx_program_aarch64_vm_instructions_end_v1):
+	lsr	x10, x9, 32
+	eor	x9, x9, x20
+	mov	w20, w9
+	ror	x9, x9, 32
+
+DECL(randomx_program_aarch64_vm_instructions_end_v2):
+	lsr	x10, x9, 32
+	ror	x9, x9, 32
+	eor	x9, x9, x20
+	mov	w20, w9
+
+DECL(randomx_program_aarch64_vm_instructions_end_light_v1):
+	eor	x9, x9, x20
+	ror	x9, x9, 32
+
+DECL(randomx_program_aarch64_vm_instructions_end_light_v2):
+	ror	x9, x9, 32
+	eor	x9, x9, x20
 
 DECL(randomx_program_aarch64_v2_FE_mix_soft_aes):
 	sub	sp, sp, 176
