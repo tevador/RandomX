@@ -249,7 +249,10 @@ namespace randomx {
 	static const uint8_t* codePrologue = (uint8_t*)&randomx_riscv64_prologue;
 	static const uint8_t* codeLoopBegin = (uint8_t*)&randomx_riscv64_loop_begin;
 	static const uint8_t* codeDataRead = (uint8_t*)&randomx_riscv64_data_read;
+	static const uint8_t* codeDataRead2 = (uint8_t*)&randomx_riscv64_data_read_v2_tweak;
 	static const uint8_t* codeDataReadLight = (uint8_t*)&randomx_riscv64_data_read_light;
+	static const uint8_t* codeDataReadLight1 = (uint8_t*)&randomx_riscv64_data_read_light_v1;
+	static const uint8_t* codeDataReadLight2 = (uint8_t*)&randomx_riscv64_data_read_light_v2;
 	static const uint8_t* codeFixLoopCall = (uint8_t*)&randomx_riscv64_fix_loop_call;
 	static const uint8_t* codeSpadStore = (uint8_t*)&randomx_riscv64_spad_store;
 	static const uint8_t* codeSpadStoreSoftAes = (uint8_t*)&randomx_riscv64_spad_store_softaes;
@@ -267,8 +270,12 @@ namespace randomx {
 	static const int32_t sizeDataInit = codePrologue - codeDataInit;
 	static const int32_t sizePrologue = codeLoopBegin - codePrologue;
 	static const int32_t sizeLoopBegin = codeDataRead - codeLoopBegin;
-	static const int32_t sizeDataRead = codeDataReadLight - codeDataRead;
-	static const int32_t sizeDataReadLight = codeSpadStore - codeDataReadLight;
+	static const int32_t sizeDataRead = codeDataRead2 - codeDataRead;
+	static const int32_t sizeDataRead2 = codeDataReadLight - codeDataRead2;
+	static const int32_t sizeDataReadLight = codeDataReadLight1 - codeDataReadLight;
+	static const int32_t sizeDataReadLight1 = codeDataReadLight2 - codeDataReadLight1;
+	static const int32_t sizeDataReadLight2 = codeFixLoopCall - codeDataReadLight2;
+	static const int32_t sizeFixLoopCall = codeSpadStore - codeFixLoopCall;
 	static const int32_t sizeSpadStore = codeSpadStoreSoftAes - codeSpadStore;
 	static const int32_t sizeSpadStoreSoftAes = codeLoopEnd - codeSpadStoreSoftAes;
 	static const int32_t sizeLoopEnd = codeEpilogue - codeLoopEnd;
@@ -279,7 +286,6 @@ namespace randomx {
 	static const int32_t sizeSshPrefetch = codeSshEnd - codeSshPrefetch;
 
 	static const int32_t offsetFixDataCall = codeFixDataCall - codeDataInit;
-	static const int32_t offsetFixLoopCall = codeFixLoopCall - codeDataReadLight;
 	static const int32_t offsetFixContinueLoop = codeFixContinueLoop - codeLoopEnd;
 
 	static const int32_t LoopTopPos = LiteralPoolSize + sizeDataInit + sizePrologue;
@@ -678,6 +684,9 @@ namespace randomx {
 		state.emit(codeDataRead, sizeDataRead);
 		//xor x8, x{readReg2}, x{readReg3}
 		state.emitAt(fixPos, rvi(rv64::XOR, Tmp1Reg, regR(pcfg.readReg2), regR(pcfg.readReg3)));
+		int32_t fixPos2 = state.codePos;
+		state.emit(codeDataRead2, sizeDataRead2);
+		state.emitAt(fixPos2, (uint16_t)((flags & RANDOMX_FLAG_V2) ? 0x1402 : 0x0001));
 		emitProgramSuffix(state, pcfg, flags);
 		clearCache(state);
 	}
@@ -700,7 +709,14 @@ namespace randomx {
 		state.emitAt(fixPos + 4, rv64::LUI | (uimm << 12) | rvrd(Tmp2Reg));
 		//addi x9, x9, {limm}
 		state.emitAt(fixPos + 8, rvi(rv64::ADDI, Tmp2Reg, Tmp2Reg, limm));
-		fixPos += offsetFixLoopCall;
+		if (flags & RANDOMX_FLAG_V2) {
+			state.emit(codeDataReadLight2, sizeDataReadLight2);
+		}
+		else {
+			state.emit(codeDataReadLight1, sizeDataReadLight1);
+		}
+		fixPos = state.codePos;
+		state.emit(codeFixLoopCall, sizeFixLoopCall);
 		//jal x1, SuperscalarHash
 		emitJump(state, ReturnReg, fixPos, SuperScalarHashOffset);
 		emitProgramSuffix(state, pcfg, flags);

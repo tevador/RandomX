@@ -367,6 +367,16 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 	*mx_xor = mx_xor_value;
 	*mx_xor_light = mx_xor_value;
 
+	// "slli x5, x5, 32" for RandomX v2, "nop" for RandomX v1
+	const uint16_t mp_reg_value = (flags & RANDOMX_FLAG_V2) ? 0x1282 : 0x0001;
+
+	memcpy(((uint8_t*)mx_xor) + 8, &mp_reg_value, sizeof(mp_reg_value));
+	memcpy(((uint8_t*)mx_xor_light) + 8, &mp_reg_value, sizeof(mp_reg_value));
+
+	// "srli x5, x14, 32" for RandomX v2, "srli x5, x14, 0" for RandomX v1
+	const uint32_t mp_reg_value2 = (flags & RANDOMX_FLAG_V2) ? 0x02075293 : 0x00075293;
+	memcpy(((uint8_t*)mx_xor) + 14, &mp_reg_value2, sizeof(mp_reg_value2));
+
 	if (entryDataInitScalar) {
 		void* light_mode_data = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_program_main_loop_light_mode_data);
 

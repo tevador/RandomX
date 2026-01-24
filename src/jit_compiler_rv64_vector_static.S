@@ -665,11 +665,13 @@ DECL(randomx_riscv64_vector_program_main_loop_instructions_end):
 
 DECL(randomx_riscv64_vector_program_main_loop_mx_xor):
 	xor x5, x24, x26	// x5 = readReg2 ^ readReg3 (JIT compiler will substitute the actual registers)
-
 	and x5, x5, x19		// x5 = (readReg2 ^ readReg3) & dataset mask
-	xor x14, x14, x5	// mx ^= (readReg2 ^ readReg3) & dataset mask
+	slli x5, x5, 32		// JIT compiler will replace it with "nop" for v1
+	xor x14, x14, x5	// mp ^= (readReg2 ^ readReg3) & dataset mask
 
-	add x5, x14, x11	// x5 = &dataset[mx & dataset mask]
+	srli x5, x14, 32	// JIT compiler will replace it with "srli x5, x14, 0" for v1
+	and x5, x5, x19		// x5 = mp & dataset mask
+	add x5, x5, x11		// x5 = &dataset[mp & dataset mask]
 
 #ifdef __riscv_zicbop
 	prefetch.r (x5)
@@ -874,6 +876,7 @@ DECL(randomx_riscv64_vector_program_main_loop_instructions_end_light_mode):
 DECL(randomx_riscv64_vector_program_main_loop_mx_xor_light_mode):
 	xor x5, x24, x26	// x5 = readReg2 ^ readReg3 (JIT compiler will substitute the actual registers)
 	and x5, x5, x19		// x5 = (readReg2 ^ readReg3) & dataset mask
+	slli x5, x5, 32		// JIT compiler will replace it with "nop" for v1
 	xor x14, x14, x5	// mx ^= (readReg2 ^ readReg3) & dataset mask
 
 	// Save all registers modified when calling dataset_init_scalar_func_ptr
