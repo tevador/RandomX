@@ -30,60 +30,46 @@ This change complements the program size increase tweak and has the same purpose
 
 ## 4. Performance impact
 
-**TODO: the information below is outdated because the tests were done before the prefetch tweak.**
-
 Tests show that RandomX v2, while being more than 1.5 times "heavier" than RandomX v1, results in only a slight hashrate reduction but massive efficiency improvements (in terms of VM+AES instructions per Joule):
 
-### Ryzen 9 9950X (Zen 5) @ 100W
+### AMD Ryzen AI 9 HX 370 (Zen 5), DDR5-5600 @ 28W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|19883.4|100.0%|198.83|88.61e9|886.08e6|100.0%|
-RandomX v2|17240.2|86.7%|172.4|117.5e9|1175.03e6|**132.6%**|
+RandomX v1|6597.15|100.0%|235.61|29.4e9|1050e6|100.0%|
+RandomX v2|7121.69|107.95%|254.35|48.54e9|1733.56e6|**165.1%**|
 
-### Ryzen 9 9950X (Zen 5) @ 256W (PBO max)
+### Ryzen AI 9 365 (Zen 5) @ 28W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|26621 h/s|100.0%|104|118.63e9|463.47e6|100.0%|
-RandomX v2|24091 h/s|90.5%|94.1|164.2e9|641.36e6|**138.4%**|
+RandomX v1|6091|100.0%|217.5|27.14e9|969.44e6|100.0%|
+RandomX v2|6649|109.2%|237.5|45.32e9|1618.5e6|**166.95%**|
 
-### Ryzen 9 7945HX (Zen 4) @ 85W at the wall
+### Ryzen 9 7945HX (Zen 4) @ 62W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|18712 h/s|100.0%|220.14|83.39e9|981.05e6|100.0%|
-RandomX v2|16108 h/s|86.08%|189.51|109.79e9|1291.62e6|**131.66%**|
-
-### Ryzen 9 7945HX (Zen 4) @ 62W (CPU TDP)
-|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
-|-|-|-|-|-|-|-|
-RandomX v1|18712 h/s|100.0%|301.81|83.39e9|1344.98e6|100.0%|
-RandomX v2|16108 h/s|86.08%|259.81|109.79e9|1770.77e6|**131.66%**|
+RandomX v1|16126|100.0%|260.1|71.86e9|1159.11e6|100.0%|
+RandomX v2|15308|94.9%|246.9|104.33e9|1682.83e6|**145.18%**|
 
 ### Ryzen 5 8600G (Zen 4) @ 45W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|5806 h/s|100.0%|129|25.87e9|574.88e6|100.0%|
-RandomX v2|5153 h/s|88.75%|114.5|35.12e9|780.4e6|**135.75%**|
+RandomX v1|5876.47|100.0%|130.59|26.19e9|581.96e6|100.0%|
+RandomX v2|5375.29|91.5%|119.45|36.64e9|814.15e6|**139.9%**|
 
-### Ryzen 9 5900X (Zen 3) @ 132.25W
+### Ryzen 9 5950X (Zen 3) @ 122-126W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|12029.1 h/s|100.0%|90.95|53.61e9|405.35e6|100.0%|
-RandomX v2|10392.85 h/s|86.4%|78.58|70.84e9|535.61e6|**132.14%**|
+RandomX v1|14745.9 @ 126W|100.0%|117.03|65.71e9|521.54e6|100.0%|
+RandomX v2|12905.3 @ 122W|87.5%|105.78|87.96e9|720.98e6|**138.2%**|
 
-### Ryzen 7 4700U (Zen 2) @ 25W
+### Ryzen 7 3700X (Zen 2) @ 88W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|2539 h/s|100.0%|101.56|11.31e9|452.6e6|100.0%|
-RandomX v2|2294 h/s|90.35%|91.76|15.64e9|625.41e6|**138.18%**|
+RandomX v1|8624|100.0%|98|38.43e9|436.73e6|100.0%|
+RandomX v2|7361|85.35%|83.65|50.17e9|570.12e6|**130.54%**|
 
-### Ryzen 9 3950X (Zen 2) @ 127-132W
+### Intel Core i9-12900K @ 125W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
-RandomX v1|15110 h/s (131.27W)|100.0%|115.1|67.34e9|512.94e6|100.0%|
-RandomX v2|13236 h/s (127.59W)|87.6%|103.7|90.21e9|706.8e6|**137.8%**|
-
-### Intel Core i7-6820HQ (Skylake) 4C/8T 2.7 GHz 45W
-|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
-|-|-|-|-|-|-|-|
-RandomX v1|1930.11 h/s|100.0%|42.9|8.601e9|191.14e6|100.0%|
-RandomX v2|1469.72 h/s|76.15%|32.66|10.017e9|222.61e6|**116.5%**|
+RandomX v1|8644.47|100.0%|69.16|38.52e9|308.19e6|100.0%|
+RandomX v2|8310.78|96.14%|66.49|56.64e9|453.15e6|**147.04%**|
