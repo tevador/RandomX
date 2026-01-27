@@ -62,14 +62,38 @@ RandomX v2|5375.29|91.5%|119.45|36.64e9|814.15e6|**139.9%**|
 RandomX v1|14745.9 @ 126W|100.0%|117.03|65.71e9|521.54e6|100.0%|
 RandomX v2|12905.3 @ 122W|87.5%|105.78|87.96e9|720.98e6|**138.2%**|
 
+### Ryzen 9 3950X (Zen 2) @ 131W
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|15049.34|100.0%|114.88|67.07e9|511.96e6|100.0%|
+RandomX v2|13868.64|92.15%|105.87|94.53e9|721.57e6|**140.94%**|
+
 ### Ryzen 7 3700X (Zen 2) @ 88W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
 RandomX v1|8624|100.0%|98|38.43e9|436.73e6|100.0%|
 RandomX v2|7361|85.35%|83.65|50.17e9|570.12e6|**130.54%**|
 
+### Ryzen 7 1700X (Zen 1) @ 95W
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|4832.73|100.0%|50.87|21.54e9|226.7e6|100.0%|
+RandomX v2|4870.41|100.78%|51.27|33.2e9|349.43e6|**154.13%**|
+
 ### Intel Core i9-12900K @ 125W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
 RandomX v1|8644.47|100.0%|69.16|38.52e9|308.19e6|100.0%|
 RandomX v2|8310.78|96.14%|66.49|56.64e9|453.15e6|**147.04%**|
+
+### Intel Core i7-8650U @ 15W
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|1831.15|100.0%|122.08|8.16e9|544.03e6|100.0%|
+RandomX v2|1415|77.27%|94.33|9.64e9|642.95e6|**118.18%**|
+
+### Intel Core i7-6820HQ @ 45W
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|1968.56|100.0%|43.75|8.77e9|194.95e6|100.0%|
+RandomX v2|1488.25|75.6%|33.07|10.14e9|225.41e6|**115.62%**|
