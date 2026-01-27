@@ -14,7 +14,7 @@ These parameters can be modified in source file [configuration.h](../src/configu
 |`RANDOMX_SUPERSCALAR_LATENCY`|Target latency for SuperscalarHash (in cycles of the reference CPU)|`170`|
 |`RANDOMX_DATASET_BASE_SIZE`|Dataset base size in bytes|`2147483648`|
 |`RANDOMX_DATASET_EXTRA_SIZE`|Dataset extra size in bytes|`33554368`|
-|`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|`256`|
+|`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|v1: `256`, v2: `384`|
 |`RANDOMX_PROGRAM_ITERATIONS`|The number of iterations per program|`2048`|
 |`RANDOMX_PROGRAM_COUNT`|The number of programs per hash|`8`|
 |`RANDOMX_JUMP_BITS`|Jump condition mask size in bits|`8`|
