@@ -32,6 +32,18 @@ This change complements the program size increase tweak and has the same purpose
 
 Tests show that RandomX v2, while being more than 1.5 times "heavier" than RandomX v1, results in only a slight hashrate reduction but massive efficiency improvements (in terms of VM+AES instructions per Joule):
 
+### AMD Ryzen 9 9950X (Zen 5) @ 285W (PBO max)
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|27186.1|100.0%|95.38|121.15e9|425.1e6|100.0%|
+RandomX v2|26791.7|98.55%|94.01|182.61e9|640.72e6|**150.72%**|
+
+### AMD Ryzen 9 9950X (Zen 5) @ 100W
+|Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
+|-|-|-|-|-|-|-|
+RandomX v1|19912.2|100.0%|199.122|88.74e9|887.38e6|100.0%|
+RandomX v2|17346.2|87.11%|173.462|118.23e9|1182.27e6|**133.23%**|
+
 ### AMD Ryzen AI 9 HX 370 (Zen 5), DDR5-5600 @ 28W
 |Algorithm|Hashrate|Relative speed|Hash/Joule|VM+AES/s|VM+AES/Joule|Relative work/Joule|
 |-|-|-|-|-|-|-|
