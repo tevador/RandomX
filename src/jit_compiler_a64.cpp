@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "program.hpp"
 #include "reciprocal.h"
 #include "virtual_memory.h"
+#include "soft_aes.h"
 
 namespace ARMV8A {
 
@@ -179,8 +180,13 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 		}
 		else {
 			// Jump to RandomX v2 FE mix soft AES code by writing "b randomx_program_aarch64_v2_FE_mix_soft_aes" instruction
-			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+			uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
 			emit32(ARMV8A::B | (offset / 4), code, codePos);
+
+			offset = (uint8_t*)randomx_program_aarch64_aes_lut_pointers - (uint8_t*)randomx_program_aarch64;
+
+			*(uint64_t*)(code + offset + 0) = (uint64_t) &randomx_aes_lut_enc[0][0];
+			*(uint64_t*)(code + offset + 8) = (uint64_t) &randomx_aes_lut_dec[0][0];
 		}
 	}
 	else {
@@ -270,8 +276,13 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 		}
 		else {
 			// Jump to RandomX v2 FE mix soft AES code by writing "b randomx_program_aarch64_v2_FE_mix_soft_aes" instruction
-			const uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
+			uint32_t offset = (uint8_t*)randomx_program_aarch64_v2_FE_mix_soft_aes - (uint8_t*)randomx_program_aarch64_v2_FE_mix;
 			emit32(ARMV8A::B | (offset / 4), code, codePos);
+
+			offset = (uint8_t*)randomx_program_aarch64_aes_lut_pointers - (uint8_t*)randomx_program_aarch64;
+
+			*(uint64_t*)(code + offset + 0) = (uint64_t) &randomx_aes_lut_enc[0][0];
+			*(uint64_t*)(code + offset + 8) = (uint64_t) &randomx_aes_lut_dec[0][0];
 		}
 	}
 	else {
