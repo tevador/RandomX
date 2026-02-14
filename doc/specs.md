@@ -319,7 +319,7 @@ To access a particular scratchpad level, bitwise AND with a mask according to ta
 
 The VM has 8 integer registers `r0`-`r7` (group R) and a total of 12 floating point registers split into 3 groups: `f0`-`f3` (group F), `e0`-`e3` (group E) and `a0`-`a3` (group A). Integer registers are 64 bits wide, while floating point registers are 128 bits wide and contain a pair of numbers in floating point format. The lower and upper half of floating point registers are not separately addressable.
 
-Additionally, there are 3 internal registers `ma`, `mx` and `fprc`.
+Additionally, there are 4 internal registers `ma`, `mx`, `mt` and `fprc`.
 
 - RandomX v1: `mp` is a name alias for `mx`
 - RandomX v2: `mp` is a name alias for `ma`
@@ -450,9 +450,9 @@ The loop described below is repeated until the value of the `ic` register reache
 2. `spAddr0` is used to perform a 64-byte aligned read from Scratchpad level 3 (using mask from Table 4.2.1). The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
 3. `spAddr1` is used to perform a 64-byte aligned read from Scratchpad level 3 (using mask from Table 4.2.1). Each floating point register `f0`-`f3` and `e0`-`e3` is initialized using an 8-byte value according to the conversion rules from chapters 4.3.1 and 4.3.2.
 4. The 256 instructions stored in the Program Buffer are executed.
-5. The value of `ma` is saved as a temporary `t`. Then the `mp` register is XORed with the low 32 bits of registers `readReg2` and `readReg3` (see Table 4.5.3).
+5. The value of `ma` is saved in `mt`. Then the `mp` register is XORed with the low 32 bits of registers `readReg2` and `readReg3` (see Table 4.5.3).
 6. A 64-byte Dataset item at address `datasetOffset + mp % RANDOMX_DATASET_BASE_SIZE` is prefetched from the Dataset (it will be used during the next iteration(s)).
-7. A 64-byte Dataset item at address `datasetOffset + t % RANDOMX_DATASET_BASE_SIZE` is loaded from the Dataset. The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
+7. A 64-byte Dataset item at address `datasetOffset + mt % RANDOMX_DATASET_BASE_SIZE` is loaded from the Dataset. The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
 8. The values of registers `mx` and `ma` are swapped.
 9. The values of all integer registers `r0`-`r7` are written to the Scratchpad (L3) at address `spAddr1` (64-byte aligned).
 10. Group F registers are mixed with group E registers.
