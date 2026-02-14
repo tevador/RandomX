@@ -20,7 +20,7 @@ CPUs got much faster since the original RandomX was released. Back in 2019, Ryze
 
 But in RandomX it's only 20-25% faster, because it's bottlenecked by the RAM latency. While CPU cores got faster over the years, RAM latency stayed basically the same - a tuned DDR4 memory from 2019, and a tuned DDR5 memory from 2026 will both have the same access latency of around 50-55 ns.
 
-This disbalance is the main reason of the program size increase - Zen5 and newer CPUs need more work to keep themselves busy while they're waiting for data from memory.
+This imbalance is the main reason of the program size increase - Zen5 and newer CPUs need more work to keep themselves busy while they're waiting for data from memory.
 
 ## 4. Prefetch two main loop iterations ahead instead of just one
 
