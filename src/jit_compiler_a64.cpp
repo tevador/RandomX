@@ -185,8 +185,11 @@ void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& con
 
 			offset = (uint8_t*)randomx_program_aarch64_aes_lut_pointers - (uint8_t*)randomx_program_aarch64;
 
-			*(uint64_t*)(code + offset + 0) = (uint64_t) &randomx_aes_lut_enc[0][0];
-			*(uint64_t*)(code + offset + 8) = (uint64_t) &randomx_aes_lut_dec[0][0];
+			const void* lut_enc = &randomx_aes_lut_enc[0][0];
+			const void* lut_dec = &randomx_aes_lut_dec[0][0];
+
+			memcpy(code + offset + 0, &lut_enc, sizeof(lut_enc));
+			memcpy(code + offset + 8, &lut_dec, sizeof(lut_dec));
 		}
 	}
 	else {
@@ -281,8 +284,11 @@ void JitCompilerA64::generateProgramLight(Program& program, ProgramConfiguration
 
 			offset = (uint8_t*)randomx_program_aarch64_aes_lut_pointers - (uint8_t*)randomx_program_aarch64;
 
-			*(uint64_t*)(code + offset + 0) = (uint64_t) &randomx_aes_lut_enc[0][0];
-			*(uint64_t*)(code + offset + 8) = (uint64_t) &randomx_aes_lut_dec[0][0];
+			const void* lut_enc = &randomx_aes_lut_enc[0][0];
+			const void* lut_dec = &randomx_aes_lut_dec[0][0];
+
+			memcpy(code + offset + 0, &lut_enc, sizeof(lut_enc));
+			memcpy(code + offset + 8, &lut_dec, sizeof(lut_dec));
 		}
 	}
 	else {
