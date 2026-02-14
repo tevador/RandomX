@@ -380,5 +380,13 @@ if(NOT HAVE_CXX_ATOMICS)
   target_link_libraries(randomx-benchmark
     PRIVATE "atomic")
 endif()
+
+check_cxx_source_compiles("
+#include <stdlib.h>
+int main() {
+  void* p;
+  return posix_memalign(&p, 64, 64);
+}" HAVE_POSIX_MEMALIGN)
+
 set_property(TARGET randomx-benchmark PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx-benchmark PROPERTY CXX_STANDARD 11)
