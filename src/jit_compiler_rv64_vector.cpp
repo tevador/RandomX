@@ -364,8 +364,8 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 	*spaddr_xor2			= 0x014A42B3 + (pcfg.readReg0 << 15) + (pcfg.readReg1 << 20);	// xor x5,  readReg0, readReg1
 	const uint32_t mx_xor_value	= 0x014A42B3 + (pcfg.readReg2 << 15) + (pcfg.readReg3 << 20);	// xor x5,  readReg2, readReg3
 
-	*mx_xor = mx_xor_value;
-	*mx_xor_light = mx_xor_value;
+	memcpy(mx_xor, &mx_xor_value, sizeof(mx_xor_value));
+	memcpy(mx_xor_light, &mx_xor_value, sizeof(mx_xor_value));
 
 	// "slli x5, x5, 32" for RandomX v2, "nop" for RandomX v1
 	const uint16_t mp_reg_value = (flags & RANDOMX_FLAG_V2) ? 0x1282 : 0x0001;
