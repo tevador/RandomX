@@ -143,8 +143,16 @@ endif()
 
 # PowerPC
 if(ARCH_ID STREQUAL "ppc64" OR ARCH_ID STREQUAL "ppc64le")
+  list(APPEND randomx_sources
+    src/jit_compiler_ppc64_static.S
+    src/jit_compiler_ppc64.cpp)
+
+  set_property(SOURCE src/jit_compiler_ppc64_static.S PROPERTY LANGUAGE C)
+
   if(ARCH STREQUAL "native")
     add_flag("-mcpu=native")
+  else()
+    add_flag("-mcpu=power8")
   endif()
   # PowerPC AES requires ALTIVEC (POWER7+), so it cannot be enabled in the default build
 endif()

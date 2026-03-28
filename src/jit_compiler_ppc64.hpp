@@ -1,5 +1,6 @@
 /*
-Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2023 tevador <tevador@gmail.com>
+Copyright (c) 2026, Forest Crossman <cyrozap@gmail.com>
 
 All rights reserved.
 
@@ -28,54 +29,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <vector>
+
 #include "common.hpp"
+#include "jit_compiler.hpp"
+
+#include "jit_compiler_ppc64_static.hpp"
 
 namespace randomx {
 
-	struct CodeBuffer {
-		uint8_t* code;
-		int32_t codePos;
-		int32_t rcpCount;
+	class Program;
+	struct ProgramConfiguration;
+	class SuperscalarProgram;
+	class Instruction;
 
-		void emit(const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
-			codePos += len;
-		}
+	class JitCompilerPPC64 {
+	public:
+		JitCompilerPPC64();
+		~JitCompilerPPC64();
 
-		template<typename T>
-		void emit(T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-			codePos += sizeof(src);
-		}
+		void generateProgram(Program&, ProgramConfiguration&);
+		void generateProgramLight(Program&, ProgramConfiguration&, uint32_t);
 
-		void emitAt(int32_t codePos, const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
-		}
+		void generateSuperscalarHash(SuperscalarProgramList& programs, std::vector<uint64_t> &);
 
-		template<typename T>
-		void emitAt(int32_t codePos, T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-		}
+		void generateDatasetInitCode() {}
+
+		ProgramFunc* getProgramFunc() { return reinterpret_cast<ProgramFunc*>(entryProgram); }
+		DatasetInitFunc* getDatasetInitFunc() { return reinterpret_cast<DatasetInitFunc*>(entryDataInit); }
+		uint8_t* getCode() { return state.code; }
+		size_t getCodeSize();
+
+		void enableWriting();
+		void enableExecution();
+		void enableAll();
+
+		void setFlags(randomx_flags f) { flags = f; }
+
+		static uint8_t instMap[256];
+
+	private:
+		void emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags);
+		void emitProgramSuffix(CompilerState& state, ProgramConfiguration& pcfg, randomx_flags flags);
+
+		CompilerState state;
+		randomx_flags flags;
+
+		void* entryDataInit = nullptr;
+		void* entryProgram = nullptr;
+
+		int32_t RandomXCodePos;
+		int32_t SshashSingleItemPos;
+		int32_t LoopBeginPos;
 	};
 
-	struct CompilerState : public CodeBuffer {
-		int32_t instructionOffsets[RANDOMX_PROGRAM_MAX_SIZE];
-		int registerUsage[RegistersCount];
-	};
 }
-
-#if defined(RANDOMX_COMPILER_X86)
-#include "jit_compiler_x86.hpp"
-#elif defined(RANDOMX_COMPILER_A64)
-#include "jit_compiler_a64.hpp"
-#elif defined(RANDOMX_COMPILER_RV64)
-#include "jit_compiler_rv64.hpp"
-#elif defined(RANDOMX_COMPILER_PPC64)
-#include "jit_compiler_ppc64.hpp"
-#else
-#include "jit_compiler_fallback.hpp"
-#endif
-
-#if defined(__OpenBSD__) || defined(__NetBSD__) || (defined(__APPLE__) && defined(__aarch64__))
-#define RANDOMX_FORCE_SECURE
-#endif
