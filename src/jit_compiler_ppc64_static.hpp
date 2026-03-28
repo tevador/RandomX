@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018-2019, tevador <tevador@gmail.com>
+Copyright (c) 2026, Forest Crossman <cyrozap@gmail.com>
 
 All rights reserved.
 
@@ -28,54 +28,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include "common.hpp"
+extern "C" {
+	void randomx_ppc64_constants();
+	void randomx_ppc64_constant_lut_fprc_to_fpscr();
+	void randomx_ppc64_constants_end();
 
-namespace randomx {
+	void randomx_ppc64_dataset_init();
+	void randomx_ppc64_dataset_init_fix_call();
+	void randomx_ppc64_dataset_init_end();
 
-	struct CodeBuffer {
-		uint8_t* code;
-		int32_t codePos;
-		int32_t rcpCount;
+	void randomx_ppc64_sshash_single_item_prologue();
+	void randomx_ppc64_sshash_single_item_prologue_end();
+	void randomx_ppc64_sshash_single_item_epilogue();
+	void randomx_ppc64_sshash_single_item_epilogue_end();
+	void randomx_ppc64_sshash_cache_prefetch();
+	void randomx_ppc64_sshash_cache_prefetch_end();
+	void randomx_ppc64_sshash_xor();
+	void randomx_ppc64_sshash_xor_end();
 
-		void emit(const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
-			codePos += len;
-		}
-
-		template<typename T>
-		void emit(T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-			codePos += sizeof(src);
-		}
-
-		void emitAt(int32_t codePos, const uint8_t* src, int32_t len) {
-			memcpy(&code[codePos], src, len);
-		}
-
-		template<typename T>
-		void emitAt(int32_t codePos, T src) {
-			memcpy(&code[codePos], &src, sizeof(src));
-		}
-	};
-
-	struct CompilerState : public CodeBuffer {
-		int32_t instructionOffsets[RANDOMX_PROGRAM_MAX_SIZE];
-		int registerUsage[RegistersCount];
-	};
+	void randomx_ppc64_vm_prologue();
+	void randomx_ppc64_vm_prologue_end();
+	void randomx_ppc64_vm_epilogue();
+	void randomx_ppc64_vm_fix_loop();
+	void randomx_ppc64_vm_epilogue_end();
+	void randomx_ppc64_vm_loop_prologue();
+	void randomx_ppc64_vm_loop_prologue_end();
+	void randomx_ppc64_vm_data_read();
+	void randomx_ppc64_vm_data_read_end();
+	void randomx_ppc64_vm_data_read_light();
+	void randomx_ppc64_vm_data_read_light_fix_call();
+	void randomx_ppc64_vm_data_read_light_end();
+	void randomx_ppc64_vm_spad_store();
+	void randomx_ppc64_vm_spad_store_end();
+	void randomx_ppc64_vm_spad_store_hard_aes();
+	void randomx_ppc64_vm_spad_store_hard_aes_end();
 }
-
-#if defined(RANDOMX_COMPILER_X86)
-#include "jit_compiler_x86.hpp"
-#elif defined(RANDOMX_COMPILER_A64)
-#include "jit_compiler_a64.hpp"
-#elif defined(RANDOMX_COMPILER_RV64)
-#include "jit_compiler_rv64.hpp"
-#elif defined(RANDOMX_COMPILER_PPC64)
-#include "jit_compiler_ppc64.hpp"
-#else
-#include "jit_compiler_fallback.hpp"
-#endif
-
-#if defined(__OpenBSD__) || defined(__NetBSD__) || (defined(__APPLE__) && defined(__aarch64__))
-#define RANDOMX_FORCE_SECURE
-#endif

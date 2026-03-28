@@ -47,6 +47,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include <asm/hwcap.h>
 #endif
 
+#if defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
+	#include <sys/auxv.h>
+	#include <asm/cputable.h>
+#endif
+
 #ifdef __riscv
 #include <signal.h>
 #include <setjmp.h>
@@ -120,8 +125,10 @@ namespace randomx {
 
 			sigaction(SIGILL, &old_action, nullptr);
 		}
+#elif defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
+		unsigned long hwcaps2 = getauxval(AT_HWCAP2);
+		aes_ = (hwcaps2 & PPC_FEATURE2_VEC_CRYPTO) != 0;
 #endif
-		//TODO POWER8 AES
 	}
 
 	const Cpu cpu;
