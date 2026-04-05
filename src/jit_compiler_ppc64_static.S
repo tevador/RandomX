@@ -397,6 +397,7 @@ randomx_ppc64_sshash_xor_end:
 // r6-r12 (volatile) -> scratch registers
 // r14-r21 (non-volatile) -> RandomX integer registers r0-r7
 // r22 (non-volatile) -> dataset pointer (memory)
+// r23 (non-volatile) -> unused
 // r24 (non-volatile) -> ma
 // r25 (non-volatile) -> mx
 // r26 (non-volatile) -> spAddr0
