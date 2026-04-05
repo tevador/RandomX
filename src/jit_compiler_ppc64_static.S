@@ -405,8 +405,8 @@ randomx_ppc64_sshash_xor_end:
 // r29 (non-volatile) -> Saved pointer to MemoryRegisters
 // r30 (non-volatile) -> Saved pointer to scratchpad (uint8_t *)
 // r31 (non-volatile) -> unused
-// vsr0–vsr13 (volatile) -> scratch registers
-// vsr14–vsr31 (non-volatile) -> unused
+// f0-f13 / vs0–vs13 (volatile) -> scratch registers
+// f14-f31 / vs14–vs31 (non-volatile) -> unused
 // v0-v3 / vs32-vs35 (volatile) -> RandomX floating point registers f0-f3
 // v4-v7 / vs36-vs39 (volatile) -> RandomX floating point registers e0-e3
 // v8-v11 / vs40-vs43 (volatile) -> RandomX floating point registers a0-a3
