@@ -76,7 +76,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	.global randomx_reciprocal_fast
 
 // Macro to store a VR containing a RandomX Group F/E/A register to memory
-// Clobbers: v12 / vs44
 .macro STORE_LE_VR vr_src, vr_temp, offset_reg, base_reg
 #if PPC_BIG_ENDIAN
 	vperm \vr_temp, \vr_src, \vr_src, %v15         // Reverse the bytes so they're arranged as [ 0123 4567 ]
