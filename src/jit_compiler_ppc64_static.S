@@ -78,11 +78,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Macro to store a VR containing a RandomX Group F/E/A register to memory
 .macro STORE_LE_VR vr_src, vr_temp, offset_reg, base_reg
 #if PPC_BIG_ENDIAN
-	vperm \vr_temp, \vr_src, \vr_src, %v15         // Reverse the bytes so they're arranged as [ 0123 4567 ]
+	vperm \vr_temp, \vr_src, \vr_src, %v15  // Reverse the bytes so they're arranged as [ 0123 4567 ]
+	stvx \vr_temp, \offset_reg, \base_reg   // Store the two doubles to memory
 #else
-	xxswapd \vr_temp + 32, \vr_src + 32            // Swap the doubles so they're arranged as [ 3210 7654 ]
+	stvx \vr_src, \offset_reg, \base_reg    // Store the two doubles to memory
 #endif
-	stxvd2x \vr_temp + 32, \offset_reg, \base_reg  // Store the two doubles to memory
 .endm
 
 // Macro to shuffle a VR after being loaded with lxsdx.
