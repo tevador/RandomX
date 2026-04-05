@@ -252,6 +252,7 @@ namespace PPC64 {
 
 	static inline uint32_t rlwinm(uint32_t ra, uint32_t rs, uint32_t sh, uint32_t mb, uint32_t me) { return M_form(21, rs, ra, sh, mb, me, 0); }
 	static inline uint32_t rldicl(uint32_t ra, uint32_t rs, uint32_t sh, uint32_t mb) { return MD_form(30, rs, ra, sh, mb, 0, 0); }
+	static inline uint32_t rldicl_dot(uint32_t ra, uint32_t rs, uint32_t sh, uint32_t mb) { return MD_form(30, rs, ra, sh, mb, 0, 1); }
 	static inline uint32_t rldicr(uint32_t ra, uint32_t rs, uint32_t sh, uint32_t me) { return MD_form(30, rs, ra, sh, me, 1, 0); }
 	static inline uint32_t rldic(uint32_t ra, uint32_t rs, uint32_t sh, uint32_t mb) { return MD_form(30, rs, ra, sh, mb, 2, 0); }
 	static inline uint32_t rldcl(uint32_t ra, uint32_t rs, uint32_t rb, uint32_t mb) { return MDS_form(30, rs, ra, rb, mb, 8, 0); }
@@ -494,7 +495,7 @@ namespace randomx {
 	constexpr size_t CodeAlign = 64*1024;  // 64 kB, to ensure alignment on systems with a page size <= 64 kB
 	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStore + sizeVmSpadStoreHardAes, CodeAlign);
-	constexpr size_t MaxRandomXInstrCodeSize = 4*11;  // CBRANCH requires at most 11 instructions
+	constexpr size_t MaxRandomXInstrCodeSize = 4*10;  // FDIV_M requires at most 10 instructions
 	constexpr size_t MaxSuperscalarInstrSize = 4*6;  // IMUL_RCP requires at most 6 instructions
 	static const size_t SuperscalarProgramHeaders = sizeSshashSingleItemPrologue + sizeSshashSingleItemEpilogue;
 
@@ -1183,9 +1184,11 @@ namespace randomx {
 		int dst = RegisterMapR.getPpcGprNum(reg);
 		emitAddImm32(state, dst, dst, imm);
 
-		uint64_t mask = (uint64_t)ConditionMask << shift;
-		emitMovImm64(state, 8, mask);
-		state.emit(PPC64::and_dot(8, dst, 8));
+		// Calculate the Mask Begin (MB) parameter
+		uint32_t mb = 64 - RANDOMX_JUMP_BITS;
+
+		// rldicl. r8, dst, 64 - shift, mb
+		state.emit(PPC64::rldicl_dot(8, dst, (64 - shift) & 63, mb));
 
 		int32_t targetPos = state.instructionOffsets[target];
 		int offset = targetPos - state.codePos;
