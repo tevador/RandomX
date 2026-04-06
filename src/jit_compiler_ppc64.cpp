@@ -736,13 +736,11 @@ namespace randomx {
 		// spAddr0 (r26) = r26 & 0xFFFFFFFF
 		state.emit(PPC64::rldicl(SpAddr0GPR26, SpAddr0GPR26, 0, 32));
 
-		// Load Scratchpad L3 mask into r8
-		uint32_t l3Mask = (RANDOMX_SCRATCHPAD_L3 - 1) & ~63;
-		emitMovImm32(state, 8, l3Mask);
-
-		// Apply mask
-		state.emit(PPC64::and_(SpAddr0GPR26, SpAddr0GPR26, 8));
-		state.emit(PPC64::and_(SpAddr1GPR27, SpAddr1GPR27, 8));
+		// Apply Scratchpad L3 mask
+		uint32_t mb = 32 - Log2(RANDOMX_SCRATCHPAD_L3);
+		uint32_t me = 31 - Log2(RANDOMX_DATASET_ITEM_SIZE);
+		state.emit(PPC64::rlwinm(SpAddr0GPR26, SpAddr0GPR26, 0, mb, me));
+		state.emit(PPC64::rlwinm(SpAddr1GPR27, SpAddr1GPR27, 0, mb, me));
 
 		// Add scratchpad base pointer (r30)
 		state.emit(PPC64::add(SpAddr0GPR26, SpAddr0GPR26, ScratchpadPointerGPR30));
