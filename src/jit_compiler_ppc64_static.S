@@ -650,7 +650,10 @@ randomx_ppc64_vm_data_read:
 	.long 0  // Placeholder for: rlwinm %r8, %mpReg, 0, mask_begin, mask_end
 	add %r8, %r8, %r22  // r22 holds dataset base pointer
 
-	// Prefetch
+	// Prefetch the next block with dcbt. This is extremely important--without this
+	// we lose >20% performance in V1 and >16% in V2.
+	// Setting TH=0b10000 (dcbtt 0, %r8) didn't make any measurable difference in
+	// performance.
 	dcbt 0, %r8, 0
 
 	// Calculate read address (JIT compiler MUST patch)
