@@ -30,9 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <cstring>
 
-#include <sys/auxv.h>
-#include <asm/cputable.h>
-
 #include "cpu.hpp"
 #include "program.hpp"
 #include "reciprocal.h"
@@ -727,8 +724,7 @@ namespace randomx {
 	void JitCompilerPPC64::emitProgramSuffix(CompilerState& state, ProgramConfiguration& pcfg, randomx_flags flags) {
 		if (flags & RANDOMX_FLAG_V2) {
 			if (true || (flags & RANDOMX_FLAG_HARD_AES)) {  // TODO: Remove the "true" once software AES is working
-				unsigned long hwcaps2 = getauxval(AT_HWCAP2);
-				if (!(hwcaps2 & PPC_FEATURE2_VEC_CRYPTO)) {
+				if (!randomx::cpu.hasAes()) {
 					throw std::runtime_error("This CPU is missing support for hardware AES!");
 				}
 				state.emit(codeVmSpadStoreHardAes, sizeVmSpadStoreHardAes);
