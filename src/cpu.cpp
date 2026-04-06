@@ -49,7 +49,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
 	#include <sys/auxv.h>
-	#include <asm/cputable.h>
+	// From asm/cputable.h:
+	#ifndef PPC_FEATURE2_VEC_CRYPTO
+		#define PPC_FEATURE2_VEC_CRYPTO 0x02000000
+	#endif
+	#ifndef PPC_FEATURE2_ARCH_3_00
+		#define PPC_FEATURE2_ARCH_3_00 0x00800000
+	#endif
 #endif
 
 #ifdef __riscv
