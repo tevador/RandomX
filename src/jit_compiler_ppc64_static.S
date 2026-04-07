@@ -28,7 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 	.machine power7
 	.machine altivec
-	.abiversion 2
 	.section ".rodata"  // Not .text because it's not meant to be executed in-place.
 
 #include "configuration.h"
@@ -37,6 +36,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#define PPC_BIG_ENDIAN 1
 #else
 	#define PPC_BIG_ENDIAN 0
+#endif
+
+#if (defined(_CALL_ELF) && _CALL_ELF == 2) || (!defined(_CALL_ELF) && !PPC_BIG_ENDIAN)
+	#define PPC_ABI_V2 1
+#else
+	#define PPC_ABI_V2 0
+#endif
+
+#if PPC_ABI_V2
+	.abiversion 2
+	#define C_FUNCTION(name) \
+		.global name; \
+		name:
+#else
+	.abiversion 1
+	#define C_FUNCTION(name) \
+		.section ".opd","aw"; \
+		.align 3; \
+		.global name; \
+		name: \
+		.quad .name, .TOC.@tocbase, 0; \
+		.previous; \
+		.global .name; \
+		.name:
 #endif
 
 	.global randomx_ppc64_constants
@@ -72,8 +95,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	.global randomx_ppc64_vm_spad_store_end
 	.global randomx_ppc64_vm_spad_store_hard_aes
 	.global randomx_ppc64_vm_spad_store_hard_aes_end
-
-	.global randomx_reciprocal_fast
 
 // Macro to store a VR containing a RandomX Group F/E/A register to memory
 .macro STORE_LE_VR vr_src, vr_temp, offset_reg, base_reg
@@ -197,9 +218,9 @@ randomx_ppc64_dataset_init:
 	// Standard function prologue
 	mflr %r0
 	std %r0, 16(%r1)
-	stdu %r1, -48(%r1)
-	std %r14, 32(%r1)
-	std %r15, 40(%r1)
+	stdu %r1, -128(%r1)
+	std %r14, 112(%r1)
+	std %r15, 120(%r1)
 
 	// Load cache->memory pointer
 	ld %r3, 0(%r3)
@@ -244,9 +265,9 @@ randomx_ppc64_dataset_init_fix_call:
 	bdnz 1b
 
 	// Standard function epilogue
-	ld %r14, 32(%r1)
-	ld %r15, 40(%r1)
-	addi %r1, %r1, 48
+	ld %r14, 112(%r1)
+	ld %r15, 120(%r1)
+	addi %r1, %r1, 128
 	ld %r0, 16(%r1)
 	mtlr %r0
 	blr
@@ -283,9 +304,9 @@ randomx_ppc64_sshash_single_item_prologue:
 	// Standard function prologue
 	mflr %r0
 	std %r0, 16(%r1)
-	stdu %r1, -48(%r1)
-	std %r22, 32(%r1)
-	std %r23, 40(%r1)
+	stdu %r1, -128(%r1)
+	std %r22, 112(%r1)
+	std %r23, 120(%r1)
 
 	// Step 1. Initialize registers
 
@@ -331,9 +352,9 @@ randomx_ppc64_sshash_single_item_epilogue:
 	mr %r5, %r22
 
 	// Standard function epilogue
-	ld %r22, 32(%r1)
-	ld %r23, 40(%r1)
-	addi %r1, %r1, 48
+	ld %r22, 112(%r1)
+	ld %r23, 120(%r1)
+	addi %r1, %r1, 128
 	ld %r0, 16(%r1)
 	mtlr %r0
 	blr
@@ -425,25 +446,25 @@ randomx_ppc64_vm_prologue:
 	// Standard function prologue
 	mflr %r0
 	std %r0, 16(%r1)
-	stdu %r1, -176(%r1)
-	std %r14, 32(%r1)
-	std %r15, 40(%r1)
-	std %r16, 48(%r1)
-	std %r17, 56(%r1)
-	std %r18, 64(%r1)
-	std %r19, 72(%r1)
-	std %r20, 80(%r1)
-	std %r21, 88(%r1)
-	std %r22, 96(%r1)
-	std %r23, 104(%r1)
-	std %r24, 112(%r1)
-	std %r25, 120(%r1)
-	std %r26, 128(%r1)
-	std %r27, 136(%r1)
-	std %r28, 144(%r1)
-	std %r29, 152(%r1)
-	std %r30, 160(%r1)
-	//std %r31, 168(%r1)
+	stdu %r1, -256(%r1)
+	std %r14, 112(%r1)
+	std %r15, 120(%r1)
+	std %r16, 128(%r1)
+	std %r17, 136(%r1)
+	std %r18, 144(%r1)
+	std %r19, 152(%r1)
+	std %r20, 160(%r1)
+	std %r21, 168(%r1)
+	std %r22, 176(%r1)
+	std %r23, 184(%r1)
+	std %r24, 192(%r1)
+	std %r25, 200(%r1)
+	std %r26, 208(%r1)
+	std %r27, 216(%r1)
+	std %r28, 224(%r1)
+	std %r29, 232(%r1)
+	std %r30, 240(%r1)
+	//std %r31, 248(%r1)
 
 	// Save arguments
 	mr %r28, %r3
@@ -551,25 +572,25 @@ randomx_ppc64_vm_fix_loop:
 	stxvd2x %vs7, 0, %r11
 
 	// Standard function epilogue
-	ld %r14, 32(%r1)
-	ld %r15, 40(%r1)
-	ld %r16, 48(%r1)
-	ld %r17, 56(%r1)
-	ld %r18, 64(%r1)
-	ld %r19, 72(%r1)
-	ld %r20, 80(%r1)
-	ld %r21, 88(%r1)
-	ld %r22, 96(%r1)
-	ld %r23, 104(%r1)
-	ld %r24, 112(%r1)
-	ld %r25, 120(%r1)
-	ld %r26, 128(%r1)
-	ld %r27, 136(%r1)
-	ld %r28, 144(%r1)
-	ld %r29, 152(%r1)
-	ld %r30, 160(%r1)
-	//ld %r31, 168(%r1)
-	addi %r1, %r1,176
+	ld %r14, 112(%r1)
+	ld %r15, 120(%r1)
+	ld %r16, 128(%r1)
+	ld %r17, 136(%r1)
+	ld %r18, 144(%r1)
+	ld %r19, 152(%r1)
+	ld %r20, 160(%r1)
+	ld %r21, 168(%r1)
+	ld %r22, 176(%r1)
+	ld %r23, 184(%r1)
+	ld %r24, 192(%r1)
+	ld %r25, 200(%r1)
+	ld %r26, 208(%r1)
+	ld %r27, 216(%r1)
+	ld %r28, 224(%r1)
+	ld %r29, 232(%r1)
+	ld %r30, 240(%r1)
+	//ld %r31, 248(%r1)
+	addi %r1, %r1,256
 	ld %r0, 16(%r1)
 	mtlr %r0
 	blr
@@ -820,7 +841,7 @@ randomx_ppc64_vm_spad_store_hard_aes_end:
 
 
 	.section ".text"
-randomx_reciprocal_fast:
+C_FUNCTION(randomx_reciprocal_fast)
 	cntlzd  %r4, %r3       // r4 = 63 - k (count leading zeros)
 	li      %r5, 1         // r5 = 1
 	subfic  %r4, %r4, 63   // r4 = 63 - (63 - k) = k
