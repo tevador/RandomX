@@ -36,6 +36,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "jit_compiler_ppc64_static.hpp"
 
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	#define PPC_BIG_ENDIAN 1
+#else
+	#define PPC_BIG_ENDIAN 0
+#endif
+
+#if (defined(_CALL_ELF) && _CALL_ELF == 2) || (!defined(_CALL_ELF) && !PPC_BIG_ENDIAN)
+	#define PPC_ABI_V2 1
+#else
+	#define PPC_ABI_V2 0
+#endif
+
 namespace randomx {
 
 	class Program;
@@ -55,8 +67,20 @@ namespace randomx {
 
 		void generateDatasetInitCode() {}
 
-		ProgramFunc* getProgramFunc() { return reinterpret_cast<ProgramFunc*>(entryProgram); }
-		DatasetInitFunc* getDatasetInitFunc() { return reinterpret_cast<DatasetInitFunc*>(entryDataInit); }
+		ProgramFunc* getProgramFunc() {
+#if PPC_ABI_V2
+			return reinterpret_cast<ProgramFunc*>(entryProgram);
+#else
+			return reinterpret_cast<ProgramFunc*>(descriptorProgram);
+#endif
+		}
+		DatasetInitFunc* getDatasetInitFunc() {
+#if PPC_ABI_V2
+			return reinterpret_cast<DatasetInitFunc*>(entryDataInit);
+#else
+			return reinterpret_cast<DatasetInitFunc*>(descriptorDataInit);
+#endif
+		}
 		uint8_t* getCode() { return state.code; }
 		size_t getCodeSize();
 
@@ -77,6 +101,10 @@ namespace randomx {
 
 		void* entryDataInit = nullptr;
 		void* entryProgram = nullptr;
+#if !PPC_ABI_V2
+		uint64_t descriptorProgram[3];
+		uint64_t descriptorDataInit[3];
+#endif
 
 		int32_t RandomXCodePos;
 		int32_t SshashSingleItemPos;

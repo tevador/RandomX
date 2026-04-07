@@ -38,12 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "jit_compiler_ppc64.hpp"
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-	#define PPC_BIG_ENDIAN 1
-#else
-	#define PPC_BIG_ENDIAN 0
-#endif
-
 namespace {
 #define HANDLER_ARGS randomx::CompilerState& state, randomx::Instruction isn, int i, randomx_flags flags
 	using InstructionHandler = void(HANDLER_ARGS);
@@ -792,6 +786,17 @@ namespace randomx {
 		SshashSingleItemPos = alignSize(state.codePos, 128);
 		// Patch in the call to the SuperScalar Hash single item function
 		state.emitAt(datasetInitFixCallPos, PPC64::bl(SshashSingleItemPos - datasetInitFixCallPos));
+
+#if !PPC_ABI_V2
+		// Initialize the ABI V1 function descriptors
+		descriptorProgram[0] = reinterpret_cast<uint64_t>(entryProgram);
+		descriptorProgram[1] = 0;
+		descriptorProgram[2] = 0;
+
+		descriptorDataInit[0] = reinterpret_cast<uint64_t>(entryDataInit);
+		descriptorDataInit[1] = 0;
+		descriptorDataInit[2] = 0;
+#endif
 
 		clearCache(state);
 	}
