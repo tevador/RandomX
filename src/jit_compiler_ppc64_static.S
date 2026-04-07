@@ -246,14 +246,14 @@ randomx_ppc64_dataset_init_fix_call:
 	b 0
 
 	// Store the 64 computed bytes back in the dataset
-	STORE_LE_GPR %r4, 8*0, %r14
-	STORE_LE_GPR %r6, 8*1, %r14
-	STORE_LE_GPR %r7, 8*2, %r14
-	STORE_LE_GPR %r9, 8*3, %r14
-	STORE_LE_GPR %r10, 8*4, %r14
-	STORE_LE_GPR %r11, 8*5, %r14
-	STORE_LE_GPR %r12, 8*6, %r14
-	STORE_LE_GPR %r5, 8*7, %r14
+	std %r4, 8*0(%r14)
+	std %r6, 8*1(%r14)
+	std %r7, 8*2(%r14)
+	std %r9, 8*3(%r14)
+	std %r10, 8*4(%r14)
+	std %r11, 8*5(%r14)
+	std %r12, 8*6(%r14)
+	std %r5, 8*7(%r14)
 
 	// Increment the dataset pointer by 64 bytes
 	addi %r14, %r14, 8*8
@@ -376,20 +376,20 @@ randomx_ppc64_sshash_cache_prefetch_end:
 
 // Step 6. XOR all registers with data loaded from randomx cache
 randomx_ppc64_sshash_xor:
-	LOAD_LE_GPR %r8, 0, %r23
-	LOAD_LE_GPR %r0, 8, %r23
+	ld %r8, 0(%r23)
+	ld %r0, 8(%r23)
 	xor %r4, %r4, %r8
 	xor %r6, %r6, %r0
-	LOAD_LE_GPR %r8, 16, %r23
-	LOAD_LE_GPR %r0, 24, %r23
+	ld %r8, 16(%r23)
+	ld %r0, 24(%r23)
 	xor %r7, %r7, %r8
 	xor %r9, %r9, %r0
-	LOAD_LE_GPR %r8, 32, %r23
-	LOAD_LE_GPR %r0, 40, %r23
+	ld %r8, 32(%r23)
+	ld %r0, 40(%r23)
 	xor %r10, %r10, %r8
 	xor %r11, %r11, %r0
-	LOAD_LE_GPR %r8, 48, %r23
-	LOAD_LE_GPR %r0, 56, %r23
+	ld %r8, 48(%r23)
+	ld %r0, 56(%r23)
 	xor %r12, %r12, %r8
 	xor %r22, %r22, %r0
 
@@ -682,20 +682,20 @@ randomx_ppc64_vm_data_read:
 	add %r8, %r8, %r22
 
 	// Read 64 bytes and XOR with integer registers
-	LOAD_LE_GPR %r9, 0, %r8
-	LOAD_LE_GPR %r10, 8, %r8
+	ld %r9, 0(%r8)
+	ld %r10, 8(%r8)
 	xor %r14, %r14, %r9
 	xor %r15, %r15, %r10
-	LOAD_LE_GPR %r9, 16, %r8
-	LOAD_LE_GPR %r10, 24, %r8
+	ld %r9, 16(%r8)
+	ld %r10, 24(%r8)
 	xor %r16, %r16, %r9
 	xor %r17, %r17, %r10
-	LOAD_LE_GPR %r9, 32, %r8
-	LOAD_LE_GPR %r10, 40, %r8
+	ld %r9, 32(%r8)
+	ld %r10, 40(%r8)
 	xor %r18, %r18, %r9
 	xor %r19, %r19, %r10
-	LOAD_LE_GPR %r9, 48, %r8
-	LOAD_LE_GPR %r10, 56, %r8
+	ld %r9, 48(%r8)
+	ld %r10, 56(%r8)
 	xor %r20, %r20, %r9
 	xor %r21, %r21, %r10
 
