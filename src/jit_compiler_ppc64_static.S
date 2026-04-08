@@ -213,7 +213,7 @@ literal_vector_group_e_or_mask:
 // r16-r31 (non-volatile) -> unused
 
 randomx_ppc64_dataset_init:
-	// JIT compiler MUST emit immediate load to r2 before this code
+	// JIT compiler MUST emit immediate load to r2 before this code (ABI v2 only)
 
 	// Standard function prologue
 	mflr %r0
@@ -441,7 +441,7 @@ randomx_ppc64_sshash_xor_end:
 // v20-v31 / vs52-vs63 (non-volatile) -> unused
 
 randomx_ppc64_vm_prologue:
-	// JIT compiler MUST emit immediate load to r2 before this code
+	// JIT compiler MUST emit immediate load to r2 before this code (ABI v2 only)
 
 	// Standard function prologue
 	mflr %r0

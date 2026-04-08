@@ -772,8 +772,10 @@ namespace randomx {
 
 		state.codePos = ConstantPoolSize;
 		entryProgram = state.code + state.codePos;
-		// Load r2 with the base address of the constant pool
-		emitMovImm64(state, ConstantsBaseAddressRegisterGPR2, reinterpret_cast<uint64_t>(state.code));
+		if (PPC_ABI_V2) {
+			// Load r2 with the base address of the constant pool
+			emitMovImm64(state, ConstantsBaseAddressRegisterGPR2, reinterpret_cast<uint64_t>(state.code));
+		}
 		state.emit(codeVmPrologue, sizeVmPrologue);
 		// Mask mx and ma with Scratchpad L3 mask
 		uint32_t mask_begin = 32 - Log2(RANDOMX_SCRATCHPAD_L3);
@@ -788,8 +790,10 @@ namespace randomx {
 
 		state.codePos = RandomXCodeSize;
 		entryDataInit = state.code + state.codePos;
-		// Load r2 with the base address of the constant pool
-		emitMovImm64(state, ConstantsBaseAddressRegisterGPR2, reinterpret_cast<uint64_t>(state.code));
+		if (PPC_ABI_V2) {
+			// Load r2 with the base address of the constant pool
+			emitMovImm64(state, ConstantsBaseAddressRegisterGPR2, reinterpret_cast<uint64_t>(state.code));
+		}
 		int32_t datasetInitFixCallPos = state.codePos + offsetDatasetInitFixCall;
 		state.emit(codeDatasetInit, sizeDatasetInit);
 		SshashSingleItemPos = alignSize(state.codePos, 128);
@@ -799,11 +803,11 @@ namespace randomx {
 #if !PPC_ABI_V2
 		// Initialize the ABI V1 function descriptors
 		descriptorProgram[0] = reinterpret_cast<uint64_t>(entryProgram);
-		descriptorProgram[1] = 0;
+		descriptorProgram[1] = reinterpret_cast<uint64_t>(state.code);
 		descriptorProgram[2] = 0;
 
 		descriptorDataInit[0] = reinterpret_cast<uint64_t>(entryDataInit);
-		descriptorDataInit[1] = 0;
+		descriptorDataInit[1] = reinterpret_cast<uint64_t>(state.code);
 		descriptorDataInit[2] = 0;
 #endif
 
