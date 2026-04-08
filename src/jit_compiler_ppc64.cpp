@@ -261,6 +261,7 @@ namespace PPC64 {
 	static inline uint32_t ldx(uint32_t rt, uint32_t ra, uint32_t rb) { return X_form(31, rt, ra, rb, 21, 0); }
 	static inline uint32_t ldbrx(uint32_t rt, uint32_t ra, uint32_t rb) { return X_form(31, rt, ra, rb, 532, 0); }
 	static inline uint32_t stdx(uint32_t rs, uint32_t ra, uint32_t rb) { return X_form(31, rs, ra, rb, 149, 0); }
+	static inline uint32_t stdbrx(uint32_t rs, uint32_t ra, uint32_t rb) { return X_form(31, rs, ra, rb, 660, 0); }
 
 	static inline uint32_t lfd(uint32_t frt, uint32_t ra, uint32_t d) { return D_form(50, frt, ra, d); }
 	static inline uint32_t lfdx(uint32_t frt, uint32_t ra, uint32_t rb) { return X_form(31, frt, ra, rb, 599, 0); }
@@ -558,6 +559,14 @@ namespace randomx {
 		}
 	}
 
+	static void emitStoreGpr64(CompilerState& state, uint32_t rs, uint32_t ra, uint32_t rb) {
+		if (PPC_BIG_ENDIAN) {
+			state.emit(PPC64::stdbrx(rs, ra, rb));
+		} else {
+			state.emit(PPC64::stdx(rs, ra, rb));
+		}
+	}
+
 	static void emitLoadVr64(CompilerState& state, uint32_t vrt, uint32_t ra, uint32_t rb) {
 		// We need to load the two packed little-endian signed 32-bit integers into a VSR, then we need to
 		// shuffle them so they're in the correct halves of the VSR register and in the correct byte order,
@@ -695,9 +704,9 @@ namespace randomx {
 	void JitCompilerPPC64::emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags) {
 		state.codePos = RandomXCodePos;
 
-		// Load the Group E OR vector mask (high word in offset 1, low word in offset 0--enables loading with lxvd2x)
-		state.emitAt(sizeConstants, pcfg.eMask[1]);
-		state.emitAt(sizeConstants + 8, pcfg.eMask[0]);
+		// Set the Group E OR vector mask
+		state.emitAt(sizeConstants, pcfg.eMask[0]);
+		state.emitAt(sizeConstants + 8, pcfg.eMask[1]);
 
 		LoopBeginPos = state.codePos;
 		state.emit(codeVmLoopPrologue, sizeVmLoopPrologue);
@@ -1282,7 +1291,7 @@ namespace randomx {
 		uint32_t mb = 32 - Log2(size);
 		state.emit(PPC64::rlwinm(8, 8, 0, mb, 28));
 
-		state.emit(PPC64::stdx(src, ScratchpadPointerGPR30, 8));
+		emitStoreGpr64(state, src, ScratchpadPointerGPR30, 8);
 	}
 	static void h_NOP(HANDLER_ARGS) {
 	}

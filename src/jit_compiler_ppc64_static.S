@@ -484,11 +484,14 @@ randomx_ppc64_vm_prologue:
 	li %r12, constant_vector_be_byte_reverse_mask-randomx_ppc64_constants
 	lxvd2x %vs49, %r8, %r2
 	lxvd2x %vs50, %r9, %r2
-	lxvd2x %vs51, %r10, %r2
+	lvx %v19, %r10, %r2  // Use lvx to load the vector since it's written [ low word, high word ] in memory
 #if PPC_BIG_ENDIAN
 	lxvd2x %vs48, %r11, %r2  // Load the BE permutation mask (not needed for LE)
 #endif
 	lxvd2x %vs47, %r12, %r2
+#if PPC_BIG_ENDIAN
+	vperm %v19, %v19, %v19, %v15  // Swap the byte order of the Group E OR mask vector
+#endif
 
 	// Zero the RandomX integer registers
 	li %r14, 0
@@ -505,20 +508,22 @@ randomx_ppc64_vm_prologue:
 	lwz %r24, 4(%r29)  // ma
 	ld %r22, 8(%r29)   // memory (dataset pointer)
 
-	// Load a0-a3 from RegisterFile (we have to swap doubles because lxvd2x always loads them in big-endian word order)
+	// Load a0-a3 from RegisterFile
 	.equ registers_a_base, 8*8+16*4+16*4
 	addi %r8, %r28, registers_a_base + 16*0
 	addi %r9, %r28, registers_a_base + 16*1
 	addi %r10, %r28, registers_a_base + 16*2
 	addi %r11, %r28, registers_a_base + 16*3
-	lxvd2x %vs40, 0, %r8
-	lxvd2x %vs41, 0, %r9
-	lxvd2x %vs42, 0, %r10
-	lxvd2x %vs43, 0, %r11
-	xxswapd %vs40, %vs40
-	xxswapd %vs41, %vs41
-	xxswapd %vs42, %vs42
-	xxswapd %vs43, %vs43
+	lvx %v8, 0, %r8
+	lvx %v9, 0, %r9
+	lvx %v10, 0, %r10
+	lvx %v11, 0, %r11
+#if PPC_BIG_ENDIAN
+	vperm %v8, %v8, %v8, %v15
+	vperm %v9, %v9, %v9, %v15
+	vperm %v10, %v10, %v10, %v15
+	vperm %v11, %v11, %v11, %v15
+#endif
 
 	// Instructions to mask mx and ma with Scratchpad L3 mask and set the
 	// initial values of spAddr0 and spAddr1 are appended here by the JIT
@@ -533,43 +538,35 @@ randomx_ppc64_vm_fix_loop:
 	b 0
 1:
 
-	// Store RandomX registers back into register file (no endian swaps needed)
-	std %r14, 8*0(%r28)
-	std %r15, 8*1(%r28)
-	std %r16, 8*2(%r28)
-	std %r17, 8*3(%r28)
-	std %r18, 8*4(%r28)
-	std %r19, 8*5(%r28)
-	std %r20, 8*6(%r28)
-	std %r21, 8*7(%r28)
+	// Store RandomX registers back into register file
+	STORE_LE_GPR %r14, 8*0, %r28
+	STORE_LE_GPR %r15, 8*1, %r28
+	STORE_LE_GPR %r16, 8*2, %r28
+	STORE_LE_GPR %r17, 8*3, %r28
+	STORE_LE_GPR %r18, 8*4, %r28
+	STORE_LE_GPR %r19, 8*5, %r28
+	STORE_LE_GPR %r20, 8*6, %r28
+	STORE_LE_GPR %r21, 8*7, %r28
 
 	.equ registers_f_base, 8*8
-	addi %r8, %r28, registers_f_base + 16*0
-	addi %r9, %r28, registers_f_base + 16*1
-	addi %r10, %r28, registers_f_base + 16*2
-	addi %r11, %r28, registers_f_base + 16*3
-	xxswapd %vs0, %vs32
-	xxswapd %vs1, %vs33
-	xxswapd %vs2, %vs34
-	xxswapd %vs3, %vs35
-	stxvd2x %vs0, 0, %r8
-	stxvd2x %vs1, 0, %r9
-	stxvd2x %vs2, 0, %r10
-	stxvd2x %vs3, 0, %r11
+	li %r8, registers_f_base + 16*0
+	li %r9, registers_f_base + 16*1
+	li %r10, registers_f_base + 16*2
+	li %r11, registers_f_base + 16*3
+	STORE_LE_VR 0, 12, %r8, %r28
+	STORE_LE_VR 1, 13, %r9, %r28
+	STORE_LE_VR 2, 14, %r10, %r28
+	STORE_LE_VR 3, 12, %r11, %r28
 
 	.equ registers_e_base, 8*8+16*4
-	addi %r8, %r28, registers_e_base + 16*0
-	addi %r9, %r28, registers_e_base + 16*1
-	addi %r10, %r28, registers_e_base + 16*2
-	addi %r11, %r28, registers_e_base + 16*3
-	xxswapd %vs4, %vs36
-	xxswapd %vs5, %vs37
-	xxswapd %vs6, %vs38
-	xxswapd %vs7, %vs39
-	stxvd2x %vs4, 0, %r8
-	stxvd2x %vs5, 0, %r9
-	stxvd2x %vs6, 0, %r10
-	stxvd2x %vs7, 0, %r11
+	li %r8, registers_e_base + 16*0
+	li %r9, registers_e_base + 16*1
+	li %r10, registers_e_base + 16*2
+	li %r11, registers_e_base + 16*3
+	STORE_LE_VR 4, 12, %r8, %r28
+	STORE_LE_VR 5, 13, %r9, %r28
+	STORE_LE_VR 6, 14, %r10, %r28
+	STORE_LE_VR 7, 12, %r11, %r28
 
 	// Standard function epilogue
 	ld %r14, 112(%r1)
