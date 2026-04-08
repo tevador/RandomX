@@ -277,11 +277,19 @@ FORCE_INLINE rx_vec_f128 rx_set1_vec_f128(uint64_t x) {
 }
 
 FORCE_INLINE rx_vec_f128 rx_cast_vec_i2f(rx_vec_i128 a) {
+#if defined(NATIVE_LITTLE_ENDIAN)
 	return (rx_vec_f128)a;
+#else
+	return (rx_vec_f128)vec_perm((__m128i)a, (__m128i)a, (__m128i){4,5,6,7, 0,1,2,3, 12,13,14,15, 8,9,10,11});
+#endif
 }
 
 FORCE_INLINE rx_vec_i128 rx_cast_vec_f2i(rx_vec_f128 a) {
+#if defined(NATIVE_LITTLE_ENDIAN)
 	return (rx_vec_i128)a;
+#else
+	return (rx_vec_i128)vec_perm((__m128i)a, (__m128i)a, (__m128i){4,5,6,7, 0,1,2,3, 12,13,14,15, 8,9,10,11});
+#endif
 }
 
 FORCE_INLINE rx_vec_f128 rx_xor_vec_f128(rx_vec_f128 a, rx_vec_f128 b) {
