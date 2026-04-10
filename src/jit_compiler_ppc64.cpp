@@ -30,6 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <cstring>
 
+#include <unistd.h>
+
 #include "cpu.hpp"
 #include "program.hpp"
 #include "reciprocal.h"
@@ -551,10 +553,48 @@ namespace randomx {
 		return (-1 == ~0) ? (int32_t)x : (x > INT32_MAX ? (-(int32_t)(UINT32_MAX - x) - 1) : (int32_t)x);
 	}
 
-	static void clearCache(CodeBuffer& buf) {
-#ifdef __GNUC__
-		__builtin___clear_cache((char*)buf.code, (char*)(buf.code + CodeSize));
-#endif
+	static void syncInstructionCache(void* start_ptr, void* end_ptr) {
+		// Apparently GCC compiles __builtin___clear_cache to nothing, so we use LLVM's implementation instead.
+		//
+		// This code has been modified from compiler-rt/lib/builtins/clear_cache.c, found at
+		// https://github.com/llvm/llvm-project revision 7459e10f34aa86952b1620d0cb48b40be112ebe9.
+		//
+		// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+		// See https://llvm.org/LICENSE.txt for license information.
+		// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+		char* start = (char*)start_ptr;
+		char* end = (char*)end_ptr;
+		const size_t len = (uintptr_t)end - (uintptr_t)start;
+		if (len == 0) return;
+
+		// Query data and instruction cache line sizes
+		long dcache_val = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+		long icache_val = sysconf(_SC_LEVEL1_ICACHE_LINESIZE);
+
+		const size_t d_line_size = (dcache_val > 0) ? dcache_val : 32;
+		const size_t i_line_size = (icache_val > 0) ? icache_val : 32;
+
+		// Flush Data Cache
+		const uintptr_t d_mask = ~(d_line_size - 1);
+		const uintptr_t d_start_line = ((uintptr_t)start) & d_mask;
+		const uintptr_t d_end_line = ((uintptr_t)start + len + d_line_size - 1) & d_mask;
+
+		for (uintptr_t line = d_start_line; line < d_end_line; line += d_line_size)
+			__asm__ volatile("dcbst 0, %0" : : "r"(line));
+
+		// Wait for memory writes to complete
+		__asm__ volatile("sync");
+
+		// Invalidate Instruction Cache
+		const uintptr_t i_mask = ~(i_line_size - 1);
+		const uintptr_t i_start_line = ((uintptr_t)start) & i_mask;
+		const uintptr_t i_end_line = ((uintptr_t)start + len + i_line_size - 1) & i_mask;
+
+		for (uintptr_t line = i_start_line; line < i_end_line; line += i_line_size)
+			__asm__ volatile("icbi 0, %0" : : "r"(line));
+
+		// Flush the local instruction pipeline
+		__asm__ volatile("isync");
 	}
 
 	static void emitLoadGpr64(CompilerState& state, uint32_t rt, uint32_t ra, uint32_t rb) {
@@ -821,8 +861,6 @@ namespace randomx {
 		descriptorDataInit[1] = reinterpret_cast<uint64_t>(state.code);
 		descriptorDataInit[2] = 0;
 #endif
-
-		clearCache(state);
 	}
 
 	JitCompilerPPC64::~JitCompilerPPC64() {
@@ -870,7 +908,7 @@ namespace randomx {
 
 		emitProgramSuffix(state, pcfg, flags);
 
-		clearCache(state);
+		syncInstructionCache(entryProgram, state.code + state.codePos);
 	}
 
 	void JitCompilerPPC64::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
@@ -902,7 +940,7 @@ namespace randomx {
 
 		emitProgramSuffix(state, pcfg, flags);
 
-		clearCache(state);
+		syncInstructionCache(entryProgram, state.code + state.codePos);
 	}
 
 	static void generateSuperscalarCode(CompilerState& state, Instruction instr, const std::vector<uint64_t>& reciprocalCache) {
@@ -998,7 +1036,7 @@ namespace randomx {
 		// Return
 		state.emit(codeSshashSingleItemEpilogue, sizeSshashSingleItemEpilogue);
 
-		clearCache(state);
+		syncInstructionCache(entryDataInit, state.code + state.codePos);
 	}
 
 	size_t JitCompilerPPC64::getCodeSize() {
