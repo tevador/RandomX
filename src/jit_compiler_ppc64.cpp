@@ -702,11 +702,22 @@ namespace randomx {
 	}
 
 	void JitCompilerPPC64::emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags) {
-		state.codePos = RandomXCodePos;
-
 		// Set the Group E OR vector mask
 		state.emitAt(sizeConstants, pcfg.eMask[0]);
 		state.emitAt(sizeConstants + 8, pcfg.eMask[1]);
+
+		state.codePos = RandomXCodePos;
+
+		state.emit(codeVmPrologue, sizeVmPrologue);
+		// Mask mx and ma with Scratchpad L3 mask
+		uint32_t mask_begin = 32 - Log2(RANDOMX_SCRATCHPAD_L3);
+		uint32_t mask_end = 31 - Log2(RANDOMX_DATASET_ITEM_SIZE);
+		state.emit(PPC64::rlwinm(SpAddr0GPR26, MxGPR25, 0, mask_begin, mask_end));
+		state.emit(PPC64::rlwinm(SpAddr1GPR27, MaGPR24, 0, mask_begin, mask_end));
+		// Init spAddr0 to masked mx + scratchpad base
+		state.emit(PPC64::add(SpAddr0GPR26, SpAddr0GPR26, ScratchpadPointerGPR30));
+		// Init spAddr1 to masked ma + scratchpad base
+		state.emit(PPC64::add(SpAddr1GPR27, SpAddr1GPR27, ScratchpadPointerGPR30));
 
 		LoopBeginPos = state.codePos;
 		state.emit(codeVmLoopPrologue, sizeVmLoopPrologue);
@@ -776,16 +787,6 @@ namespace randomx {
 			// Load r2 with the base address of the constant pool
 			emitMovImm64(state, ConstantsBaseAddressRegisterGPR2, reinterpret_cast<uint64_t>(state.code));
 		}
-		state.emit(codeVmPrologue, sizeVmPrologue);
-		// Mask mx and ma with Scratchpad L3 mask
-		uint32_t mask_begin = 32 - Log2(RANDOMX_SCRATCHPAD_L3);
-		uint32_t mask_end = 31 - Log2(RANDOMX_DATASET_ITEM_SIZE);
-		state.emit(PPC64::rlwinm(SpAddr0GPR26, MxGPR25, 0, mask_begin, mask_end));
-		state.emit(PPC64::rlwinm(SpAddr1GPR27, MaGPR24, 0, mask_begin, mask_end));
-		// Init spAddr0 to masked mx + scratchpad base
-		state.emit(PPC64::add(SpAddr0GPR26, SpAddr0GPR26, ScratchpadPointerGPR30));
-		// Init spAddr1 to masked ma + scratchpad base
-		state.emit(PPC64::add(SpAddr1GPR27, SpAddr1GPR27, ScratchpadPointerGPR30));
 		RandomXCodePos = state.codePos;
 
 		state.codePos = RandomXCodeSize;
