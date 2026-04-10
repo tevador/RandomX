@@ -91,10 +91,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	.global randomx_ppc64_vm_data_read_light
 	.global randomx_ppc64_vm_data_read_light_fix_call
 	.global randomx_ppc64_vm_data_read_light_end
-	.global randomx_ppc64_vm_spad_store
-	.global randomx_ppc64_vm_spad_store_end
-	.global randomx_ppc64_vm_spad_store_hard_aes
-	.global randomx_ppc64_vm_spad_store_hard_aes_end
+	.global randomx_ppc64_vm_spad_store_prologue
+	.global randomx_ppc64_vm_spad_store_prologue_end
+	.global randomx_ppc64_vm_spad_store_mix_v1
+	.global randomx_ppc64_vm_spad_store_mix_v1_end
+	.global randomx_ppc64_vm_spad_store_epilogue
+	.global randomx_ppc64_vm_spad_store_epilogue_end
+	.global randomx_ppc64_vm_spad_store_mix_v2_hard_aes
+	.global randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end
 
 // Macro to store a VR containing a RandomX Group F/E/A register to memory
 .macro STORE_LE_VR vr_src, vr_temp, offset_reg, base_reg
@@ -731,7 +735,7 @@ randomx_ppc64_vm_data_read_light_fix_call:
 
 randomx_ppc64_vm_data_read_light_end:
 
-randomx_ppc64_vm_spad_store:
+randomx_ppc64_vm_spad_store_prologue:
 	// Store to scratchpad at spAddr1
 	STORE_LE_GPR %r14, 8*0, %r27
 	STORE_LE_GPR %r15, 8*1, %r27
@@ -742,12 +746,18 @@ randomx_ppc64_vm_spad_store:
 	STORE_LE_GPR %r20, 8*6, %r27
 	STORE_LE_GPR %r21, 8*7, %r27
 
+randomx_ppc64_vm_spad_store_prologue_end:
+
+randomx_ppc64_vm_spad_store_mix_v1:
 	// Mix F and E registers (f0-f3 are vs32-vs35, e0-e3 are vs36-vs39)
 	xxlxor %vs32, %vs32, %vs36
 	xxlxor %vs33, %vs33, %vs37
 	xxlxor %vs34, %vs34, %vs38
 	xxlxor %vs35, %vs35, %vs39
 
+randomx_ppc64_vm_spad_store_mix_v1_end:
+
+randomx_ppc64_vm_spad_store_epilogue:
 	// Store F registers to scratchpad at spAddr0
 	li %r8, 16*0
 	li %r9, 16*1
@@ -758,19 +768,9 @@ randomx_ppc64_vm_spad_store:
 	STORE_LE_VR 2, 14, %r10, %r26
 	STORE_LE_VR 3, 12, %r11, %r26
 
-randomx_ppc64_vm_spad_store_end:
+randomx_ppc64_vm_spad_store_epilogue_end:
 
-randomx_ppc64_vm_spad_store_hard_aes:
-	// Store to scratchpad at spAddr1
-	STORE_LE_GPR %r14, 8*0, %r27
-	STORE_LE_GPR %r15, 8*1, %r27
-	STORE_LE_GPR %r16, 8*2, %r27
-	STORE_LE_GPR %r17, 8*3, %r27
-	STORE_LE_GPR %r18, 8*4, %r27
-	STORE_LE_GPR %r19, 8*5, %r27
-	STORE_LE_GPR %r20, 8*6, %r27
-	STORE_LE_GPR %r21, 8*7, %r27
-
+randomx_ppc64_vm_spad_store_mix_v2_hard_aes:
 	// Mix F and E registers (f0-f3 are v0-v3, e0-e3 are v4-v7)
 
 	// Byte-reverse f0-f3 and e0-e3
@@ -824,17 +824,7 @@ randomx_ppc64_vm_spad_store_hard_aes:
 	vperm %v6, %v6, %v6, %v15
 	vperm %v7, %v7, %v7, %v15
 
-	// Store F registers to scratchpad at spAddr0
-	li %r8, 16*0
-	li %r9, 16*1
-	li %r10, 16*2
-	li %r11, 16*3
-	STORE_LE_VR 0, 12, %r8, %r26
-	STORE_LE_VR 1, 13, %r9, %r26
-	STORE_LE_VR 2, 14, %r10, %r26
-	STORE_LE_VR 3, 12, %r11, %r26
-
-randomx_ppc64_vm_spad_store_hard_aes_end:
+randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end:
 
 
 	.section ".text"

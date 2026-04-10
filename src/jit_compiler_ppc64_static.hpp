@@ -58,8 +58,12 @@ extern "C" {
 	void randomx_ppc64_vm_data_read_light();
 	void randomx_ppc64_vm_data_read_light_fix_call();
 	void randomx_ppc64_vm_data_read_light_end();
-	void randomx_ppc64_vm_spad_store();
-	void randomx_ppc64_vm_spad_store_end();
-	void randomx_ppc64_vm_spad_store_hard_aes();
-	void randomx_ppc64_vm_spad_store_hard_aes_end();
+	void randomx_ppc64_vm_spad_store_prologue();
+	void randomx_ppc64_vm_spad_store_prologue_end();
+	void randomx_ppc64_vm_spad_store_mix_v1();
+	void randomx_ppc64_vm_spad_store_mix_v1_end();
+	void randomx_ppc64_vm_spad_store_epilogue();
+	void randomx_ppc64_vm_spad_store_epilogue_end();
+	void randomx_ppc64_vm_spad_store_mix_v2_hard_aes();
+	void randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end();
 }
