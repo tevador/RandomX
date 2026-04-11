@@ -773,6 +773,9 @@ randomx_ppc64_vm_spad_store_epilogue_end:
 randomx_ppc64_vm_spad_store_mix_v2_hard_aes:
 	// Mix F and E registers (f0-f3 are v0-v3, e0-e3 are v4-v7)
 
+	// We need a zero vector to bypass vncipher's internal key XOR
+	vxor %v12, %v12, %v12
+
 	// Byte-reverse f0-f3 and e0-e3
 	vperm %v0, %v0, %v0, %v15
 	vperm %v1, %v1, %v1, %v15
@@ -782,9 +785,6 @@ randomx_ppc64_vm_spad_store_mix_v2_hard_aes:
 	vperm %v5, %v5, %v5, %v15
 	vperm %v6, %v6, %v6, %v15
 	vperm %v7, %v7, %v7, %v15
-
-	// We need a zero vector to bypass vncipher's internal key XOR
-	vxor %v12, %v12, %v12
 
 	vcipher %v0, %v0, %v4
 	vncipher %v1, %v1, %v12  // Pass 0 as the key
