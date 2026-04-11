@@ -77,6 +77,15 @@ namespace PPC64 {
 		return (po << 26) | (rt << 21) | (ra << 16) | d;
 	}
 
+	static inline uint32_t DS_form(uint32_t po, uint32_t rt, uint32_t ra, uint32_t ds, uint32_t xo) {
+		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
+		if (!(rt <= 0x1F)) throw std::runtime_error("rt <= 0x1F");
+		if (!(ra <= 0x1F)) throw std::runtime_error("ra <= 0x1F");
+		if (!(ds <= 0x3FFF)) throw std::runtime_error("ds <= 0x3FFF");
+		if (!(xo <= 0x3)) throw std::runtime_error("xo <= 0x3");
+		return (po << 26) | (rt << 21) | (ra << 16) | (ds << 2) | xo;
+	}
+
 	static inline uint32_t I_form(uint32_t po, uint32_t li, uint32_t aa, uint32_t lk) {
 		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
 		if (!(li <= 0xFFFFFF)) throw std::runtime_error("li <= 0xFFFFFF");
@@ -259,6 +268,12 @@ namespace PPC64 {
 	static inline uint32_t rotrdi(uint32_t ra, uint32_t rs, uint32_t n) { return rldicl(ra, rs, 64-n, 0); }
 	static inline uint32_t sldi(uint32_t rx, uint32_t ry, uint32_t n) { return rldicr(rx, ry, n, 63-n); }
 	static inline uint32_t srdi(uint32_t rx, uint32_t ry, uint32_t n) { return rldicl(rx, ry, 64-n, n); }
+
+	static inline uint32_t ld(uint32_t rt, uint32_t ra, int32_t offset) {
+		if (offset & 3) throw std::runtime_error("offset must be 4-byte aligned");
+		if (offset < -(1 << 15) || offset >= (1 << 15)) throw std::runtime_error("offset out of range");
+		return DS_form(58, rt, ra, (offset >> 2) & 0x3FFF, 0);
+	}
 
 	static inline uint32_t ldx(uint32_t rt, uint32_t ra, uint32_t rb) { return X_form(31, rt, ra, rb, 21, 0); }
 	static inline uint32_t ldbrx(uint32_t rt, uint32_t ra, uint32_t rb) { return X_form(31, rt, ra, rb, 532, 0); }
@@ -494,7 +509,9 @@ namespace randomx {
 	static const int32_t offsetVmDataReadLightFixCall = codeVmDataReadLightFixCall - codeVmDataReadLight;
 
 	constexpr size_t CodeAlign = 64*1024;  // 64 kB, to ensure alignment on systems with a page size <= 64 kB
-	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
+	constexpr size_t ReciprocalPoolSize = 8 * RANDOMX_PROGRAM_MAX_SIZE;  // RANDOMX_PROGRAM_MAX_SIZE 64-bit reciprocals
+	static const size_t ReciprocalPoolPos = sizeConstants + 16;  // Add 16 bytes for the Group E OR vector mask
+	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16 + ReciprocalPoolSize, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStorePrologue + sizeVmSpadStoreMixV2HardAes + sizeVmSpadStoreEpilogue, CodeAlign);
 	constexpr size_t MaxRandomXInstrCodeSize = 4*10;  // FDIV_M requires at most 10 instructions
 	constexpr size_t MaxSuperscalarInstrSize = 4*6;  // IMUL_RCP requires at most 6 instructions
@@ -768,6 +785,9 @@ namespace randomx {
 
 		LoopBeginPos = state.codePos;
 		state.emit(codeVmLoopPrologue, sizeVmLoopPrologue);
+
+		// Initialize the reciprocal pool to zero
+		state.rcpCount = 0;
 
 		// Step 4: The 256 instructions stored in the Program Buffer are executed.
 		for (unsigned i = 0; i < RegistersCount; ++i) {
@@ -1135,8 +1155,13 @@ namespace randomx {
 		if (!isZeroOrPowerOf2(divisor)) {
 			state.registerUsage[isn.dst] = i;
 			int dst = RegisterMapR.getPpcGprNum(isn.dst);
+
+			// Calculate and cache the reciprocal
+			int32_t offset = ReciprocalPoolPos + 8 * state.rcpCount++;
 			uint64_t rcp = randomx_reciprocal_fast(divisor);
-			emitMovImm64(state, 8, rcp);
+			state.emitAt(offset, rcp);
+
+			state.emit(PPC64::ld(8, ConstantsBaseAddressRegisterGPR2, offset));
 			state.emit(PPC64::mulld(dst, dst, 8));
 		}
 	}
