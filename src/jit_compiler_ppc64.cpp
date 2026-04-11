@@ -268,6 +268,7 @@ namespace PPC64 {
 	static inline uint32_t lfd(uint32_t frt, uint32_t ra, uint32_t d) { return D_form(50, frt, ra, d); }
 	static inline uint32_t lfdx(uint32_t frt, uint32_t ra, uint32_t rb) { return X_form(31, frt, ra, rb, 599, 0); }
 	static inline uint32_t mtfsf(uint32_t flm, uint32_t frb, uint32_t l, uint32_t w) { return XFL_form(63, l, flm, w, frb, 711, 0); }
+	static inline uint32_t mffscrn(uint32_t frt, uint32_t frb) { return X_form(63, frt, 22, frb, 583, 0); }  // Only v3.0B and later
 
 	static inline uint32_t lxsdx(uint32_t xt, uint32_t ra, uint32_t rb) {
 		if (!(xt <= 0x3F)) throw std::runtime_error("xt <= 0x3F");
@@ -1316,9 +1317,15 @@ namespace randomx {
 		// lfdx f0, r8, r0
 		state.emit(PPC64::lfdx(0, 8, 0));
 
-		// Move the RN value from scratch FPR0 to FPSCR (masked)
-		// mtfsf 0x01, f0, 0, 0
-		state.emit(PPC64::mtfsf(0x01, 0, 0, 0));
+		if (randomx::cpu.hasV3P0()) {
+			// Move the RN value from scratch FPR0 to FPSCR field RN
+			// mffscrn f0, f0
+			state.emit(PPC64::mffscrn(0, 0));
+		} else {
+			// Move the RN value from scratch FPR0 to FPSCR (masked)
+			// mtfsf 0x01, f0, 0, 0
+			state.emit(PPC64::mtfsf(0x01, 0, 0, 0));
+		}
 
 		if (flags & RANDOMX_FLAG_V2) {
 			// Patch in the conditional branch instruction.

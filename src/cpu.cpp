@@ -128,6 +128,7 @@ namespace randomx {
 #elif defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
 		unsigned long hwcaps2 = getauxval(AT_HWCAP2);
 		aes_ = (hwcaps2 & PPC_FEATURE2_VEC_CRYPTO) != 0;
+		v3p0_ = (hwcaps2 & PPC_FEATURE2_ARCH_3_00) != 0;
 #endif
 	}
 
