@@ -739,15 +739,12 @@ namespace randomx {
 
 			uint32_t mb = 32 - Log2(size);
 			state.emit(PPC64::rlwinm(tmp_gpr, tmp_gpr, 0, mb, 28));
-
-			emitLoadGpr64(state, tmp_gpr, ScratchpadPointerGPR30, tmp_gpr);
 		} else {
-			imm = (imm & ScratchpadL3Mask) >> 3;
-			emitMovImm32(state, tmp_gpr, imm);
-			state.emit(PPC64::sldi(tmp_gpr, tmp_gpr, 3));
-
-			emitLoadGpr64(state, tmp_gpr, ScratchpadPointerGPR30, tmp_gpr);
+			imm &= ScratchpadL3Mask;
+			emitMovImm64(state, tmp_gpr, imm);
 		}
+
+		emitLoadGpr64(state, tmp_gpr, ScratchpadPointerGPR30, tmp_gpr);
 	}
 
 	template<uint32_t tmp_vr>
