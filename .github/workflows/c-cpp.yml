@@ -133,9 +133,7 @@ jobs:
     strategy:
       matrix:
         config:
-          - {arch: x64, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\"}
           - {arch: x64, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\amd64\\"}
-          - {arch: Win32, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\"}
           - {arch: Win32, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\"}
 
     steps:
