@@ -654,14 +654,14 @@ randomx_ppc64_vm_loop_prologue:
 	xvcvsxwdp %vs37, %vs37
 	xvcvsxwdp %vs38, %vs38
 	xvcvsxwdp %vs39, %vs39
-	xxland %vs36, %vs36, %vs49
-	xxland %vs37, %vs37, %vs49
-	xxland %vs38, %vs38, %vs49
-	xxland %vs39, %vs39, %vs49
-	xxlor %vs36, %vs36, %vs51
-	xxlor %vs37, %vs37, %vs51
-	xxlor %vs38, %vs38, %vs51
-	xxlor %vs39, %vs39, %vs51
+	vand %v4, %v4, %v17
+	vand %v5, %v5, %v17
+	vand %v6, %v6, %v17
+	vand %v7, %v7, %v17
+	vor %v4, %v4, %v19
+	vor %v5, %v5, %v19
+	vor %v6, %v6, %v19
+	vor %v7, %v7, %v19
 
 randomx_ppc64_vm_loop_prologue_end:
 
@@ -749,11 +749,11 @@ randomx_ppc64_vm_spad_store_prologue:
 randomx_ppc64_vm_spad_store_prologue_end:
 
 randomx_ppc64_vm_spad_store_mix_v1:
-	// Mix F and E registers (f0-f3 are vs32-vs35, e0-e3 are vs36-vs39)
-	xxlxor %vs32, %vs32, %vs36
-	xxlxor %vs33, %vs33, %vs37
-	xxlxor %vs34, %vs34, %vs38
-	xxlxor %vs35, %vs35, %vs39
+	// Mix F and E registers (f0-f3 are v0-v3, e0-e3 are v4-v7)
+	vxor %v0, %v0, %v4
+	vxor %v1, %v1, %v5
+	vxor %v2, %v2, %v6
+	vxor %v3, %v3, %v7
 
 randomx_ppc64_vm_spad_store_mix_v1_end:
 
