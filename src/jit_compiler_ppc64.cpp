@@ -494,6 +494,8 @@ namespace randomx {
 	static const uint8_t* codeVmSpadStoreEpilogueEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_epilogue_end;
 	static const uint8_t* codeVmSpadStoreMixV2HardAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes;
 	static const uint8_t* codeVmSpadStoreMixV2HardAesEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end;
+	static const uint8_t* codeVmSpadStoreMixV2SoftAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_soft_aes;
+	static const uint8_t* codeVmSpadStoreMixV2SoftAesEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_soft_aes_end;
 
 	static const int32_t sizeConstants = codeConstantsEnd - codeConstants;
 
@@ -513,6 +515,7 @@ namespace randomx {
 	static const int32_t sizeVmSpadStoreMixV1 = codeVmSpadStoreMixV1End - codeVmSpadStoreMixV1;
 	static const int32_t sizeVmSpadStoreEpilogue = codeVmSpadStoreEpilogueEnd - codeVmSpadStoreEpilogue;
 	static const int32_t sizeVmSpadStoreMixV2HardAes = codeVmSpadStoreMixV2HardAesEnd - codeVmSpadStoreMixV2HardAes;
+	static const int32_t sizeVmSpadStoreMixV2SoftAes = codeVmSpadStoreMixV2SoftAesEnd - codeVmSpadStoreMixV2SoftAes;
 
 	static const int32_t offsetConstantLutFprcToFpscr = codeConstantLutFprcToFpscr - codeConstants;
 
@@ -525,7 +528,7 @@ namespace randomx {
 	constexpr size_t ReciprocalPoolSize = 8 * RANDOMX_PROGRAM_MAX_SIZE;  // RANDOMX_PROGRAM_MAX_SIZE 64-bit reciprocals
 	static const size_t ReciprocalPoolPos = sizeConstants + 16;  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16 + ReciprocalPoolSize, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
-	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStorePrologue + sizeVmSpadStoreMixV2HardAes + sizeVmSpadStoreEpilogue, CodeAlign);
+	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStorePrologue + sizeVmSpadStoreMixV2SoftAes + sizeVmSpadStoreEpilogue, CodeAlign);
 	constexpr size_t MaxRandomXInstrCodeSize = 4*10;  // FDIV_M requires at most 10 instructions
 	constexpr size_t MaxSuperscalarInstrSize = 4*6;  // IMUL_RCP requires at most 6 instructions
 	static const size_t SuperscalarProgramHeaders = sizeSshashSingleItemPrologue + sizeSshashSingleItemEpilogue;
@@ -816,13 +819,13 @@ namespace randomx {
 		state.emit(codeVmSpadStorePrologue, sizeVmSpadStorePrologue);
 
 		if (flags & RANDOMX_FLAG_V2) {
-			if (true || (flags & RANDOMX_FLAG_HARD_AES)) {  // TODO: Remove the "true" once software AES is working
+			if (flags & RANDOMX_FLAG_HARD_AES) {
 				if (!randomx::cpu.hasAes()) {
 					throw std::runtime_error("This CPU is missing support for hardware AES!");
 				}
 				state.emit(codeVmSpadStoreMixV2HardAes, sizeVmSpadStoreMixV2HardAes);
 			} else {
-				throw std::runtime_error("Software AES is not yet implemented for PPC64!");
+				state.emit(codeVmSpadStoreMixV2SoftAes, sizeVmSpadStoreMixV2SoftAes);
 			}
 		} else {
 			state.emit(codeVmSpadStoreMixV1, sizeVmSpadStoreMixV1);
