@@ -143,6 +143,15 @@ namespace PPC64 {
 		return (po << 26) | (vrt << 21) | (vra << 16) | (vrb << 11) | (vrc << 6) | xo;
 	}
 
+	static inline uint32_t VX_form(uint32_t po, uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t xo) {
+		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
+		if (!(vrt <= 0x1F)) throw std::runtime_error("vrt <= 0x1F");
+		if (!(vra <= 0x1F)) throw std::runtime_error("vra <= 0x1F");
+		if (!(vrb <= 0x1F)) throw std::runtime_error("vrb <= 0x1F");
+		if (!(xo <= 0x7FF)) throw std::runtime_error("xo <= 0x7FF");
+		return (po << 26) | (vrt << 21) | (vra << 16) | (vrb << 11) | xo;
+	}
+
 	static inline uint32_t X_form(uint32_t po, uint32_t rt, uint32_t ra, uint32_t rb, uint32_t xo, uint32_t rc) {
 		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
 		if (!(rt <= 0x1F)) throw std::runtime_error("rt <= 0x1F");
@@ -300,6 +309,10 @@ namespace PPC64 {
 	}
 
 	static inline uint32_t vperm(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 43); }
+
+	static inline uint32_t vand(uint32_t vrt, uint32_t vra, uint32_t vrb) { return VX_form(4, vrt, vra, vrb, 1028); }
+	static inline uint32_t vor(uint32_t vrt, uint32_t vra, uint32_t vrb) { return VX_form(4, vrt, vra, vrb, 1156); }
+	static inline uint32_t vxor(uint32_t vrt, uint32_t vra, uint32_t vrb) { return VX_form(4, vrt, vra, vrb, 1220); }
 
 	static inline uint32_t xxmrghw(uint32_t xt, uint32_t xa, uint32_t xb) {
 		if (!(xt <= 0x3F)) throw std::runtime_error("xt <= 0x3F");
@@ -1246,8 +1259,8 @@ namespace randomx {
 		state.emit(PPC64::xvsubdp(dst, dst, 32 + 12));
 	}
 	static void h_FSCAL_R(HANDLER_ARGS) {
-		int dst = RegisterMapF.getPpcVsrNum(isn.dst);
-		state.emit(PPC64::xxlxor(dst, dst, ConstantVectorFscalXorMaskVSR50));
+		int dst = RegisterMapF.getPpcVrNum(isn.dst);
+		state.emit(PPC64::vxor(dst, dst, ConstantVectorFscalXorMaskVR18));
 	}
 	static void h_FMUL_R(HANDLER_ARGS) {
 		int dst = RegisterMapE.getPpcVsrNum(isn.dst);
@@ -1256,11 +1269,10 @@ namespace randomx {
 	}
 	static void h_FDIV_M(HANDLER_ARGS) {
 		int dst = RegisterMapE.getPpcVsrNum(isn.dst);
-		uint32_t temp_vsr = 32 + 12;
 		emitLoadVsrFromScratchpad<12>(state, isn);
-		state.emit(PPC64::xxland(temp_vsr, temp_vsr, ConstantVectorGroupEAndMaskVSR49));
-		state.emit(PPC64::xxlor(temp_vsr, temp_vsr, ConstantVectorGroupEOrMaskVSR51));
-		state.emit(PPC64::xvdivdp(dst, dst, temp_vsr));
+		state.emit(PPC64::vand(12, 12, ConstantVectorGroupEAndMaskVR17));
+		state.emit(PPC64::vor(12, 12, ConstantVectorGroupEOrMaskVR19));
+		state.emit(PPC64::xvdivdp(dst, dst, 32 + 12));
 	}
 	static void h_FSQRT_R(HANDLER_ARGS) {
 		int dst = RegisterMapE.getPpcVsrNum(isn.dst);
