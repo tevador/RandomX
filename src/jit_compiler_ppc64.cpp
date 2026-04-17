@@ -602,9 +602,17 @@ namespace randomx {
 		if (len == 0) return;
 
 		// Query data and instruction cache line sizes
-		long dcache_val = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-		long icache_val = sysconf(_SC_LEVEL1_ICACHE_LINESIZE);
+		long dcache_val = 0;
+		long icache_val = 0;
 
+#ifdef _SC_LEVEL1_DCACHE_LINESIZE
+		dcache_val = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#endif
+#ifdef _SC_LEVEL1_ICACHE_LINESIZE
+		icache_val = sysconf(_SC_LEVEL1_ICACHE_LINESIZE);
+#endif
+
+		// Default to 32 bytes if querying the line size fails
 		const size_t d_line_size = (dcache_val > 0) ? dcache_val : 32;
 		const size_t i_line_size = (icache_val > 0) ? icache_val : 32;
 
