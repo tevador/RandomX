@@ -41,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "jit_compiler_ppc64.hpp"
 
 namespace {
-#define HANDLER_ARGS randomx::CompilerState& state, randomx::Instruction isn, int i, randomx_flags flags
+#define HANDLER_ARGS randomx::JitCompilerPPC64* jit, randomx::CompilerState& state, randomx::Instruction isn, int i, randomx_flags flags
 	using InstructionHandler = void(HANDLER_ARGS);
 	extern InstructionHandler* opcodeMap1[256];
 }
@@ -680,13 +680,13 @@ namespace randomx {
 		}
 	}
 
-	static void emitAddImm32(CompilerState& state, int dstReg, int srcReg, uint32_t imm) {
+	static void emitAddImm32(CompilerState& state, uint32_t tmpReg, int dstReg, int srcReg, uint32_t imm) {
 		int32_t simm = (int32_t)imm;
 		if (simm >= -32768 && simm <= 32767) {
 			state.emit(PPC64::addi(dstReg, srcReg, simm & 0xFFFF));
 		} else {
-			emitMovImm32(state, 8, imm);
-			state.emit(PPC64::add(dstReg, srcReg, 8));
+			emitMovImm32(state, tmpReg, imm);
+			state.emit(PPC64::add(dstReg, srcReg, tmpReg));
 		}
 	}
 
@@ -744,14 +744,13 @@ namespace randomx {
 		}
 	}
 
-	template<uint32_t tmp_gpr>
-	static void emitLoadGprFromScratchpad(CompilerState& state, uint32_t dst, uint32_t src, Instruction& instr) {
+	static void emitLoadGprFromScratchpad(CompilerState& state, uint32_t tmp_gpr, uint32_t dst, uint32_t src, Instruction& instr) {
 		uint32_t imm = instr.getImm32();
 
 		if (src != dst) {
 			uint32_t size = instr.getModMem() ? RANDOMX_SCRATCHPAD_L1 : RANDOMX_SCRATCHPAD_L2;
 			imm &= size - 1;
-			emitAddImm32(state, tmp_gpr, src, imm);
+			emitAddImm32(state, tmp_gpr, tmp_gpr, src, imm);
 
 			uint32_t mb = 32 - Log2(size);
 			state.emit(PPC64::rlwinm(tmp_gpr, tmp_gpr, 0, mb, 28));
@@ -763,19 +762,32 @@ namespace randomx {
 		emitLoadGpr64(state, tmp_gpr, ScratchpadPointerGPR30, tmp_gpr);
 	}
 
-	template<uint32_t tmp_vr>
-	static void emitLoadVsrFromScratchpad(CompilerState& state, Instruction& instr) {
+	static void emitLoadVsrFromScratchpad(CompilerState& state, uint32_t tmp_gpr, uint32_t tmp_vr, Instruction& instr) {
 		int src = RegisterMapR.getPpcGprNum(instr.src);
 
 		uint32_t imm = instr.getImm32();
 		uint32_t size = instr.getModMem() ? RANDOMX_SCRATCHPAD_L1 : RANDOMX_SCRATCHPAD_L2;
 		imm &= size - 1;
-		emitAddImm32(state, 8, src, imm);
+		emitAddImm32(state, tmp_gpr, tmp_gpr, src, imm);
 
 		uint32_t mb = 32 - Log2(size);
-		state.emit(PPC64::rlwinm(8, 8, 0, mb, 28));
+		state.emit(PPC64::rlwinm(tmp_gpr, tmp_gpr, 0, mb, 28));
 
-		emitLoadVr64(state, tmp_vr, ScratchpadPointerGPR30, 8);
+		emitLoadVr64(state, tmp_vr, ScratchpadPointerGPR30, tmp_gpr);
+	}
+
+	uint32_t JitCompilerPPC64::getTempGpr() {
+		static const uint32_t gprs[] = {6, 7, 8, 9, 10, 11, 12};
+		uint32_t reg = gprs[tempGprIndex];
+		tempGprIndex = (tempGprIndex + 1) % 7;
+		return reg;
+	}
+
+	uint32_t JitCompilerPPC64::getTempVr() {
+		static const uint32_t vrs[] = {12, 13, 14};
+		uint32_t reg = vrs[tempVrIndex];
+		tempVrIndex = (tempVrIndex + 1) % 3;
+		return reg;
 	}
 
 	void JitCompilerPPC64::emitProgramPrefix(CompilerState& state, Program& prog, ProgramConfiguration& pcfg, randomx_flags flags) {
@@ -811,7 +823,7 @@ namespace randomx {
 			instr.src %= RegistersCount;
 			instr.dst %= RegistersCount;
 			state.instructionOffsets[i] = state.codePos;
-			opcodeMap1[instr.opcode](state, instr, i, flags);
+			opcodeMap1[instr.opcode](this, state, instr, i, flags);
 		}
 	}
 
@@ -966,7 +978,7 @@ namespace randomx {
 		state.emit(PPC64::and_(5, mtReg, 8)); // r5 = mt & datasetMask
 		state.emit(PPC64::srdi(5, 5, Log2(CacheLineSize))); // r5 = r5 >> 6
 
-		emitAddImm32(state, 5, 5, datasetOffset / CacheLineSize);
+		emitAddImm32(state, 8, 5, 5, datasetOffset / CacheLineSize);
 
 		int32_t callPos = state.codePos + offsetVmDataReadLightFixCall;
 		state.emit(codeVmDataReadLight, sizeVmDataReadLight);
@@ -1084,22 +1096,24 @@ namespace randomx {
 		int shift = isn.getModShift();
 
 		if (shift) {
-			state.emit(PPC64::sldi(8, src, shift));
-			state.emit(PPC64::add(dst, dst, 8));
+			uint32_t tmp_gpr = jit->getTempGpr();
+			state.emit(PPC64::sldi(tmp_gpr, src, shift));
+			state.emit(PPC64::add(dst, dst, tmp_gpr));
 		} else {
 			state.emit(PPC64::add(dst, dst, src));
 		}
 
 		if (isn.dst == RegisterNeedsDisplacement) {
-			emitAddImm32(state, dst, dst, isn.getImm32());
+			emitAddImm32(state, jit->getTempGpr(), dst, dst, isn.getImm32());
 		}
 	}
 	static void h_IADD_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::add(dst, dst, 8));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::add(dst, dst, tmp_gpr));
 	}
 	static void h_ISUB_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
@@ -1109,15 +1123,16 @@ namespace randomx {
 			state.emit(PPC64::subf(dst, src, dst));
 		} else {
 			int32_t imm = unsigned32ToSigned2sCompl(-isn.getImm32());
-			emitAddImm32(state, dst, dst, imm);
+			emitAddImm32(state, jit->getTempGpr(), dst, dst, imm);
 		}
 	}
 	static void h_ISUB_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::subf(dst, 8, dst));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::subf(dst, tmp_gpr, dst));
 	}
 	static void h_IMUL_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
@@ -1126,16 +1141,18 @@ namespace randomx {
 			int src = RegisterMapR.getPpcGprNum(isn.src);
 			state.emit(PPC64::mulld(dst, dst, src));
 		} else {
-			emitMovImm32(state, 8, isn.getImm32());
-			state.emit(PPC64::mulld(dst, dst, 8));
+			uint32_t tmp_gpr = jit->getTempGpr();
+			emitMovImm32(state, tmp_gpr, isn.getImm32());
+			state.emit(PPC64::mulld(dst, dst, tmp_gpr));
 		}
 	}
 	static void h_IMUL_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::mulld(dst, dst, 8));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::mulld(dst, dst, tmp_gpr));
 	}
 	static void h_IMULH_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
@@ -1147,8 +1164,9 @@ namespace randomx {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::mulhdu(dst, dst, 8));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::mulhdu(dst, dst, tmp_gpr));
 	}
 	static void h_ISMULH_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
@@ -1160,22 +1178,24 @@ namespace randomx {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::mulhd(dst, dst, 8));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::mulhd(dst, dst, tmp_gpr));
 	}
 	static void h_IMUL_RCP(HANDLER_ARGS) {
 		uint32_t divisor = isn.getImm32();
 		if (!isZeroOrPowerOf2(divisor)) {
 			state.registerUsage[isn.dst] = i;
 			int dst = RegisterMapR.getPpcGprNum(isn.dst);
+			uint32_t tmp_gpr = jit->getTempGpr();
 
 			// Calculate and cache the reciprocal
 			int32_t offset = ReciprocalPoolPos + 8 * state.rcpCount++;
 			uint64_t rcp = randomx_reciprocal_fast(divisor);
 			state.emitAt(offset, rcp);
 
-			state.emit(PPC64::ld(8, ConstantsBaseAddressRegisterGPR2, offset));
-			state.emit(PPC64::mulld(dst, dst, 8));
+			state.emit(PPC64::ld(tmp_gpr, ConstantsBaseAddressRegisterGPR2, offset));
+			state.emit(PPC64::mulld(dst, dst, tmp_gpr));
 		}
 	}
 	static void h_INEG_R(HANDLER_ARGS) {
@@ -1190,24 +1210,27 @@ namespace randomx {
 			int src = RegisterMapR.getPpcGprNum(isn.src);
 			state.emit(PPC64::xor_(dst, dst, src));
 		} else {
-			emitMovImm32(state, 8, isn.getImm32());
-			state.emit(PPC64::xor_(dst, dst, 8));
+			uint32_t tmp_gpr = jit->getTempGpr();
+			emitMovImm32(state, tmp_gpr, isn.getImm32());
+			state.emit(PPC64::xor_(dst, dst, tmp_gpr));
 		}
 	}
 	static void h_IXOR_M(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
-		emitLoadGprFromScratchpad<8>(state, dst, src, isn);
-		state.emit(PPC64::xor_(dst, dst, 8));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		emitLoadGprFromScratchpad(state, tmp_gpr, dst, src, isn);
+		state.emit(PPC64::xor_(dst, dst, tmp_gpr));
 	}
 	static void h_IROR_R(HANDLER_ARGS) {
 		state.registerUsage[isn.dst] = i;
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		if (isn.src != isn.dst) {
 			int src = RegisterMapR.getPpcGprNum(isn.src);
-			state.emit(PPC64::neg(8, src));
-			state.emit(PPC64::rldcl(dst, dst, 8, 0));
+			uint32_t tmp_gpr = jit->getTempGpr();
+			state.emit(PPC64::neg(tmp_gpr, src));
+			state.emit(PPC64::rldcl(dst, dst, tmp_gpr, 0));
 		} else {
 			uint32_t imm = isn.getImm32() & 63;
 			if (imm)
@@ -1232,9 +1255,10 @@ namespace randomx {
 			state.registerUsage[isn.src] = i;
 			int dst = RegisterMapR.getPpcGprNum(isn.dst);
 			int src = RegisterMapR.getPpcGprNum(isn.src);
-			state.emit(PPC64::mr(8, dst));
+			uint32_t tmp_gpr = jit->getTempGpr();
+			state.emit(PPC64::mr(tmp_gpr, dst));
 			state.emit(PPC64::mr(dst, src));
-			state.emit(PPC64::mr(src, 8));
+			state.emit(PPC64::mr(src, tmp_gpr));
 		}
 	}
 	static void h_FSWAP_R(HANDLER_ARGS) {
@@ -1248,8 +1272,10 @@ namespace randomx {
 	}
 	static void h_FADD_M(HANDLER_ARGS) {
 		int dst = RegisterMapF.getPpcVsrNum(isn.dst);
-		emitLoadVsrFromScratchpad<12>(state, isn);
-		state.emit(PPC64::xvadddp(dst, dst, 32 + 12));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		uint32_t tmp_vr = jit->getTempVr();
+		emitLoadVsrFromScratchpad(state, tmp_gpr, tmp_vr, isn);
+		state.emit(PPC64::xvadddp(dst, dst, 32 + tmp_vr));
 	}
 	static void h_FSUB_R(HANDLER_ARGS) {
 		int dst = RegisterMapF.getPpcVsrNum(isn.dst);
@@ -1258,8 +1284,10 @@ namespace randomx {
 	}
 	static void h_FSUB_M(HANDLER_ARGS) {
 		int dst = RegisterMapF.getPpcVsrNum(isn.dst);
-		emitLoadVsrFromScratchpad<12>(state, isn);
-		state.emit(PPC64::xvsubdp(dst, dst, 32 + 12));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		uint32_t tmp_vr = jit->getTempVr();
+		emitLoadVsrFromScratchpad(state, tmp_gpr, tmp_vr, isn);
+		state.emit(PPC64::xvsubdp(dst, dst, 32 + tmp_vr));
 	}
 	static void h_FSCAL_R(HANDLER_ARGS) {
 		int dst = RegisterMapF.getPpcVrNum(isn.dst);
@@ -1272,10 +1300,12 @@ namespace randomx {
 	}
 	static void h_FDIV_M(HANDLER_ARGS) {
 		int dst = RegisterMapE.getPpcVsrNum(isn.dst);
-		emitLoadVsrFromScratchpad<12>(state, isn);
-		state.emit(PPC64::vand(12, 12, ConstantVectorGroupEAndMaskVR17));
-		state.emit(PPC64::vor(12, 12, ConstantVectorGroupEOrMaskVR19));
-		state.emit(PPC64::xvdivdp(dst, dst, 32 + 12));
+		uint32_t tmp_gpr = jit->getTempGpr();
+		uint32_t tmp_vr = jit->getTempVr();
+		emitLoadVsrFromScratchpad(state, tmp_gpr, tmp_vr, isn);
+		state.emit(PPC64::vand(tmp_vr, tmp_vr, ConstantVectorGroupEAndMaskVR17));
+		state.emit(PPC64::vor(tmp_vr, tmp_vr, ConstantVectorGroupEOrMaskVR19));
+		state.emit(PPC64::xvdivdp(dst, dst, 32 + tmp_vr));
 	}
 	static void h_FSQRT_R(HANDLER_ARGS) {
 		int dst = RegisterMapE.getPpcVsrNum(isn.dst);
@@ -1291,13 +1321,13 @@ namespace randomx {
 			imm &= ~(1UL << (shift - 1));
 
 		int dst = RegisterMapR.getPpcGprNum(reg);
-		emitAddImm32(state, dst, dst, imm);
+		emitAddImm32(state, jit->getTempGpr(), dst, dst, imm);
 
 		// Calculate the Mask Begin (MB) parameter
 		uint32_t mb = 64 - RANDOMX_JUMP_BITS;
 
-		// rldicl. r8, dst, 64 - shift, mb
-		state.emit(PPC64::rldicl_dot(8, dst, (64 - shift) & 63, mb));
+		// rldicl. tmp_gpr, dst, 64 - shift, mb
+		state.emit(PPC64::rldicl_dot(jit->getTempGpr(), dst, (64 - shift) & 63, mb));
 
 		int32_t targetPos = state.instructionOffsets[target];
 		int offset = targetPos - state.codePos;
@@ -1323,11 +1353,13 @@ namespace randomx {
 
 		// Rotate right by rotateBits
 		if (rotateBits) {
-			// rotrdi r8, src, rotateBits
-			state.emit(PPC64::rotrdi(8, src, rotateBits));
+			uint32_t tmp_gpr = jit->getTempGpr();
 
-			// We rotated src and put the new value in r8
-			rot_src = 8;
+			// rotrdi tmp_gpr, src, rotateBits
+			state.emit(PPC64::rotrdi(tmp_gpr, src, rotateBits));
+
+			// We rotated src and put the new value in tmp_gpr
+			rot_src = tmp_gpr;
 		}
 
 		int32_t patch_pos = 0;
@@ -1343,16 +1375,20 @@ namespace randomx {
 			state.emit(0); // bne skip_update
 		}
 
-		// Mask out bits 1:0 and multiply by 8 (shift left by 3) to get the table word offset (0, 8, 16, 24)
-		// rldic r8, rot_src, 3, 59
-		state.emit(PPC64::rldic(8, rot_src, 3, 59));
+		uint32_t offset_gpr = jit->getTempGpr();
 
-		// Load table address into scratch GPR0
-		emitAddImm32(state, 0, ConstantsBaseAddressRegisterGPR2, offsetConstantLutFprcToFpscr);
+		// Mask out bits 1:0 and multiply by 8 (shift left by 3) to get the table word offset (0, 8, 16, 24)
+		// rldic offset_gpr, rot_src, 3, 59
+		state.emit(PPC64::rldic(offset_gpr, rot_src, 3, 59));
+
+		uint32_t address_gpr = jit->getTempGpr();
+
+		// Load table address into scratch address_gpr
+		emitAddImm32(state, jit->getTempGpr(), address_gpr, ConstantsBaseAddressRegisterGPR2, offsetConstantLutFprcToFpscr);
 
 		// Load value from fprc-to-FPSCR table into temporary FPR0
-		// lfdx f0, r8, r0
-		state.emit(PPC64::lfdx(0, 8, 0));
+		// lfdx f0, offset_gpr, address_gpr
+		state.emit(PPC64::lfdx(0, offset_gpr, address_gpr));
 
 		if (randomx::cpu.hasV3P0()) {
 			// Move the RN value from scratch FPR0 to FPSCR field RN
@@ -1374,6 +1410,7 @@ namespace randomx {
 		int dst = RegisterMapR.getPpcGprNum(isn.dst);
 		int src = RegisterMapR.getPpcGprNum(isn.src);
 		uint32_t imm = isn.getImm32();
+		uint32_t tmp_gpr = jit->getTempGpr();
 
 		uint32_t size;
 		if (isn.getModCond() < StoreL3Condition) {
@@ -1383,12 +1420,12 @@ namespace randomx {
 		}
 		imm &= size - 1;
 
-		emitAddImm32(state, 8, dst, imm);
+		emitAddImm32(state, jit->getTempGpr(), tmp_gpr, dst, imm);
 
 		uint32_t mb = 32 - Log2(size);
-		state.emit(PPC64::rlwinm(8, 8, 0, mb, 28));
+		state.emit(PPC64::rlwinm(tmp_gpr, tmp_gpr, 0, mb, 28));
 
-		emitStoreGpr64(state, src, ScratchpadPointerGPR30, 8);
+		emitStoreGpr64(state, src, ScratchpadPointerGPR30, tmp_gpr);
 	}
 	static void h_NOP(HANDLER_ARGS) {
 	}

@@ -90,6 +90,9 @@ namespace randomx {
 
 		void setFlags(randomx_flags f) { flags = f; }
 
+		uint32_t getTempGpr();
+		uint32_t getTempVr();
+
 		static uint8_t instMap[256];
 
 	private:
@@ -109,6 +112,9 @@ namespace randomx {
 		int32_t RandomXCodePos;
 		int32_t SshashSingleItemPos;
 		int32_t LoopBeginPos;
+
+		uint32_t tempGprIndex = 0;
+		uint32_t tempVrIndex = 0;
 	};
 
 }
