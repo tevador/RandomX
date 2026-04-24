@@ -175,8 +175,8 @@ constant_vector_fscal_xor_mask:
 	.8byte 0x80F0000000000000
 	.8byte 0x80F0000000000000
 
-constant_vector_be_byte_reverse_mask:
-	// Big-endian vector byte reverse mask
+constant_vector_byte_reverse_mask:
+	// Vector byte reverse mask
 	.8byte 0x0F0E0D0C0B0A0908
 	.8byte 0x0706050403020100
 
@@ -498,7 +498,7 @@ randomx_ppc64_sshash_xor_end:
 // v4-v7 / vs36-vs39 (volatile) -> RandomX floating point registers e0-e3
 // v8-v11 / vs40-vs43 (volatile) -> RandomX floating point registers a0-a3
 // v12-v14 / vs44-vs46 (volatile) -> scratch registers
-// v15 / vs47 (volatile) -> constant_vector_be_byte_reverse_mask
+// v15 / vs47 (volatile) -> constant_vector_byte_reverse_mask
 // v16 / vs48 (volatile) -> constant_vector_be_permutation_mask
 // v17 / vs49 (volatile) -> constant_vector_group_e_and_mask
 // v18 / vs50 (volatile) -> constant_vector_fscal_xor_mask
@@ -546,7 +546,7 @@ randomx_ppc64_vm_prologue:
 #if PPC_BIG_ENDIAN
 	li %r11, constant_vector_be_permutation_mask-randomx_ppc64_constants
 #endif
-	li %r12, constant_vector_be_byte_reverse_mask-randomx_ppc64_constants
+	li %r12, constant_vector_byte_reverse_mask-randomx_ppc64_constants
 	lxvd2x %vs49, %r8, %r2
 	lxvd2x %vs50, %r9, %r2
 	lvx %v19, %r10, %r2  // Use lvx to load the vector since it's written [ low word, high word ] in memory
@@ -1099,7 +1099,7 @@ randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end:
 // v10 / vs42 (non-volatile) -> 0x5b... / 0xe8... (must reload: RandomX floating point registers a2)
 // v11 / vs43 (non-volatile) -> invsubbytes_mulE_hi (must reload: RandomX floating point registers a3)
 // v12-v14 / vs44-vs46 (volatile) -> scratch registers
-// v15 / vs47 (non-volatile) -> shiftrows / invshiftrows (must reload: constant_vector_be_byte_reverse_mask)
+// v15 / vs47 (non-volatile) -> shiftrows / invshiftrows (must reload: constant_vector_byte_reverse_mask)
 // v16 / vs48 (non-volatile) -> enc/dec input/output transform lo (must reload (BE only): constant_vector_be_permutation_mask)
 // v17 / vs49 (non-volatile) -> enc/dec input/output transform hi (must reload: constant_vector_group_e_and_mask)
 // v18 / vs50 (non-volatile) -> mixcolumns forward (must reload: constant_vector_fscal_xor_mask)
