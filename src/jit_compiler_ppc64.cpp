@@ -309,6 +309,7 @@ namespace PPC64 {
 	}
 
 	static inline uint32_t vperm(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 43); }
+	static inline uint32_t vsel(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 42); }
 
 	static inline uint32_t vand(uint32_t vrt, uint32_t vra, uint32_t vrb) { return VX_form(4, vrt, vra, vrb, 1028); }
 	static inline uint32_t vor(uint32_t vrt, uint32_t vra, uint32_t vrb) { return VX_form(4, vrt, vra, vrb, 1156); }
@@ -1311,8 +1312,7 @@ namespace randomx {
 		uint32_t tmp_gpr = jit->getTempGpr();
 		uint32_t tmp_vr = jit->getTempVr();
 		emitLoadVsrFromScratchpad(state, tmp_gpr, tmp_vr, isn);
-		state.emit(PPC64::vand(tmp_vr, tmp_vr, ConstantVectorGroupEAndMaskVR17));
-		state.emit(PPC64::vor(tmp_vr, tmp_vr, ConstantVectorGroupEOrMaskVR19));
+		state.emit(PPC64::vsel(tmp_vr, ConstantVectorGroupEOrMaskVR19, tmp_vr, ConstantVectorGroupEAndMaskVR17));
 		state.emit(PPC64::xvdivdp(dst, dst, 32 + tmp_vr));
 	}
 	static void h_FSQRT_R(HANDLER_ARGS) {

@@ -714,14 +714,10 @@ randomx_ppc64_vm_loop_prologue:
 	xvcvsxwdp %vs37, %vs37
 	xvcvsxwdp %vs38, %vs38
 	xvcvsxwdp %vs39, %vs39
-	vand %v4, %v4, %v17
-	vand %v5, %v5, %v17
-	vand %v6, %v6, %v17
-	vand %v7, %v7, %v17
-	vor %v4, %v4, %v19
-	vor %v5, %v5, %v19
-	vor %v6, %v6, %v19
-	vor %v7, %v7, %v19
+	vsel %v4, %v19, %v4, %v17
+	vsel %v5, %v19, %v5, %v17
+	vsel %v6, %v19, %v6, %v17
+	vsel %v7, %v19, %v7, %v17
 
 randomx_ppc64_vm_loop_prologue_end:
 
