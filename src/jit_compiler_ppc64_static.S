@@ -177,8 +177,7 @@ constant_vector_fscal_xor_mask:
 
 constant_vector_byte_reverse_mask:
 	// Vector byte reverse mask
-	.8byte 0x0F0E0D0C0B0A0908
-	.8byte 0x0706050403020100
+	.octa 0x0F0E0D0C0B0A09080706050403020100
 
 #if PPC_BIG_ENDIAN
 constant_vector_be_permutation_mask:
@@ -553,7 +552,7 @@ randomx_ppc64_vm_prologue:
 #if PPC_BIG_ENDIAN
 	lxvd2x %vs48, %r11, %r2  // Load the BE permutation mask (not needed for LE)
 #endif
-	lxvd2x %vs47, %r12, %r2
+	lvx %v15, %r12, %r2
 #if PPC_BIG_ENDIAN
 	vperm %v19, %v19, %v19, %v15  // Swap the byte order of the Group E OR mask vector
 #endif
