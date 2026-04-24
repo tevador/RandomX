@@ -168,8 +168,8 @@ randomx_ppc64_constant_lut_fprc_to_fpscr:
 	.align 4
 
 constant_vector_group_e_and_mask:
-	.8byte 0x00FFFFFFFFFFFFFF
-	.8byte 0x00FFFFFFFFFFFFFF
+	.8byte 0x00FFFFFFFFC00000
+	.8byte 0x00FFFFFFFFC00000
 
 constant_vector_fscal_xor_mask:
 	.8byte 0x80F0000000000000
