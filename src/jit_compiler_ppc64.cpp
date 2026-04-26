@@ -530,7 +530,7 @@ namespace randomx {
 	static const size_t ReciprocalPoolPos = sizeConstants + 16;  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16 + ReciprocalPoolSize, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStorePrologue + sizeVmSpadStoreMixV2SoftAes + sizeVmSpadStoreEpilogue, CodeAlign);
-	constexpr size_t MaxRandomXInstrCodeSize = 4*10;  // FDIV_M requires at most 10 instructions
+	constexpr size_t MaxRandomXInstrCodeSize = 4*9;  // FDIV_M and CFROUND require at most 9 instructions
 	constexpr size_t MaxSuperscalarInstrSize = 4*6;  // IMUL_RCP requires at most 6 instructions
 	static const size_t SuperscalarProgramHeaders = sizeSshashSingleItemPrologue + sizeSshashSingleItemEpilogue;
 
