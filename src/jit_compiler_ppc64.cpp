@@ -693,6 +693,8 @@ namespace randomx {
 		int32_t simm = (int32_t)imm;
 		if (simm >= -32768 && simm <= 32767) {
 			state.emit(PPC64::addi(dstReg, srcReg, simm & 0xFFFF));
+		} else if ((imm & 0xFFFF) == 0) {
+			state.emit(PPC64::addis(dstReg, srcReg, (imm >> 16) & 0xFFFF));
 		} else {
 			emitMovImm32(state, tmpReg, imm);
 			state.emit(PPC64::add(dstReg, srcReg, tmpReg));
