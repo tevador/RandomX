@@ -664,18 +664,18 @@ randomx_ppc64_vm_loop_prologue:
 	// Load scratchpad data, mix registers, etc.
 	LOAD_LE_GPR %r8, 0, %r26
 	LOAD_LE_GPR %r9, 8, %r26
-	xor %r14, %r14, %r8
-	xor %r15, %r15, %r9
 	LOAD_LE_GPR %r10, 16, %r26
 	LOAD_LE_GPR %r11, 24, %r26
+	xor %r14, %r14, %r8
+	xor %r15, %r15, %r9
 	xor %r16, %r16, %r10
 	xor %r17, %r17, %r11
 	LOAD_LE_GPR %r8, 32, %r26
 	LOAD_LE_GPR %r9, 40, %r26
-	xor %r18, %r18, %r8
-	xor %r19, %r19, %r9
 	LOAD_LE_GPR %r10, 48, %r26
 	LOAD_LE_GPR %r11, 56, %r26
+	xor %r18, %r18, %r8
+	xor %r19, %r19, %r9
 	xor %r20, %r20, %r10
 	xor %r21, %r21, %r11
 
@@ -741,18 +741,18 @@ randomx_ppc64_vm_data_read:
 	// Read 64 bytes and XOR with integer registers
 	ld %r9, 0(%r8)
 	ld %r10, 8(%r8)
-	xor %r14, %r14, %r9
-	xor %r15, %r15, %r10
 	ld %r11, 16(%r8)
 	ld %r12, 24(%r8)
+	xor %r14, %r14, %r9
+	xor %r15, %r15, %r10
 	xor %r16, %r16, %r11
 	xor %r17, %r17, %r12
 	ld %r9, 32(%r8)
 	ld %r10, 40(%r8)
-	xor %r18, %r18, %r9
-	xor %r19, %r19, %r10
 	ld %r11, 48(%r8)
 	ld %r12, 56(%r8)
+	xor %r18, %r18, %r9
+	xor %r19, %r19, %r10
 	xor %r20, %r20, %r11
 	xor %r21, %r21, %r12
 
