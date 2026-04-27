@@ -696,6 +696,19 @@ namespace randomx {
 		} else if ((imm & 0xFFFF) == 0) {
 			state.emit(PPC64::addis(dstReg, srcReg, (imm >> 16) & 0xFFFF));
 		} else {
+			// Notes on optimization:
+			//
+			// 1. Performing an `addis` -> `addi` is not a complete replacement for `lis` -> `ori` -> `add`, as constants in the
+			//    range 0x7FFF8000 to 0x7FFFFFFF cannot be handled by `addis` -> `addi`. So to be able to handle all constants,
+			//    `lis` -> `ori` -> `add` must always be available as a fallback.
+			// 2. In the context of RandomX, `addis` -> `addi` is almost always slower than `lis` -> `ori` -> `add`. The reason
+			//    for this is subtle--with `addis` -> `addi`, execution blocks at the `addis` as the CPU waits for the source
+			//    register to become ready, and `addi` can't be executed because it depends on the result of `addis`. In
+			//    contrast, `lis` -> `ori` to a temporary register can almost always be executed while the CPU waits for the
+			//    source register to become ready, and so execution will usually only block on the single `add` instruction. So
+			//    despite significantly reducing the total number of instructions executed, using `addis` -> `addi` instead of
+			//    `lis` -> `ori` -> `add` results in a significant reduction in IPC (-5%) and a small overall reduction in
+			//    performance (-0.5%).
 			emitMovImm32(state, tmpReg, imm);
 			state.emit(PPC64::add(dstReg, srcReg, tmpReg));
 		}
