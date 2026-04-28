@@ -487,12 +487,12 @@ namespace randomx {
 	static const uint8_t* codeVmDataReadLight = (uint8_t*)&randomx_ppc64_vm_data_read_light;
 	static const uint8_t* codeVmDataReadLightFixCall = (uint8_t*)&randomx_ppc64_vm_data_read_light_fix_call;
 	static const uint8_t* codeVmDataReadLightEnd = (uint8_t*)&randomx_ppc64_vm_data_read_light_end;
-	static const uint8_t* codeVmSpadStorePrologue = (uint8_t*)&randomx_ppc64_vm_spad_store_prologue;
-	static const uint8_t* codeVmSpadStorePrologueEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_prologue_end;
+	static const uint8_t* codeVmSpadStoreGroupR = (uint8_t*)&randomx_ppc64_vm_spad_store_group_r;
+	static const uint8_t* codeVmSpadStoreGroupREnd = (uint8_t*)&randomx_ppc64_vm_spad_store_group_r_end;
 	static const uint8_t* codeVmSpadStoreMixV1 = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v1;
 	static const uint8_t* codeVmSpadStoreMixV1End = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v1_end;
-	static const uint8_t* codeVmSpadStoreEpilogue = (uint8_t*)&randomx_ppc64_vm_spad_store_epilogue;
-	static const uint8_t* codeVmSpadStoreEpilogueEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_epilogue_end;
+	static const uint8_t* codeVmSpadStoreGroupF = (uint8_t*)&randomx_ppc64_vm_spad_store_group_f;
+	static const uint8_t* codeVmSpadStoreGroupFEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_group_f_end;
 	static const uint8_t* codeVmSpadStoreMixV2HardAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes;
 	static const uint8_t* codeVmSpadStoreMixV2HardAesEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end;
 	static const uint8_t* codeVmSpadStoreMixV2SoftAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_soft_aes;
@@ -512,9 +512,9 @@ namespace randomx {
 	static const int32_t sizeVmLoopPrologue = codeVmLoopPrologueEnd - codeVmLoopPrologue;
 	static const int32_t sizeVmDataRead = codeVmDataReadEnd - codeVmDataRead;
 	static const int32_t sizeVmDataReadLight = codeVmDataReadLightEnd - codeVmDataReadLight;
-	static const int32_t sizeVmSpadStorePrologue = codeVmSpadStorePrologueEnd - codeVmSpadStorePrologue;
+	static const int32_t sizeVmSpadStoreGroupR = codeVmSpadStoreGroupREnd - codeVmSpadStoreGroupR;
 	static const int32_t sizeVmSpadStoreMixV1 = codeVmSpadStoreMixV1End - codeVmSpadStoreMixV1;
-	static const int32_t sizeVmSpadStoreEpilogue = codeVmSpadStoreEpilogueEnd - codeVmSpadStoreEpilogue;
+	static const int32_t sizeVmSpadStoreGroupF = codeVmSpadStoreGroupFEnd - codeVmSpadStoreGroupF;
 	static const int32_t sizeVmSpadStoreMixV2HardAes = codeVmSpadStoreMixV2HardAesEnd - codeVmSpadStoreMixV2HardAes;
 	static const int32_t sizeVmSpadStoreMixV2SoftAes = codeVmSpadStoreMixV2SoftAesEnd - codeVmSpadStoreMixV2SoftAes;
 
@@ -529,7 +529,7 @@ namespace randomx {
 	constexpr size_t ReciprocalPoolSize = 8 * RANDOMX_PROGRAM_MAX_SIZE;  // RANDOMX_PROGRAM_MAX_SIZE 64-bit reciprocals
 	static const size_t ReciprocalPoolPos = sizeConstants + 16;  // Add 16 bytes for the Group E OR vector mask
 	static const size_t ConstantPoolSize = alignSize(sizeConstants + 16 + ReciprocalPoolSize, CodeAlign);  // Add 16 bytes for the Group E OR vector mask
-	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStorePrologue + sizeVmSpadStoreMixV2SoftAes + sizeVmSpadStoreEpilogue, CodeAlign);
+	static const size_t ReserveCodeSize = alignSize(sizeVmPrologue + sizeVmEpilogue + sizeVmLoopPrologue + sizeVmDataRead + sizeVmDataReadLight + sizeVmSpadStoreGroupR + sizeVmSpadStoreMixV2SoftAes + sizeVmSpadStoreGroupF, CodeAlign);
 	constexpr size_t MaxRandomXInstrCodeSize = 4*9;  // FDIV_M and CFROUND require at most 9 instructions
 	constexpr size_t MaxSuperscalarInstrSize = 4*6;  // IMUL_RCP requires at most 6 instructions
 	static const size_t SuperscalarProgramHeaders = sizeSshashSingleItemPrologue + sizeSshashSingleItemEpilogue;
@@ -852,7 +852,7 @@ namespace randomx {
 	}
 
 	void JitCompilerPPC64::emitProgramSuffix(CompilerState& state, ProgramConfiguration& pcfg, randomx_flags flags) {
-		state.emit(codeVmSpadStorePrologue, sizeVmSpadStorePrologue);
+		state.emit(codeVmSpadStoreGroupR, sizeVmSpadStoreGroupR);
 
 		if (flags & RANDOMX_FLAG_V2) {
 			if (flags & RANDOMX_FLAG_HARD_AES) {
@@ -867,7 +867,7 @@ namespace randomx {
 			state.emit(codeVmSpadStoreMixV1, sizeVmSpadStoreMixV1);
 		}
 
-		state.emit(codeVmSpadStoreEpilogue, sizeVmSpadStoreEpilogue);
+		state.emit(codeVmSpadStoreGroupF, sizeVmSpadStoreGroupF);
 
 		state.emit(PPC64::xor_(SpAddr0GPR26, RegisterMapR.getPpcGprNum(pcfg.readReg0), RegisterMapR.getPpcGprNum(pcfg.readReg1)));
 
