@@ -1015,12 +1015,18 @@ namespace randomx {
 	void JitCompilerPPC64::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
 		emitProgramPrefix(state, prog, pcfg, flags);
 
-		// Step 5a: Save ma in mt (r9, temporary)
-		int mtReg = 9;
-		state.emit(PPC64::mr(mtReg, MaGPR24));
+		int mtReg = MaGPR24;
+		int mpReg = MxGPR25;
+
+		if (flags & RANDOMX_FLAG_V2) {
+			// Step 5a: Save ma in mt (r9, temporary)
+			mtReg = 9;
+			state.emit(PPC64::mr(mtReg, MaGPR24));
+
+			mpReg = MaGPR24;
+		}
 
 		// Step 5b: the mp register is XORed with the low 32 bits of registers readReg2 and readReg3
-		int mpReg = (flags & RANDOMX_FLAG_V2) ? MaGPR24 : MxGPR25;  // r24 = ma, r25 = mx
 		state.emit(PPC64::xor_(8, RegisterMapR.getPpcGprNum(pcfg.readReg2), RegisterMapR.getPpcGprNum(pcfg.readReg3)));
 		// Zero-extend r8 to 32 bits (clear upper 32 bits)
 		state.emit(PPC64::rldicl(8, 8, 0, 32));
@@ -1047,12 +1053,18 @@ namespace randomx {
 	void JitCompilerPPC64::generateProgramLight(Program& prog, ProgramConfiguration& pcfg, uint32_t datasetOffset) {
 		emitProgramPrefix(state, prog, pcfg, flags);
 
-		// Step 5a: Save ma in mt (r9, temporary)
-		int mtReg = 9;
-		state.emit(PPC64::mr(mtReg, MaGPR24));
+		int mtReg = MaGPR24;
+		int mpReg = MxGPR25;
+
+		if (flags & RANDOMX_FLAG_V2) {
+			// Step 5a: Save ma in mt (r9, temporary)
+			mtReg = 9;
+			state.emit(PPC64::mr(mtReg, MaGPR24));
+
+			mpReg = MaGPR24;
+		}
 
 		// Step 5b: the mp register is XORed with the low 32 bits of registers readReg2 and readReg3
-		int mpReg = (flags & RANDOMX_FLAG_V2) ? MaGPR24 : MxGPR25;  // r24 = ma, r25 = mx
 		state.emit(PPC64::xor_(8, RegisterMapR.getPpcGprNum(pcfg.readReg2), RegisterMapR.getPpcGprNum(pcfg.readReg3)));
 		// Zero-extend r8 to 32 bits (clear upper 32 bits)
 		state.emit(PPC64::rldicl(8, 8, 0, 32));
