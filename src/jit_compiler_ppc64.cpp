@@ -278,7 +278,7 @@ namespace PPC64 {
 	static inline uint32_t sldi(uint32_t rx, uint32_t ry, uint32_t n) { return rldicr(rx, ry, n, 63-n); }
 	static inline uint32_t srdi(uint32_t rx, uint32_t ry, uint32_t n) { return rldicl(rx, ry, 64-n, n); }
 
-	static inline uint32_t ld(uint32_t rt, uint32_t ra, int32_t offset) {
+	static inline uint32_t ld(uint32_t rt, int32_t offset, uint32_t ra) {
 		if (offset & 3) throw std::runtime_error("offset must be 4-byte aligned");
 		if (offset < -(1 << 15) || offset >= (1 << 15)) throw std::runtime_error("offset out of range");
 		return DS_form(58, rt, ra, (offset >> 2) & 0x3FFF, 0);
@@ -1218,7 +1218,7 @@ namespace randomx {
 			uint64_t rcp = randomx_reciprocal_fast(divisor);
 			state.emitAt(offset, rcp);
 
-			state.emit(PPC64::ld(tmp_gpr, ConstantsBaseAddressRegisterGPR2, offset));
+			state.emit(PPC64::ld(tmp_gpr, offset, ConstantsBaseAddressRegisterGPR2));
 			state.emit(PPC64::mulld(dst, dst, tmp_gpr));
 		}
 	}
