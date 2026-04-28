@@ -62,8 +62,6 @@ extern "C" {
 	void randomx_ppc64_vm_spad_store_group_r_end();
 	void randomx_ppc64_vm_spad_store_mix_v1();
 	void randomx_ppc64_vm_spad_store_mix_v1_end();
-	void randomx_ppc64_vm_spad_store_group_f();
-	void randomx_ppc64_vm_spad_store_group_f_end();
 	void randomx_ppc64_vm_spad_store_mix_v2_hard_aes();
 	void randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end();
 	void randomx_ppc64_vm_spad_store_mix_v2_soft_aes();

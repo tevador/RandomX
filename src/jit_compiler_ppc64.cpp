@@ -308,6 +308,8 @@ namespace PPC64 {
 		return X_form(31, t, ra, rb, 844, tx);
 	}
 
+	static inline uint32_t stvx(uint32_t vrs, uint32_t ra, uint32_t rb) { return X_form(31, vrs, ra, rb, 231, 0); }
+
 	static inline uint32_t vperm(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 43); }
 	static inline uint32_t vsel(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 42); }
 
@@ -491,8 +493,6 @@ namespace randomx {
 	static const uint8_t* codeVmSpadStoreGroupREnd = (uint8_t*)&randomx_ppc64_vm_spad_store_group_r_end;
 	static const uint8_t* codeVmSpadStoreMixV1 = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v1;
 	static const uint8_t* codeVmSpadStoreMixV1End = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v1_end;
-	static const uint8_t* codeVmSpadStoreGroupF = (uint8_t*)&randomx_ppc64_vm_spad_store_group_f;
-	static const uint8_t* codeVmSpadStoreGroupFEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_group_f_end;
 	static const uint8_t* codeVmSpadStoreMixV2HardAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes;
 	static const uint8_t* codeVmSpadStoreMixV2HardAesEnd = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_hard_aes_end;
 	static const uint8_t* codeVmSpadStoreMixV2SoftAes = (uint8_t*)&randomx_ppc64_vm_spad_store_mix_v2_soft_aes;
@@ -514,9 +514,9 @@ namespace randomx {
 	static const int32_t sizeVmDataReadLight = codeVmDataReadLightEnd - codeVmDataReadLight;
 	static const int32_t sizeVmSpadStoreGroupR = codeVmSpadStoreGroupREnd - codeVmSpadStoreGroupR;
 	static const int32_t sizeVmSpadStoreMixV1 = codeVmSpadStoreMixV1End - codeVmSpadStoreMixV1;
-	static const int32_t sizeVmSpadStoreGroupF = codeVmSpadStoreGroupFEnd - codeVmSpadStoreGroupF;
 	static const int32_t sizeVmSpadStoreMixV2HardAes = codeVmSpadStoreMixV2HardAesEnd - codeVmSpadStoreMixV2HardAes;
 	static const int32_t sizeVmSpadStoreMixV2SoftAes = codeVmSpadStoreMixV2SoftAesEnd - codeVmSpadStoreMixV2SoftAes;
+	constexpr size_t sizeVmSpadStoreGroupF = 4*12;  // Worst case size is 12 instructions
 
 	static const int32_t offsetConstantLutFprcToFpscr = codeConstantLutFprcToFpscr - codeConstants;
 
@@ -540,6 +540,8 @@ namespace randomx {
 	static const uint32_t CodeSize = RandomXCodeSize + SuperscalarSize;
 
 	constexpr uint32_t ConstantsBaseAddressRegisterGPR2 = 2;
+	constexpr uint32_t ConstantVectorByteReverseMaskVR15 = 15;
+	constexpr uint32_t ConstantVectorByteReverseMaskVSR47 = 32 + ConstantVectorByteReverseMaskVR15;
 	constexpr uint32_t ConstantVectorBePermutationMaskVR16 = 16;
 	constexpr uint32_t ConstantVectorBePermutationMaskVSR48 = 32 + ConstantVectorBePermutationMaskVR16;
 	constexpr uint32_t ConstantVectorGroupEAndMaskVR17 = 17;
@@ -800,6 +802,30 @@ namespace randomx {
 		emitLoadVr64(state, tmp_vr, ScratchpadPointerGPR30, tmp_gpr);
 	}
 
+	static void emitVmSpadStoreGroupF(CompilerState& state) {
+		// Store F registers to scratchpad at spAddr0
+		state.emit(PPC64::li(8, 16 * 0));
+		state.emit(PPC64::li(9, 16 * 1));
+		state.emit(PPC64::li(10, 16 * 2));
+		state.emit(PPC64::li(11, 16 * 3));
+
+		if (PPC_BIG_ENDIAN) {
+			state.emit(PPC64::vperm(12, 0, 0, ConstantVectorByteReverseMaskVR15));
+			state.emit(PPC64::stvx(12, 8, SpAddr0GPR26));
+			state.emit(PPC64::vperm(13, 1, 1, ConstantVectorByteReverseMaskVR15));
+			state.emit(PPC64::stvx(13, 9, SpAddr0GPR26));
+			state.emit(PPC64::vperm(14, 2, 2, ConstantVectorByteReverseMaskVR15));
+			state.emit(PPC64::stvx(14, 10, SpAddr0GPR26));
+			state.emit(PPC64::vperm(12, 3, 3, ConstantVectorByteReverseMaskVR15));
+			state.emit(PPC64::stvx(12, 11, SpAddr0GPR26));
+		} else {
+			state.emit(PPC64::stvx(0, 8, SpAddr0GPR26));
+			state.emit(PPC64::stvx(1, 9, SpAddr0GPR26));
+			state.emit(PPC64::stvx(2, 10, SpAddr0GPR26));
+			state.emit(PPC64::stvx(3, 11, SpAddr0GPR26));
+		}
+	}
+
 	uint32_t JitCompilerPPC64::getTempGpr() {
 		static const uint32_t gprs[] = {6, 7, 8, 9, 10, 11, 12};
 		uint32_t reg = gprs[tempGprIndex];
@@ -867,7 +893,7 @@ namespace randomx {
 			state.emit(codeVmSpadStoreMixV1, sizeVmSpadStoreMixV1);
 		}
 
-		state.emit(codeVmSpadStoreGroupF, sizeVmSpadStoreGroupF);
+		emitVmSpadStoreGroupF(state);
 
 		state.emit(PPC64::xor_(SpAddr0GPR26, RegisterMapR.getPpcGprNum(pcfg.readReg0), RegisterMapR.getPpcGprNum(pcfg.readReg1)));
 
