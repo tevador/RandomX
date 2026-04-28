@@ -77,6 +77,16 @@ namespace PPC64 {
 		return (po << 26) | (rt << 21) | (ra << 16) | d;
 	}
 
+	static inline uint32_t DQ_form(uint32_t po, uint32_t s, uint32_t ra, uint32_t dq, uint32_t sx, uint32_t xo) {
+		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
+		if (!(s <= 0x1F)) throw std::runtime_error("s <= 0x1F");
+		if (!(ra <= 0x1F)) throw std::runtime_error("ra <= 0x1F");
+		if (!(dq <= 0xFFF)) throw std::runtime_error("dq <= 0xFFF");
+		if (!(sx <= 0x1)) throw std::runtime_error("sx <= 0x1");
+		if (!(xo <= 0x7)) throw std::runtime_error("xo <= 0x7");
+		return (po << 26) | (s << 21) | (ra << 16) | (dq << 4) | (sx << 3) | xo;
+	}
+
 	static inline uint32_t DS_form(uint32_t po, uint32_t rt, uint32_t ra, uint32_t ds, uint32_t xo) {
 		if (!(po <= 0x3F)) throw std::runtime_error("po <= 0x3F");
 		if (!(rt <= 0x1F)) throw std::runtime_error("rt <= 0x1F");
@@ -309,6 +319,15 @@ namespace PPC64 {
 	}
 
 	static inline uint32_t stvx(uint32_t vrs, uint32_t ra, uint32_t rb) { return X_form(31, vrs, ra, rb, 231, 0); }
+
+	static inline uint32_t stxv(uint32_t xs, int32_t offset, uint32_t ra) {  // Only v3.0B and later
+		if (!(xs <= 0x3F)) throw std::runtime_error("xs <= 0x3F");
+		if (offset & 0xF) throw std::runtime_error("offset must be 16-byte aligned");
+		if (offset < -(1 << 15) || offset >= (1 << 15)) throw std::runtime_error("offset out of range");
+		uint32_t s = xs & 0x1F;
+		uint32_t sx = xs >> 5;
+		return DQ_form(61, s, ra, (offset >> 4) & 0xFFF, sx, 5);
+	}
 
 	static inline uint32_t vperm(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 43); }
 	static inline uint32_t vsel(uint32_t vrt, uint32_t vra, uint32_t vrb, uint32_t vrc) { return VA_form(4, vrt, vra, vrb, vrc, 42); }
@@ -804,25 +823,43 @@ namespace randomx {
 
 	static void emitVmSpadStoreGroupF(CompilerState& state) {
 		// Store F registers to scratchpad at spAddr0
-		state.emit(PPC64::li(8, 16 * 0));
-		state.emit(PPC64::li(9, 16 * 1));
-		state.emit(PPC64::li(10, 16 * 2));
-		state.emit(PPC64::li(11, 16 * 3));
-
-		if (PPC_BIG_ENDIAN) {
-			state.emit(PPC64::vperm(12, 0, 0, ConstantVectorByteReverseMaskVR15));
-			state.emit(PPC64::stvx(12, 8, SpAddr0GPR26));
-			state.emit(PPC64::vperm(13, 1, 1, ConstantVectorByteReverseMaskVR15));
-			state.emit(PPC64::stvx(13, 9, SpAddr0GPR26));
-			state.emit(PPC64::vperm(14, 2, 2, ConstantVectorByteReverseMaskVR15));
-			state.emit(PPC64::stvx(14, 10, SpAddr0GPR26));
-			state.emit(PPC64::vperm(12, 3, 3, ConstantVectorByteReverseMaskVR15));
-			state.emit(PPC64::stvx(12, 11, SpAddr0GPR26));
+		if (randomx::cpu.hasV3P0()) {
+			if (PPC_BIG_ENDIAN) {
+				state.emit(PPC64::vperm(12, 0, 0, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stxv(32 + 12, 16 * 0, SpAddr0GPR26));
+				state.emit(PPC64::vperm(13, 1, 1, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stxv(32 + 13, 16 * 1, SpAddr0GPR26));
+				state.emit(PPC64::vperm(14, 2, 2, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stxv(32 + 14, 16 * 2, SpAddr0GPR26));
+				state.emit(PPC64::vperm(12, 3, 3, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stxv(32 + 12, 16 * 3, SpAddr0GPR26));
+			} else {
+				state.emit(PPC64::stxv(32 + 0, 16 * 0, SpAddr0GPR26));
+				state.emit(PPC64::stxv(32 + 1, 16 * 1, SpAddr0GPR26));
+				state.emit(PPC64::stxv(32 + 2, 16 * 2, SpAddr0GPR26));
+				state.emit(PPC64::stxv(32 + 3, 16 * 3, SpAddr0GPR26));
+			}
 		} else {
-			state.emit(PPC64::stvx(0, 8, SpAddr0GPR26));
-			state.emit(PPC64::stvx(1, 9, SpAddr0GPR26));
-			state.emit(PPC64::stvx(2, 10, SpAddr0GPR26));
-			state.emit(PPC64::stvx(3, 11, SpAddr0GPR26));
+			state.emit(PPC64::li(8, 16 * 0));
+			state.emit(PPC64::li(9, 16 * 1));
+			state.emit(PPC64::li(10, 16 * 2));
+			state.emit(PPC64::li(11, 16 * 3));
+
+			if (PPC_BIG_ENDIAN) {
+				state.emit(PPC64::vperm(12, 0, 0, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stvx(12, 8, SpAddr0GPR26));
+				state.emit(PPC64::vperm(13, 1, 1, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stvx(13, 9, SpAddr0GPR26));
+				state.emit(PPC64::vperm(14, 2, 2, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stvx(14, 10, SpAddr0GPR26));
+				state.emit(PPC64::vperm(12, 3, 3, ConstantVectorByteReverseMaskVR15));
+				state.emit(PPC64::stvx(12, 11, SpAddr0GPR26));
+			} else {
+				state.emit(PPC64::stvx(0, 8, SpAddr0GPR26));
+				state.emit(PPC64::stvx(1, 9, SpAddr0GPR26));
+				state.emit(PPC64::stvx(2, 10, SpAddr0GPR26));
+				state.emit(PPC64::stvx(3, 11, SpAddr0GPR26));
+			}
 		}
 	}
 
