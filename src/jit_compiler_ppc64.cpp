@@ -840,14 +840,14 @@ namespace randomx {
 				state.emit(PPC64::stxv(32 + 3, 16 * 3, SpAddr0GPR26));
 			}
 		} else {
-			state.emit(PPC64::li(8, 16 * 0));
+			//state.emit(PPC64::li(8, 16 * 0));
 			state.emit(PPC64::li(9, 16 * 1));
 			state.emit(PPC64::li(10, 16 * 2));
 			state.emit(PPC64::li(11, 16 * 3));
 
 			if (PPC_BIG_ENDIAN) {
 				state.emit(PPC64::vperm(12, 0, 0, ConstantVectorByteReverseMaskVR15));
-				state.emit(PPC64::stvx(12, 8, SpAddr0GPR26));
+				state.emit(PPC64::stvx(12, 0, SpAddr0GPR26));  // RA=0 for zero offset
 				state.emit(PPC64::vperm(13, 1, 1, ConstantVectorByteReverseMaskVR15));
 				state.emit(PPC64::stvx(13, 9, SpAddr0GPR26));
 				state.emit(PPC64::vperm(14, 2, 2, ConstantVectorByteReverseMaskVR15));
@@ -855,7 +855,7 @@ namespace randomx {
 				state.emit(PPC64::vperm(12, 3, 3, ConstantVectorByteReverseMaskVR15));
 				state.emit(PPC64::stvx(12, 11, SpAddr0GPR26));
 			} else {
-				state.emit(PPC64::stvx(0, 8, SpAddr0GPR26));
+				state.emit(PPC64::stvx(0, 0, SpAddr0GPR26));  // RA=0 for zero offset
 				state.emit(PPC64::stvx(1, 9, SpAddr0GPR26));
 				state.emit(PPC64::stvx(2, 10, SpAddr0GPR26));
 				state.emit(PPC64::stvx(3, 11, SpAddr0GPR26));
