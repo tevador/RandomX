@@ -70,6 +70,8 @@ namespace randomx {
 #include "jit_compiler_a64.hpp"
 #elif defined(RANDOMX_COMPILER_RV64)
 #include "jit_compiler_rv64.hpp"
+#elif defined(RANDOMX_COMPILER_PPC64)
+#include "jit_compiler_ppc64.hpp"
 #else
 #include "jit_compiler_fallback.hpp"
 #endif
