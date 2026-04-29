@@ -257,6 +257,8 @@ namespace PPC64 {
 	static inline uint32_t addis(uint32_t rt, uint32_t ra, uint32_t si) { return D_form(15, rt, ra, si); }
 	static inline uint32_t ori(uint32_t ra, uint32_t rs, uint32_t ui) { return D_form(24, rs, ra, ui); }
 	static inline uint32_t oris(uint32_t ra, uint32_t rs, uint32_t ui) { return D_form(25, rs, ra, ui); }
+	static inline uint32_t xori(uint32_t ra, uint32_t rs, uint32_t ui) { return D_form(26, rs, ra, ui); }
+	static inline uint32_t xoris(uint32_t ra, uint32_t rs, uint32_t ui) { return D_form(27, rs, ra, ui); }
 	static inline uint32_t andi_dot(uint32_t ra, uint32_t rs, uint32_t ui) { return D_form(28, rs, ra, ui); }
 
 	static inline uint32_t add(uint32_t rt, uint32_t ra, uint32_t rb) { return XO_form(31, rt, ra, rb, 0, 266, 0); }
@@ -1309,9 +1311,22 @@ namespace randomx {
 			int src = RegisterMapR.getPpcGprNum(isn.src);
 			state.emit(PPC64::xor_(dst, dst, src));
 		} else {
-			uint32_t tmp_gpr = jit->getTempGpr();
-			emitMovImm32(state, tmp_gpr, isn.getImm32());
-			state.emit(PPC64::xor_(dst, dst, tmp_gpr));
+			// Note: RandomX 32-bit immediates are sign-extended to 64 bits.
+			// xori/xoris zero-extend their 16-bit immediate, so they only match
+			// the sign-extended semantics when the imm32 is non-negative as a
+			// signed 32-bit value (i.e., <= 0x7FFFFFFF).
+			uint32_t imm = isn.getImm32();
+			if (imm <= 0xFFFF) {
+				// Fits in unsigned 16 bits; XOR of upper bits is a no-op.
+				state.emit(PPC64::xori(dst, dst, imm));
+			} else if ((imm & 0xFFFF) == 0 && imm <= 0x7FFFFFFF) {
+				// Only the high 16 bits are nonzero, and the value is non-negative.
+				state.emit(PPC64::xoris(dst, dst, (imm >> 16) & 0xFFFF));
+			} else {
+				uint32_t tmp_gpr = jit->getTempGpr();
+				emitMovImm32(state, tmp_gpr, imm);
+				state.emit(PPC64::xor_(dst, dst, tmp_gpr));
+			}
 		}
 	}
 	static void h_IXOR_M(HANDLER_ARGS) {
