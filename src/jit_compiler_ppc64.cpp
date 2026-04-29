@@ -239,6 +239,7 @@ namespace PPC64 {
 
 	static inline uint32_t beq(int32_t offset) { return bc(12, 2, offset); }
 	static inline uint32_t bne(int32_t offset) { return bc(4, 2, offset); }
+	static inline uint32_t bne_predict_taken(int32_t offset) { return bc(7, 2, offset); }
 
 	static inline uint32_t cmpi(uint32_t bf, uint32_t l, uint32_t ra, int32_t si) {
 		if (!(bf <= 0x7)) throw std::runtime_error("bf <= 0x7");
@@ -1509,9 +1510,11 @@ namespace randomx {
 		}
 
 		if (flags & RANDOMX_FLAG_V2) {
-			// Patch in the conditional branch instruction.
+			// Patch in the conditional branch instruction. We predict that the branch is taken because
+			// there's only a 1-in-16 chance of bits 5:2 of the rotated value being equal to zero and
+			// falling through to the RN-update code.
 			int32_t branch_offset = state.codePos - patch_pos;
-			state.emitAt(patch_pos, PPC64::bne(branch_offset));
+			state.emitAt(patch_pos, PPC64::bne_predict_taken(branch_offset));
 		}
 	}
 	static void h_ISTORE(HANDLER_ARGS) {
