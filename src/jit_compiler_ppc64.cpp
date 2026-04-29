@@ -237,13 +237,8 @@ namespace PPC64 {
 		return B_form(16, bo, bi, (offset >> 2) & 0x3FFF, 0, 0);
 	}
 
-	static inline uint32_t beq(int32_t offset) {
-		return bc(12, 2, offset);
-	}
-
-	static inline uint32_t bne(int32_t offset) {
-		return bc(4, 2, offset);
-	}
+	static inline uint32_t beq(int32_t offset) { return bc(12, 2, offset); }
+	static inline uint32_t bne(int32_t offset) { return bc(4, 2, offset); }
 
 	static inline uint32_t cmpi(uint32_t bf, uint32_t l, uint32_t ra, int32_t si) {
 		if (!(bf <= 0x7)) throw std::runtime_error("bf <= 0x7");
