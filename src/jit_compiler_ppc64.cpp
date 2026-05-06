@@ -238,6 +238,7 @@ namespace PPC64 {
 	}
 
 	static inline uint32_t beq(int32_t offset) { return bc(0x0C, 2, offset); }
+	static inline uint32_t beq_predict_not_taken(int32_t offset) { return bc(0x0E, 2, offset); }
 	static inline uint32_t bne(int32_t offset) { return bc(0x04, 2, offset); }
 	static inline uint32_t bne_predict_taken(int32_t offset) { return bc(0x07, 2, offset); }
 
@@ -1442,10 +1443,10 @@ namespace randomx {
 		int offset = targetPos - state.codePos;
 
 		if (offset >= -(1 << 15) && offset < (1 << 15)) {
-			state.emit(PPC64::beq(offset));
+			state.emit(PPC64::beq_predict_not_taken(offset));
 		} else {
 			// Branch over the jump if not equal
-			state.emit(PPC64::bne(8));
+			state.emit(PPC64::bne_predict_taken(8));
 			state.emit(PPC64::b(offset - 4));
 		}
 
