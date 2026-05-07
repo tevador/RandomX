@@ -528,19 +528,17 @@ randomx_ppc64_vm_prologue:
 
 	// Load the vector constants/literals
 	li %r8, constant_vector_group_e_and_mask-randomx_ppc64_constants
+	lxvd2x %vs49, %r2, %r8
 	li %r9, constant_vector_fscal_xor_mask-randomx_ppc64_constants
+	lxvd2x %vs50, %r2, %r9
 	li %r10, literal_vector_group_e_or_mask-randomx_ppc64_constants
+	lvx %v19, %r2, %r10  // Use lvx to load the vector since it's written [ low word, high word ] in memory
 #if PPC_BIG_ENDIAN
 	li %r11, constant_vector_be_permutation_mask-randomx_ppc64_constants
+	lxvd2x %vs48, %r2, %r11  // Load the BE permutation mask (not needed for LE)
 #endif
 	li %r12, constant_vector_byte_reverse_mask-randomx_ppc64_constants
-	lxvd2x %vs49, %r8, %r2
-	lxvd2x %vs50, %r9, %r2
-	lvx %v19, %r10, %r2  // Use lvx to load the vector since it's written [ low word, high word ] in memory
-#if PPC_BIG_ENDIAN
-	lxvd2x %vs48, %r11, %r2  // Load the BE permutation mask (not needed for LE)
-#endif
-	lvx %v15, %r12, %r2
+	lvx %v15, %r2, %r12
 #if PPC_BIG_ENDIAN
 	vperm %v19, %v19, %v19, %v15  // Swap the byte order of the Group E OR mask vector
 #endif
@@ -562,14 +560,14 @@ randomx_ppc64_vm_prologue:
 
 	// Load a0-a3 from RegisterFile
 	.equ registers_a_base, 8*8+16*4+16*4
-	addi %r8, %r28, registers_a_base + 16*0
-	addi %r9, %r28, registers_a_base + 16*1
-	addi %r10, %r28, registers_a_base + 16*2
-	addi %r11, %r28, registers_a_base + 16*3
-	lvx %v8, 0, %r8
-	lvx %v9, 0, %r9
-	lvx %v10, 0, %r10
-	lvx %v11, 0, %r11
+	li %r8, registers_a_base + 16*0
+	lvx %v8, %r28, %r8
+	li %r9, registers_a_base + 16*1
+	lvx %v9, %r28, %r9
+	li %r10, registers_a_base + 16*2
+	lvx %v10, %r28, %r10
+	li %r11, registers_a_base + 16*3
+	lvx %v11, %r28, %r11
 #if PPC_BIG_ENDIAN
 	vperm %v8, %v8, %v8, %v15
 	vperm %v9, %v9, %v9, %v15
@@ -614,23 +612,23 @@ randomx_ppc64_vm_fix_loop:
 
 	.equ registers_f_base, 8*8
 	li %r8, registers_f_base + 16*0
+	stvx %v0, %r28, %r8
 	li %r9, registers_f_base + 16*1
+	stvx %v1, %r28, %r9
 	li %r10, registers_f_base + 16*2
+	stvx %v2, %r28, %r10
 	li %r11, registers_f_base + 16*3
-	stvx %v0, %r8, %r28
-	stvx %v1, %r9, %r28
-	stvx %v2, %r10, %r28
-	stvx %v3, %r11, %r28
+	stvx %v3, %r28, %r11
 
 	.equ registers_e_base, 8*8+16*4
 	li %r8, registers_e_base + 16*0
+	stvx %v4, %r28, %r8
 	li %r9, registers_e_base + 16*1
+	stvx %v5, %r28, %r9
 	li %r10, registers_e_base + 16*2
+	stvx %v6, %r28, %r10
 	li %r11, registers_e_base + 16*3
-	stvx %v4, %r8, %r28
-	stvx %v5, %r9, %r28
-	stvx %v6, %r10, %r28
-	stvx %v7, %r11, %r28
+	stvx %v7, %r28, %r11
 
 	// Standard function epilogue
 	ld %r14, 112(%r1)
@@ -680,14 +678,13 @@ randomx_ppc64_vm_loop_prologue:
 	xor %r21, %r21, %r11
 
 	// Load F registers (v0-v3 / vs32-vs35) from spAddr1 (r27)
-	//addi %r8, %r27, 8*0
-	addi %r9, %r27, 8*1
-	addi %r10, %r27, 8*2
-	addi %r11, %r27, 8*3
-	lxsdx %vs32, 0, %r27  // Use base address directly to avoid an `addi`
-	lxsdx %vs33, 0, %r9
-	lxsdx %vs34, 0, %r10
-	lxsdx %vs35, 0, %r11
+	lxsdx %vs32, 0, %r27  // Use base address directly to avoid an immediate load
+	li %r9, 8*1
+	lxsdx %vs33, %r27, %r9
+	li %r10, 8*2
+	lxsdx %vs34, %r27, %r10
+	li %r11, 8*3
+	lxsdx %vs35, %r27, %r11
 	SHUFFLE_VR 0
 	SHUFFLE_VR 1
 	SHUFFLE_VR 2
@@ -698,14 +695,14 @@ randomx_ppc64_vm_loop_prologue:
 	xvcvsxwdp %vs35, %vs35
 
 	// Load E registers (v4-v7 / vs36-vs39) from spAddr1 (r27) and fixup
-	addi %r8, %r27, 8*4
-	addi %r9, %r27, 8*5
-	addi %r10, %r27, 8*6
-	addi %r11, %r27, 8*7
-	lxsdx %vs36, 0, %r8
-	lxsdx %vs37, 0, %r9
-	lxsdx %vs38, 0, %r10
-	lxsdx %vs39, 0, %r11
+	li %r8, 8*4
+	lxsdx %vs36, %r27, %r8
+	li %r9, 8*5
+	lxsdx %vs37, %r27, %r9
+	li %r10, 8*6
+	lxsdx %vs38, %r27, %r10
+	li %r11, 8*7
+	lxsdx %vs39, %r27, %r11
 	SHUFFLE_VR 4
 	SHUFFLE_VR 5
 	SHUFFLE_VR 6
