@@ -100,16 +100,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	.global randomx_ppc64_vm_spad_store_mix_v2_soft_aes
 	.global randomx_ppc64_vm_spad_store_mix_v2_soft_aes_end
 
-// Macro to store a VR containing a RandomX Group F/E/A register to memory
-.macro STORE_LE_VR vr_src, vr_temp, offset_reg, base_reg
-#if PPC_BIG_ENDIAN
-	vperm \vr_temp, \vr_src, \vr_src, %v15  // Reverse the bytes so they're arranged as [ 0123 4567 ]
-	stvx \vr_temp, \offset_reg, \base_reg   // Store the two doubles to memory
-#else
-	stvx \vr_src, \offset_reg, \base_reg    // Store the two doubles to memory
-#endif
-.endm
-
 // Macro to shuffle a VR after being loaded with lxsdx.
 .macro SHUFFLE_VR vr_reg
 #if PPC_BIG_ENDIAN
@@ -610,25 +600,37 @@ randomx_ppc64_vm_fix_loop:
 	STORE_LE_GPR %r20, 8*6, %r28
 	STORE_LE_GPR %r21, 8*7, %r28
 
+#if PPC_BIG_ENDIAN
+	// Reverse the Group F/E register bytes so they're arranged as [ 0123 4567 ]
+	vperm %v0, %v0, %v0, %v15
+	vperm %v1, %v1, %v1, %v15
+	vperm %v2, %v2, %v2, %v15
+	vperm %v3, %v3, %v3, %v15
+	vperm %v4, %v4, %v4, %v15
+	vperm %v5, %v5, %v5, %v15
+	vperm %v6, %v6, %v6, %v15
+	vperm %v7, %v7, %v7, %v15
+#endif
+
 	.equ registers_f_base, 8*8
 	li %r8, registers_f_base + 16*0
 	li %r9, registers_f_base + 16*1
 	li %r10, registers_f_base + 16*2
 	li %r11, registers_f_base + 16*3
-	STORE_LE_VR 0, 12, %r8, %r28
-	STORE_LE_VR 1, 13, %r9, %r28
-	STORE_LE_VR 2, 14, %r10, %r28
-	STORE_LE_VR 3, 12, %r11, %r28
+	stvx %v0, %r8, %r28
+	stvx %v1, %r9, %r28
+	stvx %v2, %r10, %r28
+	stvx %v3, %r11, %r28
 
 	.equ registers_e_base, 8*8+16*4
 	li %r8, registers_e_base + 16*0
 	li %r9, registers_e_base + 16*1
 	li %r10, registers_e_base + 16*2
 	li %r11, registers_e_base + 16*3
-	STORE_LE_VR 4, 12, %r8, %r28
-	STORE_LE_VR 5, 13, %r9, %r28
-	STORE_LE_VR 6, 14, %r10, %r28
-	STORE_LE_VR 7, 12, %r11, %r28
+	stvx %v4, %r8, %r28
+	stvx %v5, %r9, %r28
+	stvx %v6, %r10, %r28
+	stvx %v7, %r11, %r28
 
 	// Standard function epilogue
 	ld %r14, 112(%r1)
