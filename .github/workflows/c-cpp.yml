@@ -20,7 +20,7 @@ jobs:
           - {arch: armhf, branch: latest-stable}
           - {arch: armv7, branch: latest-stable}
           - {arch: ppc64le, branch: latest-stable}
-          - {arch: riscv64, branch: edge}
+          - {arch: riscv64, branch: latest-stable}
           - {arch: s390x, branch: latest-stable}
 
     steps:
@@ -45,7 +45,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ..
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DARCH=native
         make -j$(nproc)
 
     - name: Run tests
@@ -61,8 +61,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - {os: ubuntu-20.04, c: gcc-11, cpp: g++-11}
-          - {os: ubuntu-22.04, c: gcc-12, cpp: g++-12}
+          - {os: ubuntu-24.04, c: gcc-14, cpp: g++-14}
+          - {os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14}
 
     steps:
     - name: Install dependencies
@@ -133,9 +133,7 @@ jobs:
     strategy:
       matrix:
         config:
-          - {arch: x64, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\"}
           - {arch: x64, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\amd64\\"}
-          - {arch: Win32, os: 2019, vs: Visual Studio 16 2019, msbuild: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\"}
           - {arch: Win32, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\"}
 
     steps:
@@ -165,7 +163,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-11, macos-12, macos-13]
+        os: [macos-15, macos-15-intel]
 
     steps:
     - name: Checkout repository
@@ -173,15 +171,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install dependencies
-      run: HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake
-
     - name: Build RandomX
       run: |
         mkdir build
         cd build
         cmake ..
-        make -j3
+        make -j4
 
     - name: Run tests
       run: |
@@ -197,13 +192,13 @@ jobs:
         os:
           - name: freebsd
             architecture: x86-64
-            version: '13.2'
-            host: ubuntu-22.04
+            version: '13.3'
+            host: ubuntu-latest
 
           - name: freebsd
             architecture: arm64
-            version: '13.2'
-            host: ubuntu-22.04
+            version: '13.3'
+            host: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -212,11 +207,13 @@ jobs:
         submodules: recursive
 
     - name: Build RandomX
-      uses: cross-platform-actions/action@v0.19.0
+      uses: cross-platform-actions/action@v0.24.0
       with:
         operating_system: ${{ matrix.os.name }}
         architecture: ${{ matrix.os.architecture }}
         version: ${{ matrix.os.version }}
+        memory: 12G
+        cpu_count: 4
         shell: bash
         run: |
           sudo pkg install -y cmake
