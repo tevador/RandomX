@@ -561,7 +561,16 @@ void JitCompilerA64::h_ISUB_R(Instruction& instr, uint32_t& codePos)
 	}
 	else
 	{
-		emitAddImmediate(dst, dst, -instr.getImm32(), code, k);
+		const uint32_t imm = instr.getImm32();
+
+		if (imm == 0x80000000ul) {
+			constexpr uint32_t tmp_reg = 20;
+			emit32(ARMV8A::MOVZ | tmp_reg | (1u << 21) | (0x8000u << 5), code, k);
+			emit32(ARMV8A::ADD | dst | (dst << 5) | (tmp_reg << 16), code, k);
+		}
+		else {
+			emitAddImmediate(dst, dst, -instr.getImm32(), code, k);
+		}
 	}
 
 	reg_changed_offset[instr.dst] = k;
