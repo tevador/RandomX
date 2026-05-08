@@ -1002,9 +1002,13 @@ int main() {
 	};
 
 	auto test_f = [&] {
-		char key[RANDOMX_HASH_SIZE] = {
+		uint8_t key_u[RANDOMX_HASH_SIZE] = {
 			0x77, 0x97, 0x37, 0x3e, 0xa4, 0x63, 0x31, 0x94, 0x64, 0x0b, 0xf8, 0xd8, 0xc3, 0xb6, 0x67, 0x24, 0xd6, 0xaa, 0x7b, 0xd2, 0xdc, 0x20, 0xe0, 0x09, 0xdf, 0x2f, 0x8f, 0x17, 0x10, 0xab, 0xe8, 0x24
 		};
+		char key[RANDOMX_HASH_SIZE];
+
+		// workaround for picky compilers
+		memcpy(key, key_u, sizeof(key_u));
 
 		char hash[RANDOMX_HASH_SIZE];
 		calcHexHash(key, "1010e1eaf8cf067b37b5f0ee031ab23ed1755e090a3af4415830145853e2be3e1f6821fed84dae58d00e00da5214d6c1f2d0622e0abd51f9373d04e0b0f8e6d6514d90689721c4aac5a9bb0d", &hash);
