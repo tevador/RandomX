@@ -60,7 +60,7 @@ void runTest(const char* name, bool condition, FUNC f) {
 	std::cout << "[";
 	std::cout.width(2);
 	std::cout << std::right << ++testNo << "] ";
-	std::cout.width(40);
+	std::cout.width(44);
 	std::cout << std::left << name << " ... ";
 	std::cout.flush();
 	if (condition) {
@@ -1002,11 +1002,26 @@ int main() {
 		assert(equalsHex(hash, (vm->getFlags() & RANDOMX_FLAG_V2) ? "c8e92c5f7c1946fecf06bc382b92e3111da38ee3e6a5ad90704e1a9d8aaf6e76" : "c56414121acda1713c2f2a819d8ae38aed7c80c35c2a769298d34f03833cd5f1"));
 	};
 
+	auto test_f = [&] {
+		uint8_t key_u[RANDOMX_HASH_SIZE] = {
+			0x77, 0x97, 0x37, 0x3e, 0xa4, 0x63, 0x31, 0x94, 0x64, 0x0b, 0xf8, 0xd8, 0xc3, 0xb6, 0x67, 0x24, 0xd6, 0xaa, 0x7b, 0xd2, 0xdc, 0x20, 0xe0, 0x09, 0xdf, 0x2f, 0x8f, 0x17, 0x10, 0xab, 0xe8, 0x24
+		};
+		char key[RANDOMX_HASH_SIZE];
+
+		// workaround for picky compilers
+		memcpy(key, key_u, sizeof(key_u));
+
+		char hash[RANDOMX_HASH_SIZE];
+		calcHexHash(key, "1010e1eaf8cf067b37b5f0ee031ab23ed1755e090a3af4415830145853e2be3e1f6821fed84dae58d00e00da5214d6c1f2d0622e0abd51f9373d04e0b0f8e6d6514d90689721c4aac5a9bb0d", &hash);
+		assert(equalsHex(hash, "78af2a1864c42abce36d2e8983e13df99b2af0ce1362999af09fab004d4435a8"));
+	};
+
 	runTest("Hash test 1a (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_a);
 	runTest("Hash test 1b (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_b);
 	runTest("Hash test 1c (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
 	runTest("Hash test 1d (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
 	runTest("Hash test 1e (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
+	runTest("Hash test 1f (ISUB_R edge case, interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
 
 	randomx_destroy_vm(vm);
 
@@ -1040,6 +1055,7 @@ int main() {
 	runTest("Hash test 2c (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
 	runTest("Hash test 2d (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
 	runTest("Hash test 2e (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
+	runTest("Hash test 2f (ISUB_R edge case, compiler)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_destroy_vm(vm);

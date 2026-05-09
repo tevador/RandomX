@@ -448,6 +448,12 @@ void* generateProgramVectorRV64(uint8_t* buf, Program& prog, ProgramConfiguratio
 				// sub x20 + dst, x20 + dst, x20 + src
 				emit32(0x414A0A33 + (dst << 7) + (dst << 15) + (src << 20));
 			}
+			else if (imm == 0x80000000U) {
+				// lui x5, 0x80000000U
+				emit32(0x800002B7);
+				// sub x20 + dst, x20 + dst, x5
+				emit32(0x405A0A33 + (dst << 7) + (dst << 15));
+			}
 			else {
 				imm_to_x5(-imm, p);
 				// c.add x20 + dst, x5
