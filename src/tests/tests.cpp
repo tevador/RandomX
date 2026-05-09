@@ -1055,7 +1055,7 @@ int main() {
 	runTest("Hash test 2c (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_c);
 	runTest("Hash test 2d (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_d);
 	runTest("Hash test 2e (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
-	runTest("Hash test 2f (ISUB_R edge case, compiler)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
+	runTest("Hash test 2f (ISUB_R edge case, compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_destroy_vm(vm);
