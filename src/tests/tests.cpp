@@ -59,7 +59,7 @@ void runTest(const char* name, bool condition, FUNC f) {
 	std::cout << "[";
 	std::cout.width(2);
 	std::cout << std::right << ++testNo << "] ";
-	std::cout.width(40);
+	std::cout.width(44);
 	std::cout << std::left << name << " ... ";
 	std::cout.flush();
 	if (condition) {
