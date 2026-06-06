@@ -198,6 +198,22 @@ void setPagesRX(void* ptr, size_t bytes) {
 #endif
 }
 
+void setPagesRXKeepIcache(void* ptr, size_t bytes) {
+#if defined(USE_PTHREAD_JIT_WP) && defined(MAC_OS_VERSION_11_0) \
+	&& MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0
+	if (__builtin_available(macOS 11.0, *)) {
+		/* The A64 JIT already called __builtin___clear_cache on the exact
+		   modified range inside generateProgram. Only toggle write-protect
+		   here; re-flushing the full buffer is redundant and measurably
+		   expensive on Apple Silicon. */
+		pthread_jit_write_protect_np(1);
+		return;
+	}
+#endif
+	char *errfunc;
+	pageProtect(ptr, bytes, PAGE_EXECUTE_READ, &errfunc);
+}
+
 void setPagesRWX(void* ptr, size_t bytes) {
 	char *errfunc;
 	pageProtect(ptr, bytes, PAGE_EXECUTE_READWRITE, &errfunc);
