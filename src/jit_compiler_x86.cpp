@@ -321,11 +321,12 @@ namespace randomx {
 		generateProgramPrologue(prog, pcfg);
 		if (vmFlags & RANDOMX_FLAG_V2) {
 			memcpy(code + codePos, codeReadDatasetV2, readDatasetV2Size);
+			codePos += readDatasetV2Size;
 		}
 		else {
 			memcpy(code + codePos, codeReadDataset, readDatasetSize);
+			codePos += readDatasetSize;
 		}
-		codePos += readDatasetSize;
 		generateProgramEpilogue(prog, pcfg);
 	}
 
