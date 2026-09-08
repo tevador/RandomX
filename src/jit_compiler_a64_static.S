@@ -911,3 +911,7 @@ DECL(randomx_calc_dataset_item_aarch64_store_result):
 	ret
 
 DECL(randomx_calc_dataset_item_aarch64_end):
+
+#if defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif

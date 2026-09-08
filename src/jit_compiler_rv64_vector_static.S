@@ -1087,3 +1087,7 @@ DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes):
 DECL(randomx_riscv64_vector_program_end):
 
 DECL(randomx_riscv64_vector_code_end):
+
+#if defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif

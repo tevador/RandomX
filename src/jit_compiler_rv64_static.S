@@ -1243,3 +1243,7 @@ DECL(randomx_riscv64_ssh_prefetch):
 
 DECL(randomx_riscv64_ssh_end):
     nop
+
+#if defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
