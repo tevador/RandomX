@@ -1101,6 +1101,18 @@ int main() {
 
 	if (cache != nullptr)
 		randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_AVX512);
+
+	runTest("Cache initialization: AVX-512F", (flags & RANDOMX_FLAG_ARGON2_AVX512) && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		uint64_t* cacheMemory = (uint64_t*)cache->memory;
+		assert(cacheMemory[0] == 0x191e0e1d23c02186);
+		assert(cacheMemory[1568413] == 0xf1b62fe6210bf8b1);
+		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
+	});
+
+	if (cache != nullptr)
+		randomx_release_cache(cache);
 	cache = randomx_alloc_cache(RANDOMX_FLAG_DEFAULT);
 
 	if (!RANDOMX_HAVE_COMPILER) {

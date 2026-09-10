@@ -255,6 +255,7 @@ void randomx_argon2_fill_segment_ref(const argon2_instance_t* instance,
 
 randomx_argon2_impl *randomx_argon2_impl_ssse3();
 randomx_argon2_impl *randomx_argon2_impl_avx2();
+randomx_argon2_impl *randomx_argon2_impl_avx512();
 
 #if defined(__cplusplus)
 }
