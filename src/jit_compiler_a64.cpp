@@ -116,7 +116,7 @@ void JitCompilerA64::enableWriting()
 
 void JitCompilerA64::enableExecution()
 {
-	setPagesRX(code, CodeSize + CalcDatasetItemSize);
+	setPagesRXKeepIcache(code, CodeSize + CalcDatasetItemSize);
 }
 
 void JitCompilerA64::enableAll()
