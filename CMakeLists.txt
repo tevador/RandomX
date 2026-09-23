@@ -329,6 +329,8 @@ if(TARGET generate-asm)
   add_dependencies(randomx generate-asm)
 endif()
 
+target_include_directories(randomx PUBLIC ${RANDOMX_INCLUDE})
+
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
 set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
