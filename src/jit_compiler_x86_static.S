@@ -28,6 +28,9 @@
 #if defined(__APPLE__)
 .text
 #define DECL(x) _##x
+#elif defined(__ELF__)
+.section .rodata
+#define DECL(x) x
 #else
 .section .text
 #define DECL(x) x
@@ -256,6 +259,7 @@ DECL(randomx_program_end):
 rx_program_end:
 	nop
 
+.text
 .balign 64
 DECL(randomx_reciprocal_fast):
 #if !defined(WINABI)
