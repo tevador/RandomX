@@ -134,6 +134,9 @@ SET ERRORLEVEL = 0</Command>
     <ClCompile Include="..\src\argon2_avx2.c">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
+    <ClCompile Include="..\src\argon2_avx512.c">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AdvancedVectorExtensions512</EnableEnhancedInstructionSet>
+    </ClCompile>
     <ClCompile Include="..\src\argon2_core.c" />
     <ClCompile Include="..\src\argon2_ref.c" />
     <ClCompile Include="..\src\argon2_ssse3.c" />
@@ -169,6 +172,7 @@ SET ERRORLEVEL = 0</Command>
     <ClInclude Include="..\src\blake2\blake2-impl.h" />
     <ClInclude Include="..\src\blake2\blake2.h" />
     <ClInclude Include="..\src\blake2\blamka-round-avx2.h" />
+    <ClInclude Include="..\src\blake2\blamka-round-avx512.h" />
     <ClInclude Include="..\src\blake2\blamka-round-ref.h" />
     <ClInclude Include="..\src\blake2\blamka-round-ssse3.h" />
     <ClInclude Include="..\src\blake2\endian.h" />

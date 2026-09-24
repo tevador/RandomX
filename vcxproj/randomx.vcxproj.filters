@@ -84,6 +84,9 @@
     <ClCompile Include="..\src\argon2_avx2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\argon2_avx512.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\argon2_ssse3.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -195,6 +198,8 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\blake2\blamka-round-avx2.h">
+      <Filter>Header Files</Filter>
+    <ClInclude Include="..\src\blake2\blamka-round-avx512.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\blake2\blamka-round-ssse3.h">
