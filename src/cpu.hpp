@@ -41,6 +41,9 @@ namespace randomx {
 		inline bool hasRVV() const { return rvv_; }
 		inline int getRVV_Length() const { return rvv_length; }
 #endif
+#if defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
+		inline bool hasV3P0() const { return v3p0_; }
+#endif
 
 	private:
 		bool aes_ = false;
@@ -49,6 +52,9 @@ namespace randomx {
 #ifdef __riscv
 		bool rvv_ = false;
 		int rvv_length = 0;
+#endif
+#if defined(__ppc64__) || defined(__PPC64__) || defined(__ppc64le__) || defined(__PPC64LE__)
+		bool v3p0_ = false;
 #endif
 	};
 
