@@ -260,14 +260,6 @@ FORCE_INLINE rx_vec_f128 rx_sqrt_vec_f128(rx_vec_f128 a) {
 	return (rx_vec_f128)vec_sqrt(a);
 }
 
-FORCE_INLINE rx_vec_i128 rx_set1_long_vec_i128(uint64_t a) {
-	return (rx_vec_i128)vec_splat2sd(a);
-}
-
-FORCE_INLINE rx_vec_f128 rx_vec_i128_vec_f128(rx_vec_i128 a) {
-	return (rx_vec_f128)a;
-}
-
 FORCE_INLINE rx_vec_f128 rx_set_vec_f128(uint64_t x1, uint64_t x0) {
 	return (rx_vec_f128)(__m128ll){x0,x1};
 }
@@ -637,19 +629,6 @@ FORCE_INLINE rx_vec_f128 rx_sqrt_vec_f128(rx_vec_f128 a) {
 	rx_vec_f128 x;
 	x.lo = rx_sqrt(a.lo);
 	x.hi = rx_sqrt(a.hi);
-	return x;
-}
-
-FORCE_INLINE rx_vec_i128 rx_set1_long_vec_i128(uint64_t a) {
-	rx_vec_i128 x;
-	x.u64[0] = a;
-	x.u64[1] = a;
-	return x;
-}
-
-FORCE_INLINE rx_vec_f128 rx_vec_i128_vec_f128(rx_vec_i128 a) {
-	rx_vec_f128 x;
-	x.i = a;
 	return x;
 }
 
