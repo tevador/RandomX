@@ -321,6 +321,61 @@ if(ARCH_ID STREQUAL "riscv64")
   set_source_files_properties(src/aes_hash_rv64_zvkned.cpp PROPERTIES COMPILE_FLAGS "-O3 -march=${RV64_VECTOR_FILE_ARCH}_zvkned")
 endif()
 
+# LoongArch
+if(ARCH_ID STREQUAL "loongarch64")
+  list(APPEND randomx_sources
+    src/jit_compiler_la64_static.S
+    src/jit_compiler_la64.cpp
+    src/jit_compiler_la64_lasx_static.S
+    src/jit_compiler_la64_lasx.cpp)
+
+  # cheat because cmake and ccache hate each other
+  set_property(SOURCE src/jit_compiler_la64_static.S PROPERTY LANGUAGE C)
+  set_property(SOURCE src/jit_compiler_la64_lasx_static.S PROPERTY LANGUAGE C)
+
+  enable_language(ASM)
+
+  # LSX: the interpreter's vector layer and the generated code of the JIT
+  # both build on the 128 bit unit, so the whole build carries -mlsx once
+  # the probe below passes.  Without it the interpreter falls back to the
+  # portable layer of intrin_portable.h, and the per-file -mlsx of the
+  # static blob keeps the JIT assembling.
+  try_run(RANDOMX_LOONGARCH_LSX_RUN_FAIL
+      RANDOMX_LOONGARCH_LSX_COMPILE_OK
+      ${CMAKE_CURRENT_BINARY_DIR}/
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/loongarch_lsx.s
+      COMPILE_DEFINITIONS "-mlsx")
+
+  if (RANDOMX_LOONGARCH_LSX_COMPILE_OK AND NOT RANDOMX_LOONGARCH_LSX_RUN_FAIL)
+      add_flag("-mlsx")
+      message(STATUS "LoongArch LSX detected")
+  else()
+      message(STATUS "LoongArch LSX not detected, the interpreter runs on the portable fallback")
+  endif()
+
+  # The static blob assembles LSX regardless of the running CPU; the
+  # per-file flag keeps it building on the machines of the else branch.
+  set_source_files_properties(src/jit_compiler_la64_static.S PROPERTIES COMPILE_FLAGS "-mlsx")
+
+  # LASX: the 256 bit dataset item units are always compiled, the running
+  # CPU decides whether one word of them is ever executed (the runtime
+  # probe of jit_compiler_la64.cpp).  The probe below only reports.
+  try_run(RANDOMX_LOONGARCH_LASX_RUN_FAIL
+      RANDOMX_LOONGARCH_LASX_COMPILE_OK
+      ${CMAKE_CURRENT_BINARY_DIR}/
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/loongarch_lasx.s
+      COMPILE_DEFINITIONS "-mlasx")
+
+  if (RANDOMX_LOONGARCH_LASX_COMPILE_OK AND NOT RANDOMX_LOONGARCH_LASX_RUN_FAIL)
+      message(STATUS "LoongArch LASX detected")
+  else()
+      message(STATUS "LoongArch LASX not detected, the dataset init stays on the 128 bit item function")
+  endif()
+
+  set_source_files_properties(src/jit_compiler_la64_lasx_static.S PROPERTIES COMPILE_FLAGS "-mlasx")
+  set_source_files_properties(src/jit_compiler_la64_lasx.cpp PROPERTIES COMPILE_FLAGS "-O3 -mlasx")
+endif()
+
 set(RANDOMX_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE STRING "RandomX Include path")
 
 add_library(randomx ${randomx_sources})
