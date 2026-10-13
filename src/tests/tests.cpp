@@ -1034,6 +1034,14 @@ int main() {
 	runTest("Hash test 1e (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
 	runTest("Hash test 1f (ISUB_R edge case, interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
 
+	runTest("randomx_vm_set_cache (same key, new cache)", true, []() {
+		randomx_cache copy = *cache;
+		randomx_vm_set_cache(vm, &copy);
+		assert(vm->getCache() == &copy);
+		randomx_vm_set_cache(vm, cache);
+		assert(vm->getCache() == cache);
+	});
+
 	randomx_destroy_vm(vm);
 
 #ifdef RANDOMX_FORCE_SECURE
