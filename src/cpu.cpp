@@ -59,6 +59,16 @@ static sigjmp_buf jump_buffer;
 static void sigill_handler(int) { siglongjmp(jump_buffer, 1); }
 
 void hashAes1Rx4_zvkned(const void *input, size_t inputSize, void *hash);
+
+namespace randomx {
+
+	struct RiscvFeatures {
+		RiscvFeatures();
+		bool aes_ = false;
+		bool rvv_ = false;
+		int rvv_length = 0;
+	};
+}
 #endif
 
 namespace randomx {
@@ -86,6 +96,22 @@ namespace randomx {
 		aes_ = true;
 	#endif
 #elif defined(__riscv)
+		static const RiscvFeatures features;
+		aes_ = features.aes_;
+		rvv_ = features.rvv_;
+		rvv_length = features.rvv_length;
+#endif
+		//TODO POWER8 AES
+	}
+
+#ifdef __riscv
+	RiscvFeatures::RiscvFeatures()
+	{
+		sigset_t sigill_set, old_mask;
+		sigemptyset(&sigill_set);
+		sigaddset(&sigill_set, SIGILL);
+		sigprocmask(SIG_UNBLOCK, &sigill_set, &old_mask);
+
 		struct sigaction new_action, old_action;
 
 		new_action.sa_handler = sigill_handler;
@@ -120,9 +146,10 @@ namespace randomx {
 
 			sigaction(SIGILL, &old_action, nullptr);
 		}
-#endif
-		//TODO POWER8 AES
+
+		sigprocmask(SIG_SETMASK, &old_mask, nullptr);
 	}
+#endif
 
 	const Cpu cpu;
 }
