@@ -16,6 +16,7 @@
 #include "../jit_compiler.hpp"
 #include "../aes_hash.hpp"
 #include "../virtual_machine.hpp"
+#include "../cpu.hpp"
 
 randomx_cache* cache;
 randomx_vm* vm = nullptr;
@@ -1224,6 +1225,26 @@ int main() {
 	}
 
 	runTest("Hash test (compiler switch v1 <-> v2)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_switch);
+
+	runTest("Hash test (hardware AES)", randomx::cpu.hasAes() && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		for (randomx_flags f : { RANDOMX_FLAG_HARD_AES, RANDOMX_FLAG_HARD_AES | RANDOMX_FLAG_V2 }) {
+			randomx_vm* hardVm = randomx_create_vm(f, cache, nullptr);
+			if (hardVm == nullptr)
+				continue;
+			char hash1[RANDOMX_HASH_SIZE], hash2[RANDOMX_HASH_SIZE];
+			randomx_calculate_hash_first(hardVm, "This is a test", 14);
+			randomx_calculate_hash_next(hardVm, "Lorem ipsum dolor sit amet", 26, hash1);
+			randomx_calculate_hash_last(hardVm, hash2);
+			randomx_destroy_vm(hardVm);
+			assert(equalsHex(hash1, (f & RANDOMX_FLAG_V2) ? "22ec6b861b3eb23686b2efbad69513c967ecfce80983df66c9c5b4fbfb4cdb6f" : "639183aae1bf4c9a35884cb46b09cad9175f04efd7684e7262a0ac1c2f0b4e3f"));
+			assert(equalsHex(hash2, (f & RANDOMX_FLAG_V2) ? "9e2c772c12fd48f93c14c97fdc89d556264d9100597023f44d9163e279012ecf" : "300a0adb47603dedb42228ccb2b211104f4da45af709cd7547cd049e9489c969"));
+		}
+	});
+
+	runTest("Hardware AES not supported", !HAVE_AES && !randomx::cpu.hasAes(), []() {
+		assert(randomx_create_vm(RANDOMX_FLAG_HARD_AES, cache, nullptr) == nullptr);
+	});
 
 	if (cache != nullptr)
 		randomx_release_cache(cache);
