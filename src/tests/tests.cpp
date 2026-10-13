@@ -175,6 +175,16 @@ int main() {
 		assert(equalsHex(state, "fa89397dd6ca422513aeadba3f124b5540324c4ad4b6db434394307a17c833ab"));
 	});
 
+	runTest("rx_cast_vec_f2i / rx_cast_vec_i2f", true, []() {
+		alignas(16) uint8_t in[16], out[16];
+		for (int i = 0; i < 16; ++i)
+			in[i] = (uint8_t)(0x11 * i + 1);
+		rx_store_vec_i128((rx_vec_i128*)out, rx_cast_vec_f2i(rx_load_vec_f128((const double*)in)));
+		assert(memcmp(in, out, sizeof(in)) == 0);
+		rx_store_vec_f128((double*)out, rx_cast_vec_i2f(rx_load_vec_i128((const rx_vec_i128*)in)));
+		assert(memcmp(in, out, sizeof(in)) == 0);
+	});
+
 	randomx::NativeRegisterFile reg;
 	randomx::BytecodeMachine decoder;
 	randomx::InstructionByteCode ibc;
