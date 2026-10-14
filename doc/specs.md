@@ -64,7 +64,7 @@ RandomX has several configurable parameters that are listed in Table 1.2.1 with 
 |`RANDOMX_SUPERSCALAR_LATENCY`|Target latency for SuperscalarHash (in cycles of the reference CPU)|`170`|
 |`RANDOMX_DATASET_BASE_SIZE`|Dataset base size in bytes|`2147483648`|
 |`RANDOMX_DATASET_EXTRA_SIZE`|Dataset extra size in bytes|`33554368`|
-|`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|`256`|
+|`RANDOMX_PROGRAM_SIZE`|The number of instructions in a RandomX program|v1: `256`, v2: `384`|
 |`RANDOMX_PROGRAM_ITERATIONS`|The number of iterations per program|`2048`|
 |`RANDOMX_PROGRAM_COUNT`|The number of programs per hash|`8`|
 |`RANDOMX_JUMP_BITS`|Jump condition mask size in bits|`8`|
@@ -332,7 +332,7 @@ Floating point registers `f0`-`f3` are the "additive" registers, which can be th
 
 Floating point registers `e0`-`e3` are the "multiplicative" registers, which can be the destination of floating point multiplication, division and square root instructions. Their value is always positive.
 
-`ma` and `mx` are the memory registers. Both are 32 bits wide. `ma` contains the memory address of the next Dataset read and `mx` contains the address of the next Dataset prefetch. The values of `ma` and `mx` registers are always aligned to be a multiple of 64.
+`ma` and `mx` are the memory registers. Both are 32 bits wide. `ma` contains the memory address of the next Dataset read and `mp` contains the address of the next Dataset prefetch. The values of `ma` and `mx` registers are always aligned to be a multiple of 64.
 
 The 2-bit `fprc` register determines the rounding mode of all floating point operations according to Table 4.3.1. The four rounding modes are defined by the IEEE 754 standard.
 
@@ -354,8 +354,8 @@ When an 8-byte value read from the memory is to be converted to an F group regis
 When an 8-byte value read from the memory is to be converted to an E group register value or operand, the same conversion procedure is applied as for F group registers (see 4.3.1) with additional post-processing steps for each of the two floating point values:
 
 1. The sign bit is set to `0`.
-2. Bits 0-2 of the exponent are set to the constant value of <code>011<sub>2</sub></code>.
-3. Bits 3-6 of the exponent are set to the value of the exponent mask described in chapter 4.5.6. This value is fixed for a given VM program.
+2. Bits 8-10 of the exponent are set to the constant value of <code>011<sub>2</sub></code>.
+3. Bits 4-7 of the exponent are set to the value of the exponent mask described in chapter 4.5.6. This value is fixed for a given VM program.
 4. The bottom 22 bits of the fraction significand are set to the value of the fraction mask described in chapter 4.5.6. This value is fixed for a given VM program.
 
 ### 4.4 Program buffer
@@ -449,7 +449,7 @@ The loop described below is repeated until the value of the `ic` register reache
 1. XOR of registers `readReg0` and `readReg1` (see Table 4.5.3) is calculated and `spAddr0` is XORed with the low 32 bits of the result and `spAddr1` with the high 32 bits.
 2. `spAddr0` is used to perform a 64-byte aligned read from Scratchpad level 3 (using mask from Table 4.2.1). The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
 3. `spAddr1` is used to perform a 64-byte aligned read from Scratchpad level 3 (using mask from Table 4.2.1). Each floating point register `f0`-`f3` and `e0`-`e3` is initialized using an 8-byte value according to the conversion rules from chapters 4.3.1 and 4.3.2.
-4. The 256 instructions stored in the Program Buffer are executed.
+4. The 256 (384 in v2) instructions stored in the Program Buffer are executed.
 5. The value of `ma` is saved in `mt`. Then the `mp` register is XORed with the low 32 bits of registers `readReg2` and `readReg3` (see Table 4.5.3).
 6. A 64-byte Dataset item at address `datasetOffset + mp % RANDOMX_DATASET_BASE_SIZE` is prefetched from the Dataset (it will be used during the next iteration(s)).
 7. A 64-byte Dataset item at address `datasetOffset + mt % RANDOMX_DATASET_BASE_SIZE` is loaded from the Dataset. The 64 bytes are XORed with all integer registers in order `r0`-`r7`.
@@ -668,8 +668,8 @@ There are 2 control instructions.
 
 |frequency|instruction|dst|src|operation|
 |-|-|-|-|-|
-|1/256|CFROUND|-|R|`fprc = src >>> imm32`
 |25/256|CBRANCH|R|-|`dst = dst + cimm`, conditional jump
+|1/256|CFROUND|-|R|`fprc = src >>> imm32` (conditional in RandomX v2)
 
 #### 5.4.1 CFROUND
 This instruction calculates a 2-bit value by rotating the source register right by `imm32` bits and taking the 2 least significant bits (the value of the source register is unaffected).
