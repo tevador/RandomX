@@ -319,6 +319,23 @@ if(ARCH_ID STREQUAL "riscv64")
   set_source_files_properties(src/jit_compiler_rv64_vector_static.S PROPERTIES COMPILE_FLAGS "-march=${RV64_VECTOR_FILE_ARCH}_zvkned")
   set_source_files_properties(src/aes_hash_rv64_vector.cpp PROPERTIES COMPILE_FLAGS "-O3 -march=${RV64_VECTOR_FILE_ARCH}")
   set_source_files_properties(src/aes_hash_rv64_zvkned.cpp PROPERTIES COMPILE_FLAGS "-O3 -march=${RV64_VECTOR_FILE_ARCH}_zvkned")
+
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state()
+  set(CMAKE_REQUIRED_FLAGS "-march=${RV64_VECTOR_FILE_ARCH}_zvkned")
+  check_cxx_source_compiles("
+#include <riscv_vector.h>
+int main() {
+  vuint32m1_t a = __riscv_vmv_v_x_u32m1(0, 8);
+  a = __riscv_vaesdm_vv_u32m1(__riscv_vaesem_vv_u32m1(a, a, 8), a, 8);
+  return __riscv_vmv_x_s_u32m1_u32(a);
+}" HAVE_ZVKNED_INTRINSICS)
+  cmake_pop_check_state()
+
+  if(NOT HAVE_ZVKNED_INTRINSICS)
+    set_source_files_properties(src/aes_hash_rv64_zvkned.cpp PROPERTIES COMPILE_DEFINITIONS NO_ZVKNED_INTRINSICS)
+  endif()
 endif()
 
 set(RANDOMX_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE STRING "RandomX Include path")

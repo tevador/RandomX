@@ -33,8 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <riscv_vector.h>
 
+#ifndef NO_ZVKNED_INTRINSICS
 static FORCE_INLINE vuint32m1_t aesenc_zvkned(vuint32m1_t a, vuint32m1_t b) { return __riscv_vaesem_vv_u32m1(a, b, 8); }
 static FORCE_INLINE vuint32m1_t aesdec_zvkned(vuint32m1_t a, vuint32m1_t b, vuint32m1_t zero) { return __riscv_vxor_vv_u32m1(__riscv_vaesdm_vv_u32m1(a, zero, 8), b, 8); }
+#else
+static FORCE_INLINE vuint32m1_t aesenc_zvkned(vuint32m1_t a, vuint32m1_t b) { asm("vsetivli zero, 8, e32, m1, ta, ma\n\tvaesem.vv %0, %1" : "+vr"(a) : "vr"(b) : "vl", "vtype"); return a; }
+static FORCE_INLINE vuint32m1_t aesdec_zvkned(vuint32m1_t a, vuint32m1_t b, vuint32m1_t zero) { asm("vsetivli zero, 8, e32, m1, ta, ma\n\tvaesdm.vv %0, %1" : "+vr"(a) : "vr"(zero) : "vl", "vtype"); return __riscv_vxor_vv_u32m1(a, b, 8); }
+#endif
 
 static constexpr uint32_t AES_HASH_1R_STATE02[8] = { 0x92b52c0d, 0x9fa856de, 0xcc82db47, 0xd7983aad, 0x6a770017, 0xae62c7d0, 0x5079506b, 0xe8a07ce4 };
 static constexpr uint32_t AES_HASH_1R_STATE13[8] = { 0x338d996e, 0x15c7b798, 0xf59e125a, 0xace78057, 0x630a240c, 0x07ad828d, 0x79a10005, 0x7e994948 };
