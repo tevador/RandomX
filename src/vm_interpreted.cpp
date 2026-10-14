@@ -106,10 +106,10 @@ namespace randomx {
 				}
 
 				for (unsigned i = 0; i < RegisterCountFlt; ++i) {
-					freg[0] = aesenc<softAes>(freg[0], ekey[i]);
-					freg[1] = aesdec<softAes>(freg[1], ekey[i]);
-					freg[2] = aesenc<softAes>(freg[2], ekey[i]);
-					freg[3] = aesdec<softAes>(freg[3], ekey[i]);
+					freg[0] = aesenc<softAes || !HAVE_AES>(freg[0], ekey[i]);
+					freg[1] = aesdec<softAes || !HAVE_AES>(freg[1], ekey[i]);
+					freg[2] = aesenc<softAes || !HAVE_AES>(freg[2], ekey[i]);
+					freg[3] = aesdec<softAes || !HAVE_AES>(freg[3], ekey[i]);
 				}
 
 				for (unsigned i = 0; i < RegisterCountFlt; ++i)
