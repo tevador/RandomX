@@ -203,8 +203,8 @@ RANDOMX_EXPORT randomx_vm *randomx_create_vm(randomx_flags flags, randomx_cache 
 
 /**
  * Reinitializes a virtual machine with a new Cache. This function should be called anytime
- * the Cache is reinitialized with a new key. Does nothing if called with a Cache containing
- * the same key value as already set.
+ * the Cache is reinitialized with a new key. Does nothing if called with the same Cache
+ * containing the same key value as already set.
  *
  * @param machine is a pointer to a randomx_vm structure that was initialized
  *        without RANDOMX_FLAG_FULL_MEM. Must not be NULL.

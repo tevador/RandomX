@@ -57,6 +57,9 @@ public:
 	const uint8_t* getMemory() const {
 		return mem.memory;
 	}
+	const randomx_cache* getCache() const {
+		return cachePtr;
+	}
 protected:
 	void initialize();
 	alignas(64) randomx::Program program;
