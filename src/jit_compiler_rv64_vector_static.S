@@ -55,6 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 .global DECL(randomx_riscv64_vector_sshash_begin)
 .global DECL(randomx_riscv64_vector_sshash_imul_rcp_literals)
+.hidden DECL(randomx_riscv64_vector_sshash_imul_rcp_literals)
 .global DECL(randomx_riscv64_vector_sshash_dataset_init)
 .global DECL(randomx_riscv64_vector_sshash_generated_instructions)
 .global DECL(randomx_riscv64_vector_sshash_generated_instructions_end)
@@ -67,6 +68,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_begin)
 .global DECL(randomx_riscv64_vector_program_v2_soft_aes_init)
 .global DECL(randomx_riscv64_vector_program_main_loop)
+.hidden DECL(randomx_riscv64_vector_program_main_loop)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor)
@@ -74,9 +76,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix)
 
 .global DECL(randomx_riscv64_vector_program_main_loop_light_mode_data)
+.hidden DECL(randomx_riscv64_vector_program_main_loop_light_mode_data)
 .global DECL(randomx_riscv64_vector_program_main_loop_instructions_end_light_mode)
 .global DECL(randomx_riscv64_vector_program_main_loop_mx_xor_light_mode)
 .global DECL(randomx_riscv64_vector_program_scratchpad_prefetch)
+.hidden DECL(randomx_riscv64_vector_program_scratchpad_prefetch)
 
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v1)
 .global DECL(randomx_riscv64_vector_program_main_loop_fe_mix_v2_soft_aes)
