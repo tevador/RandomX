@@ -15,6 +15,7 @@
 #include "../intrin_portable.h"
 #include "../jit_compiler.hpp"
 #include "../aes_hash.hpp"
+#include "../virtual_machine.hpp"
 
 randomx_cache* cache;
 randomx_vm* vm = nullptr;
@@ -1027,6 +1028,14 @@ int main() {
 	runTest("Hash test 1e (interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_e);
 
 	runTest("Hash test 1f (ISUB_R edge case, interpreter)", stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), test_f);
+
+	runTest("randomx_vm_set_cache (same key, new cache)", true, []() {
+		randomx_cache copy = *cache;
+		randomx_vm_set_cache(vm, &copy);
+		assert(vm->getCache() == &copy);
+		randomx_vm_set_cache(vm, cache);
+		assert(vm->getCache() == cache);
+	});
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_release_cache(cache);
