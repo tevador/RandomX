@@ -390,5 +390,9 @@ int main() {
   return posix_memalign(&p, 64, 64);
 }" HAVE_POSIX_MEMALIGN)
 
+if(HAVE_POSIX_MEMALIGN)
+  add_definitions(-DHAVE_POSIX_MEMALIGN)
+endif()
+
 set_property(TARGET randomx-benchmark PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx-benchmark PROPERTY CXX_STANDARD 11)
