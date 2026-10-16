@@ -110,17 +110,20 @@ JitCompilerA64::~JitCompilerA64()
 
 void JitCompilerA64::enableWriting()
 {
-	setPagesRW(code, CodeSize + CalcDatasetItemSize);
+	if (setPagesRW(code, CodeSize + CalcDatasetItemSize))
+		throw std::runtime_error("setPagesRW");
 }
 
 void JitCompilerA64::enableExecution()
 {
-	setPagesRX(code, CodeSize + CalcDatasetItemSize);
+	if (setPagesRX(code, CodeSize + CalcDatasetItemSize))
+		throw std::runtime_error("setPagesRX");
 }
 
 void JitCompilerA64::enableAll()
 {
-	setPagesRWX(code, CodeSize + CalcDatasetItemSize);
+	if (setPagesRWX(code, CodeSize + CalcDatasetItemSize))
+		throw std::runtime_error("setPagesRWX");
 }
 
 void JitCompilerA64::generateProgram(Program& program, ProgramConfiguration& config)

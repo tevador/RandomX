@@ -236,15 +236,18 @@ namespace randomx {
 	}
 
 	void JitCompilerX86::enableAll() {
-		setPagesRWX(code, CodeSize);
+		if (setPagesRWX(code, CodeSize))
+			throw std::runtime_error("setPagesRWX");
 	}
 
 	void JitCompilerX86::enableWriting() {
-		setPagesRW(code, CodeSize);
+		if (setPagesRW(code, CodeSize))
+			throw std::runtime_error("setPagesRW");
 	}
 
 	void JitCompilerX86::enableExecution() {
-		setPagesRX(code, CodeSize);
+		if (setPagesRX(code, CodeSize))
+			throw std::runtime_error("setPagesRX");
 	}
 
 	void JitCompilerX86::generateProgram(Program& prog, ProgramConfiguration& pcfg) {
