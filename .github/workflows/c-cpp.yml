@@ -2,90 +2,73 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build-alpine:
 
     timeout-minutes: 15
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
+      fail-fast: false
       matrix:
-        config:
-          - {arch: x86_64, branch: latest-stable}
-          - {arch: x86, branch: latest-stable}
-          - {arch: aarch64, branch: latest-stable}
-          - {arch: armhf, branch: latest-stable}
-          - {arch: armv7, branch: latest-stable}
-          - {arch: ppc64le, branch: latest-stable}
-          - {arch: riscv64, branch: latest-stable}
-          - {arch: s390x, branch: latest-stable}
+        arch: [x86_64, x86, aarch64, armhf, armv7, ppc64le, riscv64, s390x]
 
     steps:
-    - name: Setup Alpine Linux
+    - name: Check out repository
+      uses: actions/checkout@v7
+
+    - name: Set up Alpine Linux
       uses: jirutka/setup-alpine@v1
       with:
-        arch: ${{ matrix.config.arch }}
-        branch: ${{ matrix.config.branch }}
-
-    - name: Install dependencies
-      shell: alpine.sh --root {0}
-      run: |
-        apk add git cmake gcc g++ make
-
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: true
+        arch: ${{ matrix.arch }}
+        packages: build-base cmake
+        apk-tools-url: https://gitlab.alpinelinux.org/api/v4/projects/5/packages/generic/v3.0.8/x86_64/apk.static#!sha256!11758d76de3699c7606152357f415f55879743ccf0e3d8942d5ba98cf29a3c86
 
     - name: Build RandomX
       shell: alpine.sh {0}
       run: |
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DARCH=native
-        make -j$(nproc)
+        cmake -B build -DARCH=native
+        cmake --build build --parallel "$(nproc)"
 
     - name: Run tests
       shell: alpine.sh {0}
-      run: |
-        build/randomx-tests
+      run: build/randomx-tests
 
   build-ubuntu:
 
     timeout-minutes: 5
-    runs-on: ${{ matrix.config.os }}
+    runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
-        config:
-          - {os: ubuntu-24.04, c: gcc-14, cpp: g++-14}
-          - {os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14}
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+
+    env:
+      CC: gcc-14
+      CXX: g++-14
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        sudo apt update
-        sudo apt install -y git build-essential cmake ${{ matrix.config.c }} ${{ matrix.config.cpp }}
-
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: true
+    - name: Check out repository
+      uses: actions/checkout@v7
 
     - name: Build RandomX
       run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc)
+        cmake -B build
+        cmake --build build --parallel "$(nproc)"
 
     - name: Run tests
-      run: |
-        build/randomx-tests
+      run: build/randomx-tests
 
   build-windows-msys2:
 
@@ -93,68 +76,60 @@ jobs:
     runs-on: windows-latest
 
     strategy:
+      fail-fast: false
       matrix:
         config:
-          - {c: "gcc", cxx: "g++"}
-          - {c: "clang", cxx: "clang++"}
+          - {c: gcc, cxx: g++}
+          - {c: clang, cxx: clang++}
+
+    env:
+      CC: ${{ matrix.config.c }}
+      CXX: ${{ matrix.config.cxx }}
 
     defaults:
       run:
         shell: msys2 {0}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+    - name: Check out repository
+      uses: actions/checkout@v7
 
-    - name: Setup MSYS2
-      uses: eine/setup-msys2@v2
+    - name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
       with:
+        msystem: UCRT64
         update: true
-        install: mingw-w64-x86_64-toolchain mingw-w64-x86_64-clang mingw-w64-x86_64-lld mingw-w64-x86_64-cmake make
+        pacboy: toolchain:p ${{ matrix.config.c }}:p cmake:p ninja:p
 
     - name: Build RandomX
       run: |
-        mkdir build
-        cd build
-        cmake .. -G "Unix Makefiles" -DCMAKE_C_COMPILER=${{ matrix.config.c }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx }}
-        make -j$(nproc)
+        cmake -B build -G Ninja
+        cmake --build build
 
     - name: Run tests
-      run: |
-        build/randomx-tests.exe
+      run: build/randomx-tests.exe
 
   build-windows-msbuild:
 
     timeout-minutes: 5
-    runs-on: windows-${{ matrix.config.os }}
+    runs-on: windows-2022
 
     strategy:
+      fail-fast: false
       matrix:
-        config:
-          - {arch: x64, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\amd64\\"}
-          - {arch: Win32, os: 2022, vs: Visual Studio 17 2022, msbuild: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Msbuild\\Current\\Bin\\"}
+        arch: [x64, Win32]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-
-    - name: Setup cmake
-      uses: lukka/get-cmake@latest
+    - name: Check out repository
+      uses: actions/checkout@v7
 
     - name: Build RandomX
       run: |
-        mkdir build
-        cd build
-        cmake .. -G "${{ matrix.config.vs }}" -A ${{ matrix.config.arch }}
-        & "${{ matrix.config.msbuild }}msbuild" -v:m /m /p:Configuration=Release randomx-tests.vcxproj
+        cmake -B build -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
+        cmake --build build --config Release --target randomx-tests --parallel
 
     - name: Run tests
-      run: |
-        build/Release/randomx-tests.exe
+      run: build/Release/randomx-tests.exe
 
   build-macos:
 
@@ -162,62 +137,52 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-15, macos-15-intel]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+    - name: Check out repository
+      uses: actions/checkout@v7
 
     - name: Build RandomX
       run: |
-        mkdir build
-        cd build
-        cmake ..
-        make -j4
+        cmake -B build
+        cmake --build build --parallel 4
 
     - name: Run tests
-      run: |
-        build/randomx-tests
+      run: build/randomx-tests
 
   build-freebsd:
 
     timeout-minutes: 15
-    runs-on: ${{ matrix.os.host }}
+    runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        os:
-          - name: freebsd
-            architecture: x86-64
-            version: '13.3'
-            host: ubuntu-latest
-
-          - name: freebsd
-            architecture: arm64
-            version: '13.3'
-            host: ubuntu-latest
+        arch: [x86-64, arm64]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
+    - name: Check out repository
+      uses: actions/checkout@v7
 
-    - name: Build RandomX
-      uses: cross-platform-actions/action@v0.24.0
+    - name: Start FreeBSD
+      uses: cross-platform-actions/action@v1.6.0
       with:
-        operating_system: ${{ matrix.os.name }}
-        architecture: ${{ matrix.os.architecture }}
-        version: ${{ matrix.os.version }}
+        operating_system: freebsd
+        architecture: ${{ matrix.arch }}
+        version: '14.5'
         memory: 12G
         cpu_count: 4
-        shell: bash
-        run: |
-          sudo pkg install -y cmake
-          mkdir build && cd build
-          cmake ..
-          make -j2
-          ./randomx-tests
+
+    - name: Build RandomX
+      shell: cpa.sh {0} --sync-files runner-to-vm
+      run: |
+        sudo pkg install -y cmake
+        cmake -B build
+        cmake --build build --parallel 4
+
+    - name: Run tests
+      shell: cpa.sh {0} --sync-files none
+      run: build/randomx-tests
