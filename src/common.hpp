@@ -138,6 +138,11 @@ namespace randomx {
 	#define RANDOMX_COMPILER_RV64
 	class JitCompilerRV64;
 	using JitCompiler = JitCompilerRV64;
+#elif defined(__loongarch__) && (__SIZEOF_POINTER__ == 8)
+	#define RANDOMX_HAVE_COMPILER 1
+	#define RANDOMX_COMPILER_LA64
+	class JitCompilerLa64;
+	using JitCompiler = JitCompilerLa64;
 #else
 	#define RANDOMX_HAVE_COMPILER 0
 	class JitCompilerFallback;

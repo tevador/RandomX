@@ -304,11 +304,6 @@ extern "C" const uint32_t randomx_aes_lut_dec[4][256] = {
 	0x397101a8, 0x08deb30c, 0xd89ce4b4, 0x6490c156, 0x7b6184cb, 0xd570b632, 0x48745c6c, 0xd04257b8,
 } };
 
-#define lutEnc0 randomx_aes_lut_enc[0]
-#define lutEnc1 randomx_aes_lut_enc[1]
-#define lutEnc2 randomx_aes_lut_enc[2]
-#define lutEnc3 randomx_aes_lut_enc[3]
-
 extern "C" alignas(16) const uint8_t randomx_aes_lut_enc_index[4][32] = {
 	{ 0, 255, 255, 255, 4, 255, 255, 255, 8, 255, 255, 255, 12, 255, 255, 255, 16, 255, 255, 255, 20, 255, 255, 255, 24, 255, 255, 255, 28, 255, 255, 255 },
 	{ 5, 255, 255, 255, 9, 255, 255, 255, 13, 255, 255, 255, 1, 255, 255, 255, 21, 255, 255, 255, 25, 255, 255, 255, 29, 255, 255, 255, 17, 255, 255, 255 },
@@ -322,44 +317,3 @@ extern "C" alignas(16) const uint8_t randomx_aes_lut_dec_index[4][32] = {
 	{ 10, 255, 255, 255, 14, 255, 255, 255, 2, 255, 255, 255, 6, 255, 255, 255, 26, 255, 255, 255, 30, 255, 255, 255, 18, 255, 255, 255, 22, 255, 255, 255 },
 	{ 7, 255, 255, 255, 11, 255, 255, 255, 15, 255, 255, 255, 3, 255, 255, 255, 23, 255, 255, 255, 27, 255, 255, 255, 31, 255, 255, 255, 19, 255, 255, 255 }
 };
-
-rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key) {
-	uint32_t s0, s1, s2, s3;
-
-	s0 = rx_vec_i128_w(in);
-	s1 = rx_vec_i128_z(in);
-	s2 = rx_vec_i128_y(in);
-	s3 = rx_vec_i128_x(in);
-
-	rx_vec_i128 out = rx_set_int_vec_i128(
-		(lutEnc0[s0 & 0xff] ^ lutEnc1[(s3 >> 8) & 0xff] ^ lutEnc2[(s2 >> 16) & 0xff] ^ lutEnc3[s1 >> 24]),
-		(lutEnc0[s1 & 0xff] ^ lutEnc1[(s0 >> 8) & 0xff] ^ lutEnc2[(s3 >> 16) & 0xff] ^ lutEnc3[s2 >> 24]),
-		(lutEnc0[s2 & 0xff] ^ lutEnc1[(s1 >> 8) & 0xff] ^ lutEnc2[(s0 >> 16) & 0xff] ^ lutEnc3[s3 >> 24]),
-		(lutEnc0[s3 & 0xff] ^ lutEnc1[(s2 >> 8) & 0xff] ^ lutEnc2[(s1 >> 16) & 0xff] ^ lutEnc3[s0 >> 24])
-	);
-
-	return rx_xor_vec_i128(out, key);
-}
-
-#define lutDec0 randomx_aes_lut_dec[0]
-#define lutDec1 randomx_aes_lut_dec[1]
-#define lutDec2 randomx_aes_lut_dec[2]
-#define lutDec3 randomx_aes_lut_dec[3]
-
-rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key) {
-	uint32_t s0, s1, s2, s3;
-
-	s0 = rx_vec_i128_w(in);
-	s1 = rx_vec_i128_z(in);
-	s2 = rx_vec_i128_y(in);
-	s3 = rx_vec_i128_x(in);
-
-	rx_vec_i128 out = rx_set_int_vec_i128(
-		(lutDec0[s0 & 0xff] ^ lutDec1[(s1 >> 8) & 0xff] ^ lutDec2[(s2 >> 16) & 0xff] ^ lutDec3[s3 >> 24]),
-		(lutDec0[s1 & 0xff] ^ lutDec1[(s2 >> 8) & 0xff] ^ lutDec2[(s3 >> 16) & 0xff] ^ lutDec3[s0 >> 24]),
-		(lutDec0[s2 & 0xff] ^ lutDec1[(s3 >> 8) & 0xff] ^ lutDec2[(s0 >> 16) & 0xff] ^ lutDec3[s1 >> 24]),
-		(lutDec0[s3 & 0xff] ^ lutDec1[(s0 >> 8) & 0xff] ^ lutDec2[(s1 >> 16) & 0xff] ^ lutDec3[s2 >> 24])
-	);
-
-	return rx_xor_vec_i128(out, key);
-}
