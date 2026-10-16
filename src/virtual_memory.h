@@ -39,6 +39,7 @@ extern "C" {
 void* allocMemoryPages(size_t);
 void setPagesRW(void*, size_t);
 void setPagesRX(void*, size_t);
+void setPagesRXKeepIcache(void*, size_t);
 void setPagesRWX(void*, size_t);
 void* allocLargePagesMemory(size_t);
 void freePagedMemory(void*, size_t);
