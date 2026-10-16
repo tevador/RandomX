@@ -653,24 +653,24 @@ namespace randomx {
 	}
 
 	void JitCompilerRV64::enableAll() {
-		setPagesRWX(entryDataInit, ExecutableSize);
-		if (vectorCode) {
-			setPagesRWX(vectorCode, vectorCodeSize);
-		}
+		if (setPagesRWX(entryDataInit, ExecutableSize))
+			throw std::runtime_error("setPagesRWX");
+		if (vectorCode && setPagesRWX(vectorCode, vectorCodeSize))
+			throw std::runtime_error("setPagesRWX");
 	}
 
 	void JitCompilerRV64::enableWriting() {
-		setPagesRW(entryDataInit, ExecutableSize);
-		if (vectorCode) {
-			setPagesRW(vectorCode, vectorCodeSize);
-		}
+		if (setPagesRW(entryDataInit, ExecutableSize))
+			throw std::runtime_error("setPagesRW");
+		if (vectorCode && setPagesRW(vectorCode, vectorCodeSize))
+			throw std::runtime_error("setPagesRW");
 	}
 
 	void JitCompilerRV64::enableExecution() {
-		setPagesRX(entryDataInit, ExecutableSize);
-		if (vectorCode) {
-			setPagesRX(vectorCode, vectorCodeSize);
-		}
+		if (setPagesRX(entryDataInit, ExecutableSize))
+			throw std::runtime_error("setPagesRX");
+		if (vectorCode && setPagesRX(vectorCode, vectorCodeSize))
+			throw std::runtime_error("setPagesRX");
 	}
 
 	void JitCompilerRV64::generateProgram(Program& prog, ProgramConfiguration& pcfg) {

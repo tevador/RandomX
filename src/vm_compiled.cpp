@@ -36,7 +36,10 @@ namespace randomx {
 
 	template<class Allocator, bool softAes, bool secureJit>
 	CompiledVm<Allocator, softAes, secureJit>::CompiledVm(randomx_flags flags) : VmBase<Allocator, softAes>(flags) {
-		if (!secureJit) {
+		if (secureJit) {
+			compiler.enableExecution();
+		}
+		else {
 			compiler.enableAll(); //make JIT buffer both writable and executable
 		}
 		compiler.setFlags(flags);
