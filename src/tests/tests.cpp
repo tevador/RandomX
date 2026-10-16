@@ -169,7 +169,7 @@ int main() {
 	});
 
 	runTest("AesGenerator1R", true, []() {
-		char state[64] = { 0 };
+		alignas(16) char state[64] = { 0 };
 		hex2bin("6c19536eb2de31b6c0065f7f116e86f960d8af0c57210a6584c3237b9d064dc7", 64, state);
 		fillAes1Rx4<true>(state, sizeof(state), state);
 		assert(equalsHex(state, "fa89397dd6ca422513aeadba3f124b5540324c4ad4b6db434394307a17c833ab"));
