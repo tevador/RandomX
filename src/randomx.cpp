@@ -88,6 +88,7 @@ extern "C" {
 				case RANDOMX_FLAG_JIT:
 					cache->dealloc = &randomx::deallocCache<randomx::DefaultAllocator>;
 					cache->jit = new randomx::JitCompiler();
+					cache->jit->enableExecution();
 					cache->initialize = &randomx::initCacheCompile;
 					cache->datasetInit = cache->jit->getDatasetInitFunc();
 					cache->memory = (uint8_t*)randomx::DefaultAllocator::allocMemory(randomx::CacheSize);
@@ -104,6 +105,7 @@ extern "C" {
 				case RANDOMX_FLAG_JIT | RANDOMX_FLAG_LARGE_PAGES:
 					cache->dealloc = &randomx::deallocCache<randomx::LargePageAllocator>;
 					cache->jit = new randomx::JitCompiler();
+					cache->jit->enableExecution();
 					cache->initialize = &randomx::initCacheCompile;
 					cache->datasetInit = cache->jit->getDatasetInitFunc();
 					cache->memory = (uint8_t*)randomx::LargePageAllocator::allocMemory(randomx::CacheSize);
