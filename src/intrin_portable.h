@@ -205,7 +205,23 @@ typedef union{
 	int i32[4];
 } vec_u;
 
+#ifdef HAVE_POSIX_MEMALIGN
+#include <stdlib.h>
+
+inline void* rx_aligned_alloc(size_t size, size_t align) {
+	void* p;
+	if (posix_memalign(&p, align, size) == 0)
+		return p;
+
+	return 0;
+};
+
+#else // HAVE_POSIX_MEMALIGN
+
 #define rx_aligned_alloc(a, b) malloc(a)
+
+#endif // HAVE_POSIX_MEMALIGN
+
 #define rx_aligned_free(a) free(a)
 #define rx_prefetch_nta(x)
 #define rx_prefetch_t0(x)
