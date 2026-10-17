@@ -94,6 +94,7 @@ void printUsage(const char* executable) {
 	std::cout << "  --seed S      seed for cache initialization (default: 0)" << std::endl;
 	std::cout << "  --ssse3       use optimized Argon2 for SSSE3 CPUs" << std::endl;
 	std::cout << "  --avx2        use optimized Argon2 for AVX2 CPUs" << std::endl;
+	std::cout << "  --avx512      use optimized Argon2 for AVX-512F CPUs" << std::endl;
 	std::cout << "  --auto        select the best options for the current CPU" << std::endl;
 	std::cout << "  --noBatch     calculate hashes one by one (default: batch)" << std::endl;
 	std::cout << "  --commit      calculate commitments instead of hashes (default: hashes)" << std::endl;
@@ -152,7 +153,7 @@ void mine(randomx_vm* vm, std::atomic<uint32_t>& atomicNonce, AtomicHash& result
 
 int main(int argc, char** argv) {
 	bool softAes, miningMode, verificationMode, help, largePages, jit, secure, commit, v2;
-	bool ssse3, avx2, autoFlags, noBatch;
+	bool ssse3, avx2, avx512, autoFlags, noBatch;
 	int noncesCount, threadCount, initThreadCount;
 	uint64_t threadAffinity;
 	int32_t seedValue;
@@ -175,6 +176,7 @@ int main(int argc, char** argv) {
 	readOption("--secure", argc, argv, secure);
 	readOption("--ssse3", argc, argv, ssse3);
 	readOption("--avx2", argc, argv, avx2);
+	readOption("--avx512", argc, argv, avx512);
 	readOption("--auto", argc, argv, autoFlags);
 	readOption("--noBatch", argc, argv, noBatch);
 	readOption("--commit", argc, argv, commit);
@@ -215,6 +217,9 @@ int main(int argc, char** argv) {
 		if (avx2) {
 			flags |= RANDOMX_FLAG_ARGON2_AVX2;
 		}
+		if (avx512) {
+			flags |= RANDOMX_FLAG_ARGON2_AVX512;
+		}
 		if (!softAes) {
 			flags |= RANDOMX_FLAG_HARD_AES;
 		}
@@ -242,7 +247,10 @@ int main(int argc, char** argv) {
 		flags |= RANDOMX_FLAG_V2;
 	}
 
-	if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
+	if (flags & RANDOMX_FLAG_ARGON2_AVX512) {
+		std::cout << " - Argon2 implementation: AVX-512F" << std::endl;
+	}
+	else if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
 		std::cout << " - Argon2 implementation: AVX2" << std::endl;
 	}
 	else if (flags & RANDOMX_FLAG_ARGON2_SSSE3) {

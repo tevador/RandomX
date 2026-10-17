@@ -92,6 +92,9 @@ namespace randomx {
 	void initDataset(randomx_cache* cache, uint8_t* dataset, uint32_t startBlock, uint32_t endBlock);
 
 	inline randomx_argon2_impl* selectArgonImpl(randomx_flags flags) {
+		if (flags & RANDOMX_FLAG_ARGON2_AVX512) {
+			return randomx_argon2_impl_avx512();
+		}
 		if (flags & RANDOMX_FLAG_ARGON2_AVX2) {
 			return randomx_argon2_impl_avx2();
 		}
