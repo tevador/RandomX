@@ -32,7 +32,11 @@
 #endif
 
 	.arch armv8-a+crypto
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+	.section .rodata,"a",%progbits
+#else
 	.text
+#endif
 	.global DECL(randomx_program_aarch64)
 	.global DECL(randomx_program_aarch64_main_loop)
 	.global DECL(randomx_program_aarch64_vm_instructions)
