@@ -67,7 +67,7 @@ namespace randomx {
 
 	template<class Allocator, bool softAes, bool secureJit>
 	void CompiledVm<Allocator, softAes, secureJit>::execute() {
-#if defined(__aarch64__) || defined(__riscv)
+#if defined(__aarch64__) || defined(__riscv) || defined(__loongarch__)
 		memcpy(reg.f, config.eMask, sizeof(config.eMask));
 #endif
 		compiler.getProgramFunc()(reg, mem, scratchpad, RANDOMX_PROGRAM_ITERATIONS);
