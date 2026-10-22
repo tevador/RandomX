@@ -867,6 +867,8 @@ randomx_riscv64_vector_program_main_loop_end:
 
 	ret
 
+.balign 8
+
 DECL(randomx_riscv64_vector_program_main_loop_light_mode_data):
 	// 1) Pointer to the scalar dataset init function
 	// 2) Dataset offset
