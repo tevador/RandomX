@@ -176,8 +176,8 @@ DECL(randomx_program_aarch64):
 	mrs	x8, fpcr
 	rbit	x8, x8
 
-	# Save x0
-	str	x0, [sp, -16]!
+	# Save x0 and reserve stack space for light mode
+	str	x0, [sp, -112]!
 
 	# Read literals
 	ldr	x0, literal_x0
@@ -464,7 +464,7 @@ randomx_program_aarch64_FE_store:
 	bne	DECL(randomx_program_aarch64_main_loop)
 	
 	# Restore x0
-	ldr	x0, [sp], 16
+	ldr	x0, [sp], 112
 
 	# Store integer registers
 	stp	x4, x5, [x0, 0]
@@ -496,9 +496,8 @@ randomx_program_aarch64_FE_store:
 	ret
 
 DECL(randomx_program_aarch64_vm_instructions_end_light):
-	sub	sp, sp, 96
-	stp	x0, x1, [sp, 64]
-	stp	x2, x30, [sp, 80]
+	stp	x0, x1, [sp, 80]
+	stp	x2, x30, [sp, 96]
 
 	lsr	x2, x9, 32
 
@@ -517,7 +516,7 @@ DECL(randomx_program_aarch64_vm_instructions_end_light_tweak):
 	mov	x0, x1
 
 	# x1 -> pointer to output
-	mov	x1, sp
+	add	x1, sp, 16
 
 	# x2 -> item number
 	lsr	x2, x2, 6
@@ -529,10 +528,9 @@ DECL(randomx_program_aarch64_light_dataset_offset):
 
 	bl	rx_calc_dataset_item
 
-	mov	x10, sp
-	ldp	x0, x1, [sp, 64]
-	ldp	x2, x30, [sp, 80]
-	add	sp, sp, 96
+	add	x10, sp, 16
+	ldp	x0, x1, [sp, 80]
+	ldp	x2, x30, [sp, 96]
 
 	b	rx_program_xor_with_dataset_line
 
