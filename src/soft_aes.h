@@ -37,9 +37,51 @@ extern "C" const uint32_t randomx_aes_lut_dec[4][256];
 extern "C" const uint8_t randomx_aes_lut_enc_index[4][32];
 extern "C" const uint8_t randomx_aes_lut_dec_index[4][32];
 
-rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key);
+/*
+ * The soft AES rounds live in this header so the streaming loops of
+ * aes_hash.cpp can inline them: the table lookups of one round then
+ * overlap with the loads and stores of the neighbouring rounds.
+ * Without the inlining the call overhead dominates on machines
+ * without a hardware AES unit (measured on Loongson 3A6000: the
+ * hash+fill pass over the 2 MiB scratchpad runs about three times
+ * faster with these two functions inlined).
+ */
 
-rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key);
+FORCE_INLINE rx_vec_i128 soft_aesenc(rx_vec_i128 in, rx_vec_i128 key) {
+	uint32_t s0, s1, s2, s3;
+
+	s0 = rx_vec_i128_w(in);
+	s1 = rx_vec_i128_z(in);
+	s2 = rx_vec_i128_y(in);
+	s3 = rx_vec_i128_x(in);
+
+	rx_vec_i128 out = rx_set_int_vec_i128(
+		(randomx_aes_lut_enc[0][s0 & 0xff] ^ randomx_aes_lut_enc[1][(s3 >> 8) & 0xff] ^ randomx_aes_lut_enc[2][(s2 >> 16) & 0xff] ^ randomx_aes_lut_enc[3][s1 >> 24]),
+		(randomx_aes_lut_enc[0][s1 & 0xff] ^ randomx_aes_lut_enc[1][(s0 >> 8) & 0xff] ^ randomx_aes_lut_enc[2][(s3 >> 16) & 0xff] ^ randomx_aes_lut_enc[3][s2 >> 24]),
+		(randomx_aes_lut_enc[0][s2 & 0xff] ^ randomx_aes_lut_enc[1][(s1 >> 8) & 0xff] ^ randomx_aes_lut_enc[2][(s0 >> 16) & 0xff] ^ randomx_aes_lut_enc[3][s3 >> 24]),
+		(randomx_aes_lut_enc[0][s3 & 0xff] ^ randomx_aes_lut_enc[1][(s2 >> 8) & 0xff] ^ randomx_aes_lut_enc[2][(s1 >> 16) & 0xff] ^ randomx_aes_lut_enc[3][s0 >> 24])
+	);
+
+	return rx_xor_vec_i128(out, key);
+}
+
+FORCE_INLINE rx_vec_i128 soft_aesdec(rx_vec_i128 in, rx_vec_i128 key) {
+	uint32_t s0, s1, s2, s3;
+
+	s0 = rx_vec_i128_w(in);
+	s1 = rx_vec_i128_z(in);
+	s2 = rx_vec_i128_y(in);
+	s3 = rx_vec_i128_x(in);
+
+	rx_vec_i128 out = rx_set_int_vec_i128(
+		(randomx_aes_lut_dec[0][s0 & 0xff] ^ randomx_aes_lut_dec[1][(s1 >> 8) & 0xff] ^ randomx_aes_lut_dec[2][(s2 >> 16) & 0xff] ^ randomx_aes_lut_dec[3][s3 >> 24]),
+		(randomx_aes_lut_dec[0][s1 & 0xff] ^ randomx_aes_lut_dec[1][(s2 >> 8) & 0xff] ^ randomx_aes_lut_dec[2][(s3 >> 16) & 0xff] ^ randomx_aes_lut_dec[3][s0 >> 24]),
+		(randomx_aes_lut_dec[0][s2 & 0xff] ^ randomx_aes_lut_dec[1][(s3 >> 8) & 0xff] ^ randomx_aes_lut_dec[2][(s0 >> 16) & 0xff] ^ randomx_aes_lut_dec[3][s1 >> 24]),
+		(randomx_aes_lut_dec[0][s3 & 0xff] ^ randomx_aes_lut_dec[1][(s0 >> 8) & 0xff] ^ randomx_aes_lut_dec[2][(s1 >> 16) & 0xff] ^ randomx_aes_lut_dec[3][s2 >> 24])
+	);
+
+	return rx_xor_vec_i128(out, key);
+}
 
 template<bool soft>
 inline rx_vec_i128 aesenc(rx_vec_i128 in, rx_vec_i128 key) {
