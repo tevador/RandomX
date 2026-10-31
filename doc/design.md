@@ -471,7 +471,7 @@ The following figure shows the distribution of times to calculate 1 hash result 
 
 The average entropy of the Scratchpad after 8 program executions was approximated using the LZMA compression algorithm:
 
-1. Hash resuls were calculated and the final scratchpads were written to disk as files with '.spad' extension (source code: [scratchpad-entropy.cpp](../src/tests/scratchpad-entropy.cpp))
+1. Hash results were calculated and the final scratchpads were written to disk as files with '.spad' extension (source code: [scratchpad-entropy.cpp](../src/tests/scratchpad-entropy.cpp))
 2. The files were compressed using 7-Zip [[29](https://www.7-zip.org/)] in Ultra compression mode: `7z.exe a -t7z -m0=lzma2 -mx=9 scratchpads.7z *.spad`
 
 The size of the resulting archive is approximately 99.98% of the uncompressed size of the scratchpad files. This shows that the Scratchpad retains high entropy during VM execution.
@@ -484,7 +484,7 @@ The following figure shows the sensitivity of SuperscalarHash to changing a sing
 
 ![Imgur](https://i.imgur.com/ztZ0V0G.png)
 
-This shows that SuperscalaHash has quite low sensitivity to high-order bits and somewhat decreased sensitivity to the lowest-order bits. Sensitivity is highest for bits 3-53 (inclusive).
+This shows that SuperscalarHash has quite low sensitivity to high-order bits and somewhat decreased sensitivity to the lowest-order bits. Sensitivity is highest for bits 3-53 (inclusive).
 
 When calculating a Dataset item, the input of the first SuperscalarHash depends only on the item number. To ensure a good distribution of results, the constants described in section 7.3 of the Specification were chosen to provide unique values of bits 3-53 for *all* item numbers in the range 0-34078718 (the Dataset contains 34078719 items). All initial register values for all Dataset item numbers were checked to make sure bits 3-53 of each register are unique and there are no collisions (source code: [superscalar-init.cpp](../src/tests/superscalar-init.cpp)). While this is not strictly necessary to get unique output from SuperscalarHash, it's a security precaution that mitigates the non-perfect avalanche properties of the randomly generated SuperscalarHash instances.
 
