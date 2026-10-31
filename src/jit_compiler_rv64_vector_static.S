@@ -43,7 +43,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define DECL(x) x
 
+#if defined(__ELF__)
+.section .rodata
+#else
 .text
+#endif
 
 #ifndef __riscv_v
 #error This file requires rv64gcv

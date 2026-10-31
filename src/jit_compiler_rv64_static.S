@@ -28,7 +28,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define DECL(x) x
 
+#if defined(__ELF__)
+.section .rodata
+#else
 .text
+#endif
 .option rvc
 
 #include "configuration.h"
