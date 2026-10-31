@@ -37,6 +37,8 @@ namespace randomx {
 		inline bool hasAes() const { return aes_; }
 		inline bool hasSsse3() const { return ssse3_; }
 		inline bool hasAvx2() const { return avx2_; }
+		/// Specifically AVX-512F
+		inline bool hasAvx512() const { return avx512_; }
 #ifdef __riscv
 		inline bool hasRVV() const { return rvv_; }
 		inline int getRVV_Length() const { return rvv_length; }
@@ -46,6 +48,7 @@ namespace randomx {
 		bool aes_ = false;
 		bool ssse3_ = false;
 		bool avx2_ = false;
+		bool avx512_ = false;
 #ifdef __riscv
 		bool rvv_ = false;
 		int rvv_length = 0;

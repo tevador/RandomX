@@ -35,6 +35,7 @@ src/aes_hash.cpp
 src/argon2_ref.c
 src/argon2_ssse3.c
 src/argon2_avx2.c
+src/argon2_avx512.c
 src/bytecode_machine.cpp
 src/cpu.cpp
 src/dataset.cpp
@@ -107,6 +108,7 @@ if ((CMAKE_SIZEOF_VOID_P EQUAL 8) AND (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STRE
     set_property(SOURCE src/jit_compiler_x86_static.asm PROPERTY LANGUAGE ASM_MASM)
 
     set_source_files_properties(src/argon2_avx2.c COMPILE_FLAGS /arch:AVX2)
+    set_source_files_properties(src/argon2_avx512.c COMPILE_FLAGS /arch:AVX512)
 
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} /DRELWITHDEBINFO")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /DRELWITHDEBINFO")
@@ -136,6 +138,10 @@ if ((CMAKE_SIZEOF_VOID_P EQUAL 8) AND (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STRE
       check_c_compiler_flag(-mavx2 HAVE_AVX2)
       if(HAVE_AVX2)
         set_source_files_properties(src/argon2_avx2.c COMPILE_FLAGS -mavx2)
+      endif()
+      check_c_compiler_flag(-mavx512f HAVE_AVX512F)
+      if(HAVE_AVX512F)
+        set_source_files_properties(src/argon2_avx512.c COMPILE_FLAGS -mavx512f)
       endif()
     endif()
   endif()
