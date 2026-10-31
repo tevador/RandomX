@@ -1250,7 +1250,12 @@ int main() {
 		}
 	});
 
-	runTest("Hardware AES not supported", !HAVE_AES && !randomx::cpu.hasAes(), []() {
+#ifdef __riscv
+	constexpr bool hardAesCheckedAtRuntime = true;
+#else
+	constexpr bool hardAesCheckedAtRuntime = !HAVE_AES;
+#endif
+	runTest("Hardware AES not supported", hardAesCheckedAtRuntime && !randomx::cpu.hasAes(), []() {
 		assert(randomx_create_vm(RANDOMX_FLAG_HARD_AES, cache, nullptr) == nullptr);
 	});
 

@@ -772,6 +772,13 @@ FORCE_INLINE rx_vec_f128 rx_cvt_packed_int_vec_f128(const void* addr) {
 	return x;
 }
 
+#ifdef __riscv
+rx_vec_i128 rx_aesenc_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey);
+rx_vec_i128 rx_aesdec_vec_i128(rx_vec_i128 v, rx_vec_i128 rkey);
+
+#define HAVE_AES 1
+#endif
+
 #define RANDOMX_DEFAULT_FENV
 
 #endif

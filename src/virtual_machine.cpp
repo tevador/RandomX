@@ -109,7 +109,7 @@ namespace randomx {
 			throw std::invalid_argument("Cache/Dataset not set");
 #ifdef __riscv
 		if (!softAes && !cpu.hasAes())
-			throw std::runtime_error(platformError);
+			throw std::runtime_error("Platform doesn't support hardware AES");
 #else
 		if (!softAes) { //if hardware AES is not supported, it's better to fail now than to return a ticking bomb
 			rx_vec_i128 tmp = rx_load_vec_i128((const rx_vec_i128*)&aesDummy);
