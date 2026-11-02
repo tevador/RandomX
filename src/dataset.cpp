@@ -145,6 +145,7 @@ namespace randomx {
 		cache->jit->generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		cache->jit->generateDatasetInitCode();
 		cache->jit->enableExecution();
+		cache->datasetInit = cache->jit->getDatasetInitFunc();
 	}
 
 	constexpr uint64_t superscalarMul0 = 6364136223846793005ULL;

@@ -57,16 +57,33 @@ void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgramList &progra
 	uint8_t* literals = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_imul_rcp_literals);
 	uint8_t* cur_literal = literals;
 
+	if (reciprocalCache.size() > static_cast<size_t>(DIST(randomx_riscv64_vector_sshash_imul_rcp_literals, randomx_riscv64_vector_sshash_dataset_init)) / 8) {
+		return nullptr;
+	}
+
+	const uint8_t* e = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_generated_instructions_end);
+
+	// Leave room for Step 6, Step 7 and the final jump
+	const uint8_t* code_end = e - DIST(randomx_riscv64_vector_sshash_xor, randomx_riscv64_vector_sshash_end) - 8;
+
 	const size_t num_programs = programs.size();
 
 	for (size_t i = 0; i < num_programs; ++i) {
 		// Step 4
 		size_t k = DIST(randomx_riscv64_vector_sshash_cache_prefetch, randomx_riscv64_vector_sshash_xor);
+		if (p + k > code_end) {
+			return nullptr;
+		}
 		memcpy(p, reinterpret_cast<void*>(randomx_riscv64_vector_sshash_cache_prefetch), k);
 		p += k;
 
 		// Step 5
 		for (uint32_t j = 0; j < programs[i].size; ++j) {
+			// Up to 20 bytes per instruction
+			if (p + 20 > code_end) {
+				return nullptr;
+			}
+
 			const uint32_t dst = programs[i].programBuffer[j].dst & 7;
 			const uint32_t src = programs[i].programBuffer[j].src & 7;
 			const uint32_t modShift = (programs[i].programBuffer[j].mod >> 2) & 3;
@@ -216,7 +233,6 @@ void* generateDatasetInitVectorRV64(uint8_t* buf, SuperscalarProgramList &progra
 	}
 
 	// Emit "J randomx_riscv64_vector_sshash_generated_instructions_end" instruction
-	const uint8_t* e = buf + DIST(randomx_riscv64_vector_code_begin, randomx_riscv64_vector_sshash_generated_instructions_end);
 	const uint32_t j = JUMP(e - p);
 	memcpy(p, &j, 4);
 

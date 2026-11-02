@@ -52,7 +52,7 @@ namespace randomx {
 			return (ProgramFunc*)(vectorCode ? entryProgramVector : entryProgram);
 		}
 		DatasetInitFunc* getDatasetInitFunc() {
-			return (DatasetInitFunc*)((vectorCode && (vectorRegisterLength >= 256)) ? entryDataInitVector : entryDataInit);
+			return (DatasetInitFunc*)((entryDataInitVector && (vectorRegisterLength >= 256)) ? entryDataInitVector : entryDataInit);
 		}
 		uint8_t* getCode() {
 			return vectorCode ? vectorCode : state.code;
