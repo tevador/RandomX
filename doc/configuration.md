@@ -24,7 +24,7 @@ These parameters can be modified in source file [configuration.h](../src/configu
 |`RANDOMX_SCRATCHPAD_L1`|Scratchpad L1 size in bytes|`16384`|
 |`RANDOMX_FREQ_*` (29x)|Instruction frequencies|multiple values|
 
-Not all of the parameters can be changed safely and most parameters have some contraints on what values can be selected (checked at compile-time).
+Not all of the parameters can be changed safely and most parameters have some constraints on what values can be selected (checked at compile-time).
 
 **Disclaimer: The compile-time checks only prevent obviously broken configurations. Passing the checks does not imply that the configuration is safe and will not cause crashes or other issues. We recommend that each non-standard configuration is thoroughly tested before being deployed.**
 
@@ -190,14 +190,14 @@ The default value of 16 KiB was selected to be about half of the per-core L1 cac
 Instruction frequencies (per 256 instructions).
 
 #### Permitted values
-There is a total of 29 different instructions. The sum of frequencies must be equal to 256.
+There are a total of 29 different instructions. The sum of frequencies must be equal to 256.
 
 #### Notes
 
 Making changes to the default values is not recommended. The only exceptions are the instruction pairs IROR_R/IROL_R, FADD_R/FSUB_R and FADD_M/FSUB_M, which are functionally equivalent. Example of a safe custom configuration:
 
 ||default|custom|
-|-|------|------|-|
+|-|------|------|
 |`RANDOMX_FREQ_IROR_R`|8|5|
 |`RANDOMX_FREQ_IROL_R`|2|5|
 
