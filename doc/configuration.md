@@ -215,7 +215,7 @@ Making changes to the default values is not recommended. The only exceptions are
 
 There are some configurations that are considered 'unsafe' because they affect the security of the algorithm against attacks. If the conditions listed below are not satisfied, the configuration is unsafe and a compilation error is emitted when building the RandomX library.
 
-These checks can be disabled by definining `RANDOMX_UNSAFE` when building RandomX, e.g. by using `-DRANDOMX_UNSAFE` command line switch in GCC or MSVC. It is not recommended to disable these checks except for testing purposes.
+These checks can be disabled by defining `RANDOMX_UNSAFE` when building RandomX, e.g. by using `-DRANDOMX_UNSAFE` command line switch in GCC or MSVC. It is not recommended to disable these checks except for testing purposes.
 
 
 ### 1. Memory-time tradeoffs
