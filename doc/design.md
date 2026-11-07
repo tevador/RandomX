@@ -163,7 +163,7 @@ Because integer division is not fully pipelined in CPUs and can be made faster i
 
 #### 2.4.3 IROR_R/IROL_R
 
-Rotation instructions are split between rotate right and rotate left with a 4:1 ratio. Rotate right has a higher frequency because some architecures (like ARM) don't support rotate left natively (it must be emulated using rotate right).
+Rotation instructions are split between rotate right and rotate left with a 4:1 ratio. Rotate right has a higher frequency because some architectures (like ARM) don't support rotate left natively (it must be emulated using rotate right).
 
 #### 2.4.4 ISWAP_R
 
@@ -177,7 +177,7 @@ RandomX uses five operations that are guaranteed by the IEEE 754 standard to giv
 
 #### 2.5.1 Floating point register groups
 
-The domains of floating point operations are separated into "additive" operations, which use register group F and "multiplicative" operations, which use register group E. This is done to prevent addition/subtraction from becoming no-op when a small number is added to a large number. Since the range of the F group registers is limited to around `±3.0e+14`, adding or subtracting a floating point number with absolute value larger than 1 always changes at least 5 fraction bits.
+The domains of floating point operations are separated into "additive" operations, which use register group F and "multiplicative" operations, which use register group E. This is done to prevent addition/subtraction from becoming no-op when a small number is added to a large number. Since the range of the F group registers is limited to around ±3.0e+14, adding or subtracting a floating point number with absolute value of at least 1.0 always changes at least 1 fraction bit.
 
 Because the limited range of group F registers would allow the use of a more efficient fixed-point representation (with 80-bit numbers), the FSCAL instruction manipulates the binary representation of the floating point format to make this optimization more difficult.
 
@@ -348,7 +348,8 @@ For `N = 1`, there are no wasted program executions and the only cost is program
 
  For `N > 1`, the first program can be filtered as usual, but after the program is executed, there is a chance of `1-Q` that the next program should be rejected and we have wasted one program execution.
 
-For `N` chained executions, the chance is only <code>Q<sup>N</sup></code> that all programs in the chain are acceptable. However, during each attempt to find such chain, we will waste the execution of some programs. For `N = 8`, the number of wasted programs per attempt is equal to <code>(1-Q)*(1+2\*Q+3\*Q<sup>2</sup>+4\*Q<sup>3</sup>+5\*Q<sup>4</sup>+6\*Q<sup>5</sup>+7\*Q<sup>6</sup>)</code> (approximately 2.5 for `Q = 0.75`).
+For `N` chained executions, the chance is only <code>Q<sup>N</sup></code> that all programs in the chain are acceptable. However, during each attempt to find such chain, we will waste the execution of some programs. For `N = 8`, the expected number of wasted programs per attempt (<code>F</code>) is given by <code>F = (1-Q)\*Q\*(1+2\*Q+3\*Q<sup>2</sup>+4\*Q<sup>3</sup>+5\*Q<sup>4</sup>+6\*Q<sup>5</sup>+7\*Q<sup>6</sup>)</code> (approximately 1.9 for `Q = 0.75`).
+Note, the expected number of programs executed per attempt (including the full N not wasted in a completed chain) is then <code>F + 8\*Q<sup>8</sup></code> (approximately 2.7 for `Q = 0.75`), and the expected number of attempts to find an acceptable chain is <code>1/Q<sup>8</sup></code> (approximately 10.0 for `Q = 0.75`), so the expected number of program needing to be executed to get one valid hash result is <code>F/Q<sup>8</sup> + 8</sup></code> (approximately 27.0 for `Q = 0.75`).
 
 Let's consider 3 mining strategies:
 
@@ -358,7 +359,7 @@ Honest miner that doesn't reject any programs (`Q = 1`).
 
 #### Strategy II
 
-Miner that uses optimized custom hardware that cannot execute 25% of programs (`Q = 0.75`), but supported programs can be executed 50% faster.
+Miner that uses optimized custom hardware that cannot execute 25% of programs (`Q = 0.75`), but supported programs can be executed 50% faster (i.e. 1.5x speed or programs per time, i.e. dividing time to execute by 1.5).
 
 #### Strategy III
 
@@ -366,7 +367,7 @@ Miner that can execute all programs, but rejects 25% of the slowest programs for
 
 #### Results
 
-The table below lists the results for the above 3 strategies and different values of `N`. The columns **N(I)**, **N(II)** and **N(III)** list the number of programs that each strategy has to execute on average to get one valid hash result (this includes programs wasted in rejected chains). Columns **Speed(I)**, **Speed(II)** and **Speed(III)** list the average mining performance relative to strategy I.
+The table below lists the results for the above 3 strategies and different values of `N`. The columns **N(I)**, **N(II)** and **N(III)** list the number of programs that each strategy has to execute on average to get one valid hash result (this includes programs wasted in rejected chains). Columns **Speed(I)**, **Speed(II)** and **Speed(III)** list the average mining performance relative to strategy I (computed from theoretical N values at full precision before rounding with half to even rounding mode).
 
 |N|N(I)|N(II)|N(III)|Speed(I)|Speed(II)|Speed(III)|
 |---|----|----|----|---------|---------|---------|
